@@ -413,7 +413,7 @@ function test() {
   // ============================================================================
 
   test('do with string', () => {
-    const ast = parse('let x = do "what is 2+2?"');
+    const ast = parse('let x = do "what is 2+2?" myModel default');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
@@ -424,12 +424,20 @@ function test() {
           type: 'StringLiteral',
           value: 'what is 2+2?',
         },
+        model: {
+          type: 'Identifier',
+          name: 'myModel',
+        },
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'default',
+        },
       },
     });
   });
 
   test('do with identifier', () => {
-    const ast = parse('let x = do prompt');
+    const ast = parse('let x = do prompt myModel local');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
@@ -439,6 +447,14 @@ function test() {
         prompt: {
           type: 'Identifier',
           name: 'prompt',
+        },
+        model: {
+          type: 'Identifier',
+          name: 'myModel',
+        },
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'local',
         },
       },
     });

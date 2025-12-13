@@ -24,6 +24,7 @@ export interface Program extends BaseNode {
 export type Statement =
   | LetDeclaration
   | ConstDeclaration
+  | ModelDeclaration
   | FunctionDeclaration
   | ReturnStatement
   | IfStatement
@@ -42,6 +43,23 @@ export interface ConstDeclaration extends BaseNode {
   type: 'ConstDeclaration';
   name: string;
   initializer: Expression;
+}
+
+export interface ModelDeclaration extends BaseNode {
+  type: 'ModelDeclaration';
+  name: string;
+  config: ModelConfig;
+}
+
+export interface ModelConfig extends BaseNode {
+  type: 'ModelConfig';
+  properties: ModelProperty[];
+}
+
+export interface ModelProperty extends BaseNode {
+  type: 'ModelProperty';
+  key: string;
+  value: Expression;
 }
 
 export interface FunctionDeclaration extends BaseNode {
@@ -117,6 +135,14 @@ export interface CallExpression extends BaseNode {
 export interface DoExpression extends BaseNode {
   type: 'DoExpression';
   prompt: Expression;
+  model: Expression;
+  context: ContextSpecifier;
+}
+
+export interface ContextSpecifier extends BaseNode {
+  type: 'ContextSpecifier';
+  kind: 'default' | 'local' | 'variable';
+  variable?: string;
 }
 
 export interface VibeExpression extends BaseNode {

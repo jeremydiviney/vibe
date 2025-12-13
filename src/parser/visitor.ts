@@ -47,6 +47,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   statement(ctx: Record<string, CstNode[]>): AST.Statement {
     if (ctx.letDeclaration) return this.visit(ctx.letDeclaration);
     if (ctx.constDeclaration) return this.visit(ctx.constDeclaration);
+    if (ctx.modelDeclaration) return this.visit(ctx.modelDeclaration);
     if (ctx.functionDeclaration) return this.visit(ctx.functionDeclaration);
     if (ctx.returnStatement) return this.visit(ctx.returnStatement);
     if (ctx.ifStatement) return this.visit(ctx.ifStatement);
@@ -72,6 +73,36 @@ class VibeAstVisitor extends BaseVibeVisitor {
       name: ctx.Identifier[0].image,
       initializer: this.visit(ctx.expression),
       location: tokenLocation(ctx.Const[0]),
+    };
+  }
+
+  modelDeclaration(ctx: { Model: IToken[]; Identifier: IToken[]; objectLiteral: CstNode[] }): AST.ModelDeclaration {
+    return {
+      type: 'ModelDeclaration',
+      name: ctx.Identifier[0].image,
+      config: this.visit(ctx.objectLiteral),
+      location: tokenLocation(ctx.Model[0]),
+    };
+  }
+
+  objectLiteral(ctx: { LBrace: IToken[]; propertyList?: CstNode[] }): AST.ModelConfig {
+    return {
+      type: 'ModelConfig',
+      properties: ctx.propertyList ? this.visit(ctx.propertyList) : [],
+      location: tokenLocation(ctx.LBrace[0]),
+    };
+  }
+
+  propertyList(ctx: { property: CstNode[] }): AST.ModelProperty[] {
+    return ctx.property.map((p) => this.visit(p));
+  }
+
+  property(ctx: { Identifier: IToken[]; expression: CstNode[] }): AST.ModelProperty {
+    return {
+      type: 'ModelProperty',
+      key: ctx.Identifier[0].image,
+      value: this.visit(ctx.expression),
+      location: tokenLocation(ctx.Identifier[0]),
     };
   }
 
@@ -150,11 +181,13 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // Expressions
   // ============================================================================
 
-  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; callExpression?: CstNode[]; expression?: CstNode[] }): AST.Expression {
+  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; callExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
     if (ctx.Do) {
       return {
         type: 'DoExpression',
-        prompt: this.visit(ctx.expression!),
+        prompt: this.visit(ctx.expression![0]),
+        model: this.visit(ctx.expression![1]),
+        context: this.visit(ctx.contextSpecifier!),
         location: tokenLocation(ctx.Do[0]),
       };
     }
@@ -168,6 +201,29 @@ class VibeAstVisitor extends BaseVibeVisitor {
     }
 
     return this.visit(ctx.callExpression!);
+  }
+
+  contextSpecifier(ctx: { Default?: IToken[]; Local?: IToken[]; Identifier?: IToken[] }): AST.ContextSpecifier {
+    if (ctx.Default) {
+      return {
+        type: 'ContextSpecifier',
+        kind: 'default',
+        location: tokenLocation(ctx.Default[0]),
+      };
+    }
+    if (ctx.Local) {
+      return {
+        type: 'ContextSpecifier',
+        kind: 'local',
+        location: tokenLocation(ctx.Local[0]),
+      };
+    }
+    return {
+      type: 'ContextSpecifier',
+      kind: 'variable',
+      variable: ctx.Identifier![0].image,
+      location: tokenLocation(ctx.Identifier![0]),
+    };
   }
 
   callExpression(ctx: { primaryExpression: CstNode[]; LParen?: IToken[]; argumentList?: CstNode[] }): AST.Expression {

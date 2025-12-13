@@ -13,6 +13,9 @@ import {
   Continue,
   True,
   False,
+  Model,
+  Default,
+  Local,
   StringLiteral,
   Identifier,
   Equals,
@@ -21,6 +24,7 @@ import {
   LBrace,
   RBrace,
   Comma,
+  Colon,
 } from '../lexer';
 
 class VibeParser extends CstParser {
@@ -49,6 +53,7 @@ class VibeParser extends CstParser {
     this.OR([
       { ALT: () => this.SUBRULE(this.letDeclaration) },
       { ALT: () => this.SUBRULE(this.constDeclaration) },
+      { ALT: () => this.SUBRULE(this.modelDeclaration) },
       { ALT: () => this.SUBRULE(this.functionDeclaration) },
       { ALT: () => this.SUBRULE(this.returnStatement) },
       { ALT: () => this.SUBRULE(this.ifStatement) },
@@ -72,6 +77,35 @@ class VibeParser extends CstParser {
     this.CONSUME(Const);
     this.CONSUME(Identifier);
     this.CONSUME(Equals);
+    this.SUBRULE(this.expression);
+  });
+
+  private modelDeclaration = this.RULE('modelDeclaration', () => {
+    this.CONSUME(Model);
+    this.CONSUME(Identifier);
+    this.CONSUME(Equals);
+    this.SUBRULE(this.objectLiteral);
+  });
+
+  private objectLiteral = this.RULE('objectLiteral', () => {
+    this.CONSUME(LBrace);
+    this.OPTION(() => {
+      this.SUBRULE(this.propertyList);
+    });
+    this.CONSUME(RBrace);
+  });
+
+  private propertyList = this.RULE('propertyList', () => {
+    this.SUBRULE(this.property);
+    this.MANY(() => {
+      this.CONSUME(Comma);
+      this.SUBRULE2(this.property);
+    });
+  });
+
+  private property = this.RULE('property', () => {
+    this.CONSUME(Identifier);
+    this.CONSUME(Colon);
     this.SUBRULE(this.expression);
   });
 
@@ -144,17 +178,27 @@ class VibeParser extends CstParser {
       {
         ALT: () => {
           this.CONSUME(Do);
-          this.SUBRULE(this.expression);
+          this.SUBRULE(this.expression);        // prompt
+          this.SUBRULE2(this.expression);       // model
+          this.SUBRULE(this.contextSpecifier);  // context
         },
       },
       {
         ALT: () => {
           this.CONSUME(Vibe);
-          this.SUBRULE2(this.expression);
+          this.SUBRULE3(this.expression);
         },
       },
       // Call expression or primary
       { ALT: () => this.SUBRULE(this.callExpression) },
+    ]);
+  });
+
+  private contextSpecifier = this.RULE('contextSpecifier', () => {
+    this.OR([
+      { ALT: () => this.CONSUME(Default) },
+      { ALT: () => this.CONSUME(Local) },
+      { ALT: () => this.CONSUME(Identifier) },
     ]);
   });
 

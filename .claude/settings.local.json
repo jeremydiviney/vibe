@@ -28,7 +28,8 @@
       "Bash(bun run:*)",
       "Bash(bun add:*)",
       "Bash(bun:*)",
-      "Bash(bun test:*)"
+      "Bash(bun test:*)",
+      "Bash(dir:*)"
     ],
     "deny": [
       "Bash(rm:*)",

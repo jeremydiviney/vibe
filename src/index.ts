@@ -2,12 +2,14 @@
 export { VibeLexer, tokenize, allTokens } from './lexer';
 export { vibeParser } from './parser';
 export { parse } from './parser/parse';
+export { analyze } from './semantic';
 export { Runtime, RuntimeStatus } from './runtime';
 export type { RuntimeState, AIProvider } from './runtime';
 export * as AST from './ast';
 export * from './errors';
 
 import { parse } from './parser/parse';
+import { analyze } from './semantic';
 import { Runtime, AIProvider } from './runtime';
 
 // Simple mock AI provider for testing
@@ -23,7 +25,16 @@ class MockAIProvider implements AIProvider {
 
 // Main function to run a vibe program
 export async function runVibe(source: string, aiProvider?: AIProvider): Promise<unknown> {
+  // 1. Parse
   const ast = parse(source);
+
+  // 2. Semantic analysis
+  const errors = analyze(ast, source);
+  if (errors.length > 0) {
+    throw errors[0];
+  }
+
+  // 3. Runtime
   const runtime = new Runtime(ast, aiProvider ?? new MockAIProvider());
   return runtime.run();
 }

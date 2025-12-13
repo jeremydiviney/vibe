@@ -44,6 +44,9 @@ export const Break = token({ name: 'Break', pattern: /break/ });
 export const Continue = token({ name: 'Continue', pattern: /continue/ });
 export const True = token({ name: 'True', pattern: /true/ });
 export const False = token({ name: 'False', pattern: /false/ });
+export const Model = token({ name: 'Model', pattern: /model/ });
+export const Default = token({ name: 'Default', pattern: /default/ });
+export const Local = token({ name: 'Local', pattern: /local/ });
 
 // ============================================================================
 // Literals
@@ -75,6 +78,7 @@ export const RParen = token({ name: 'RParen', pattern: /\)/ });
 export const LBrace = token({ name: 'LBrace', pattern: /\{/ });
 export const RBrace = token({ name: 'RBrace', pattern: /\}/ });
 export const Comma = token({ name: 'Comma', pattern: /,/ });
+export const Colon = token({ name: 'Colon', pattern: /:/ });
 
 // ============================================================================
 // All tokens in order (order matters for matching!)
@@ -99,6 +103,9 @@ export const allTokens = [
   Continue,
   True,
   False,
+  Model,
+  Default,
+  Local,
 
   // Literals
   StringLiteral,
@@ -115,6 +122,7 @@ export const allTokens = [
   LBrace,
   RBrace,
   Comma,
+  Colon,
 ];
 
 // ============================================================================

@@ -114,3 +114,11 @@ export class AssignmentError extends VibeError {
     this.name = 'AssignmentError';
   }
 }
+
+// Semantic errors (type checking, scope validation)
+export class SemanticError extends VibeError {
+  constructor(message: string, location?: SourceLocation, source?: string) {
+    super(message, location, source);
+    this.name = 'SemanticError';
+  }
+}
