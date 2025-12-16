@@ -3,6 +3,19 @@ import type { RuntimeState, Instruction, Variable, ExecutionEntry } from './type
 import { currentFrame, createFrame } from './state';
 import { buildLocalContext, buildGlobalContext } from './context';
 
+// Helper: Look up a variable by walking the scope chain
+function lookupVariable(state: RuntimeState, name: string): { variable: Variable; frameIndex: number } | null {
+  let frameIndex: number | null = state.callStack.length - 1;
+  while (frameIndex !== null) {
+    const frame = state.callStack[frameIndex];
+    if (frame.locals[name]) {
+      return { variable: frame.locals[name], frameIndex };
+    }
+    frameIndex = frame.parentFrameIndex;
+  }
+  return null;
+}
+
 // Get the next instruction that will be executed (or null if done/paused)
 export function getNextInstruction(state: RuntimeState): Instruction | null {
   if (state.status !== 'running' || state.instructionStack.length === 0) {
@@ -376,12 +389,14 @@ function execDeclareVar(
 
 // Assign variable with value from lastResult
 function execAssignVar(state: RuntimeState, name: string): RuntimeState {
-  const frame = currentFrame(state);
-  const variable = frame.locals[name];
+  // Walk scope chain to find the variable
+  const found = lookupVariable(state, name);
 
-  if (!variable) {
+  if (!found) {
     throw new Error(`ReferenceError: '${name}' is not defined`);
   }
+
+  const { variable, frameIndex } = found;
 
   if (variable.isConst) {
     throw new Error(`TypeError: Cannot assign to constant '${name}'`);
@@ -389,16 +404,19 @@ function execAssignVar(state: RuntimeState, name: string): RuntimeState {
 
   const validatedValue = validateAndCoerce(state.lastResult, variable.typeAnnotation, name);
 
+  const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
     [name]: { ...variable, value: validatedValue },
   };
 
+  // Update the correct frame in the call stack
   return {
     ...state,
     callStack: [
-      ...state.callStack.slice(0, -1),
+      ...state.callStack.slice(0, frameIndex),
       { ...frame, locals: newLocals },
+      ...state.callStack.slice(frameIndex + 1),
     ],
     executionLog: [
       ...state.executionLog,
@@ -537,11 +555,10 @@ function execExitBlock(state: RuntimeState, savedKeys: string[]): RuntimeState {
 
 // Identifier - get variable value
 function execIdentifier(state: RuntimeState, expr: AST.Identifier): RuntimeState {
-  const frame = currentFrame(state);
-  const variable = frame.locals[expr.name];
-
-  if (variable) {
-    return { ...state, lastResult: variable.value };
+  // Walk the scope chain to find the variable
+  const found = lookupVariable(state, expr.name);
+  if (found) {
+    return { ...state, lastResult: found.variable.value };
   }
 
   // Check if it's a function
@@ -690,7 +707,9 @@ function execCallFunction(state: RuntimeState, _funcName: string, argCount: numb
     }
 
     // Create new frame with parameters
-    const newFrame = createFrame(funcName);
+    // Parent frame is 0 (global scope) for top-level functions
+    // This enables lexical scoping - function can access global variables
+    const newFrame = createFrame(funcName, 0);
     for (let i = 0; i < func.params.length; i++) {
       newFrame.locals[func.params[i]] = {
         value: args[i] ?? null,
@@ -864,12 +883,11 @@ function execAIVibe(state: RuntimeState, model: string, context: AST.ContextSpec
 
 // String interpolation
 function execInterpolateString(state: RuntimeState, template: string): RuntimeState {
-  const frame = currentFrame(state);
-
   const result = template.replace(/\{(\w+)\}/g, (_, name) => {
-    const variable = frame.locals[name];
-    if (variable) {
-      return String(variable.value);
+    // Walk scope chain to find variable
+    const found = lookupVariable(state, name);
+    if (found) {
+      return String(found.variable.value);
     }
     return `{${name}}`;
   });

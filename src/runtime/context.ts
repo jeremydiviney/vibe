@@ -9,7 +9,7 @@ export function buildLocalContext(state: RuntimeState): ContextVariable[] {
   return Object.entries(frame.locals).map(([name, variable]) => ({
     name,
     value: variable.value,
-    type: variable.typeAnnotation as 'text' | 'json' | null,
+    type: variable.typeAnnotation as 'text' | 'json' | 'model' | null,
   }));
 }
 
@@ -23,7 +23,7 @@ export function buildGlobalContext(state: RuntimeState): ContextVariable[] {
       variables.push({
         name,
         value: variable.value,
-        type: variable.typeAnnotation as 'text' | 'json' | null,
+        type: variable.typeAnnotation as 'text' | 'json' | 'model' | null,
       });
     }
   }

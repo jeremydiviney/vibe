@@ -27,6 +27,7 @@ export interface ContextVariable {
 export interface StackFrame {
   name: string;
   locals: Record<string, Variable>;
+  parentFrameIndex: number | null;  // Lexical parent frame for scope chain
 }
 
 // AI operation history entry

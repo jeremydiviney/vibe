@@ -34,10 +34,11 @@ export function createInitialState(program: AST.Program): RuntimeState {
 }
 
 // Create a new stack frame
-export function createFrame(name: string): StackFrame {
+export function createFrame(name: string, parentFrameIndex: number | null = null): StackFrame {
   return {
     name,
     locals: {},
+    parentFrameIndex,
   };
 }
 
@@ -134,13 +135,17 @@ export function currentFrame(state: RuntimeState): StackFrame {
   return frame;
 }
 
-// Get variable value
+// Get variable value (walks scope chain)
 export function getVariable(state: RuntimeState, name: string): unknown {
-  const frame = currentFrame(state);
-  const variable = frame.locals[name];
-
-  if (variable) {
-    return variable.value;
+  // Walk the scope chain
+  let frameIndex: number | null = state.callStack.length - 1;
+  while (frameIndex !== null) {
+    const frame = state.callStack[frameIndex];
+    const variable = frame.locals[name];
+    if (variable) {
+      return variable.value;
+    }
+    frameIndex = frame.parentFrameIndex;
   }
 
   // Check if it's a function

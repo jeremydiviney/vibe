@@ -258,7 +258,7 @@ describe('Context Building Functions', () => {
       const localCtxInBlock = normalizeContext(buildLocalContext(state));
       const globalCtxInBlock = normalizeContext(buildGlobalContext(state));
 
-      // Local context now includes blockVar
+      // Local context now includes blockVar (blocks share frame with function)
       expect(localCtxInBlock).toEqual([
         { name: 'blockVar', value: 'block_value', type: null },
         { name: 'funcLocal', value: 'func_local', type: null },
