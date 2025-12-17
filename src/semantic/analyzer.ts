@@ -6,6 +6,7 @@ export class SemanticAnalyzer {
   private symbols = new SymbolTable();
   private errors: SemanticError[] = [];
   private inFunction = false;
+  private atTopLevel = true;
   private source?: string;
 
   analyze(program: AST.Program, source?: string): SemanticError[] {
@@ -55,6 +56,9 @@ export class SemanticAnalyzer {
         break;
 
       case 'FunctionDeclaration':
+        if (!this.atTopLevel) {
+          this.error('Functions can only be declared at global scope', node.location);
+        }
         this.declare(node.name, 'function', node.location, node.params.length);
         this.visitFunction(node);
         break;
@@ -81,11 +85,14 @@ export class SemanticAnalyzer {
         break;
 
       case 'BlockStatement':
+        const wasAtTopLevel = this.atTopLevel;
+        this.atTopLevel = false;
         this.symbols.enterScope();
         for (const stmt of node.body) {
           this.visitStatement(stmt);
         }
         this.symbols.exitScope();
+        this.atTopLevel = wasAtTopLevel;
         break;
 
       case 'ExpressionStatement':

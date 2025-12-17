@@ -236,7 +236,11 @@ function second() {
     expect(errors.length).toBe(0);
   });
 
-  test('function inside if block with parameter shadowing', () => {
+  // ============================================================================
+  // Nested function restrictions
+  // ============================================================================
+
+  test('function inside if block is not allowed', () => {
     const ast = parse(`
 let name = "outer"
 if true {
@@ -244,6 +248,63 @@ if true {
     return name
   }
 }
+`);
+    const errors = analyze(ast);
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toContain('Functions can only be declared at global scope');
+  });
+
+  test('function inside function is not allowed', () => {
+    const ast = parse(`
+function outer() {
+  function inner() {
+    return "nested"
+  }
+  return inner()
+}
+`);
+    const errors = analyze(ast);
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toContain('Functions can only be declared at global scope');
+  });
+
+  test('function inside else block is not allowed', () => {
+    const ast = parse(`
+if false {
+  let x = "if"
+} else {
+  function helper() {
+    return "help"
+  }
+}
+`);
+    const errors = analyze(ast);
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toContain('Functions can only be declared at global scope');
+  });
+
+  test('deeply nested function is not allowed', () => {
+    const ast = parse(`
+function outer() {
+  if true {
+    function deeplyNested() {
+      return "deep"
+    }
+  }
+  return "outer"
+}
+`);
+    const errors = analyze(ast);
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toContain('Functions can only be declared at global scope');
+  });
+
+  test('function at global scope is allowed', () => {
+    const ast = parse(`
+function topLevel() {
+  return "allowed"
+}
+let result = topLevel()
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(0);

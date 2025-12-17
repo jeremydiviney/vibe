@@ -136,18 +136,13 @@ let x = ask "Question?" myModel myContext
     expect(errors.length).toBe(0);
   });
 
-  test('ask in nested function scope - no errors', () => {
+  test('ask in function accessing global variables - no errors', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let globalPrompt = "Global question"
-function outer() {
-  let localPrompt = "Local question"
-  function inner() {
-    let a = ask globalPrompt myModel default
-    let b = ask localPrompt myModel default
-    return a
-  }
-  return inner()
+function askGlobal() {
+  let a = ask globalPrompt myModel default
+  return a
 }
 `);
     const errors = analyze(ast);

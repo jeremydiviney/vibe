@@ -6,6 +6,10 @@
 
 ## Completed
 
+- [x] Disallow nested function declarations (functions only at top level)
+  - [x] Add `atTopLevel` tracking to semantic analyzer
+  - [x] Error on function declarations inside blocks or functions
+  - [x] Add 5 tests for nested function rejection
 - [x] Add lexical scoping to runtime (functions can access global scope)
   - [x] Add parentFrameIndex to StackFrame type
   - [x] Add lookupVariable() scope chain helper
