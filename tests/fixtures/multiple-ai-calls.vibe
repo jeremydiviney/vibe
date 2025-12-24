@@ -1,0 +1,10 @@
+// Program with multiple sequential AI calls
+
+model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
+const topic = "machine learning"
+
+let overview = do "Give a one-sentence overview of {topic}" m default
+let details = do "Expand on this: {overview}" m default
+let summary = do "Summarize in 5 words: {details}" m default
+
+summary

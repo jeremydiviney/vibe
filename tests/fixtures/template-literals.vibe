@@ -1,0 +1,10 @@
+// Program with template literals and string interpolation
+
+model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
+const firstName = "John"
+const lastName = "Doe"
+
+let fullName = `${firstName} ${lastName}`
+let message = do "Generate a welcome message for {fullName}" m default
+
+message

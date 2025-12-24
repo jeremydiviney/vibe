@@ -1,0 +1,16 @@
+// Program with functions and AI calls
+
+model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
+
+function generateStory(topic) {
+  let aiPrompt = "Write a short story about {topic}"
+  return do aiPrompt m default
+}
+
+function summarize(content) {
+  return do "Summarize this: {content}" m default
+}
+
+let story = generateStory("a brave knight")
+let summary = summarize(story)
+summary
