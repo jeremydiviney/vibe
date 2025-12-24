@@ -1,0 +1,6 @@
+// Simple greeting program with AI call
+
+model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
+let name = "Alice"
+let greeting = do "Generate a friendly greeting for {name}" m default
+greeting
