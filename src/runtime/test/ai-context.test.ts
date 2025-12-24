@@ -69,7 +69,7 @@ describe('AI Context Tests', () => {
   // Context formatter tests
   // ============================================================================
 
-  test('context formatter sorts and formats complete context', () => {
+  test('context formatter formats variables in declaration order', () => {
     // Note: models are filtered out before reaching formatter
     const context: ContextVariable[] = [
       { name: 'mutableVar', value: 'changing', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
@@ -80,32 +80,23 @@ describe('AI Context Tests', () => {
 
     const formatted = formatContextForAI(context);
 
-    // Verify complete sorted variables array (const first, let last)
-    expect(formatted.variables).toEqual([
-      { name: 'CONFIG', value: { key: 'value' }, type: 'json', isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'SYSTEM_PROMPT', value: 'be helpful', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'mutableVar', value: 'changing', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { name: 'anotherLet', value: 'also changing', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
-    ]);
+    // Variables remain in original order (no sorting)
+    expect(formatted.variables).toEqual(context);
 
-    // Verify complete formatted text - constants first for input caching, then variables
+    // Verify formatted text - all variables together in declaration order
     expect(formatted.text).toBe(
       `## VIBE Program Context
 Variables from the VIBE language call stack.
 
-### Constants
-  <entry> (current scope)
-    - CONFIG (json): {"key":"value"}
-    - SYSTEM_PROMPT (text): be helpful
-
-### Variables
   <entry> (current scope)
     - mutableVar: changing
-    - anotherLet: also changing`
+    - CONFIG (json): {"key":"value"}
+    - anotherLet: also changing
+    - SYSTEM_PROMPT (text): be helpful`
     );
   });
 
-  test('context formatter preserves declaration order within groups', () => {
+  test('context formatter preserves declaration order', () => {
     const context: ContextVariable[] = [
       { name: 'z_const', value: 'z', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
       { name: 'a_let', value: 'a', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
@@ -115,25 +106,16 @@ Variables from the VIBE language call stack.
 
     const formatted = formatContextForAI(context);
 
-    // Verify complete sorted variables (preserves order within const/let groups)
-    expect(formatted.variables).toEqual([
-      { name: 'z_const', value: 'z', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'a_const', value: 'a', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'a_let', value: 'a', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { name: 'z_let', value: 'z', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
-    ]);
+    // Variables remain in original declaration order
+    expect(formatted.variables).toEqual(context);
 
-    // Verify complete formatted text (no instructions for clarity)
+    // Verify formatted text preserves order (no instructions for clarity)
     const noInstructions = formatContextForAI(context, { includeInstructions: false });
     expect(noInstructions.text).toBe(
-      `### Constants
-  <entry> (current scope)
+      `  <entry> (current scope)
     - z_const: z
-    - a_const: a
-
-### Variables
-  <entry> (current scope)
     - a_let: a
+    - a_const: a
     - z_let: z`
     );
   });
@@ -149,24 +131,20 @@ Variables from the VIBE language call stack.
 
     const formatted = formatContextForAI(context);
 
-    // Verify complete formatted output - constants first for caching
+    // Verify formatted output - all variables together in declaration order
     expect(formatted.text).toBe(
       `## VIBE Program Context
 Variables from the VIBE language call stack.
 
-### Constants
   <entry> (current scope)
     - jsonVar (json): {"key":"value"}
     - textVar (text): text value
     - untypedConst: constant
-
-### Variables
-  <entry> (current scope)
     - untypedLet: mutable`
     );
 
-    // Verify variables array matches
-    expect(formatted.variables).toEqual(context); // Already sorted (all const first)
+    // Verify variables array matches input
+    expect(formatted.variables).toEqual(context);
   });
 
   test('context without instructions outputs variables only', () => {
@@ -178,12 +156,8 @@ Variables from the VIBE language call stack.
     const formatted = formatContextForAI(context, { includeInstructions: false });
 
     expect(formatted.text).toBe(
-      `### Constants
-  <entry> (current scope)
+      `  <entry> (current scope)
     - API_KEY: secret123
-
-### Variables
-  <entry> (current scope)
     - counter: 42`
     );
   });
@@ -338,17 +312,9 @@ Variables from the VIBE language call stack.
       { name: 'blockVar', value: 'inside block', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
     ]);
 
-    // Verify formatted global context sorts const first, preserving order within groups
+    // Verify formatted global context preserves declaration order
     const formatted = formatContextForAI(state.globalContext);
-    expect(formatted.variables).toEqual([
-      { name: 'SYSTEM_PROMPT', value: 'You are a helpful assistant', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'FUNC_CONST', value: 'function constant', type: null, isConst: true, frameName: 'processData', frameDepth: 1 },
-      { name: 'inputText', value: 'test input', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
-      { name: 'options', value: 'opts', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
-      { name: 'normalized', value: 'normalized', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
-      { name: 'result', value: { status: 'pending' }, type: 'json', isConst: false, frameName: 'processData', frameDepth: 1 },
-      { name: 'blockVar', value: 'inside block', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
-    ]);
+    expect(formatted.variables).toEqual(state.globalContext);
   });
 
   test('context at multiple call depths via sequential do calls', () => {
@@ -395,14 +361,9 @@ Variables from the VIBE language call stack.
       { name: 'mainVar', value: 'main value', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
     ]);
 
-    // Verify formatted context sorts const first at checkpoint 1
+    // Verify formatted context preserves declaration order at checkpoint 1
     const formatted1 = formatContextForAI(state.globalContext);
-    expect(formatted1.variables).toEqual([
-      { name: 'GLOBAL_CONST', value: 'global', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'MAIN_CONST', value: 'main const', type: null, isConst: true, frameName: 'main', frameDepth: 1 },
-      { name: 'input', value: 'test', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { name: 'mainVar', value: 'main value', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-    ]);
+    expect(formatted1.variables).toEqual(state.globalContext);
 
     // Resume and continue to next pause
     state = resumeWithAIResponse(state, 'main response');
@@ -432,44 +393,29 @@ Variables from the VIBE language call stack.
       { name: 'helperVar', value: 'helper value', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
     ]);
 
-    // Verify formatted context sorts const first at checkpoint 2
+    // Verify formatted context preserves declaration order at checkpoint 2
     const formatted2 = formatContextForAI(state.globalContext);
-    expect(formatted2.variables).toEqual([
-      { name: 'GLOBAL_CONST', value: 'global', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { name: 'MAIN_CONST', value: 'main const', type: null, isConst: true, frameName: 'main', frameDepth: 1 },
-      { name: 'HELPER_CONST', value: 'helper const', type: null, isConst: true, frameName: 'helper', frameDepth: 2 },
-      { name: 'input', value: 'test', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { name: 'mainVar', value: 'main value', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { name: 'mainResult', value: 'main response', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { name: 'value', value: 'test', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
-      { name: 'helperVar', value: 'helper value', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
-    ]);
+    expect(formatted2.variables).toEqual(state.globalContext);
 
     // Verify formatted text with nested call stack (3 frames: entry=0, main=1, helper=2)
-    // Constants section first (for input caching), then variables section
+    // All variables together, grouped by frame with indentation
     // Entry is leftmost (least indented), deeper calls are more indented
     expect(formatted2.text).toBe(
       `## VIBE Program Context
 Variables from the VIBE language call stack.
 
-### Constants
   <entry> (entry)
     - GLOBAL_CONST: global
 
     main (depth 1)
-      - MAIN_CONST: main const
-
-      helper (current scope)
-        - HELPER_CONST: helper const
-
-### Variables
-    main (depth 1)
       - input: test
+      - MAIN_CONST: main const
       - mainVar: main value
       - mainResult: main response
 
       helper (current scope)
         - value: test
+        - HELPER_CONST: helper const
         - helperVar: helper value`
     );
 
@@ -504,16 +450,12 @@ Variables from the VIBE language call stack.
       { name: 'untypedVar', value: 'plain string', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
-    // Verify formatted output - constants first for caching, then variables
+    // Verify formatted output - all variables together in declaration order
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
-      `### Constants
-  <entry> (current scope)
+      `  <entry> (current scope)
     - PROMPT (text): analyze this data
     - CONFIG (json): {"modelName":"gpt-4","temperature":"high"}
-
-### Variables
-  <entry> (current scope)
     - userMessage (text): user says hello
     - data (json): {"items":["a","b","c"],"count":"3"}
     - untypedVar: plain string`

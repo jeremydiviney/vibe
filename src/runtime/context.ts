@@ -49,22 +49,12 @@ export interface FormattedContext {
 }
 
 // Format context for AI calls with instructional wrapping
-// Sorts const/model variables first (for input caching), let variables last
 export function formatContextForAI(
   context: ContextVariable[],
   options?: { includeInstructions?: boolean }
 ): FormattedContext {
-  const sorted = sortContextVariables(context);
-  const text = formatContextText(sorted, options?.includeInstructions ?? true);
-  return { text, variables: sorted };
-}
-
-// Sort context: const/model first (stable), let last (mutable)
-// Preserves original order within each group
-function sortContextVariables(context: ContextVariable[]): ContextVariable[] {
-  const constVars = context.filter((v) => v.isConst);
-  const letVars = context.filter((v) => !v.isConst);
-  return [...constVars, ...letVars];
+  const text = formatContextText(context, options?.includeInstructions ?? true);
+  return { text, variables: context };
 }
 
 // Group variables by frame for structured output
@@ -81,8 +71,7 @@ function groupByFrame(variables: ContextVariable[]): Map<string, ContextVariable
 }
 
 // Format context as text with optional instruction header
-// Outputs ALL const variables first (for input caching), then ALL let variables
-// Within each section, variables are grouped by call stack frame
+// Variables are grouped by call stack frame in declaration order
 function formatContextText(
   variables: ContextVariable[],
   includeInstructions: boolean
@@ -95,20 +84,8 @@ function formatContextText(
     lines.push('');
   }
 
-  // Split into const and let sections for input caching
-  const constVars = variables.filter((v) => v.isConst);
-  const letVars = variables.filter((v) => !v.isConst);
-
-  // Output const section first (stable, cacheable)
-  if (constVars.length > 0) {
-    lines.push('### Constants');
-    formatFrameGroups(constVars, lines);
-  }
-
-  // Output let section last (mutable, changes between calls)
-  if (letVars.length > 0) {
-    lines.push('### Variables');
-    formatFrameGroups(letVars, lines);
+  if (variables.length > 0) {
+    formatFrameGroups(variables, lines);
   }
 
   return lines.join('\n').trimEnd();
