@@ -73,14 +73,14 @@ describe('Runtime Lexical Scoping', () => {
   test('recursion works', () => {
     const ast = parse(`
       let depth = "0"
-      function recurse(n) {
+      function recurse(n: text): text {
         if n {
           depth = "reached"
-          return recurse(false)
+          return recurse("")
         }
         return depth
       }
-      let result = recurse(true)
+      let result = recurse("yes")
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
@@ -114,7 +114,7 @@ describe('Runtime Lexical Scoping', () => {
   test('parameter shadows global', () => {
     const ast = parse(`
       let name = "global_name"
-      function greet(name) {
+      function greet(name: text): text {
         return name
       }
       let result = greet("param_name")
@@ -243,7 +243,7 @@ describe('Runtime Lexical Scoping', () => {
 
   test('block in function can access function parameters', () => {
     const ast = parse(`
-      function test(param) {
+      function test(param: text): text {
         if true {
           return param
         }
@@ -328,7 +328,7 @@ describe('Runtime Lexical Scoping', () => {
   test('multiple functions sharing global state', () => {
     const ast = parse(`
       let state = "initial"
-      function setState(val) {
+      function setState(val: text): text {
         state = val
         return state
       }
@@ -349,13 +349,13 @@ describe('Runtime Lexical Scoping', () => {
     const ast = parse(`
       let prefix = "Hello"
       let suffix = "!"
-      function addPrefix(msg) {
+      function addPrefix(msg: text): text {
         return "{prefix}, {msg}"
       }
-      function addSuffix(msg) {
+      function addSuffix(msg: text): text {
         return "{msg}{suffix}"
       }
-      function greet(name) {
+      function greet(name: text): text {
         let withPrefix = addPrefix(name)
         return addSuffix(withPrefix)
       }

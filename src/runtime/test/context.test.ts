@@ -56,7 +56,7 @@ describe('Context Building Functions', () => {
   test('buildGlobalContext returns variables from all frames with frame info', () => {
     const ast = parse(`
       let outer = "outer value"
-      function inner() {
+      function inner(): text {
         let innerVar = "inner value"
         return innerVar
       }
@@ -133,7 +133,7 @@ describe('Context Building Functions', () => {
   test('context works with nested function calls and shows frame depth', () => {
     const ast = parse(`
       let outer = "outer"
-      function getInner() {
+      function getInner(): text {
         let inner = "inner"
         return inner
       }
@@ -234,7 +234,7 @@ describe('Context Building Functions', () => {
       let outer = "outer_value"
       const outerConst: json = { key: "json_value" }
 
-      function processData(input) {
+      function processData(input: text): text {
         let funcLocal = "func_local"
         if true {
           let blockVar = "block_value"
@@ -272,16 +272,16 @@ describe('Context Building Functions', () => {
       const globalCtx = normalizeContext(buildGlobalContext(state));
 
       // Local context should only have function frame variables (depth 1 = called from entry)
-      // Types are inferred for declared variables, but function parameters have type: null
+      // Function parameters now have explicit type annotations
       expect(localCtx).toEqual([
         { kind: 'variable', name: 'funcLocal', value: 'func_local', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
-        { kind: 'variable', name: 'input', value: 'arg_value', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
+        { kind: 'variable', name: 'input', value: 'arg_value', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
       ]);
 
       // Global context should have <entry> frame (depth 0) + function frame (depth 1)
       expect(globalCtx).toEqual([
         { kind: 'variable', name: 'funcLocal', value: 'func_local', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
-        { kind: 'variable', name: 'input', value: 'arg_value', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
+        { kind: 'variable', name: 'input', value: 'arg_value', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
         { kind: 'variable', name: 'outer', value: 'outer_value', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
         { kind: 'variable', name: 'outerConst', value: { key: 'json_value' }, type: 'json', isConst: true, frameName: '<entry>', frameDepth: 0 },
       ]);
@@ -304,18 +304,18 @@ describe('Context Building Functions', () => {
       const globalCtxInBlock = normalizeContext(buildGlobalContext(state));
 
       // Local context now includes blockVar (blocks share frame with function)
-      // Note: function parameters have type: null
+      // Function parameters now have explicit type annotations
       expect(localCtxInBlock).toEqual([
         { kind: 'variable', name: 'blockVar', value: 'block_value', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
         { kind: 'variable', name: 'funcLocal', value: 'func_local', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
-        { kind: 'variable', name: 'input', value: 'arg_value', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
+        { kind: 'variable', name: 'input', value: 'arg_value', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
       ]);
 
       // Global context includes everything
       expect(globalCtxInBlock).toEqual([
         { kind: 'variable', name: 'blockVar', value: 'block_value', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
         { kind: 'variable', name: 'funcLocal', value: 'func_local', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
-        { kind: 'variable', name: 'input', value: 'arg_value', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
+        { kind: 'variable', name: 'input', value: 'arg_value', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
         { kind: 'variable', name: 'outer', value: 'outer_value', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
         { kind: 'variable', name: 'outerConst', value: { key: 'json_value' }, type: 'json', isConst: true, frameName: '<entry>', frameDepth: 0 },
       ]);

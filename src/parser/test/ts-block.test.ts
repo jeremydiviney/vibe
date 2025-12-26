@@ -183,7 +183,7 @@ describe('Parser - TypeScript Blocks', () => {
 
   test('ts block in function body', () => {
     const ast = parse(`
-      function double(n) {
+      function double(n: text): text {
         let result = ts(n) { return n * 2 }
         return result
       }

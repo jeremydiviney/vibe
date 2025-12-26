@@ -69,7 +69,7 @@ function test() {
 
   test('return inside if block in function', () => {
     const ast = parse(`
-function test(x) {
+function test(x: text): text {
   if x {
     return "yes"
   }
@@ -82,7 +82,7 @@ function test(x) {
 
   test('return inside else block in function', () => {
     const ast = parse(`
-function test(x) {
+function test(x: text): text {
   if x {
     return "yes"
   } else {
@@ -96,7 +96,7 @@ function test(x) {
 
   test('return inside nested blocks in function', () => {
     const ast = parse(`
-function test(x) {
+function test(x: text): text {
   if x {
     if true {
       return "deep"

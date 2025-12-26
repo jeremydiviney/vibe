@@ -285,7 +285,7 @@ describe('Functional Runtime - Execution Log', () => {
 describe('Functional Runtime - Complex Programs', () => {
   test('function calls work with step execution', () => {
     const ast = parse(`
-      function greet(name) {
+      function greet(name: text): text {
         return "Hello, {name}!"
       }
       let result = greet("World")

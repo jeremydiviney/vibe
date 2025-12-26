@@ -83,8 +83,8 @@ if a {
 
   test('function inside function', () => {
     const ast = parse(`
-function outer() {
-  function inner() {
+function outer(): text {
+  function inner(): text {
     return "nested"
   }
   return inner()
@@ -174,7 +174,7 @@ function outer() {
 
   test('if inside function', () => {
     const ast = parse(`
-function check(x) {
+function check(x: text): text {
   if x {
     return "yes"
   }
@@ -205,7 +205,7 @@ function check(x) {
 
   test('function with if-else inside', () => {
     const ast = parse(`
-function decide(cond) {
+function decide(cond: text): text {
   if cond {
     return "yes"
   } else {
@@ -231,7 +231,7 @@ function decide(cond) {
 
   test('block inside function', () => {
     const ast = parse(`
-function scoped() {
+function scoped(): text {
   let outer = "outer"
   {
     let inner = "inner"
@@ -291,7 +291,7 @@ if condition {
 
   test('function with nested if-else-if', () => {
     const ast = parse(`
-function classify(x) {
+function classify(x: text): text {
   if a {
     return "first"
   } else if b {
@@ -323,7 +323,7 @@ function classify(x) {
 
   test('deeply nested mixed blocks', () => {
     const ast = parse(`
-function complex() {
+function complex(): text {
   if a {
     {
       if b {
@@ -368,7 +368,7 @@ function complex() {
 
   test('multiple siblings at each level', () => {
     const ast = parse(`
-function multi() {
+function multi(): text {
   let a = "first"
   if x {
     let b = "second"

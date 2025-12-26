@@ -27,7 +27,7 @@ let x = unknownFunc()
 
   test('using undefined variable as function argument', () => {
     const ast = parse(`
-function greet(name) {
+function greet(name: text): text {
   return name
 }
 let x = greet(unknownArg)
@@ -144,7 +144,7 @@ let y = x
 
   test('using function parameter', () => {
     const ast = parse(`
-function greet(name) {
+function greet(name: text): text {
   return name
 }
 `);

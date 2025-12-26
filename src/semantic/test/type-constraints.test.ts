@@ -42,7 +42,7 @@ let x = do "prompt" notAModel default
   test('do expression with parameter as model argument', () => {
     const ast = parse(`
 model realModel = { name: "test", apiKey: "key", url: "http://test" }
-function test(notAModel) {
+function test(notAModel: text): text {
   let x = do "prompt" notAModel default
   return x
 }

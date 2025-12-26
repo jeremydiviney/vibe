@@ -98,7 +98,7 @@ let answer = ask "Hello {name}, how are you?" myModel default
   test('ask inside function', async () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-function getInput(message) {
+function getInput(message: text): text {
   return ask message myModel default
 }
 let result = getInput("Enter value:")

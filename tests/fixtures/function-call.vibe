@@ -2,12 +2,12 @@
 
 model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
 
-function generateStory(topic) {
+function generateStory(topic: text) {
   let aiPrompt = "Write a short story about {topic}"
   return do aiPrompt m default
 }
 
-function summarize(content) {
+function summarize(content: text) {
   return do "Summarize this: {content}" m default
 }
 

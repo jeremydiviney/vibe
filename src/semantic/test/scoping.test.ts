@@ -66,7 +66,7 @@ let y = x
 
   test('parameter not accessible outside function', () => {
     const ast = parse(`
-function greet(name) {
+function greet(name: text): text {
   return name
 }
 let x = name
@@ -123,7 +123,7 @@ if true {
 
   test('function body can access parameters', () => {
     const ast = parse(`
-function add(a) {
+function add(a: text): text {
   return a
 }
 `);
@@ -133,7 +133,7 @@ function add(a) {
 
   test('multiple parameters accessible', () => {
     const ast = parse(`
-function greet(first, last) {
+function greet(first: text, last: text): text {
   let full = first
   return last
 }
@@ -144,7 +144,7 @@ function greet(first, last) {
 
   test('nested block in function can access parameters', () => {
     const ast = parse(`
-function test(x) {
+function test(x: text): text {
   if x {
     return x
   }
@@ -244,7 +244,7 @@ function second() {
     const ast = parse(`
 let name = "outer"
 if true {
-  function greet(name) {
+  function greet(name: text): text {
     return name
   }
 }

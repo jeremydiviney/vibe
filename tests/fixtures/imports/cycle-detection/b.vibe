@@ -1,5 +1,5 @@
 import { funcA } from "./a.vibe"
 
-export function funcB(x) {
+export function funcB(x: text): text {
   return x
 }

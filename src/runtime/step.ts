@@ -510,12 +510,31 @@ function execReturnStatement(state: RuntimeState, stmt: AST.ReturnStatement): Ru
 
 // Return value - pop frame and skip to after pop_frame instruction
 function execReturnValue(state: RuntimeState): RuntimeState {
+  // Get current frame to check return type
+  const currentFrame = state.callStack[state.callStack.length - 1];
+  const funcName = currentFrame?.name;
+
+  // Validate return type if function has one
+  let returnValue = state.lastResult;
+  if (funcName && funcName !== 'main') {
+    // Check local functions first, then imported vibe functions
+    const func = state.functions[funcName] ?? getImportedVibeFunction(state, funcName);
+    if (func?.returnType) {
+      const { value: validatedValue } = validateAndCoerce(
+        returnValue,
+        func.returnType,
+        `return value of ${funcName}`
+      );
+      returnValue = validatedValue;
+    }
+  }
+
   // Pop frame
   const newCallStack = state.callStack.slice(0, -1);
 
   if (newCallStack.length === 0) {
     // Returning from main - program complete
-    return { ...state, status: 'completed', callStack: newCallStack };
+    return { ...state, status: 'completed', callStack: newCallStack, lastResult: returnValue };
   }
 
   // Find and skip past the pop_frame instruction
@@ -526,7 +545,7 @@ function execReturnValue(state: RuntimeState): RuntimeState {
     newInstructionStack = newInstructionStack.slice(popFrameIndex + 1);
   }
 
-  return { ...state, callStack: newCallStack, instructionStack: newInstructionStack };
+  return { ...state, callStack: newCallStack, instructionStack: newInstructionStack, lastResult: returnValue };
 }
 
 // If statement
@@ -790,14 +809,23 @@ function execCallFunction(state: RuntimeState, _funcName: string, argCount: numb
     // This enables lexical scoping - function can access global variables
     const newFrame = createFrame(funcName, 0);
     for (let i = 0; i < func.params.length; i++) {
-      const paramName = func.params[i];
-      newFrame.locals[paramName] = {
-        value: args[i] ?? null,
+      const param = func.params[i];
+      const argValue = args[i] ?? null;
+
+      // Validate argument against parameter type (type is REQUIRED)
+      const { value: validatedValue } = validateAndCoerce(
+        argValue,
+        param.typeAnnotation,
+        param.name
+      );
+
+      newFrame.locals[param.name] = {
+        value: validatedValue,
         isConst: false,
-        typeAnnotation: null,
+        typeAnnotation: param.typeAnnotation,
       };
       // Add parameter to ordered entries for context tracking
-      newFrame.orderedEntries.push({ kind: 'variable' as const, name: paramName });
+      newFrame.orderedEntries.push({ kind: 'variable' as const, name: param.name });
     }
 
     // Push function body statements (in order, we pop from front)
@@ -852,13 +880,22 @@ function execCallFunction(state: RuntimeState, _funcName: string, argCount: numb
     // Create new frame with parameters - same as local Vibe function
     const newFrame = createFrame(funcName, 0);
     for (let i = 0; i < func.params.length; i++) {
-      const paramName = func.params[i];
-      newFrame.locals[paramName] = {
-        value: args[i] ?? null,
+      const param = func.params[i];
+      const argValue = args[i] ?? null;
+
+      // Validate argument against parameter type (type is REQUIRED)
+      const { value: validatedValue } = validateAndCoerce(
+        argValue,
+        param.typeAnnotation,
+        param.name
+      );
+
+      newFrame.locals[param.name] = {
+        value: validatedValue,
         isConst: false,
-        typeAnnotation: null,
+        typeAnnotation: param.typeAnnotation,
       };
-      newFrame.orderedEntries.push({ kind: 'variable' as const, name: paramName });
+      newFrame.orderedEntries.push({ kind: 'variable' as const, name: param.name });
     }
 
     // Push function body statements

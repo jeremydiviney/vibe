@@ -91,7 +91,7 @@ function myFunc() {
 
   test('function with one param', () => {
     const ast = parse(`
-function greet(name) {
+function greet(name: text): text {
   return name
 }
 `);
@@ -99,7 +99,8 @@ function greet(name) {
     expect(ast.body[0]).toMatchObject({
       type: 'FunctionDeclaration',
       name: 'greet',
-      params: ['name'],
+      params: [{ name: 'name', typeAnnotation: 'text' }],
+      returnType: 'text',
       body: {
         type: 'BlockStatement',
         body: [
@@ -117,7 +118,7 @@ function greet(name) {
 
   test('function with multiple params', () => {
     const ast = parse(`
-function add(a, b, c) {
+function add(a: text, b: text, c: text): text {
   return a
 }
 `);
@@ -125,7 +126,12 @@ function add(a, b, c) {
     expect(ast.body[0]).toMatchObject({
       type: 'FunctionDeclaration',
       name: 'add',
-      params: ['a', 'b', 'c'],
+      params: [
+        { name: 'a', typeAnnotation: 'text' },
+        { name: 'b', typeAnnotation: 'text' },
+        { name: 'c', typeAnnotation: 'text' },
+      ],
+      returnType: 'text',
       body: {
         type: 'BlockStatement',
         body: [

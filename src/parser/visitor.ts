@@ -207,19 +207,30 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  functionDeclaration(ctx: { Function: IToken[]; Identifier: IToken[]; parameterList?: CstNode[]; blockStatement: CstNode[] }): AST.FunctionDeclaration {
+  functionDeclaration(ctx: { Function: IToken[]; Identifier: IToken[]; parameterList?: CstNode[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; blockStatement: CstNode[] }): AST.FunctionDeclaration {
     const params = ctx.parameterList ? this.visit(ctx.parameterList) : [];
+    const returnType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : null;
     return {
       type: 'FunctionDeclaration',
       name: ctx.Identifier[0].image,
       params,
+      returnType,
       body: this.visit(ctx.blockStatement),
       location: tokenLocation(ctx.Function[0]),
     };
   }
 
-  parameterList(ctx: { Identifier: IToken[] }): string[] {
-    return ctx.Identifier.map((t) => t.image);
+  parameter(ctx: { Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[] }): AST.FunctionParameter {
+    // Type is required - one of these must be present
+    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : 'prompt';
+    return {
+      name: ctx.Identifier[0].image,
+      typeAnnotation,
+    };
+  }
+
+  parameterList(ctx: { parameter: CstNode[] }): AST.FunctionParameter[] {
+    return ctx.parameter.map((p) => this.visit(p));
   }
 
   returnStatement(ctx: { Return: IToken[]; expression?: CstNode[] }): AST.ReturnStatement {

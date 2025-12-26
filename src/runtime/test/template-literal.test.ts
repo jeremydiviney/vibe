@@ -73,7 +73,7 @@ Welcome to our app!\`
   test('template literal in function with scope chain', () => {
     const ast = parse(`
       let greeting = "Hello"
-      function greet(name) {
+      function greet(name: text): text {
         return \`\${greeting}, \${name}!\`
       }
       let result = greet("World")

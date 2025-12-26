@@ -130,7 +130,7 @@ let x = ask "Question?" myModel myContext
   test('ask in function body', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-function getUserInput(message) {
+function getUserInput(message: text): text {
   return ask message myModel default
 }
 `);
@@ -183,7 +183,7 @@ if ask "Continue?" myModel default {
   test('ask as function argument', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-function process(input) {
+function process(input: text): text {
   return input
 }
 let result = process(ask "Enter value:" myModel default)

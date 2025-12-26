@@ -39,10 +39,10 @@ const x = "world"
 
   test('duplicate function declaration', () => {
     const ast = parse(`
-function greet(name) {
+function greet(name: text): text {
   return name
 }
-function greet(x) {
+function greet(x: text): text {
   return x
 }
 `);
@@ -68,7 +68,7 @@ model myModel = { name: "test2", apiKey: "key2", url: "http://test2" }
   test('variable and function with same name', () => {
     const ast = parse(`
 let greet = "hello"
-function greet(name) {
+function greet(name: text): text {
   return name
 }
 `);
@@ -129,7 +129,7 @@ function test() {
   test('function parameter shadows outer variable is valid', () => {
     const ast = parse(`
 let name = "outer"
-function greet(name) {
+function greet(name: text): text {
   return name
 }
 `);

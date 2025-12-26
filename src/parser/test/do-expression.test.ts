@@ -167,7 +167,7 @@ let response = do "hello world" gpt4 default
 
   test('do inside function', () => {
     const ast = parse(`
-function askAI(question) {
+function askAI(question: text): text {
   return do question aiModel default
 }
 `);

@@ -181,14 +181,34 @@ class VibeParser extends CstParser {
       this.SUBRULE(this.parameterList);
     });
     this.CONSUME(RParen);
+    // Optional return type
+    this.OPTION2(() => {
+      this.CONSUME(Colon);
+      this.OR([
+        { ALT: () => this.CONSUME(TextType) },
+        { ALT: () => this.CONSUME(JsonType) },
+        { ALT: () => this.CONSUME(PromptType) },
+      ]);
+    });
     this.SUBRULE(this.blockStatement);
   });
 
-  private parameterList = this.RULE('parameterList', () => {
+  // name: type (type is REQUIRED)
+  private parameter = this.RULE('parameter', () => {
     this.CONSUME(Identifier);
+    this.CONSUME(Colon);
+    this.OR([
+      { ALT: () => this.CONSUME(TextType) },
+      { ALT: () => this.CONSUME(JsonType) },
+      { ALT: () => this.CONSUME(PromptType) },
+    ]);
+  });
+
+  private parameterList = this.RULE('parameterList', () => {
+    this.SUBRULE(this.parameter);
     this.MANY(() => {
       this.CONSUME(Comma);
-      this.CONSUME2(Identifier);
+      this.SUBRULE2(this.parameter);
     });
   });
 

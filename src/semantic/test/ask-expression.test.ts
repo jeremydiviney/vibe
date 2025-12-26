@@ -60,7 +60,7 @@ let x = ask "prompt" notAModel default
 
   test('ask with function as model argument', () => {
     const ast = parse(`
-function notAModel() {
+function notAModel(): text {
   return "test"
 }
 let x = ask "prompt" notAModel default
@@ -73,7 +73,7 @@ let x = ask "prompt" notAModel default
   test('ask with parameter as model argument', () => {
     const ast = parse(`
 model realModel = { name: "test", apiKey: "key", url: "http://test" }
-function test(notAModel) {
+function test(notAModel: text): text {
   let x = ask "prompt" notAModel default
   return x
 }
@@ -109,7 +109,7 @@ let answer = ask question myModel default
   test('ask with function parameter - no errors', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-function getInput(message) {
+function getInput(message: text): text {
   return ask message myModel default
 }
 `);
@@ -140,7 +140,7 @@ let x = ask "Question?" myModel myContext
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let globalPrompt = "Global question"
-function askGlobal() {
+function askGlobal(): text {
   let a = ask globalPrompt myModel default
   return a
 }
@@ -248,7 +248,7 @@ let x = unknownFunc(ask "test" myModel default)
   test('ask in valid function call', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-function process(input) {
+function process(input: text): text {
   return input
 }
 let x = process(ask "Enter value" myModel default)

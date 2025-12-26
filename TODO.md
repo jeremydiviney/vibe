@@ -2,6 +2,23 @@
 
 ## Pending
 
+### Type System Enhancements
+- [ ] Add `boolean` type support
+  - [ ] Add `boolean` to supported type annotations for variables
+  - [ ] Add `boolean` as function parameter type
+  - [ ] Add `boolean` as function return type
+  - [ ] Update semantic analyzer for boolean type validation
+  - [ ] Update runtime for boolean type coercion
+  - [ ] Add parser/semantic/runtime tests for boolean type
+
+### Scoping & Expression Evaluation
+- [ ] Test/evaluate expression scope in fine detail
+  - [ ] Audit all expression types for correct scope chain access
+  - [ ] Verify variable resolution in nested blocks, functions, and closures
+  - [ ] Test shadowing behavior across all expression contexts
+  - [ ] Validate scope behavior in string interpolation, do/ask/vibe expressions
+  - [ ] Ensure proper scope isolation between parallel blocks and functions
+
 ### Context Management Features (Future)
 - [ ] Context checkpoints beyond local/global
   - [ ] Auto-checkpoint based on call stack depth (e.g., last N frames)
@@ -16,6 +33,15 @@
 
 ## Completed
 
+- [x] Add typed function parameters and return types
+  - [x] Parameters REQUIRE type annotations (`text`, `json`, or `prompt`)
+  - [x] Return type is OPTIONAL - if omitted, no return value validation
+  - [x] Add `FunctionParameter` interface to AST
+  - [x] Update parser with `parameter` rule and return type parsing
+  - [x] Update visitor to build new AST structure
+  - [x] Add compile-time type validation in semantic analyzer
+  - [x] Add runtime type validation for function arguments and return values
+  - [x] Update all existing tests to use new function syntax
 - [x] Filter model variables from AI context
   - [x] Models are config, not data - exclude from localContext/globalContext
   - [x] Update ContextVariable type to remove 'model' from type union

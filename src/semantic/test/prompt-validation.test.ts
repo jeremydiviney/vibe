@@ -267,7 +267,7 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
     test('do with function parameter is valid', () => {
       const errors = getErrors(`
         ${modelDecl}
-        function askAI(question) {
+        function askAI(question: text): text {
           return do question m default
         }
       `);
@@ -277,7 +277,7 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
     test('ask with function parameter is valid', () => {
       const errors = getErrors(`
         ${modelDecl}
-        function getUserInput(message) {
+        function getUserInput(message: text): text {
           return ask message m default
         }
       `);
@@ -286,7 +286,7 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with function parameter is valid', () => {
       const errors = getErrors(`
-        function generateCode(instruction) {
+        function generateCode(instruction: text): text {
           return vibe instruction
         }
       `);
@@ -302,7 +302,7 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
     test('do with function call as prompt is valid', () => {
       const errors = getErrors(`
         ${modelDecl}
-        function getQuestion() {
+        function getQuestion(): text {
           return "What is 2+2?"
         }
         let x = do getQuestion() m default
@@ -313,7 +313,7 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
     test('ask with function call as prompt is valid', () => {
       const errors = getErrors(`
         ${modelDecl}
-        function buildPrompt() {
+        function buildPrompt(): text {
           return "Enter name:"
         }
         let x = ask buildPrompt() m default
@@ -323,7 +323,7 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with function call as prompt is valid', () => {
       const errors = getErrors(`
-        function getInstruction() {
+        function getInstruction(): text {
           return "Generate code"
         }
         let x = vibe getInstruction()

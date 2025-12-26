@@ -64,7 +64,7 @@ describe('Parser - Import Declarations', () => {
 describe('Parser - Export Declarations', () => {
   test('export function', () => {
     const source = `
-      export function greet(name) {
+      export function greet(name: text): text {
         return do "Hello {name}" gpt default
       }
     `;
@@ -109,7 +109,7 @@ describe('Parser - Export Declarations', () => {
 
   test('multiple exports', () => {
     const source = `
-      export function add(a, b) {
+      export function add(a: text, b: text): text {
         return ts(a, b) { return a + b }
       }
       export const PI = "3.14159"
@@ -129,7 +129,7 @@ describe('Parser - Import and Export Combined', () => {
     const source = `
       import { helper } from "./helper.ts"
 
-      export function greet(name) {
+      export function greet(name: text): text {
         let greeting = helper(name)
         return do "{greeting}" gpt default
       }

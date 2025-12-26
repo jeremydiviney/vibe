@@ -268,9 +268,15 @@ export class SemanticAnalyzer {
     this.inFunction = true;
     this.symbols.enterScope();
 
-    // Declare parameters
+    // Declare parameters with REQUIRED type annotations
     for (const param of node.params) {
-      this.declare(param, 'parameter', node.location);
+      this.validateTypeAnnotation(param.typeAnnotation, node.location);
+      this.declare(param.name, 'parameter', node.location, { typeAnnotation: param.typeAnnotation });
+    }
+
+    // Validate return type if present
+    if (node.returnType) {
+      this.validateTypeAnnotation(node.returnType, node.location);
     }
 
     // Visit function body

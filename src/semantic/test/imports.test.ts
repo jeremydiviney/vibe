@@ -47,7 +47,7 @@ describe('Semantic Analysis - Import Declarations', () => {
 
   test('error: import conflicts with local function', () => {
     const errors = analyze(`
-      function add(a, b) {
+      function add(a: text, b: text): text {
         return a
       }
       import { add } from "./math.ts"
@@ -88,7 +88,7 @@ describe('Semantic Analysis - Export Declarations', () => {
   test('valid export function', () => {
     const errors = analyze(`
       model gpt = { name: "gpt-4", apiKey: "key", url: "url" }
-      export function greet(name) {
+      export function greet(name: text): text {
         return do "Hello {name}" gpt default
       }
     `);

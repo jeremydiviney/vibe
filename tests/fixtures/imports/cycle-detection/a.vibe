@@ -1,6 +1,6 @@
 import { funcB } from "./b.vibe"
 
-export function funcA(x) {
+export function funcA(x: text): text {
   let y = funcB(x)
   return y
 }

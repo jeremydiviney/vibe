@@ -80,10 +80,16 @@ export interface ModelConfig extends BaseNode {
   providedFields: string[];  // For semantic validation
 }
 
+export interface FunctionParameter {
+  name: string;
+  typeAnnotation: string;  // Required: 'text' | 'json' | 'prompt'
+}
+
 export interface FunctionDeclaration extends BaseNode {
   type: 'FunctionDeclaration';
   name: string;
-  params: string[];
+  params: FunctionParameter[];
+  returnType: string | null;  // Optional return type
   body: BlockStatement;
 }
 
