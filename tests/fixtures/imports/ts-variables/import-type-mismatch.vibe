@@ -1,0 +1,5 @@
+// Import a TS object variable but try to assign to text type
+import { CONFIG } from "./data.ts"
+
+// This should fail - CONFIG is an object, not a string
+let config: text = CONFIG

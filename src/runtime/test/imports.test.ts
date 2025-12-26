@@ -10,11 +10,10 @@ import { Runtime } from '../index';
 
 // Helper to load and run a vibe script with imports
 async function loadAndRun(
-  dir: string,
-  filename: string,
+  relativePath: string,
   aiResponses: Record<string, string> = {}
 ): Promise<{ state: Awaited<ReturnType<typeof loadImports>>; result: unknown }> {
-  const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', dir, filename);
+  const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', relativePath);
   const source = readFileSync(scriptPath, 'utf-8');
   const ast = parse(source);
   let state = createInitialState(ast);
@@ -51,7 +50,7 @@ async function loadAndRun(
 
 describe('Runtime - TypeScript Imports', () => {
   test('can import and call TypeScript functions', async () => {
-    const { state, result } = await loadAndRun('ts-import', 'main.vibe');
+    const { state, result } = await loadAndRun('ts-import/main.vibe');
 
     expect(state.status).toBe('completed');
     // The last statement is product = multiply(4, 7) = 28
@@ -74,7 +73,7 @@ describe('Runtime - TypeScript Imports', () => {
 
 describe('Runtime - Vibe Imports', () => {
   test('can import and call Vibe functions', async () => {
-    const { state, result } = await loadAndRun('vibe-import', 'main.vibe', {
+    const { state, result } = await loadAndRun('vibe-import/main.vibe', {
       'Say hello to Alice': 'Hello, Alice!',
     });
 
@@ -97,7 +96,7 @@ describe('Runtime - Vibe Imports', () => {
 
 describe('Runtime - Nested Imports', () => {
   test('can handle nested imports (vibe importing ts)', async () => {
-    const { state, result } = await loadAndRun('nested-import', 'main.vibe');
+    const { state, result } = await loadAndRun('nested-import/main.vibe');
 
     expect(state.status).toBe('completed');
     expect(result).toBe('John Doe');
@@ -166,5 +165,57 @@ describe('Runtime - Runtime class with imports', () => {
 
     const result = await runtime.run();
     expect(result).toBe(28);
+  });
+});
+
+describe('Runtime - TypeScript Variable Imports', () => {
+  test('can import TS variable and assign to text type', async () => {
+    const { state, result } = await loadAndRun('ts-variables/import-variable.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('Hello from TypeScript');
+
+    // Verify the variable was assigned with correct type
+    const greeting = state.callStack[0].locals['greeting'];
+    expect(greeting.value).toBe('Hello from TypeScript');
+    expect(greeting.typeAnnotation).toBe('text');
+  });
+
+  test('can import TS object and assign to json type', async () => {
+    const { state, result } = await loadAndRun('ts-variables/import-json.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toEqual({ name: 'test', version: '1.0' });
+
+    // Verify the variable was assigned with correct type
+    const config = state.callStack[0].locals['config'];
+    expect(config.value).toEqual({ name: 'test', version: '1.0' });
+    expect(config.typeAnnotation).toBe('json');
+  });
+
+  test('throws error when assigning object to text type', async () => {
+    const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'ts-variables', 'import-type-mismatch.vibe');
+    const source = readFileSync(scriptPath, 'utf-8');
+    const ast = parse(source);
+    let state = createInitialState(ast);
+
+    state = await loadImports(state, scriptPath);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('error');
+    expect(state.error).toMatch(/expected text \(string\)/);
+  });
+
+  test('throws error when calling non-function import', async () => {
+    const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'ts-variables', 'call-non-function.vibe');
+    const source = readFileSync(scriptPath, 'utf-8');
+    const ast = parse(source);
+    let state = createInitialState(ast);
+
+    state = await loadImports(state, scriptPath);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('error');
+    expect(state.error).toBe('TypeError: Cannot call non-function');
   });
 });

@@ -1,0 +1,5 @@
+// Import a TS variable (not a function)
+import { MESSAGE } from "./data.ts"
+
+// Assign to a text-typed variable - should work
+let greeting: text = MESSAGE

@@ -1,0 +1,5 @@
+// Import a TS object variable
+import { CONFIG } from "./data.ts"
+
+// Assign to a json-typed variable - should work
+let config: json = CONFIG

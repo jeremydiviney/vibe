@@ -1,0 +1,5 @@
+// Import a TS variable (not a function)
+import { MESSAGE } from "./data.ts"
+
+// Try to call it as a function - should fail
+let result = MESSAGE("arg")
