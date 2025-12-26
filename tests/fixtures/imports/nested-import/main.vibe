@@ -1,0 +1,3 @@
+import { formatGreeting } from "./helper.vibe"
+
+let greeting = formatGreeting("John", "Doe")

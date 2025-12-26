@@ -54,6 +54,102 @@ export const False = token({ name: 'False', pattern: /false/, longer_alt: Identi
 export const Model = token({ name: 'Model', pattern: /model/, longer_alt: Identifier });
 export const Default = token({ name: 'Default', pattern: /default/, longer_alt: Identifier });
 export const Local = token({ name: 'Local', pattern: /local/, longer_alt: Identifier });
+export const Import = token({ name: 'Import', pattern: /import/, longer_alt: Identifier });
+export const Export = token({ name: 'Export', pattern: /export/, longer_alt: Identifier });
+export const From = token({ name: 'From', pattern: /from/, longer_alt: Identifier });
+
+// TsBlock pattern function: Captures entire ts(params) { body }
+// Defined separately to avoid initialization issues
+function matchTsBlock(text: string, startOffset: number): RegExpExecArray | null {
+  // Must start with 'ts'
+  if (text.slice(startOffset, startOffset + 2) !== 'ts') return null;
+
+  // Check it's not part of a longer identifier
+  const nextChar = text[startOffset + 2];
+  if (nextChar && /[a-zA-Z0-9_]/.test(nextChar)) return null;
+
+  let i = startOffset + 2;
+
+  // Skip whitespace
+  while (i < text.length && /\s/.test(text[i])) i++;
+
+  // Must have '('
+  if (text[i] !== '(') return null;
+  i++;
+
+  // Find matching ')'
+  let parenDepth = 1;
+  while (i < text.length && parenDepth > 0) {
+    if (text[i] === '(') parenDepth++;
+    else if (text[i] === ')') parenDepth--;
+    i++;
+  }
+  if (parenDepth !== 0) return null;
+
+  // Skip whitespace
+  while (i < text.length && /\s/.test(text[i])) i++;
+
+  // Must have '{'
+  if (text[i] !== '{') return null;
+  i++;
+
+  // Find matching '}' with balanced brace counting
+  // Handle strings and comments to avoid false matches
+  let braceDepth = 1;
+  while (i < text.length && braceDepth > 0) {
+    const char = text[i];
+
+    // Handle string literals
+    if (char === '"' || char === "'") {
+      const quote = char;
+      i++;
+      while (i < text.length && text[i] !== quote) {
+        if (text[i] === '\\') i++; // Skip escaped char
+        i++;
+      }
+    }
+    // Handle template literals
+    else if (char === '`') {
+      i++;
+      while (i < text.length && text[i] !== '`') {
+        if (text[i] === '\\') i++;
+        i++;
+      }
+    }
+    // Handle line comments
+    else if (char === '/' && text[i + 1] === '/') {
+      while (i < text.length && text[i] !== '\n') i++;
+    }
+    // Handle block comments
+    else if (char === '/' && text[i + 1] === '*') {
+      i += 2;
+      while (i < text.length - 1 && !(text[i] === '*' && text[i + 1] === '/')) i++;
+      i++; // Skip the '/'
+    }
+    // Handle braces
+    else if (char === '{') braceDepth++;
+    else if (char === '}') braceDepth--;
+
+    i++;
+  }
+
+  if (braceDepth !== 0) return null;
+
+  // Create a fake RegExpExecArray
+  const match = text.slice(startOffset, i);
+  const result = [match] as RegExpExecArray;
+  result.index = startOffset;
+  result.input = text;
+  return result;
+}
+
+// TsBlock: Captures entire ts(params) { body } as a single token
+export const TsBlock = createToken({
+  name: 'TsBlock',
+  pattern: matchTsBlock,
+  line_breaks: true,
+  start_chars_hint: ['t'],  // TsBlock always starts with 't' (from 'ts')
+});
 
 // Type keywords
 export const TextType = token({ name: 'TextType', pattern: /text/, longer_alt: Identifier });
@@ -120,6 +216,10 @@ export const allTokens = [
   Model,
   Default,
   Local,
+  Import,
+  Export,
+  From,
+  TsBlock,  // Must be before Identifier - captures entire ts(...) { ... }
   TextType,
   JsonType,
   PromptType,

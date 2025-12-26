@@ -1,0 +1,3 @@
+import { funcA } from "./a.vibe"
+
+let result = funcA("test")

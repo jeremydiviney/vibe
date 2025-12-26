@@ -24,6 +24,15 @@ export class SemanticAnalyzer {
 
   private visitStatement(node: AST.Statement): void {
     switch (node.type) {
+      case 'ImportDeclaration':
+        this.visitImportDeclaration(node);
+        break;
+
+      case 'ExportDeclaration':
+        // Visit the underlying declaration
+        this.visitStatement(node.declaration);
+        break;
+
       case 'LetDeclaration':
         this.declare(node.name, 'variable', node.location, { typeAnnotation: node.typeAnnotation });
         if (node.typeAnnotation) {
@@ -165,6 +174,19 @@ export class SemanticAnalyzer {
           }
         }
         break;
+
+      case 'TsBlock':
+        // Validate that all parameters are defined variables
+        for (const param of node.params) {
+          if (!this.symbols.lookup(param)) {
+            this.error(`'${param}' is not defined`, node.location);
+          }
+        }
+        break;
+
+      case 'TemplateLiteral':
+        // Template literals are valid (interpolation checked at runtime)
+        break;
     }
   }
 
@@ -180,10 +202,40 @@ export class SemanticAnalyzer {
       this.error(`Cannot reassign function '${name}'`, node.location);
     } else if (symbol.kind === 'model') {
       this.error(`Cannot reassign model '${name}'`, node.location);
+    } else if (symbol.kind === 'import') {
+      this.error(`Cannot reassign imported '${name}'`, node.location);
     }
 
     // Visit the value expression
     this.visitExpression(node.value);
+  }
+
+  private visitImportDeclaration(node: AST.ImportDeclaration): void {
+    // Imports must be at top level
+    if (!this.atTopLevel) {
+      this.error('Imports can only be at global scope', node.location);
+      return;
+    }
+
+    // Register each imported name
+    for (const spec of node.specifiers) {
+      const existing = this.symbols.lookup(spec.local);
+      if (existing) {
+        if (existing.kind === 'import') {
+          this.error(
+            `'${spec.local}' is already imported from another module`,
+            node.location
+          );
+        } else {
+          this.error(
+            `Import '${spec.local}' conflicts with existing ${existing.kind}`,
+            node.location
+          );
+        }
+      } else {
+        this.declare(spec.local, 'import', node.location);
+      }
+    }
   }
 
   private validateModelConfig(node: AST.ModelDeclaration): void {

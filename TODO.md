@@ -2,7 +2,17 @@
 
 ## Pending
 
-(none)
+### Context Management Features (Future)
+- [ ] Context checkpoints beyond local/global
+  - [ ] Auto-checkpoint based on call stack depth (e.g., last N frames)
+  - [ ] Named context checkpoints
+- [ ] Context orchestration functions
+  - [ ] Create custom context bundles
+  - [ ] Merge/filter contexts programmatically
+- [ ] Variable visibility modifiers
+  - [ ] Hide variables from default contexts (global/default/local)
+  - [ ] Hide from auto-checkpoints
+  - [ ] Example: `let:hidden username = "secret"` or similar syntax
 
 ## Completed
 

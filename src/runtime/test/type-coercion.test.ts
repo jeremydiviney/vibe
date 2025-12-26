@@ -84,7 +84,7 @@ describe('Runtime - Type Coercion', () => {
     const runtime = createRuntime(`
       let x: json
     `);
-    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected JSON object or array");
+    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
   });
 
   // ============================================================================
@@ -125,17 +125,17 @@ describe('Runtime - Type Coercion', () => {
   test('json type rejects JSON primitive string (number)', async () => {
     // "42" is valid JSON but parses to a primitive, not object/array
     const runtime = createRuntime('let x: json = "42"');
-    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected JSON object or array");
+    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
   });
 
   test('json type rejects JSON primitive string (boolean)', async () => {
     const runtime = createRuntime('let x: json = "true"');
-    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected JSON object or array");
+    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
   });
 
   test('json type rejects JSON primitive string (null)', async () => {
     const runtime = createRuntime('let x: json = "null"');
-    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected JSON object or array");
+    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
   });
 
   test('json type accepts object literal directly', async () => {

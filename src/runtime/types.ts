@@ -6,6 +6,7 @@ export type RuntimeStatus =
   | 'paused'
   | 'awaiting_ai'
   | 'awaiting_user'
+  | 'awaiting_ts'
   | 'completed'
   | 'error';
 
@@ -78,6 +79,36 @@ export interface PendingAI {
   context: unknown[];
 }
 
+// Pending TypeScript evaluation (inline ts block)
+export interface PendingTS {
+  params: string[];
+  body: string;
+  paramValues: unknown[];
+}
+
+// Pending imported TS function call
+export interface PendingImportedTsCall {
+  funcName: string;
+  args: unknown[];
+}
+
+// Loaded TypeScript module
+export interface TsModule {
+  exports: Record<string, unknown>;  // Exported functions/values
+}
+
+// Loaded Vibe module
+export interface VibeModule {
+  exports: Record<string, ExportedItem>;
+  program: AST.Program;
+}
+
+// Exported item from a Vibe module
+export type ExportedItem =
+  | { kind: 'function'; declaration: AST.FunctionDeclaration }
+  | { kind: 'variable'; name: string; value: unknown; isConst: boolean; typeAnnotation: string | null }
+  | { kind: 'model'; declaration: AST.ModelDeclaration };
+
 // The complete runtime state (fully serializable)
 export interface RuntimeState {
   status: RuntimeStatus;
@@ -85,6 +116,11 @@ export interface RuntimeState {
   // The program
   program: AST.Program;
   functions: Record<string, AST.FunctionDeclaration>;
+
+  // Loaded modules
+  tsModules: Record<string, TsModule>;      // TS modules by import path
+  vibeModules: Record<string, VibeModule>;  // Vibe modules by import path
+  importedNames: Record<string, { source: string; sourceType: 'ts' | 'vibe' }>;  // Track where names come from
 
   // Execution state
   callStack: StackFrame[];
@@ -102,6 +138,8 @@ export interface RuntimeState {
 
   // Pending async operation
   pendingAI: PendingAI | null;
+  pendingTS: PendingTS | null;
+  pendingImportedTsCall: PendingImportedTsCall | null;
 
   // Error info
   error: string | null;
@@ -132,6 +170,12 @@ export type Instruction =
   | { op: 'ai_do'; model: string; context: AST.ContextSpecifier }
   | { op: 'ai_ask'; model: string; context: AST.ContextSpecifier }
   | { op: 'ai_vibe'; model: string; context: AST.ContextSpecifier }
+
+  // TypeScript evaluation (pause point)
+  | { op: 'ts_eval'; params: string[]; body: string }
+
+  // Imported TS function call (pause point)
+  | { op: 'call_imported_ts'; funcName: string; argCount: number }
 
   // Control flow
   | { op: 'if_branch'; consequent: AST.BlockStatement; alternate?: AST.Statement | null }

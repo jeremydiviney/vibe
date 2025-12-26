@@ -1,6 +1,6 @@
 import type { SourceLocation } from '../errors';
 
-export type SymbolKind = 'variable' | 'constant' | 'model' | 'function' | 'parameter';
+export type SymbolKind = 'variable' | 'constant' | 'model' | 'function' | 'parameter' | 'import';
 
 export interface Symbol {
   name: string;

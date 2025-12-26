@@ -22,6 +22,8 @@ export interface Program extends BaseNode {
 // ============================================================================
 
 export type Statement =
+  | ImportDeclaration
+  | ExportDeclaration
   | LetDeclaration
   | ConstDeclaration
   | ModelDeclaration
@@ -32,6 +34,23 @@ export type Statement =
   | ContinueStatement
   | BlockStatement
   | ExpressionStatement;
+
+export interface ImportSpecifier {
+  imported: string;  // Name in the source module
+  local: string;     // Name in this module (usually same as imported)
+}
+
+export interface ImportDeclaration extends BaseNode {
+  type: 'ImportDeclaration';
+  specifiers: ImportSpecifier[];
+  source: string;              // "./utils.ts" or "./utils.vibe"
+  sourceType: 'ts' | 'vibe';   // Determined by file extension
+}
+
+export interface ExportDeclaration extends BaseNode {
+  type: 'ExportDeclaration';
+  declaration: FunctionDeclaration | LetDeclaration | ConstDeclaration | ModelDeclaration;
+}
 
 export interface LetDeclaration extends BaseNode {
   type: 'LetDeclaration';
@@ -113,7 +132,8 @@ export type Expression =
   | CallExpression
   | DoExpression
   | VibeExpression
-  | AskExpression;
+  | AskExpression
+  | TsBlock;
 
 export interface Identifier extends BaseNode {
   type: 'Identifier';
@@ -186,6 +206,12 @@ export interface AskExpression extends BaseNode {
   prompt: Expression;
   model: Expression;
   context: ContextSpecifier;
+}
+
+export interface TsBlock extends BaseNode {
+  type: 'TsBlock';
+  params: string[];  // Parameter names passed from Vibe scope
+  body: string;      // Raw TypeScript code inside braces
 }
 
 // ============================================================================

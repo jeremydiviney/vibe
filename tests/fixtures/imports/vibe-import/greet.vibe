@@ -1,0 +1,5 @@
+model gpt = { name: "gpt-4" }
+
+export function greet(name) {
+  return do "Say hello to {name}" gpt default
+}

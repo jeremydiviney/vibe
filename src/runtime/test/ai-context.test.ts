@@ -32,7 +32,7 @@ describe('AI Context Tests', () => {
     // Prompt typed variables (SYSTEM, userQuestion) and model should be filtered out
     // Only userData should remain
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'userData', value: 'some user data', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'userData', value: 'some user data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
     expect(state.globalContext).toEqual(state.localContext);
@@ -60,16 +60,17 @@ describe('AI Context Tests', () => {
     expect(state.pendingAI?.prompt).toBe('Process this: user query');
 
     // Local context: function frame only, LOCAL_PROMPT filtered out
+    // Note: function parameters have type: null (not inferred), declared variables get type inference
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'input', value: 'user query', type: null, isConst: false, frameName: 'processQuery', frameDepth: 1 },
-      { kind: 'variable', name: 'localData', value: 'local data', type: null, isConst: false, frameName: 'processQuery', frameDepth: 1 },
+      { kind: 'variable', name: 'localData', value: 'local data', type: 'text', isConst: false, frameName: 'processQuery', frameDepth: 1 },
     ]);
 
     // Global context: entry frame + function frame, all prompts and model filtered
     expect(state.globalContext).toEqual([
-      { kind: 'variable', name: 'GLOBAL_DATA', value: 'global data value', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'GLOBAL_DATA', value: 'global data value', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'input', value: 'user query', type: null, isConst: false, frameName: 'processQuery', frameDepth: 1 },
-      { kind: 'variable', name: 'localData', value: 'local data', type: null, isConst: false, frameName: 'processQuery', frameDepth: 1 },
+      { kind: 'variable', name: 'localData', value: 'local data', type: 'text', isConst: false, frameName: 'processQuery', frameDepth: 1 },
     ]);
   });
 
@@ -94,14 +95,14 @@ describe('AI Context Tests', () => {
 
     // Context at first AI call: only inputData visible (model, ANALYZE_PROMPT filtered)
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'inputData', value: 'raw data', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
     // Verify formatted text context at first pause
     const formatted1 = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted1.text).toBe(
       `  <entry> (current scope)
-    - inputData: raw data`
+    - inputData (text): raw data`
     );
 
     // Resume - analyzed gets assigned, then SUMMARIZE_PROMPT, then pause at second do
@@ -112,18 +113,18 @@ describe('AI Context Tests', () => {
 
     // Context at second AI call: inputData, do prompt, analyzed (in execution order)
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'inputData', value: 'raw data', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
       { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'analyzed', value: 'analysis result', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'analyzed', value: 'analysis result', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
     // Verify formatted text context at second pause - shows execution order with prompt
     const formatted2 = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted2.text).toBe(
       `  <entry> (current scope)
-    - inputData: raw data
+    - inputData (text): raw data
     --> do: "Analyze this"
-    - analyzed: analysis result`
+    - analyzed (text): analysis result`
     );
 
     // Complete execution
@@ -142,22 +143,22 @@ describe('AI Context Tests', () => {
 
     // Context at completion - includes all variables and prompts in execution order
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'inputData', value: 'raw data', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
       { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'analyzed', value: 'analysis result', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'analyzed', value: 'analysis result', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
       { kind: 'prompt', aiType: 'do', prompt: 'Summarize this', frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'summary', value: 'summary result', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'summary', value: 'summary result', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
     // Verify formatted text context at completion - shows all entries in execution order
     const formatted3 = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted3.text).toBe(
       `  <entry> (current scope)
-    - inputData: raw data
+    - inputData (text): raw data
     --> do: "Analyze this"
-    - analyzed: analysis result
+    - analyzed (text): analysis result
     --> do: "Summarize this"
-    - summary: summary result`
+    - summary (text): summary result`
     );
   });
 
@@ -189,33 +190,34 @@ describe('AI Context Tests', () => {
     expect(state.pendingAI?.prompt).toBe('Process deep input');
 
     // Local context: level2 frame only, L2_PROMPT filtered
+    // Note: function parameters have type: null (not inferred), declared variables get type inference
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'input', value: 'deep input', type: null, isConst: false, frameName: 'level2', frameDepth: 2 },
-      { kind: 'variable', name: 'l2Data', value: 'level 2 data', type: null, isConst: false, frameName: 'level2', frameDepth: 2 },
+      { kind: 'variable', name: 'l2Data', value: 'level 2 data', type: 'text', isConst: false, frameName: 'level2', frameDepth: 2 },
     ]);
 
     // Global context: all frames, all prompts filtered, all models filtered
     expect(state.globalContext).toEqual([
-      { kind: 'variable', name: 'ROOT_DATA', value: 'root data', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'ROOT_DATA', value: 'root data', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'input', value: 'deep input', type: null, isConst: false, frameName: 'level1', frameDepth: 1 },
-      { kind: 'variable', name: 'l1Data', value: 'level 1 data', type: null, isConst: false, frameName: 'level1', frameDepth: 1 },
+      { kind: 'variable', name: 'l1Data', value: 'level 1 data', type: 'text', isConst: false, frameName: 'level1', frameDepth: 1 },
       { kind: 'variable', name: 'input', value: 'deep input', type: null, isConst: false, frameName: 'level2', frameDepth: 2 },
-      { kind: 'variable', name: 'l2Data', value: 'level 2 data', type: null, isConst: false, frameName: 'level2', frameDepth: 2 },
+      { kind: 'variable', name: 'l2Data', value: 'level 2 data', type: 'text', isConst: false, frameName: 'level2', frameDepth: 2 },
     ]);
 
     // Verify formatted output shows proper nesting without any prompts
     const formatted = formatContextForAI(state.globalContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (entry)
-    - ROOT_DATA: root data
+    - ROOT_DATA (text): root data
 
     level1 (depth 1)
       - input: deep input
-      - l1Data: level 1 data
+      - l1Data (text): level 1 data
 
       level2 (current scope)
         - input: deep input
-        - l2Data: level 2 data`
+        - l2Data (text): level 2 data`
     );
   });
 
@@ -238,8 +240,8 @@ describe('AI Context Tests', () => {
 
     // Verify complete local context before AI call (models filtered out)
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'API_KEY', value: 'secret', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'counter', value: '0', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'API_KEY', value: 'secret', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'counter', value: '0', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
     // Global context same as local at top level
@@ -262,15 +264,16 @@ describe('AI Context Tests', () => {
     expect(state.status).toBe('awaiting_ai');
 
     // Local context should have function params and locals only (depth 1 = called from entry)
+    // Note: function parameters have type: null (not inferred), declared variables get type inference
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'input', value: 'my input', type: null, isConst: false, frameName: 'process', frameDepth: 1 },
-      { kind: 'variable', name: 'localVar', value: 'local value', type: null, isConst: false, frameName: 'process', frameDepth: 1 },
+      { kind: 'variable', name: 'localVar', value: 'local value', type: 'text', isConst: false, frameName: 'process', frameDepth: 1 },
     ]);
 
     // Global context has entry frame (depth 0, model filtered out) + function frame (depth 1)
     expect(state.globalContext).toEqual([
       { kind: 'variable', name: 'input', value: 'my input', type: null, isConst: false, frameName: 'process', frameDepth: 1 },
-      { kind: 'variable', name: 'localVar', value: 'local value', type: null, isConst: false, frameName: 'process', frameDepth: 1 },
+      { kind: 'variable', name: 'localVar', value: 'local value', type: 'text', isConst: false, frameName: 'process', frameDepth: 1 },
     ]);
   });
 
@@ -452,10 +455,10 @@ Variables from the VIBE language call stack.
     // Models (gpt, claude) should be filtered out of context
     // Verify complete local context with correct order and types (all in entry frame, depth 0)
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'API_BASE', value: 'https://api.example.com', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'API_BASE', value: 'https://api.example.com', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'CONFIG', value: { timeout: '30', retries: '3' }, type: 'json', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'userInput', value: 'hello world', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'counter', value: '0', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'counter', value: '0', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'metadata', value: { version: '1.0' }, type: 'json', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
@@ -465,10 +468,10 @@ Variables from the VIBE language call stack.
     // Verify formatted context sorts const first
     const formatted = formatContextForAI(state.localContext);
     expect(formatted.variables).toEqual([
-      { kind: 'variable', name: 'API_BASE', value: 'https://api.example.com', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'API_BASE', value: 'https://api.example.com', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'CONFIG', value: { timeout: '30', retries: '3' }, type: 'json', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'userInput', value: 'hello world', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'counter', value: '0', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'counter', value: '0', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'metadata', value: { version: '1.0' }, type: 'json', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
   });
@@ -501,24 +504,25 @@ Variables from the VIBE language call stack.
     // Local context should only have current frame (function scope + block scope)
     // Should NOT include model m (filtered out) or outer SYSTEM_PROMPT (different frame)
     // Depth 1 = called from entry
+    // Note: function parameters have type: null (not inferred), declared variables get type inference
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'inputText', value: 'test input', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
       { kind: 'variable', name: 'options', value: 'opts', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
-      { kind: 'variable', name: 'FUNC_CONST', value: 'function constant', type: null, isConst: true, frameName: 'processData', frameDepth: 1 },
+      { kind: 'variable', name: 'FUNC_CONST', value: 'function constant', type: 'text', isConst: true, frameName: 'processData', frameDepth: 1 },
       { kind: 'variable', name: 'normalized', value: 'normalized', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
       { kind: 'variable', name: 'result', value: { status: 'pending' }, type: 'json', isConst: false, frameName: 'processData', frameDepth: 1 },
-      { kind: 'variable', name: 'blockVar', value: 'inside block', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
+      { kind: 'variable', name: 'blockVar', value: 'inside block', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
     ]);
 
     // Global context includes all frames: <entry> (depth 0) + function (depth 1), models filtered out
     expect(state.globalContext).toEqual([
-      { kind: 'variable', name: 'SYSTEM_PROMPT', value: 'You are a helpful assistant', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'SYSTEM_PROMPT', value: 'You are a helpful assistant', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'inputText', value: 'test input', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
       { kind: 'variable', name: 'options', value: 'opts', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
-      { kind: 'variable', name: 'FUNC_CONST', value: 'function constant', type: null, isConst: true, frameName: 'processData', frameDepth: 1 },
+      { kind: 'variable', name: 'FUNC_CONST', value: 'function constant', type: 'text', isConst: true, frameName: 'processData', frameDepth: 1 },
       { kind: 'variable', name: 'normalized', value: 'normalized', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
       { kind: 'variable', name: 'result', value: { status: 'pending' }, type: 'json', isConst: false, frameName: 'processData', frameDepth: 1 },
-      { kind: 'variable', name: 'blockVar', value: 'inside block', type: null, isConst: false, frameName: 'processData', frameDepth: 1 },
+      { kind: 'variable', name: 'blockVar', value: 'inside block', type: 'text', isConst: false, frameName: 'processData', frameDepth: 1 },
     ]);
 
     // Verify formatted global context preserves declaration order
@@ -556,18 +560,19 @@ Variables from the VIBE language call stack.
     expect(state.pendingAI?.prompt).toBe('main work with test');
 
     // Local context: main's frame only (depth 1 = called from entry)
+    // Note: function parameters have type: null (not inferred), declared variables get type inference
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'input', value: 'test', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: null, isConst: true, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'mainVar', value: 'main value', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
     ]);
 
     // Global context: <entry> (depth 0) + main function (depth 1), models filtered
     expect(state.globalContext).toEqual([
-      { kind: 'variable', name: 'GLOBAL_CONST', value: 'global', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'GLOBAL_CONST', value: 'global', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'input', value: 'test', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: null, isConst: true, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'mainVar', value: 'main value', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
     ]);
 
     // Verify formatted context preserves declaration order at checkpoint 1
@@ -583,24 +588,25 @@ Variables from the VIBE language call stack.
     expect(state.pendingAI?.prompt).toBe('helper work with test');
 
     // Local context: helper's frame only (depth 2 = called from main which is called from entry)
+    // Note: function parameters have type: null (not inferred), declared variables get type inference
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'value', value: 'test', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: null, isConst: true, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'helperVar', value: 'helper value', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'helperVar', value: 'helper value', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
     ]);
 
     // Global context: <entry> (depth 0) + main (depth 1) + helper (depth 2), models filtered
     // Note: mainResult now has the response from checkpoint 1, and prompt is included
     expect(state.globalContext).toEqual([
-      { kind: 'variable', name: 'GLOBAL_CONST', value: 'global', type: null, isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'GLOBAL_CONST', value: 'global', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'input', value: 'test', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: null, isConst: true, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'mainVar', value: 'main value', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
       { kind: 'prompt', aiType: 'do', prompt: 'main work with test', frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'mainResult', value: 'main response', type: null, isConst: false, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'mainResult', value: 'main response', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'value', value: 'test', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: null, isConst: true, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'helperVar', value: 'helper value', type: null, isConst: false, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'helperVar', value: 'helper value', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
     ]);
 
     // Verify formatted context preserves declaration order at checkpoint 2
@@ -615,19 +621,19 @@ Variables from the VIBE language call stack.
 Variables from the VIBE language call stack.
 
   <entry> (entry)
-    - GLOBAL_CONST: global
+    - GLOBAL_CONST (text): global
 
     main (depth 1)
       - input: test
-      - MAIN_CONST: main const
-      - mainVar: main value
+      - MAIN_CONST (text): main const
+      - mainVar (text): main value
       --> do: "main work with test"
-      - mainResult: main response
+      - mainResult (text): main response
 
       helper (current scope)
         - value: test
-        - HELPER_CONST: helper const
-        - helperVar: helper value`
+        - HELPER_CONST (text): helper const
+        - helperVar (text): helper value`
     );
 
     // Resume and complete
@@ -658,7 +664,7 @@ Variables from the VIBE language call stack.
       { kind: 'variable', name: 'CONFIG', value: { modelName: 'gpt-4', temperature: 'high' }, type: 'json', isConst: true, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'userMessage', value: 'user says hello', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'data', value: { items: ['a', 'b', 'c'], count: '3' }, type: 'json', isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'untypedVar', value: 'plain string', type: null, isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'untypedVar', value: 'plain string', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
     ]);
 
     // Verify formatted output - all variables together in declaration order
@@ -669,7 +675,7 @@ Variables from the VIBE language call stack.
     - CONFIG (json): {"modelName":"gpt-4","temperature":"high"}
     - userMessage (text): user says hello
     - data (json): {"items":["a","b","c"],"count":"3"}
-    - untypedVar: plain string`
+    - untypedVar (text): plain string`
     );
   });
 });

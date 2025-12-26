@@ -2,6 +2,13 @@ import * as AST from '../ast';
 import type { RuntimeState, Instruction, Variable, ExecutionEntry, StackFrame } from './types';
 import { currentFrame, createFrame } from './state';
 import { buildLocalContext, buildGlobalContext } from './context';
+import {
+  getImportedValue,
+  isImportedTsFunction,
+  isImportedVibeFunction,
+  getImportedVibeFunction,
+  getImportedTsFunction,
+} from './modules';
 
 // Helper: Look up a variable by walking the scope chain
 function lookupVariable(state: RuntimeState, name: string): { variable: Variable; frameIndex: number } | null {
@@ -183,6 +190,14 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     case 'ai_vibe':
       return execAIVibe(state, instruction.model, instruction.context);
 
+    case 'ts_eval':
+      return execTsEval(state, instruction.params, instruction.body);
+
+    case 'call_imported_ts':
+      // This is handled inline in execCallFunction for now
+      // but keeping the instruction type for potential future use
+      throw new Error('call_imported_ts should be handled in execCallFunction');
+
     case 'if_branch':
       return execIfBranch(state, instruction.consequent, instruction.alternate);
 
@@ -215,6 +230,14 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 // Statement execution
 function execStatement(state: RuntimeState, stmt: AST.Statement): RuntimeState {
   switch (stmt.type) {
+    case 'ImportDeclaration':
+      // Imports are processed during module loading, skip at runtime
+      return state;
+
+    case 'ExportDeclaration':
+      // Execute the underlying declaration
+      return execStatement(state, stmt.declaration);
+
     case 'LetDeclaration':
       return execLetDeclaration(state, stmt);
 
@@ -309,6 +332,9 @@ function execExpression(state: RuntimeState, expr: AST.Expression): RuntimeState
     case 'AskExpression':
       return execAskExpression(state, expr);
 
+    case 'TsBlock':
+      return execTsBlock(state, expr);
+
     default:
       throw new Error(`Unknown expression type: ${(expr as AST.Expression).type}`);
   }
@@ -390,11 +416,14 @@ function execDeclareVar(
   }
 
   const value = initialValue !== undefined ? initialValue : state.lastResult;
-  const validatedValue = validateAndCoerce(value, type, name);
+  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name);
+
+  // Use explicit type if provided, otherwise use inferred type
+  const finalType = type ?? inferredType;
 
   const newLocals = {
     ...frame.locals,
-    [name]: { value: validatedValue, isConst, typeAnnotation: type },
+    [name]: { value: validatedValue, isConst, typeAnnotation: finalType },
   };
 
   // Add variable to ordered entries for context tracking
@@ -435,7 +464,7 @@ function execAssignVar(state: RuntimeState, name: string): RuntimeState {
     throw new Error(`TypeError: Cannot assign to constant '${name}'`);
   }
 
-  const validatedValue = validateAndCoerce(state.lastResult, variable.typeAnnotation, name);
+  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name);
 
   const frame = state.callStack[frameIndex];
   const newLocals = {
@@ -594,9 +623,25 @@ function execIdentifier(state: RuntimeState, expr: AST.Identifier): RuntimeState
     return { ...state, lastResult: found.variable.value };
   }
 
-  // Check if it's a function
+  // Check if it's a local function
   if (state.functions[expr.name]) {
     return { ...state, lastResult: { __vibeFunction: true, name: expr.name } };
+  }
+
+  // Check if it's an imported TS function
+  if (isImportedTsFunction(state, expr.name)) {
+    return { ...state, lastResult: { __vibeImportedTsFunction: true, name: expr.name } };
+  }
+
+  // Check if it's an imported Vibe function
+  if (isImportedVibeFunction(state, expr.name)) {
+    return { ...state, lastResult: { __vibeImportedVibeFunction: true, name: expr.name } };
+  }
+
+  // Check if it's any other imported value
+  const importedValue = getImportedValue(state, expr.name);
+  if (importedValue !== undefined) {
+    return { ...state, lastResult: importedValue };
   }
 
   throw new Error(`ReferenceError: '${expr.name}' is not defined`);
@@ -731,6 +776,7 @@ function execCallFunction(state: RuntimeState, _funcName: string, argCount: numb
   const callee = state.valueStack[state.valueStack.length - argCount - 1];
   const newValueStack = state.valueStack.slice(0, -(argCount + 1));
 
+  // Handle local Vibe function
   if (typeof callee === 'object' && callee !== null && '__vibeFunction' in callee) {
     const funcName = (callee as { __vibeFunction: boolean; name: string }).name;
     const func = state.functions[funcName];
@@ -755,6 +801,67 @@ function execCallFunction(state: RuntimeState, _funcName: string, argCount: numb
     }
 
     // Push function body statements (in order, we pop from front)
+    const bodyInstructions = func.body.body
+      .map((s) => ({ op: 'exec_statement' as const, stmt: s }));
+
+    return {
+      ...state,
+      valueStack: newValueStack,
+      callStack: [...state.callStack, newFrame],
+      instructionStack: [
+        ...bodyInstructions,
+        { op: 'pop_frame' },
+        ...state.instructionStack,
+      ],
+      lastResult: null,
+    };
+  }
+
+  // Handle imported TS function
+  if (typeof callee === 'object' && callee !== null && '__vibeImportedTsFunction' in callee) {
+    const funcName = (callee as { __vibeImportedTsFunction: boolean; name: string }).name;
+
+    return {
+      ...state,
+      valueStack: newValueStack,
+      status: 'awaiting_ts',
+      pendingImportedTsCall: {
+        funcName,
+        args,
+      },
+      executionLog: [
+        ...state.executionLog,
+        {
+          timestamp: Date.now(),
+          instructionType: 'imported_ts_call_request',
+          details: { funcName, argCount },
+        },
+      ],
+    };
+  }
+
+  // Handle imported Vibe function
+  if (typeof callee === 'object' && callee !== null && '__vibeImportedVibeFunction' in callee) {
+    const funcName = (callee as { __vibeImportedVibeFunction: boolean; name: string }).name;
+    const func = getImportedVibeFunction(state, funcName);
+
+    if (!func) {
+      throw new Error(`ReferenceError: '${funcName}' is not defined`);
+    }
+
+    // Create new frame with parameters - same as local Vibe function
+    const newFrame = createFrame(funcName, 0);
+    for (let i = 0; i < func.params.length; i++) {
+      const paramName = func.params[i];
+      newFrame.locals[paramName] = {
+        value: args[i] ?? null,
+        isConst: false,
+        typeAnnotation: null,
+      };
+      newFrame.orderedEntries.push({ kind: 'variable' as const, name: paramName });
+    }
+
+    // Push function body statements
     const bodyInstructions = func.body.body
       .map((s) => ({ op: 'exec_statement' as const, stmt: s }));
 
@@ -1011,9 +1118,33 @@ function getContextForAI(state: RuntimeState, context: AST.ContextSpecifier): un
 }
 
 // Type validation and coercion
-function validateAndCoerce(value: unknown, type: string | null, varName: string): unknown {
-  if (!type || type === 'text') return value;
+// Returns { value, inferredType } where inferredType is set when no explicit type was given
+function validateAndCoerce(
+  value: unknown,
+  type: string | null,
+  varName: string
+): { value: unknown; inferredType: string | null } {
+  // If no type annotation, infer from JavaScript type
+  if (!type) {
+    if (typeof value === 'string') {
+      return { value, inferredType: 'text' };
+    }
+    if (typeof value === 'object' && value !== null) {
+      return { value, inferredType: 'json' };
+    }
+    // For other types (number, boolean, null, undefined), no type inference
+    return { value, inferredType: null };
+  }
 
+  // Validate text type - must be a string
+  if (type === 'text') {
+    if (typeof value !== 'string') {
+      throw new Error(`TypeError: Variable '${varName}': expected text (string), got ${typeof value}`);
+    }
+    return { value, inferredType: 'text' };
+  }
+
+  // Validate json type - must be object or array
   if (type === 'json') {
     let result = value;
 
@@ -1028,12 +1159,54 @@ function validateAndCoerce(value: unknown, type: string | null, varName: string)
 
     // Validate the result is an object or array (not a primitive)
     if (typeof result !== 'object' || result === null) {
-      throw new Error(`TypeError: Variable '${varName}': expected JSON object or array`);
+      throw new Error(`TypeError: Variable '${varName}': expected JSON (object or array), got ${typeof value}`);
     }
-    return result;
+    return { value: result, inferredType: 'json' };
   }
 
-  return value;
+  // For other types (prompt, etc.), accept as-is
+  return { value, inferredType: type };
+}
+
+// TypeScript block - push ts_eval instruction
+function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'ts_eval', params: expr.params, body: expr.body },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+// TypeScript eval - pause for async evaluation
+function execTsEval(state: RuntimeState, params: string[], body: string): RuntimeState {
+  // Look up parameter values from scope
+  const paramValues = params.map((name) => {
+    const found = lookupVariable(state, name);
+    if (!found) {
+      throw new Error(`ReferenceError: '${name}' is not defined`);
+    }
+    return found.variable.value;
+  });
+
+  return {
+    ...state,
+    status: 'awaiting_ts',
+    pendingTS: {
+      params,
+      body,
+      paramValues,
+    },
+    executionLog: [
+      ...state.executionLog,
+      {
+        timestamp: Date.now(),
+        instructionType: 'ts_eval_request',
+        details: { params, body: body.slice(0, 100) },  // Truncate body for log
+      },
+    ],
+  };
 }
 
 // Truthiness check

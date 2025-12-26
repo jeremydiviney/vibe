@@ -20,6 +20,9 @@ export function createInitialState(program: AST.Program): RuntimeState {
     status: 'running',
     program,
     functions,
+    tsModules: {},
+    vibeModules: {},
+    importedNames: {},
     callStack: [createFrame('<entry>')],
     instructionStack,
     valueStack: [],
@@ -29,6 +32,8 @@ export function createInitialState(program: AST.Program): RuntimeState {
     localContext: [],
     globalContext: [],
     pendingAI: null,
+    pendingTS: null,
+    pendingImportedTsCall: null,
     error: null,
   };
 }
@@ -100,6 +105,52 @@ export function resumeWithUserInput(state: RuntimeState, input: string): Runtime
         instructionType: 'user_input_response',
         details: { prompt: state.pendingAI.prompt },
         result: input,
+      },
+    ],
+  };
+}
+
+// Resume execution after TypeScript evaluation (inline ts block)
+export function resumeWithTsResult(state: RuntimeState, result: unknown): RuntimeState {
+  if (state.status !== 'awaiting_ts' || !state.pendingTS) {
+    throw new Error('Cannot resume: not awaiting TypeScript result');
+  }
+
+  return {
+    ...state,
+    status: 'running',
+    lastResult: result,
+    pendingTS: null,
+    executionLog: [
+      ...state.executionLog,
+      {
+        timestamp: Date.now(),
+        instructionType: 'ts_eval_result',
+        details: { params: state.pendingTS.params },
+        result,
+      },
+    ],
+  };
+}
+
+// Resume execution after imported TS function call
+export function resumeWithImportedTsResult(state: RuntimeState, result: unknown): RuntimeState {
+  if (state.status !== 'awaiting_ts' || !state.pendingImportedTsCall) {
+    throw new Error('Cannot resume: not awaiting imported TS function result');
+  }
+
+  return {
+    ...state,
+    status: 'running',
+    lastResult: result,
+    pendingImportedTsCall: null,
+    executionLog: [
+      ...state.executionLog,
+      {
+        timestamp: Date.now(),
+        instructionType: 'imported_ts_call_result',
+        details: { funcName: state.pendingImportedTsCall.funcName },
+        result,
       },
     ],
   };

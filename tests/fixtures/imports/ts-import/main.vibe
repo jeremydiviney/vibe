@@ -1,0 +1,4 @@
+import { add, multiply } from "./math.ts"
+
+let sum = add("5", "3")
+let product = multiply("4", "7")

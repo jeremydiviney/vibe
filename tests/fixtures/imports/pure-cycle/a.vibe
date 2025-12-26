@@ -1,0 +1,5 @@
+import { funcB } from "./b.vibe"
+
+export function funcA(x) {
+  return x
+}

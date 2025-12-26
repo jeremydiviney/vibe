@@ -28,6 +28,28 @@ function parseTemplateLiteral(token: IToken): string {
   return raw.slice(1, -1).replace(/\\(.)/g, '$1');
 }
 
+// Helper to parse TsBlock token: ts(param1, param2) { body }
+function parseTsBlock(token: IToken): { params: string[]; body: string } {
+  const raw = token.image;
+
+  // Find the opening paren
+  const parenStart = raw.indexOf('(');
+  const parenEnd = raw.indexOf(')');
+
+  // Extract params string and split by comma
+  const paramsStr = raw.slice(parenStart + 1, parenEnd).trim();
+  const params = paramsStr
+    ? paramsStr.split(',').map((p) => p.trim())
+    : [];
+
+  // Find the body (between first { and last })
+  const braceStart = raw.indexOf('{', parenEnd);
+  const braceEnd = raw.lastIndexOf('}');
+  const body = raw.slice(braceStart + 1, braceEnd);
+
+  return { params, body };
+}
+
 class VibeAstVisitor extends BaseVibeVisitor {
   constructor() {
     super();
@@ -52,6 +74,8 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // ============================================================================
 
   statement(ctx: Record<string, CstNode[]>): AST.Statement {
+    if (ctx.importDeclaration) return this.visit(ctx.importDeclaration);
+    if (ctx.exportDeclaration) return this.visit(ctx.exportDeclaration);
     if (ctx.letDeclaration) return this.visit(ctx.letDeclaration);
     if (ctx.constDeclaration) return this.visit(ctx.constDeclaration);
     if (ctx.modelDeclaration) return this.visit(ctx.modelDeclaration);
@@ -63,6 +87,49 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.blockStatement) return this.visit(ctx.blockStatement);
     if (ctx.expressionStatement) return this.visit(ctx.expressionStatement);
     throw new Error('Unknown statement type');
+  }
+
+  importDeclaration(ctx: { Import: IToken[]; importSpecifierList: CstNode[]; StringLiteral: IToken[] }): AST.ImportDeclaration {
+    const specifiers = this.visit(ctx.importSpecifierList) as AST.ImportSpecifier[];
+    const sourcePath = parseStringLiteral(ctx.StringLiteral[0]);
+    const sourceType = sourcePath.endsWith('.vibe') ? 'vibe' : 'ts';
+
+    return {
+      type: 'ImportDeclaration',
+      specifiers,
+      source: sourcePath,
+      sourceType,
+      location: tokenLocation(ctx.Import[0]),
+    };
+  }
+
+  importSpecifierList(ctx: { Identifier: IToken[] }): AST.ImportSpecifier[] {
+    return ctx.Identifier.map((token) => ({
+      imported: token.image,
+      local: token.image,  // Same name for now (no "as" support)
+    }));
+  }
+
+  exportDeclaration(ctx: { Export: IToken[]; functionDeclaration?: CstNode[]; letDeclaration?: CstNode[]; constDeclaration?: CstNode[]; modelDeclaration?: CstNode[] }): AST.ExportDeclaration {
+    let declaration: AST.FunctionDeclaration | AST.LetDeclaration | AST.ConstDeclaration | AST.ModelDeclaration;
+
+    if (ctx.functionDeclaration) {
+      declaration = this.visit(ctx.functionDeclaration);
+    } else if (ctx.letDeclaration) {
+      declaration = this.visit(ctx.letDeclaration);
+    } else if (ctx.constDeclaration) {
+      declaration = this.visit(ctx.constDeclaration);
+    } else if (ctx.modelDeclaration) {
+      declaration = this.visit(ctx.modelDeclaration);
+    } else {
+      throw new Error('Unknown export declaration type');
+    }
+
+    return {
+      type: 'ExportDeclaration',
+      declaration,
+      location: tokenLocation(ctx.Export[0]),
+    };
   }
 
   letDeclaration(ctx: { Let: IToken[]; Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; expression?: CstNode[] }): AST.LetDeclaration {
@@ -310,6 +377,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   }
 
   primaryExpression(ctx: {
+    TsBlock?: IToken[];
     StringLiteral?: IToken[];
     TemplateLiteral?: IToken[];
     True?: IToken[];
@@ -319,6 +387,15 @@ class VibeAstVisitor extends BaseVibeVisitor {
     arrayLiteral?: CstNode[];
     expression?: CstNode[];
   }): AST.Expression {
+    if (ctx.TsBlock) {
+      const { params, body } = parseTsBlock(ctx.TsBlock[0]);
+      return {
+        type: 'TsBlock',
+        params,
+        body,
+        location: tokenLocation(ctx.TsBlock[0]),
+      };
+    }
     if (ctx.StringLiteral) {
       return {
         type: 'StringLiteral',

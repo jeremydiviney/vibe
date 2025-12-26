@@ -1,0 +1,3 @@
+import { greet } from "./greet.vibe"
+
+let greeting = greet("Alice")

@@ -17,6 +17,10 @@ import {
   Model,
   Default,
   Local,
+  Import,
+  Export,
+  From,
+  TsBlock,
   TextType,
   JsonType,
   PromptType,
@@ -58,6 +62,8 @@ class VibeParser extends CstParser {
 
   private statement = this.RULE('statement', () => {
     this.OR([
+      { ALT: () => this.SUBRULE(this.importDeclaration) },
+      { ALT: () => this.SUBRULE(this.exportDeclaration) },
       { ALT: () => this.SUBRULE(this.letDeclaration) },
       { ALT: () => this.SUBRULE(this.constDeclaration) },
       { ALT: () => this.SUBRULE(this.modelDeclaration) },
@@ -73,6 +79,36 @@ class VibeParser extends CstParser {
         ALT: () => this.SUBRULE(this.blockStatement),
       },
       { ALT: () => this.SUBRULE(this.expressionStatement) },
+    ]);
+  });
+
+  // import { name1, name2 } from "path"
+  private importDeclaration = this.RULE('importDeclaration', () => {
+    this.CONSUME(Import);
+    this.CONSUME(LBrace);
+    this.SUBRULE(this.importSpecifierList);
+    this.CONSUME(RBrace);
+    this.CONSUME(From);
+    this.CONSUME(StringLiteral);
+  });
+
+  // name1, name2, name3
+  private importSpecifierList = this.RULE('importSpecifierList', () => {
+    this.CONSUME(Identifier);
+    this.MANY(() => {
+      this.CONSUME(Comma);
+      this.CONSUME2(Identifier);
+    });
+  });
+
+  // export function|let|const|model ...
+  private exportDeclaration = this.RULE('exportDeclaration', () => {
+    this.CONSUME(Export);
+    this.OR([
+      { ALT: () => this.SUBRULE(this.functionDeclaration) },
+      { ALT: () => this.SUBRULE(this.letDeclaration) },
+      { ALT: () => this.SUBRULE(this.constDeclaration) },
+      { ALT: () => this.SUBRULE(this.modelDeclaration) },
     ]);
   });
 
@@ -270,6 +306,7 @@ class VibeParser extends CstParser {
 
   private primaryExpression = this.RULE('primaryExpression', () => {
     this.OR([
+      { ALT: () => this.CONSUME(TsBlock) },  // ts(params) { body }
       { ALT: () => this.CONSUME(StringLiteral) },
       { ALT: () => this.CONSUME(TemplateLiteral) },
       { ALT: () => this.CONSUME(True) },

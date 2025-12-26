@@ -1,0 +1,6 @@
+import { formatName } from "./utils.ts"
+
+export function formatGreeting(firstName, lastName) {
+  let fullName = formatName(firstName, lastName)
+  return fullName
+}
