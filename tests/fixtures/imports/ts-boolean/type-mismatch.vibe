@@ -1,0 +1,5 @@
+import { add } from "../ts-import/math.ts"
+
+// This should fail - add returns number, not boolean
+let result: boolean = add(1, 2)
+result

@@ -1,10 +1,10 @@
 // Program with conditional logic
 
 model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
-let userType = "premium"
+let isPremium: boolean = true
 let response = ""
 
-if userType {
+if isPremium {
   let greeting = do "Generate a premium greeting" m default
   response = greeting
 } else {

@@ -168,6 +168,51 @@ describe('Runtime - Runtime class with imports', () => {
   });
 });
 
+describe('Runtime - TypeScript Boolean Imports', () => {
+  test('can import TS boolean constant and use in if condition', async () => {
+    const { state, result } = await loadAndRun('ts-boolean/main.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('enabled');
+
+    const enabled = state.callStack[0].locals['enabled'];
+    expect(enabled.value).toBe(true);
+    expect(enabled.typeAnnotation).toBe('boolean');
+  });
+
+  test('imported TS boolean constant is registered', async () => {
+    const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'ts-boolean', 'main.vibe');
+    const source = readFileSync(scriptPath, 'utf-8');
+    const ast = parse(source);
+    let state = createInitialState(ast);
+
+    state = await loadImports(state, scriptPath);
+
+    expect(state.importedNames['FEATURE_ENABLED']).toBeDefined();
+    expect(state.importedNames['FEATURE_ENABLED'].sourceType).toBe('ts');
+  });
+
+  test('can import TS function returning boolean and use in if condition', async () => {
+    const { state, result } = await loadAndRun('ts-boolean/use-constant.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('not empty');
+
+    // Verify boolean variables were assigned correctly
+    const check1 = state.callStack[0].locals['check1'];
+    expect(check1.value).toBe(true);
+    expect(check1.typeAnnotation).toBe('boolean');
+
+    const check2 = state.callStack[0].locals['check2'];
+    expect(check2.value).toBe(true);
+    expect(check2.typeAnnotation).toBe('boolean');
+
+    // Verify if conditions worked
+    expect(state.callStack[0].locals['result1'].value).toBe('passed');
+    expect(state.callStack[0].locals['result2'].value).toBe('not empty');
+  });
+});
+
 describe('Runtime - TypeScript Variable Imports', () => {
   test('can import TS variable and assign to text type', async () => {
     const { state, result } = await loadAndRun('ts-variables/import-variable.vibe');

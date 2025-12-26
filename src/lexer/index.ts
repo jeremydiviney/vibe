@@ -155,6 +155,7 @@ export const TsBlock = createToken({
 export const TextType = token({ name: 'TextType', pattern: /text/, longer_alt: Identifier });
 export const JsonType = token({ name: 'JsonType', pattern: /json/, longer_alt: Identifier });
 export const PromptType = token({ name: 'PromptType', pattern: /prompt/, longer_alt: Identifier });
+export const BooleanType = token({ name: 'BooleanType', pattern: /boolean/, longer_alt: Identifier });
 
 // ============================================================================
 // Literals
@@ -223,6 +224,7 @@ export const allTokens = [
   TextType,
   JsonType,
   PromptType,
+  BooleanType,
 
   // Literals
   StringLiteral,

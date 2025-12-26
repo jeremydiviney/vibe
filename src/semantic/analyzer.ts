@@ -336,7 +336,7 @@ export class SemanticAnalyzer {
   }
 
   private validateTypeAnnotation(type: string, location: SourceLocation): void {
-    const validTypes = ['text', 'json', 'prompt'];
+    const validTypes = ['text', 'json', 'prompt', 'boolean'];
     if (!validTypes.includes(type)) {
       this.error(`Unknown type '${type}'`, location);
     }

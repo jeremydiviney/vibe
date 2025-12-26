@@ -73,14 +73,14 @@ describe('Runtime Lexical Scoping', () => {
   test('recursion works', () => {
     const ast = parse(`
       let depth = "0"
-      function recurse(n: text): text {
-        if n {
+      function recurse(shouldRecurse: boolean): text {
+        if shouldRecurse {
           depth = "reached"
-          return recurse("")
+          return recurse(false)
         }
         return depth
       }
-      let result = recurse("yes")
+      let result = recurse(true)
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);

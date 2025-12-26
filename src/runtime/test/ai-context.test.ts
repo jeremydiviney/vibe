@@ -487,7 +487,7 @@ Variables from the VIBE language call stack.
         let normalized: text = "normalized"
         let result: json = { status: "pending" }
 
-        if (inputText) {
+        if true {
           let blockVar = "inside block"
           let response = do "analyze {inputText}" m default
         }

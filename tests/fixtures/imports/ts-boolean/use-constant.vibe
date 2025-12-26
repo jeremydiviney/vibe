@@ -1,0 +1,18 @@
+import { alwaysTrue, isNotEmpty } from "./checks.ts"
+
+// Test TS function returning boolean (no args)
+let check1: boolean = alwaysTrue()
+let result1 = "failed"
+if check1 {
+  result1 = "passed"
+}
+
+// Test TS function returning boolean (string arg)
+let testStr = "hello"
+let check2: boolean = isNotEmpty(testStr)
+let result2 = "empty"
+if check2 {
+  result2 = "not empty"
+}
+
+result2

@@ -24,6 +24,7 @@ import {
   TextType,
   JsonType,
   PromptType,
+  BooleanType,
   StringLiteral,
   TemplateLiteral,
   Identifier,
@@ -121,6 +122,7 @@ class VibeParser extends CstParser {
         { ALT: () => this.CONSUME(TextType) },
         { ALT: () => this.CONSUME(JsonType) },
         { ALT: () => this.CONSUME(PromptType) },
+        { ALT: () => this.CONSUME(BooleanType) },
       ]);
     });
     this.OPTION2(() => {
@@ -138,6 +140,7 @@ class VibeParser extends CstParser {
         { ALT: () => this.CONSUME(TextType) },
         { ALT: () => this.CONSUME(JsonType) },
         { ALT: () => this.CONSUME(PromptType) },
+        { ALT: () => this.CONSUME(BooleanType) },
       ]);
     });
     this.CONSUME(Equals);
@@ -188,6 +191,7 @@ class VibeParser extends CstParser {
         { ALT: () => this.CONSUME(TextType) },
         { ALT: () => this.CONSUME(JsonType) },
         { ALT: () => this.CONSUME(PromptType) },
+        { ALT: () => this.CONSUME(BooleanType) },
       ]);
     });
     this.SUBRULE(this.blockStatement);
@@ -201,6 +205,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.CONSUME(TextType) },
       { ALT: () => this.CONSUME(JsonType) },
       { ALT: () => this.CONSUME(PromptType) },
+      { ALT: () => this.CONSUME(BooleanType) },
     ]);
   });
 

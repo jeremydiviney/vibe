@@ -23,7 +23,7 @@ export interface ContextVariable {
   kind: 'variable';
   name: string;
   value: unknown;
-  type: 'text' | 'json' | null;
+  type: 'text' | 'json' | 'boolean' | null;
   isConst: boolean;
   // Call stack location info (helps AI understand variable scope)
   frameName: string;      // Name of the function/scope (e.g., "main", "processData")

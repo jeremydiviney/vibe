@@ -1,0 +1,10 @@
+import { FEATURE_ENABLED } from "./checks.ts"
+
+// Use imported TS boolean constant in if condition
+let enabled: boolean = FEATURE_ENABLED
+let result = "disabled"
+if enabled {
+  result = "enabled"
+}
+
+result

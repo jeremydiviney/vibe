@@ -1,15 +1,25 @@
 # Vibe Language - TODO
 
-## Pending
+## Completed
 
 ### Type System Enhancements
-- [ ] Add `boolean` type support
-  - [ ] Add `boolean` to supported type annotations for variables
-  - [ ] Add `boolean` as function parameter type
-  - [ ] Add `boolean` as function return type
-  - [ ] Update semantic analyzer for boolean type validation
-  - [ ] Update runtime for boolean type coercion
-  - [ ] Add parser/semantic/runtime tests for boolean type
+- [x] Add `boolean` type support (strict - no truthy coercion)
+  - [x] Add `boolean` to supported type annotations for variables
+  - [x] Add `boolean` as function parameter type
+  - [x] Add `boolean` as function return type
+  - [x] Update semantic analyzer for boolean type validation
+  - [x] Update runtime for boolean type validation
+  - [x] Replace truthy coercion with strict boolean check in if statements
+
+## Pending
+
+### Developer Tools
+- [ ] Create symbol tree visualization tool
+  - [ ] Build TypeScript script to parse project files
+  - [ ] Extract functions, types, variables, classes with hierarchical relationships
+  - [ ] Assign unique IDs to track symbol usage across files
+  - [ ] Output tree structure to configurable depth
+  - [ ] Show symbol names and identifiers (not full implementations)
 
 ### Scoping & Expression Evaluation
 - [ ] Test/evaluate expression scope in fine detail
@@ -31,46 +41,3 @@
   - [ ] Hide from auto-checkpoints
   - [ ] Example: `let:hidden username = "secret"` or similar syntax
 
-## Completed
-
-- [x] Add typed function parameters and return types
-  - [x] Parameters REQUIRE type annotations (`text`, `json`, or `prompt`)
-  - [x] Return type is OPTIONAL - if omitted, no return value validation
-  - [x] Add `FunctionParameter` interface to AST
-  - [x] Update parser with `parameter` rule and return type parsing
-  - [x] Update visitor to build new AST structure
-  - [x] Add compile-time type validation in semantic analyzer
-  - [x] Add runtime type validation for function arguments and return values
-  - [x] Update all existing tests to use new function syntax
-- [x] Filter model variables from AI context
-  - [x] Models are config, not data - exclude from localContext/globalContext
-  - [x] Update ContextVariable type to remove 'model' from type union
-  - [x] Add complex formatted context tests (nested blocks, functions, mixed types)
-- [x] Add context formatter for AI calls
-  - [x] Add `isConst` field to ContextVariable type
-  - [x] Create `formatContextForAI()` with sorting (const first, let last)
-  - [x] Add instructional wrapping for AI models
-  - [x] Create test helpers (`createMockAIRunner`, `runWithMockAI`)
-  - [x] Add comprehensive AI context tests
-- [x] Fix TypeScript errors (9 errors fixed)
-  - [x] Export conflict for RuntimeStatus
-  - [x] Implicit any for frame helpers
-  - [x] AST type mismatches (ModelConfig, Expression vs string)
-  - [x] tsconfig module setting for import.meta
-- [x] Disallow nested function declarations (functions only at top level)
-  - [x] Add `atTopLevel` tracking to semantic analyzer
-  - [x] Error on function declarations inside blocks or functions
-  - [x] Add 5 tests for nested function rejection
-- [x] Add lexical scoping to runtime (functions can access global scope)
-  - [x] Add parentFrameIndex to StackFrame type
-  - [x] Add lookupVariable() scope chain helper
-  - [x] Update execIdentifier to use scope chain
-  - [x] Update execAssignVar to use scope chain
-  - [x] Update execCallFunction with parentFrameIndex
-  - [x] Update execInterpolateString to use scope chain
-  - [x] Add runtime scoping tests (17 tests)
-- [x] Add ContextVariable type to types.ts
-- [x] Add localContext/globalContext to RuntimeState
-- [x] Create context.ts with buildLocalContext/buildGlobalContext
-- [x] Update step() to rebuild context before each instruction
-- [x] Add context tests

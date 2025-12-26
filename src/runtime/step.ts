@@ -568,7 +568,7 @@ function execIfBranch(
 ): RuntimeState {
   const condition = state.lastResult;
 
-  if (isTruthy(condition)) {
+  if (requireBoolean(condition, 'if condition')) {
     return {
       ...state,
       instructionStack: [
@@ -1166,10 +1166,13 @@ function validateAndCoerce(
     if (typeof value === 'string') {
       return { value, inferredType: 'text' };
     }
+    if (typeof value === 'boolean') {
+      return { value, inferredType: 'boolean' };
+    }
     if (typeof value === 'object' && value !== null) {
       return { value, inferredType: 'json' };
     }
-    // For other types (number, boolean, null, undefined), no type inference
+    // For other types (number, null, undefined), no type inference
     return { value, inferredType: null };
   }
 
@@ -1199,6 +1202,14 @@ function validateAndCoerce(
       throw new Error(`TypeError: Variable '${varName}': expected JSON (object or array), got ${typeof value}`);
     }
     return { value: result, inferredType: 'json' };
+  }
+
+  // Validate boolean type - must be a boolean
+  if (type === 'boolean') {
+    if (typeof value !== 'boolean') {
+      throw new Error(`TypeError: Variable '${varName}': expected boolean, got ${typeof value}`);
+    }
+    return { value, inferredType: 'boolean' };
   }
 
   // For other types (prompt, etc.), accept as-is
@@ -1246,11 +1257,11 @@ function execTsEval(state: RuntimeState, params: string[], body: string): Runtim
   };
 }
 
-// Truthiness check
-function isTruthy(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value !== 0;
-  if (typeof value === 'string') return value.length > 0;
-  return true;
+// Strict boolean check - no truthy coercion allowed
+function requireBoolean(value: unknown, context: string): boolean {
+  if (typeof value !== 'boolean') {
+    const valueType = value === null ? 'null' : typeof value;
+    throw new Error(`TypeError: ${context} must be a boolean, got ${valueType}`);
+  }
+  return value;
 }

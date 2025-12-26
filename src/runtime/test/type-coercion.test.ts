@@ -220,4 +220,256 @@ describe('Runtime - Type Coercion', () => {
     const runtime = new Runtime(ast, invalidProvider);
     await expect(runtime.run()).rejects.toThrow("Variable 'x': invalid JSON string");
   });
+
+  // ============================================================================
+  // Boolean type - variable declarations
+  // ============================================================================
+
+  test('boolean type accepts true literal', async () => {
+    const runtime = createRuntime('let x: boolean = true');
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(true);
+  });
+
+  test('boolean type accepts false literal', async () => {
+    const runtime = createRuntime('let x: boolean = false');
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(false);
+  });
+
+  test('boolean const type works', async () => {
+    const runtime = createRuntime('const DEBUG: boolean = true');
+    await runtime.run();
+    expect(runtime.getValue('DEBUG')).toBe(true);
+  });
+
+  test('boolean type throws on string value', async () => {
+    const runtime = createRuntime('let x: boolean = "true"');
+    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected boolean, got string");
+  });
+
+  test('boolean type throws on empty string', async () => {
+    const runtime = createRuntime('let x: boolean = ""');
+    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected boolean, got string");
+  });
+
+  // ============================================================================
+  // Boolean type - variable assignment
+  // ============================================================================
+
+  test('boolean variable assignment accepts boolean', async () => {
+    const runtime = createRuntime(`
+      let x: boolean = true
+      x = false
+    `);
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(false);
+  });
+
+  test('boolean variable assignment throws on string', async () => {
+    const runtime = createRuntime(`
+      let x: boolean = true
+      x = "false"
+    `);
+    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected boolean, got string");
+  });
+
+  // ============================================================================
+  // Boolean type - function returns
+  // ============================================================================
+
+  test('vibe function returning boolean works', async () => {
+    const runtime = createRuntime(`
+      function isValid(): boolean {
+        return true
+      }
+      let result = isValid()
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe(true);
+  });
+
+  test('vibe function returning boolean false works', async () => {
+    const runtime = createRuntime(`
+      function check(): boolean {
+        return false
+      }
+      let result = check()
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe(false);
+  });
+
+  test('vibe function with boolean return type throws on string return', async () => {
+    const runtime = createRuntime(`
+      function isValid(): boolean {
+        return "yes"
+      }
+      let result = isValid()
+    `);
+    await expect(runtime.run()).rejects.toThrow(/expected boolean, got string/);
+  });
+
+  test('vibe function with boolean return type throws on empty string', async () => {
+    const runtime = createRuntime(`
+      function check(): boolean {
+        return ""
+      }
+      let result = check()
+    `);
+    await expect(runtime.run()).rejects.toThrow(/expected boolean, got string/);
+  });
+
+  // ============================================================================
+  // Boolean type - function parameters
+  // ============================================================================
+
+  test('function with boolean parameter accepts boolean', async () => {
+    const runtime = createRuntime(`
+      function test(flag: boolean): boolean {
+        return flag
+      }
+      let result = test(true)
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe(true);
+  });
+
+  test('function with boolean parameter throws on string', async () => {
+    const runtime = createRuntime(`
+      function test(flag: boolean): boolean {
+        return flag
+      }
+      let result = test("true")
+    `);
+    await expect(runtime.run()).rejects.toThrow(/expected boolean, got string/);
+  });
+
+  // ============================================================================
+  // Boolean type - ts block returns
+  // ============================================================================
+
+  test('ts block returning boolean to boolean variable works', async () => {
+    const runtime = createRuntime(`
+      let x: boolean = ts() { return true }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(true);
+  });
+
+  test('ts block returning false to boolean variable works', async () => {
+    const runtime = createRuntime(`
+      let x: boolean = ts() { return false }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(false);
+  });
+
+  test('ts block with comparison returns boolean', async () => {
+    const runtime = createRuntime(`
+      let a = "5"
+      let isPositive: boolean = ts(a) { return Number(a) > 0 }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('isPositive')).toBe(true);
+  });
+
+  test('ts block returning string to boolean variable throws', async () => {
+    const runtime = createRuntime(`
+      let x: boolean = ts() { return "true" }
+    `);
+    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected boolean, got string");
+  });
+
+  test('ts block returning number to boolean variable throws', async () => {
+    const runtime = createRuntime(`
+      let x: boolean = ts() { return 1 }
+    `);
+    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected boolean, got number");
+  });
+
+  // ============================================================================
+  // Boolean type - if statement strict checking
+  // ============================================================================
+
+  test('if statement accepts boolean true', async () => {
+    const runtime = createRuntime(`
+      let result = "no"
+      if true {
+        result = "yes"
+      }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('yes');
+  });
+
+  test('if statement accepts boolean false', async () => {
+    const runtime = createRuntime(`
+      let result = "no"
+      if false {
+        result = "yes"
+      }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('no');
+  });
+
+  test('if statement accepts boolean variable', async () => {
+    const runtime = createRuntime(`
+      let flag: boolean = true
+      let result = "no"
+      if flag {
+        result = "yes"
+      }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('yes');
+  });
+
+  test('if statement throws on string condition', async () => {
+    const runtime = createRuntime(`
+      let x = "hello"
+      if x {
+        let y = "inside"
+      }
+    `);
+    await expect(runtime.run()).rejects.toThrow('if condition must be a boolean, got string');
+  });
+
+  test('if statement throws on empty string condition', async () => {
+    const runtime = createRuntime(`
+      let x = ""
+      if x {
+        let y = "inside"
+      }
+    `);
+    await expect(runtime.run()).rejects.toThrow('if condition must be a boolean, got string');
+  });
+
+  test('if statement with function returning boolean works', async () => {
+    const runtime = createRuntime(`
+      function isActive(): boolean {
+        return true
+      }
+      let result = "no"
+      if isActive() {
+        result = "yes"
+      }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('yes');
+  });
+
+  test('if statement with ts block returning boolean works', async () => {
+    const runtime = createRuntime(`
+      let num = "5"
+      let result = "no"
+      let isPositive: boolean = ts(num) { return Number(num) > 0 }
+      if isPositive {
+        result = "yes"
+      }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('yes');
+  });
 });

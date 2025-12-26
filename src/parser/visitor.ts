@@ -132,8 +132,8 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  letDeclaration(ctx: { Let: IToken[]; Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; expression?: CstNode[] }): AST.LetDeclaration {
-    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : null;
+  letDeclaration(ctx: { Let: IToken[]; Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; expression?: CstNode[] }): AST.LetDeclaration {
+    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : null;
     return {
       type: 'LetDeclaration',
       name: ctx.Identifier[0].image,
@@ -143,8 +143,8 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  constDeclaration(ctx: { Const: IToken[]; Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; expression: CstNode[] }): AST.ConstDeclaration {
-    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : null;
+  constDeclaration(ctx: { Const: IToken[]; Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; expression: CstNode[] }): AST.ConstDeclaration {
+    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : null;
     return {
       type: 'ConstDeclaration',
       name: ctx.Identifier[0].image,
@@ -207,9 +207,9 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  functionDeclaration(ctx: { Function: IToken[]; Identifier: IToken[]; parameterList?: CstNode[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; blockStatement: CstNode[] }): AST.FunctionDeclaration {
+  functionDeclaration(ctx: { Function: IToken[]; Identifier: IToken[]; parameterList?: CstNode[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; blockStatement: CstNode[] }): AST.FunctionDeclaration {
     const params = ctx.parameterList ? this.visit(ctx.parameterList) : [];
-    const returnType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : null;
+    const returnType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : null;
     return {
       type: 'FunctionDeclaration',
       name: ctx.Identifier[0].image,
@@ -220,9 +220,9 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  parameter(ctx: { Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[] }): AST.FunctionParameter {
+  parameter(ctx: { Identifier: IToken[]; TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[] }): AST.FunctionParameter {
     // Type is required - one of these must be present
-    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : 'prompt';
+    const typeAnnotation = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : 'boolean';
     return {
       name: ctx.Identifier[0].image,
       typeAnnotation,
