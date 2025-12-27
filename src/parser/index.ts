@@ -118,16 +118,26 @@ class VibeParser extends CstParser {
     this.CONSUME(Identifier);
     this.OPTION(() => {
       this.CONSUME(Colon);
-      this.OR([
-        { ALT: () => this.CONSUME(TextType) },
-        { ALT: () => this.CONSUME(JsonType) },
-        { ALT: () => this.CONSUME(PromptType) },
-        { ALT: () => this.CONSUME(BooleanType) },
-      ]);
+      this.SUBRULE(this.typeAnnotation);
     });
     this.OPTION2(() => {
       this.CONSUME(Equals);
       this.SUBRULE(this.expression);
+    });
+  });
+
+  // Type annotation: text, json, prompt, boolean, or any of these followed by []
+  private typeAnnotation = this.RULE('typeAnnotation', () => {
+    this.OR([
+      { ALT: () => this.CONSUME(TextType) },
+      { ALT: () => this.CONSUME(JsonType) },
+      { ALT: () => this.CONSUME(PromptType) },
+      { ALT: () => this.CONSUME(BooleanType) },
+    ]);
+    // Optional array brackets: text[] or text[][]
+    this.MANY(() => {
+      this.CONSUME(LBracket);
+      this.CONSUME(RBracket);
     });
   });
 
@@ -136,12 +146,7 @@ class VibeParser extends CstParser {
     this.CONSUME(Identifier);
     this.OPTION(() => {
       this.CONSUME(Colon);
-      this.OR([
-        { ALT: () => this.CONSUME(TextType) },
-        { ALT: () => this.CONSUME(JsonType) },
-        { ALT: () => this.CONSUME(PromptType) },
-        { ALT: () => this.CONSUME(BooleanType) },
-      ]);
+      this.SUBRULE(this.typeAnnotation);
     });
     this.CONSUME(Equals);
     this.SUBRULE(this.expression);
@@ -187,12 +192,7 @@ class VibeParser extends CstParser {
     // Optional return type
     this.OPTION2(() => {
       this.CONSUME(Colon);
-      this.OR([
-        { ALT: () => this.CONSUME(TextType) },
-        { ALT: () => this.CONSUME(JsonType) },
-        { ALT: () => this.CONSUME(PromptType) },
-        { ALT: () => this.CONSUME(BooleanType) },
-      ]);
+      this.SUBRULE(this.typeAnnotation);
     });
     this.SUBRULE(this.blockStatement);
   });
@@ -201,12 +201,7 @@ class VibeParser extends CstParser {
   private parameter = this.RULE('parameter', () => {
     this.CONSUME(Identifier);
     this.CONSUME(Colon);
-    this.OR([
-      { ALT: () => this.CONSUME(TextType) },
-      { ALT: () => this.CONSUME(JsonType) },
-      { ALT: () => this.CONSUME(PromptType) },
-      { ALT: () => this.CONSUME(BooleanType) },
-    ]);
+    this.SUBRULE(this.typeAnnotation);
   });
 
   private parameterList = this.RULE('parameterList', () => {

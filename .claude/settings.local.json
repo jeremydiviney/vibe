@@ -37,7 +37,8 @@
       "Bash(claude mcp list:*)",
       "Bash(claude mcp get:*)",
       "mcp__symbol-tree__symbol_tree",
-      "Skill(todo)"
+      "Skill(todo)",
+      "Bash(wc:*)"
     ],
     "deny": [
       "Bash(rm:*)",

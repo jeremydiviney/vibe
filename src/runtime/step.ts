@@ -1176,6 +1176,23 @@ function validateAndCoerce(
     return { value, inferredType: null };
   }
 
+  // Validate array types (text[], json[], boolean[], text[][], etc.)
+  if (type.endsWith('[]')) {
+    const elementType = type.slice(0, -2);  // "text[]" -> "text", "text[][]" -> "text[]"
+
+    if (!Array.isArray(value)) {
+      throw new Error(`TypeError: Variable '${varName}': expected ${type} (array), got ${typeof value}`);
+    }
+
+    // Validate each element recursively
+    const validatedElements = value.map((elem, i) => {
+      const { value: validated } = validateAndCoerce(elem, elementType, `${varName}[${i}]`);
+      return validated;
+    });
+
+    return { value: validatedElements, inferredType: type };
+  }
+
   // Validate text type - must be a string
   if (type === 'text') {
     if (typeof value !== 'string') {

@@ -336,9 +336,11 @@ export class SemanticAnalyzer {
   }
 
   private validateTypeAnnotation(type: string, location: SourceLocation): void {
+    // Strip array brackets to get base type (handles text[], text[][], etc.)
+    const baseType = type.replace(/\[\]/g, '');
     const validTypes = ['text', 'json', 'prompt', 'boolean'];
-    if (!validTypes.includes(type)) {
-      this.error(`Unknown type '${type}'`, location);
+    if (!validTypes.includes(baseType)) {
+      this.error(`Unknown type '${baseType}'`, location);
     }
   }
 
