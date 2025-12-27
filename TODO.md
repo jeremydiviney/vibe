@@ -34,16 +34,19 @@
   - [x] Strict runtime validation of element types
   - [x] Function parameters and return types support arrays
 
-## Pending
-
 ### Code Quality
-- [ ] Refactor runtime/step.ts (1284 lines → smaller modules)
-  - [ ] Extract `exec/statements.ts` - statement execution
-  - [ ] Extract `exec/expressions.ts` - expression execution
-  - [ ] Extract `exec/ai.ts` - AI do/ask/vibe operations
-  - [ ] Extract `exec/variables.ts` - lookup, declare, assign
-  - [ ] Extract `validation.ts` - type validation and coercion
-  - [ ] Keep `step.ts` as thin orchestration layer (~150 lines)
+- [x] Refactor runtime/step.ts (1284 lines → 223 lines, 83% reduction)
+  - [x] Extract `validation.ts` - type validation and coercion (94 lines)
+  - [x] Extract `exec/variables.ts` - lookup, declare, assign (116 lines)
+  - [x] Extract `exec/ai.ts` - AI do/ask/vibe operations (197 lines)
+  - [x] Extract `exec/statements.ts` - statement + return execution (305 lines)
+  - [x] Extract `exec/expressions.ts` - expression execution (242 lines)
+  - [x] Extract `exec/typescript.ts` - interpolation and TS blocks (78 lines)
+  - [x] Extract `exec/functions.ts` - function call with shared helpers (109 lines)
+  - [x] Extract `exec/frames.ts` - push/pop frame operations (23 lines)
+  - [x] `step.ts` contains core stepping + instruction dispatch (223 lines)
+
+## Pending
 
 ### Control Flow
 - [ ] Looping constructs
@@ -84,4 +87,5 @@
   - [ ] Update skill to invoke script via Bash instead of MCP
   - [ ] Create plugin manifest and structure
   - [ ] Publish to Claude Code plugin marketplace or npm
+  - [ ] Add begin/end line numbers for each symbol in output (helps Claude know exact code block boundaries)
 
