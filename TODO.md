@@ -19,15 +19,15 @@
   - [x] Output tree structure to configurable depth
   - [x] Show symbol names and identifiers (not full implementations)
 
-## Pending
-
 ### Scoping & Expression Evaluation
-- [ ] Test/evaluate expression scope in fine detail
-  - [ ] Audit all expression types for correct scope chain access
-  - [ ] Verify variable resolution in nested blocks, functions, and closures
-  - [ ] Test shadowing behavior across all expression contexts
-  - [ ] Validate scope behavior in string interpolation, do/ask/vibe expressions
-  - [ ] Ensure proper scope isolation between parallel blocks and functions
+- [x] Evaluate scoping model and document design decisions
+  - [x] Audit scope chain implementation (C-style: function → global)
+  - [x] Confirm block scope cleanup via exit_block
+  - [x] Verify shadowing behavior works correctly
+  - [x] Decision: No closures - functions always pure (params + global only)
+  - [x] Decision: Keep simple scoping model, fits AI orchestration use case
+
+## Pending
 
 ### Context Management Features (Future)
 - [ ] Context checkpoints beyond local/global
