@@ -9,19 +9,8 @@ import {
   getImportedVibeFunction,
   getImportedTsFunction,
 } from './modules';
-
-// Helper: Look up a variable by walking the scope chain
-function lookupVariable(state: RuntimeState, name: string): { variable: Variable; frameIndex: number } | null {
-  let frameIndex: number | null = state.callStack.length - 1;
-  while (frameIndex !== null && frameIndex >= 0) {
-    const frame: StackFrame = state.callStack[frameIndex];
-    if (frame.locals[name]) {
-      return { variable: frame.locals[name], frameIndex };
-    }
-    frameIndex = frame.parentFrameIndex;
-  }
-  return null;
-}
+import { validateAndCoerce, requireBoolean } from './validation';
+import { lookupVariable, execDeclareVar, execAssignVar } from './exec/variables';
 
 // Get the next instruction that will be executed (or null if done/paused)
 export function getNextInstruction(state: RuntimeState): Instruction | null {
@@ -401,96 +390,6 @@ function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclaration): 
   };
 }
 
-// Declare variable with value from lastResult
-function execDeclareVar(
-  state: RuntimeState,
-  name: string,
-  isConst: boolean,
-  type: string | null,
-  initialValue?: unknown
-): RuntimeState {
-  const frame = currentFrame(state);
-
-  if (frame.locals[name]) {
-    throw new Error(`Variable '${name}' is already declared`);
-  }
-
-  const value = initialValue !== undefined ? initialValue : state.lastResult;
-  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name);
-
-  // Use explicit type if provided, otherwise use inferred type
-  const finalType = type ?? inferredType;
-
-  const newLocals = {
-    ...frame.locals,
-    [name]: { value: validatedValue, isConst, typeAnnotation: finalType },
-  };
-
-  // Add variable to ordered entries for context tracking
-  const newOrderedEntries = [...frame.orderedEntries, { kind: 'variable' as const, name }];
-
-  const newState: RuntimeState = {
-    ...state,
-    callStack: [
-      ...state.callStack.slice(0, -1),
-      { ...frame, locals: newLocals, orderedEntries: newOrderedEntries },
-    ],
-    executionLog: [
-      ...state.executionLog,
-      {
-        timestamp: Date.now(),
-        instructionType: isConst ? 'const_declaration' : 'let_declaration',
-        details: { name, type, isConst },
-        result: validatedValue,
-      },
-    ],
-  };
-
-  return newState;
-}
-
-// Assign variable with value from lastResult
-function execAssignVar(state: RuntimeState, name: string): RuntimeState {
-  // Walk scope chain to find the variable
-  const found = lookupVariable(state, name);
-
-  if (!found) {
-    throw new Error(`ReferenceError: '${name}' is not defined`);
-  }
-
-  const { variable, frameIndex } = found;
-
-  if (variable.isConst) {
-    throw new Error(`TypeError: Cannot assign to constant '${name}'`);
-  }
-
-  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name);
-
-  const frame = state.callStack[frameIndex];
-  const newLocals = {
-    ...frame.locals,
-    [name]: { ...variable, value: validatedValue },
-  };
-
-  // Update the correct frame in the call stack
-  return {
-    ...state,
-    callStack: [
-      ...state.callStack.slice(0, frameIndex),
-      { ...frame, locals: newLocals },
-      ...state.callStack.slice(frameIndex + 1),
-    ],
-    executionLog: [
-      ...state.executionLog,
-      {
-        timestamp: Date.now(),
-        instructionType: 'assignment',
-        details: { name },
-        result: validatedValue,
-      },
-    ],
-  };
-}
 
 // Return statement
 function execReturnStatement(state: RuntimeState, stmt: AST.ReturnStatement): RuntimeState {
@@ -1154,84 +1053,6 @@ function getContextForAI(state: RuntimeState, context: AST.ContextSpecifier): un
   }
 }
 
-// Type validation and coercion
-// Returns { value, inferredType } where inferredType is set when no explicit type was given
-function validateAndCoerce(
-  value: unknown,
-  type: string | null,
-  varName: string
-): { value: unknown; inferredType: string | null } {
-  // If no type annotation, infer from JavaScript type
-  if (!type) {
-    if (typeof value === 'string') {
-      return { value, inferredType: 'text' };
-    }
-    if (typeof value === 'boolean') {
-      return { value, inferredType: 'boolean' };
-    }
-    if (typeof value === 'object' && value !== null) {
-      return { value, inferredType: 'json' };
-    }
-    // For other types (number, null, undefined), no type inference
-    return { value, inferredType: null };
-  }
-
-  // Validate array types (text[], json[], boolean[], text[][], etc.)
-  if (type.endsWith('[]')) {
-    const elementType = type.slice(0, -2);  // "text[]" -> "text", "text[][]" -> "text[]"
-
-    if (!Array.isArray(value)) {
-      throw new Error(`TypeError: Variable '${varName}': expected ${type} (array), got ${typeof value}`);
-    }
-
-    // Validate each element recursively
-    const validatedElements = value.map((elem, i) => {
-      const { value: validated } = validateAndCoerce(elem, elementType, `${varName}[${i}]`);
-      return validated;
-    });
-
-    return { value: validatedElements, inferredType: type };
-  }
-
-  // Validate text type - must be a string
-  if (type === 'text') {
-    if (typeof value !== 'string') {
-      throw new Error(`TypeError: Variable '${varName}': expected text (string), got ${typeof value}`);
-    }
-    return { value, inferredType: 'text' };
-  }
-
-  // Validate json type - must be object or array
-  if (type === 'json') {
-    let result = value;
-
-    // If string, try to parse as JSON
-    if (typeof value === 'string') {
-      try {
-        result = JSON.parse(value);
-      } catch {
-        throw new Error(`TypeError: Variable '${varName}': invalid JSON string`);
-      }
-    }
-
-    // Validate the result is an object or array (not a primitive)
-    if (typeof result !== 'object' || result === null) {
-      throw new Error(`TypeError: Variable '${varName}': expected JSON (object or array), got ${typeof value}`);
-    }
-    return { value: result, inferredType: 'json' };
-  }
-
-  // Validate boolean type - must be a boolean
-  if (type === 'boolean') {
-    if (typeof value !== 'boolean') {
-      throw new Error(`TypeError: Variable '${varName}': expected boolean, got ${typeof value}`);
-    }
-    return { value, inferredType: 'boolean' };
-  }
-
-  // For other types (prompt, etc.), accept as-is
-  return { value, inferredType: type };
-}
 
 // TypeScript block - push ts_eval instruction
 function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeState {
@@ -1274,11 +1095,3 @@ function execTsEval(state: RuntimeState, params: string[], body: string): Runtim
   };
 }
 
-// Strict boolean check - no truthy coercion allowed
-function requireBoolean(value: unknown, context: string): boolean {
-  if (typeof value !== 'boolean') {
-    const valueType = value === null ? 'null' : typeof value;
-    throw new Error(`TypeError: ${context} must be a boolean, got ${valueType}`);
-  }
-  return value;
-}
