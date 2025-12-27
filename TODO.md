@@ -11,15 +11,15 @@
   - [x] Update runtime for boolean type validation
   - [x] Replace truthy coercion with strict boolean check in if statements
 
-## Pending
-
 ### Developer Tools
-- [ ] Create symbol tree visualization tool
-  - [ ] Build TypeScript script to parse project files
-  - [ ] Extract functions, types, variables, classes with hierarchical relationships
-  - [ ] Assign unique IDs to track symbol usage across files
-  - [ ] Output tree structure to configurable depth
-  - [ ] Show symbol names and identifiers (not full implementations)
+- [x] Create symbol tree visualization tool
+  - [x] Build TypeScript script to parse project files
+  - [x] Extract functions, types, variables, classes with hierarchical relationships
+  - [x] Assign unique IDs to track symbol usage across files
+  - [x] Output tree structure to configurable depth
+  - [x] Show symbol names and identifiers (not full implementations)
+
+## Pending
 
 ### Scoping & Expression Evaluation
 - [ ] Test/evaluate expression scope in fine detail
@@ -40,4 +40,11 @@
   - [ ] Hide variables from default contexts (global/default/local)
   - [ ] Hide from auto-checkpoints
   - [ ] Example: `let:hidden username = "secret"` or similar syntax
+
+### Claude Code Plugin Distribution
+- [ ] Package symbol-tree as shareable plugin
+  - [ ] Refactor from MCP server to standalone CLI script
+  - [ ] Update skill to invoke script via Bash instead of MCP
+  - [ ] Create plugin manifest and structure
+  - [ ] Publish to Claude Code plugin marketplace or npm
 
