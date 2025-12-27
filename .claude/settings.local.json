@@ -32,7 +32,11 @@
       "Bash(dir:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "WebSearch",
+      "Bash(claude mcp list:*)",
+      "Bash(claude mcp get:*)",
+      "mcp__symbol-tree__symbol_tree"
     ],
     "deny": [
       "Bash(rm:*)",
