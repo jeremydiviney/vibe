@@ -149,4 +149,85 @@ describe('Parser - Type Annotations', () => {
       initializer: null,
     });
   });
+
+  // ============================================================================
+  // Array type annotations
+  // ============================================================================
+
+  test('let with text[] array type', () => {
+    const ast = parse('let items: text[] = ["a", "b"]');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'items',
+      typeAnnotation: 'text[]',
+      initializer: {
+        type: 'ArrayLiteral',
+        elements: [
+          { type: 'StringLiteral', value: 'a' },
+          { type: 'StringLiteral', value: 'b' },
+        ],
+      },
+    });
+  });
+
+  test('let with boolean[] array type', () => {
+    const ast = parse('let flags: boolean[] = [true, false]');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'flags',
+      typeAnnotation: 'boolean[]',
+    });
+  });
+
+  test('let with nested text[][] array type', () => {
+    const ast = parse('let matrix: text[][] = [["a"], ["b"]]');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'matrix',
+      typeAnnotation: 'text[][]',
+    });
+  });
+
+  test('const with json[] array type', () => {
+    const ast = parse('const items: json[] = [{}, {}]');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ConstDeclaration',
+      name: 'items',
+      typeAnnotation: 'json[]',
+    });
+  });
+
+  test('function with array parameter', () => {
+    const ast = parse('function process(items: text[]) { return items }');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'FunctionDeclaration',
+      name: 'process',
+      params: [{ name: 'items', typeAnnotation: 'text[]' }],
+    });
+  });
+
+  test('function with array return type', () => {
+    const ast = parse('function getItems(): text[] { return ["a"] }');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'FunctionDeclaration',
+      name: 'getItems',
+      returnType: 'text[]',
+    });
+  });
+
+  test('function with nested array return type', () => {
+    const ast = parse('function getMatrix(): boolean[][] { return [[true]] }');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'FunctionDeclaration',
+      name: 'getMatrix',
+      returnType: 'boolean[][]',
+    });
+  });
 });

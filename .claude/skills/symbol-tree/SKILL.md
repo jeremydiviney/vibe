@@ -1,18 +1,30 @@
 ---
 name: symbol-tree-analysis
-description: Use this skill to analyze TypeScript/JavaScript codebase structure using the symbol_tree MCP tool. Helpful for understanding code architecture, finding functions, and exploring call graphs.
+description: "ALWAYS USE FIRST when exploring, searching, or researching this codebase. Use symbol_tree MCP tool before grep/glob/read. Provides instant architecture overview, function relationships, and call graphs without reading full implementations."
 ---
 
 # Symbol Tree Analysis
 
 Use the `mcp__symbol-tree__symbol_tree` MCP tool to analyze TypeScript codebases.
 
+## IMPORTANT: Use This First
+
+**Before using grep, glob, or reading files** to explore or understand code, use the symbol tree tool. It provides:
+- Instant overview of file/module structure
+- Function signatures and relationships
+- Call graphs showing what calls what
+- All without reading hundreds of lines of implementation
+
+This saves tokens and gives better context faster than file searches.
+
 ## When to Use This Skill
 
-- When the user wants to understand codebase architecture
+- **FIRST** when exploring or researching any part of the codebase
+- When the user asks "how does X work?" or "where is Y?"
+- When understanding code architecture or file structure
 - When exploring how functions/classes relate to each other
 - When finding where a symbol is defined and what it calls
-- When getting a high-level overview without reading full implementations
+- When assessing file size/complexity for refactoring
 
 ## Parameters
 
@@ -41,6 +53,8 @@ Use the `mcp__symbol-tree__symbol_tree` MCP tool to analyze TypeScript codebases
 
 ## Default Parameters
 
-- `format`: "adjacency" (more token-efficient)
+- `format`: **"adjacency" (use this first)** - flat list, token-efficient, good for quick overview
 - `depth`: 3 (reasonable default)
 - `show_files`: true
+
+Only use `format: "tree"` when you specifically need to see nested call hierarchies. Start with adjacency.

@@ -472,4 +472,76 @@ describe('Runtime - Type Coercion', () => {
     await runtime.run();
     expect(runtime.getValue('result')).toBe('yes');
   });
+
+  // ============================================================================
+  // Array types
+  // ============================================================================
+
+  test('text[] type with valid string array', async () => {
+    const runtime = createRuntime('let items: text[] = ["a", "b", "c"]');
+    await runtime.run();
+    expect(runtime.getValue('items')).toEqual(['a', 'b', 'c']);
+  });
+
+  test('text[] type with empty array', async () => {
+    const runtime = createRuntime('let items: text[] = []');
+    await runtime.run();
+    expect(runtime.getValue('items')).toEqual([]);
+  });
+
+  test('boolean[] type with valid boolean array', async () => {
+    const runtime = createRuntime('let flags: boolean[] = [true, false, true]');
+    await runtime.run();
+    expect(runtime.getValue('flags')).toEqual([true, false, true]);
+  });
+
+  test('text[][] nested array type', async () => {
+    const runtime = createRuntime('let matrix: text[][] = [["a", "b"], ["c"]]');
+    await runtime.run();
+    expect(runtime.getValue('matrix')).toEqual([['a', 'b'], ['c']]);
+  });
+
+  test('json[] type with array of objects', async () => {
+    const runtime = createRuntime('let items: json[] = [{name: "a"}, {name: "b"}]');
+    await runtime.run();
+    expect(runtime.getValue('items')).toEqual([{ name: 'a' }, { name: 'b' }]);
+  });
+
+  test('text[] type errors on non-array value', async () => {
+    const runtime = createRuntime('let items: text[] = "not an array"');
+    await expect(runtime.run()).rejects.toThrow("expected text[] (array), got string");
+  });
+
+  test('text[] type errors on element type mismatch', async () => {
+    const runtime = createRuntime('let items: text[] = [true, false]');
+    await expect(runtime.run()).rejects.toThrow("items[0]");
+    await expect(runtime.run()).rejects.toThrow("expected text");
+  });
+
+  test('boolean[] type errors on string elements', async () => {
+    const runtime = createRuntime('let flags: boolean[] = ["yes", "no"]');
+    await expect(runtime.run()).rejects.toThrow("flags[0]");
+    await expect(runtime.run()).rejects.toThrow("expected boolean");
+  });
+
+  test('function parameter with array type', async () => {
+    const runtime = createRuntime(`
+      function first(items: text[]): text {
+        return "got array"
+      }
+      let result = first(["a", "b"])
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('got array');
+  });
+
+  test('function parameter array type validation', async () => {
+    const runtime = createRuntime(`
+      function process(items: text[]) {
+        return "done"
+      }
+      process("not an array")
+    `);
+    await expect(runtime.run()).rejects.toThrow("expected text[] (array)");
+  });
 });

@@ -27,7 +27,44 @@
   - [x] Decision: No closures - functions always pure (params + global only)
   - [x] Decision: Keep simple scoping model, fits AI orchestration use case
 
+### Type System
+- [x] Add list/array types
+  - [x] Syntax: `text[]`, `boolean[]`, `json[]`, `text[][]` (nested)
+  - [x] Parser support for type annotations
+  - [x] Strict runtime validation of element types
+  - [x] Function parameters and return types support arrays
+
 ## Pending
+
+### Code Quality
+- [ ] Refactor runtime/step.ts (1284 lines → smaller modules)
+  - [ ] Extract `exec/statements.ts` - statement execution
+  - [ ] Extract `exec/expressions.ts` - expression execution
+  - [ ] Extract `exec/ai.ts` - AI do/ask/vibe operations
+  - [ ] Extract `exec/variables.ts` - lookup, declare, assign
+  - [ ] Extract `validation.ts` - type validation and coercion
+  - [ ] Keep `step.ts` as thin orchestration layer (~150 lines)
+
+### Control Flow
+- [ ] Looping constructs
+  - [ ] Loop over arrays (`for item in items { ... }`)
+  - [ ] Loop while condition (`while condition { ... }`)
+  - [ ] Loop N times (`repeat N { ... }` or `for i in 0..N { ... }`)
+  - [ ] Implement break/continue (currently stubbed)
+
+### AI Integration
+- [ ] Implement actual AI model API calls
+  - [ ] HTTP client for model endpoints
+  - [ ] Support for OpenAI-compatible APIs
+  - [ ] Support for Anthropic API
+  - [ ] Handle streaming responses
+  - [ ] Error handling and retries
+
+### Language Features
+- [ ] Implement the `vibe` keyword
+  - [ ] Define semantics (code generation? simplified AI call?)
+  - [ ] Parser support (already exists?)
+  - [ ] Runtime execution
 
 ### Context Management Features (Future)
 - [ ] Context checkpoints beyond local/global
