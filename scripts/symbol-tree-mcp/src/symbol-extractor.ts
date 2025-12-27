@@ -664,22 +664,23 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
 
   if (files.length === 0) return results;
 
-  // Create ONE program for all files (much faster!)
+  // Create ONE program for all files - let TypeScript resolve imports
   const program = ts.createProgram(files, {
     target: ts.ScriptTarget.Latest,
     module: ts.ModuleKind.ESNext,
     allowJs: true,
     skipLibCheck: true,
-    noResolve: true
+    // noResolve: false - let TS follow imports to build complete dependency graph
   });
+
+  // Get ALL source files from program (includes resolved imports)
+  const allSourceFiles = program.getSourceFiles()
+    .filter(sf => !sf.fileName.includes('node_modules') && !sf.isDeclarationFile);
 
   // First pass: collect ALL symbol names across all files, tracking which files they appear in
   const nameToFiles = new Map<string, string[]>();
-  for (const filePath of files) {
-    const sourceFile = program.getSourceFile(filePath);
-    if (sourceFile) {
-      collectSymbolNamesWithFiles(sourceFile, nameToFiles);
-    }
+  for (const sourceFile of allSourceFiles) {
+    collectSymbolNamesWithFiles(sourceFile, nameToFiles);
   }
 
   // Build set of all symbol names and detect ambiguous names (defined in multiple files)
@@ -690,12 +691,29 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
       .map(([name]) => name)
   );
 
-  // Second pass: extract symbols with DIRECT call graphs
-  for (const filePath of files) {
-    const sourceFile = program.getSourceFile(filePath);
-    if (sourceFile) {
-      const fileSymbols = extractSymbolsWithCallGraph(sourceFile, depth, exportsOnly, allSymbolNames, symbol);
-      if (fileSymbols) {
+  // Second pass: extract symbols with DIRECT call graphs from ALL files (for complete call map)
+  const allFileSymbols: FileSymbols[] = [];
+  for (const sourceFile of allSourceFiles) {
+    const fileSymbols = extractSymbolsWithCallGraph(sourceFile, depth, exportsOnly, allSymbolNames);
+    if (fileSymbols) {
+      allFileSymbols.push(fileSymbols);
+    }
+  }
+
+  // Determine which files are "target" files for output
+  const targetFilePaths = new Set(files.map(f => path.resolve(f)));
+
+  // Filter results to only target files (but keep all for call map)
+  for (const fileSymbols of allFileSymbols) {
+    const normalizedPath = path.resolve(fileSymbols.filePath);
+    if (targetFilePaths.has(normalizedPath)) {
+      // If searching for specific symbol, filter to just that symbol
+      if (symbol) {
+        const filtered = fileSymbols.symbols.filter(s => s.name === symbol);
+        if (filtered.length > 0) {
+          results.push({ ...fileSymbols, symbols: filtered });
+        }
+      } else {
         results.push(fileSymbols);
       }
     }
@@ -704,7 +722,7 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
   // Build a map of function/method names to their call children for recursive expansion
   // For ambiguous names, use filePath:name as key; for unique names, just use name
   const callMap = new Map<string, { children: SymbolInfo[], filePath: string }>();
-  for (const file of results) {
+  for (const file of allFileSymbols) {
     for (const sym of file.symbols) {
       if (sym.kind === 'function' && sym.children) {
         const key = ambiguousNames.has(sym.name) ? `${file.filePath}:${sym.name}` : sym.name;
@@ -773,6 +791,45 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
             expandCalls(child.children, depth - 2, new Set([`${sym.name}.${child.name}`]), file.filePath);
           }
         }
+      }
+    }
+  }
+
+  // Collect all reachable symbol names from the call graph
+  const reachableNames = new Set<string>();
+  function collectReachable(children: SymbolInfo[] | undefined) {
+    if (!children) return;
+    for (const child of children) {
+      if (child.kind === 'calls' || child.kind === 'uses') {
+        reachableNames.add(child.name);
+        collectReachable(child.children);
+      }
+    }
+  }
+  for (const file of results) {
+    for (const sym of file.symbols) {
+      collectReachable(sym.children);
+    }
+  }
+
+  // Add reachable symbols from other files to results
+  const includedSymbols = new Set<string>(
+    results.flatMap(f => f.symbols.map(s => s.name))
+  );
+
+  for (const fileSymbols of allFileSymbols) {
+    const normalizedPath = path.resolve(fileSymbols.filePath);
+    // Skip target files (already included)
+    if (targetFilePaths.has(normalizedPath)) continue;
+
+    const reachableSymbols = fileSymbols.symbols.filter(s =>
+      reachableNames.has(s.name) && !includedSymbols.has(s.name)
+    );
+
+    if (reachableSymbols.length > 0) {
+      results.push({ ...fileSymbols, symbols: reachableSymbols });
+      for (const s of reachableSymbols) {
+        includedSymbols.add(s.name);
       }
     }
   }
