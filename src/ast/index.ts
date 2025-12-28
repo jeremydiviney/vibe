@@ -141,6 +141,7 @@ export type Expression =
   | ObjectLiteral
   | ArrayLiteral
   | RangeExpression
+  | BinaryExpression
   | AssignmentExpression
   | CallExpression
   | DoExpression
@@ -193,6 +194,17 @@ export interface RangeExpression extends BaseNode {
   type: 'RangeExpression';
   start: Expression;
   end: Expression;
+}
+
+export type BinaryOperator =
+  | '+' | '-' | '*' | '/' | '%'           // Arithmetic
+  | '==' | '!=' | '<' | '>' | '<=' | '>='; // Comparison
+
+export interface BinaryExpression extends BaseNode {
+  type: 'BinaryExpression';
+  operator: BinaryOperator;
+  left: Expression;
+  right: Expression;
 }
 
 export interface AssignmentExpression extends BaseNode {

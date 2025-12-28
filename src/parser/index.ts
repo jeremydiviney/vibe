@@ -31,7 +31,22 @@ import {
   TemplateLiteral,
   NumberLiteral,
   Identifier,
+  // Comparison operators
+  EqualEqual,
+  NotEqual,
+  LessThan,
+  GreaterThan,
+  LessEqual,
+  GreaterEqual,
+  // Assignment
   Equals,
+  // Arithmetic operators
+  Plus,
+  Minus,
+  Star,
+  Slash,
+  Percent,
+  // Delimiters
   LParen,
   RParen,
   LBrace,
@@ -266,7 +281,14 @@ class VibeParser extends CstParser {
   });
 
   // ============================================================================
-  // Expressions (simplified - no operator precedence needed)
+  // Expressions (with operator precedence)
+  // Precedence (lowest to highest):
+  //   1. AI ops, assignment
+  //   2. comparison (== != < > <= >=)
+  //   3. additive (+ -)
+  //   4. multiplicative (* / %)
+  //   5. range (..)
+  //   6. call, primary
   // ============================================================================
 
   private expression = this.RULE('expression', () => {
@@ -299,11 +321,53 @@ class VibeParser extends CstParser {
         GATE: () => this.LA(1).tokenType === Identifier && this.LA(2).tokenType === Equals,
         ALT: () => this.SUBRULE(this.assignmentExpression),
       },
-      // Range, call expression, or primary
-      { ALT: () => this.SUBRULE(this.rangeExpression) },
+      // Comparison and below
+      { ALT: () => this.SUBRULE(this.comparisonExpression) },
     ]);
   });
 
+  // Comparison: == != < > <= >=
+  private comparisonExpression = this.RULE('comparisonExpression', () => {
+    this.SUBRULE(this.additiveExpression);
+    this.OPTION(() => {
+      this.OR([
+        { ALT: () => this.CONSUME(EqualEqual) },
+        { ALT: () => this.CONSUME(NotEqual) },
+        { ALT: () => this.CONSUME(LessThan) },
+        { ALT: () => this.CONSUME(GreaterThan) },
+        { ALT: () => this.CONSUME(LessEqual) },
+        { ALT: () => this.CONSUME(GreaterEqual) },
+      ]);
+      this.SUBRULE2(this.additiveExpression);
+    });
+  });
+
+  // Additive: + -
+  private additiveExpression = this.RULE('additiveExpression', () => {
+    this.SUBRULE(this.multiplicativeExpression);
+    this.MANY(() => {
+      this.OR([
+        { ALT: () => this.CONSUME(Plus) },
+        { ALT: () => this.CONSUME(Minus) },
+      ]);
+      this.SUBRULE2(this.multiplicativeExpression);
+    });
+  });
+
+  // Multiplicative: * / %
+  private multiplicativeExpression = this.RULE('multiplicativeExpression', () => {
+    this.SUBRULE(this.rangeExpression);
+    this.MANY(() => {
+      this.OR([
+        { ALT: () => this.CONSUME(Star) },
+        { ALT: () => this.CONSUME(Slash) },
+        { ALT: () => this.CONSUME(Percent) },
+      ]);
+      this.SUBRULE2(this.rangeExpression);
+    });
+  });
+
+  // Range: ..
   private rangeExpression = this.RULE('rangeExpression', () => {
     this.SUBRULE(this.callExpression);
     this.OPTION(() => {

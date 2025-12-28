@@ -185,7 +185,23 @@ export const NumberLiteral = token({
 // Operators
 // ============================================================================
 
+// Comparison (multi-char must come before single-char)
+export const EqualEqual = token({ name: 'EqualEqual', pattern: /==/ });
+export const NotEqual = token({ name: 'NotEqual', pattern: /!=/ });
+export const LessEqual = token({ name: 'LessEqual', pattern: /<=/ });
+export const GreaterEqual = token({ name: 'GreaterEqual', pattern: />=/ });
+export const LessThan = token({ name: 'LessThan', pattern: /</ });
+export const GreaterThan = token({ name: 'GreaterThan', pattern: />/ });
+
+// Assignment (after == to avoid conflict)
 export const Equals = token({ name: 'Equals', pattern: /=/ });
+
+// Arithmetic
+export const Plus = token({ name: 'Plus', pattern: /\+/ });
+export const Minus = token({ name: 'Minus', pattern: /-/ });
+export const Star = token({ name: 'Star', pattern: /\*/ });
+export const Slash = token({ name: 'Slash', pattern: /\// });
+export const Percent = token({ name: 'Percent', pattern: /%/ });
 
 // ============================================================================
 // Delimiters
@@ -247,8 +263,19 @@ export const allTokens = [
   // Identifier after keywords
   Identifier,
 
-  // Operators
+  // Operators (multi-char before single-char)
+  EqualEqual,
+  NotEqual,
+  LessEqual,
+  GreaterEqual,
+  LessThan,
+  GreaterThan,
   Equals,
+  Plus,
+  Minus,
+  Star,
+  Slash,
+  Percent,
 
   // Delimiters
   LParen,

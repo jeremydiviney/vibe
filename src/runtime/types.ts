@@ -202,4 +202,7 @@ export type Instruction =
   | { op: 'interpolate_string'; template: string }
 
   // Template literal interpolation (${var} syntax)
-  | { op: 'interpolate_template'; template: string };
+  | { op: 'interpolate_template'; template: string }
+
+  // Binary operators
+  | { op: 'binary_op'; operator: string };

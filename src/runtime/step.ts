@@ -333,7 +333,49 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     case 'interpolate_template':
       return execInterpolateTemplate(state, instruction.template);
 
+    case 'binary_op': {
+      const right = state.lastResult;
+      const left = state.valueStack[state.valueStack.length - 1];
+      const newStack = state.valueStack.slice(0, -1);
+      const result = evaluateBinaryOp(instruction.operator, left, right);
+      return { ...state, valueStack: newStack, lastResult: result };
+    }
+
     default:
       throw new Error(`Unknown instruction: ${(instruction as Instruction).op}`);
+  }
+}
+
+// Evaluate binary operators
+function evaluateBinaryOp(op: string, left: unknown, right: unknown): unknown {
+  switch (op) {
+    // Arithmetic operators
+    case '+':
+      return (left as number) + (right as number);
+    case '-':
+      return (left as number) - (right as number);
+    case '*':
+      return (left as number) * (right as number);
+    case '/':
+      return (left as number) / (right as number);
+    case '%':
+      return (left as number) % (right as number);
+
+    // Comparison operators
+    case '==':
+      return left === right;
+    case '!=':
+      return left !== right;
+    case '<':
+      return (left as number) < (right as number);
+    case '>':
+      return (left as number) > (right as number);
+    case '<=':
+      return (left as number) <= (right as number);
+    case '>=':
+      return (left as number) >= (right as number);
+
+    default:
+      throw new Error(`Unknown binary operator: ${op}`);
   }
 }

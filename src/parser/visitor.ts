@@ -306,7 +306,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // Expressions
   // ============================================================================
 
-  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; rangeExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
+  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; comparisonExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
     if (ctx.Do) {
       return {
         type: 'DoExpression',
@@ -339,7 +339,104 @@ class VibeAstVisitor extends BaseVibeVisitor {
       return this.visit(ctx.assignmentExpression);
     }
 
-    return this.visit(ctx.rangeExpression!);
+    return this.visit(ctx.comparisonExpression!);
+  }
+
+  // Comparison: == != < > <= >=
+  comparisonExpression(ctx: {
+    additiveExpression: CstNode[];
+    EqualEqual?: IToken[];
+    NotEqual?: IToken[];
+    LessThan?: IToken[];
+    GreaterThan?: IToken[];
+    LessEqual?: IToken[];
+    GreaterEqual?: IToken[];
+  }): AST.Expression {
+    const left = this.visit(ctx.additiveExpression[0]);
+
+    // Find which operator was used (if any)
+    const operators = [
+      ...(ctx.EqualEqual ?? []),
+      ...(ctx.NotEqual ?? []),
+      ...(ctx.LessThan ?? []),
+      ...(ctx.GreaterThan ?? []),
+      ...(ctx.LessEqual ?? []),
+      ...(ctx.GreaterEqual ?? []),
+    ];
+
+    if (operators.length === 0) {
+      return left;
+    }
+
+    const op = operators[0];
+    const right = this.visit(ctx.additiveExpression[1]);
+    return {
+      type: 'BinaryExpression',
+      operator: op.image as AST.BinaryOperator,
+      left,
+      right,
+      location: left.location,
+    };
+  }
+
+  // Additive: + -
+  additiveExpression(ctx: {
+    multiplicativeExpression: CstNode[];
+    Plus?: IToken[];
+    Minus?: IToken[];
+  }): AST.Expression {
+    let left = this.visit(ctx.multiplicativeExpression[0]);
+
+    // Collect all operators and sort by position
+    const operators = [
+      ...(ctx.Plus ?? []),
+      ...(ctx.Minus ?? []),
+    ].sort((a, b) => a.startOffset - b.startOffset);
+
+    for (let i = 0; i < operators.length; i++) {
+      const op = operators[i];
+      const right = this.visit(ctx.multiplicativeExpression[i + 1]);
+      left = {
+        type: 'BinaryExpression',
+        operator: op.image as AST.BinaryOperator,
+        left,
+        right,
+        location: left.location,
+      };
+    }
+
+    return left;
+  }
+
+  // Multiplicative: * / %
+  multiplicativeExpression(ctx: {
+    rangeExpression: CstNode[];
+    Star?: IToken[];
+    Slash?: IToken[];
+    Percent?: IToken[];
+  }): AST.Expression {
+    let left = this.visit(ctx.rangeExpression[0]);
+
+    // Collect all operators and sort by position
+    const operators = [
+      ...(ctx.Star ?? []),
+      ...(ctx.Slash ?? []),
+      ...(ctx.Percent ?? []),
+    ].sort((a, b) => a.startOffset - b.startOffset);
+
+    for (let i = 0; i < operators.length; i++) {
+      const op = operators[i];
+      const right = this.visit(ctx.rangeExpression[i + 1]);
+      left = {
+        type: 'BinaryExpression',
+        operator: op.image as AST.BinaryOperator,
+        left,
+        right,
+        location: left.location,
+      };
+    }
+
+    return left;
   }
 
   rangeExpression(ctx: { callExpression: CstNode[]; DotDot?: IToken[] }): AST.Expression {

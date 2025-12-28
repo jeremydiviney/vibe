@@ -162,6 +162,22 @@ export function execCollectArgs(state: RuntimeState, count: number): RuntimeStat
 }
 
 /**
+ * Binary expression - evaluate left, push, evaluate right, apply operator.
+ */
+export function execBinaryExpression(state: RuntimeState, expr: AST.BinaryExpression): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: expr.left },
+      { op: 'push_value' },
+      { op: 'exec_expression', expr: expr.right },
+      { op: 'binary_op', operator: expr.operator },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
  * Range expression - evaluate start and end, build inclusive range array.
  */
 export function execRangeExpression(state: RuntimeState, expr: AST.RangeExpression): RuntimeState {
@@ -283,6 +299,9 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
 
     case 'RangeExpression':
       return execRangeExpression(state, expr);
+
+    case 'BinaryExpression':
+      return execBinaryExpression(state, expr);
 
     default:
       throw new Error(`Unknown expression type: ${(expr as AST.Expression).type}`);
