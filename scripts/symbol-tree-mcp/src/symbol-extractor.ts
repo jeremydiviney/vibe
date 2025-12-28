@@ -8,6 +8,7 @@ export interface SymbolInfo {
   signature?: string;
   exported: boolean;
   line: number;
+  endLine: number;
   sourceFile?: string;  // For calls/uses - shows which file the called function is from (only when ambiguous)
   outerReads?: string[];   // Variables read from outer scope
   outerWrites?: string[];  // Variables written to outer scope
@@ -338,7 +339,8 @@ function extractCallGraph(
       name: call,
       kind: 'calls',
       exported: false,
-      line: 0
+      line: 0,
+      endLine: 0
     });
   }
 
@@ -348,7 +350,8 @@ function extractCallGraph(
         name: use,
         kind: 'uses',
         exported: false,
-        line: 0
+        line: 0,
+        endLine: 0
       });
     }
   }
@@ -376,7 +379,8 @@ function extractClassMembers(node: ts.ClassDeclaration, sourceFile: ts.SourceFil
         kind,
         signature: getSignature(member, sourceFile),
         exported: false,
-        line: sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1
+        line: sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(member.getEnd()).line + 1
       } as SymbolInfo;
     });
 }
@@ -393,7 +397,8 @@ function extractInterfaceMembers(node: ts.InterfaceDeclaration, sourceFile: ts.S
         kind: 'property' as const,
         signature: getSignature(member, sourceFile),
         exported: false,
-        line: sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1
+        line: sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(member.getEnd()).line + 1
       };
     });
 }
@@ -414,7 +419,8 @@ function extractSymbolsFromNode(
       kind: 'function',
       signature: getSignature(node, sourceFile),
       exported,
-      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1
     };
   }
 
@@ -428,6 +434,7 @@ function extractSymbolsFromNode(
       kind: 'class',
       exported,
       line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
       children: extractClassMembers(node, sourceFile, depth - 1)
     };
   }
@@ -442,6 +449,7 @@ function extractSymbolsFromNode(
       kind: 'interface',
       exported,
       line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
       children: extractInterfaceMembers(node, sourceFile, depth - 1)
     };
   }
@@ -456,7 +464,8 @@ function extractSymbolsFromNode(
       kind: 'type',
       signature: getSignature(node, sourceFile),
       exported,
-      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1
     };
   }
 
@@ -469,7 +478,8 @@ function extractSymbolsFromNode(
       name: node.name.getText(sourceFile),
       kind: 'enum',
       exported,
-      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1
     };
   }
 
@@ -487,7 +497,8 @@ function extractSymbolsFromNode(
         kind: 'variable',
         signature: getSignature(decl, sourceFile),
         exported,
-        line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+        line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1
       };
     }
   }
@@ -501,7 +512,8 @@ function extractSymbolsFromNode(
       name: node.name.getText(sourceFile),
       kind: 'namespace',
       exported,
-      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+      line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1
     };
   }
 
@@ -570,6 +582,7 @@ function extractSymbolsWithCallGraph(
         signature: getSignature(node, sourceFile),
         exported,
         line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
         outerReads: outerReads.length > 0 ? outerReads : undefined,
         outerWrites: outerWrites.length > 0 ? outerWrites : undefined,
         children: callChildren.length > 0 ? callChildren : undefined
@@ -602,6 +615,7 @@ function extractSymbolsWithCallGraph(
             signature: getSignature(member, sourceFile),
             exported: false,
             line: sourceFile.getLineAndCharacterOfPosition(member.getStart(sourceFile)).line + 1,
+            endLine: sourceFile.getLineAndCharacterOfPosition(member.getEnd()).line + 1,
             outerReads: methodReads.length > 0 ? methodReads : undefined,
             outerWrites: methodWrites.length > 0 ? methodWrites : undefined,
             children: methodChildren.length > 0 ? methodChildren : undefined
@@ -614,6 +628,7 @@ function extractSymbolsWithCallGraph(
         kind: 'class',
         exported,
         line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
         children: children.length > 0 ? children : undefined
       });
     }

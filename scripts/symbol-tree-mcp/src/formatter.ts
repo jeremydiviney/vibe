@@ -136,7 +136,7 @@ function formatSymbol(symbol: FlatSymbol, options: FormatOptions, indent: string
   }
 
   if (showFiles) {
-    line += ` (${symbol.relativePath}:${symbol.line})`;
+    line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
   }
 
   return line;
@@ -277,7 +277,7 @@ export function formatSymbolTree(
       line += symbol.signature;
     }
     if (showFiles) {
-      line += ` (${symbol.relativePath}:${symbol.line})`;
+      line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
     }
 
     const lineLength = line.length + 1;
@@ -311,7 +311,7 @@ export function formatSymbolTree(
       // Symbol header
       let header = `\n${symbol.kind} ${symbol.name}`;
       if (showFiles) {
-        header += ` (${symbol.relativePath}:${symbol.line})`;
+        header += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
       }
 
       if (currentLength + header.length + 1 > textLimit) {
@@ -505,7 +505,7 @@ export function formatAdjacencyList(
       line += symbol.signature;
     }
     if (showFiles) {
-      line += ` (${symbol.relativePath}:${symbol.line})`;
+      line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
     }
 
     const lineLength = line.length + 1;
