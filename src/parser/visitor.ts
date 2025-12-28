@@ -306,7 +306,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // Expressions
   // ============================================================================
 
-  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; comparisonExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
+  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; orExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
     if (ctx.Do) {
       return {
         type: 'DoExpression',
@@ -339,7 +339,45 @@ class VibeAstVisitor extends BaseVibeVisitor {
       return this.visit(ctx.assignmentExpression);
     }
 
-    return this.visit(ctx.comparisonExpression!);
+    return this.visit(ctx.orExpression!);
+  }
+
+  // Or: or
+  orExpression(ctx: { andExpression: CstNode[]; Or?: IToken[] }): AST.Expression {
+    let left = this.visit(ctx.andExpression[0]);
+
+    const orCount = ctx.Or?.length ?? 0;
+    for (let i = 0; i < orCount; i++) {
+      const right = this.visit(ctx.andExpression[i + 1]);
+      left = {
+        type: 'BinaryExpression',
+        operator: 'or' as AST.BinaryOperator,
+        left,
+        right,
+        location: left.location,
+      };
+    }
+
+    return left;
+  }
+
+  // And: and
+  andExpression(ctx: { comparisonExpression: CstNode[]; And?: IToken[] }): AST.Expression {
+    let left = this.visit(ctx.comparisonExpression[0]);
+
+    const andCount = ctx.And?.length ?? 0;
+    for (let i = 0; i < andCount; i++) {
+      const right = this.visit(ctx.comparisonExpression[i + 1]);
+      left = {
+        type: 'BinaryExpression',
+        operator: 'and' as AST.BinaryOperator,
+        left,
+        right,
+        location: left.location,
+      };
+    }
+
+    return left;
   }
 
   // Comparison: == != < > <= >=
@@ -410,12 +448,12 @@ class VibeAstVisitor extends BaseVibeVisitor {
 
   // Multiplicative: * / %
   multiplicativeExpression(ctx: {
-    rangeExpression: CstNode[];
+    unaryExpression: CstNode[];
     Star?: IToken[];
     Slash?: IToken[];
     Percent?: IToken[];
   }): AST.Expression {
-    let left = this.visit(ctx.rangeExpression[0]);
+    let left = this.visit(ctx.unaryExpression[0]);
 
     // Collect all operators and sort by position
     const operators = [
@@ -426,7 +464,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
 
     for (let i = 0; i < operators.length; i++) {
       const op = operators[i];
-      const right = this.visit(ctx.rangeExpression[i + 1]);
+      const right = this.visit(ctx.unaryExpression[i + 1]);
       left = {
         type: 'BinaryExpression',
         operator: op.image as AST.BinaryOperator,
@@ -439,16 +477,41 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return left;
   }
 
-  rangeExpression(ctx: { callExpression: CstNode[]; DotDot?: IToken[] }): AST.Expression {
-    const left = this.visit(ctx.callExpression[0]);
+  // Unary: not, -
+  unaryExpression(ctx: { Not?: IToken[]; Minus?: IToken[]; unaryExpression?: CstNode[]; rangeExpression?: CstNode[] }): AST.Expression {
+    if (ctx.Not) {
+      const operand = this.visit(ctx.unaryExpression!);
+      return {
+        type: 'UnaryExpression',
+        operator: 'not' as AST.UnaryOperator,
+        operand,
+        location: tokenLocation(ctx.Not[0]),
+      };
+    }
 
-    // If no DotDot, just return the call expression
+    if (ctx.Minus && ctx.unaryExpression) {
+      const operand = this.visit(ctx.unaryExpression);
+      return {
+        type: 'UnaryExpression',
+        operator: '-' as AST.UnaryOperator,
+        operand,
+        location: tokenLocation(ctx.Minus[0]),
+      };
+    }
+
+    return this.visit(ctx.rangeExpression!);
+  }
+
+  rangeExpression(ctx: { postfixExpression: CstNode[]; DotDot?: IToken[] }): AST.Expression {
+    const left = this.visit(ctx.postfixExpression[0]);
+
+    // If no DotDot, just return the postfix expression
     if (!ctx.DotDot) {
       return left;
     }
 
     // Range expression: start..end
-    const right = this.visit(ctx.callExpression[1]);
+    const right = this.visit(ctx.postfixExpression[1]);
     return {
       type: 'RangeExpression',
       start: left,
@@ -493,22 +556,132 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  callExpression(ctx: { primaryExpression: CstNode[]; LParen?: IToken[]; argumentList?: CstNode[] }): AST.Expression {
+  // Postfix: function calls, indexing, slicing
+  postfixExpression(ctx: {
+    primaryExpression: CstNode[];
+    LParen?: IToken[];
+    argumentList?: CstNode[];
+    LBracket?: IToken[];
+    indexOrSlice?: CstNode[];
+  }): AST.Expression {
     let expr = this.visit(ctx.primaryExpression);
 
-    // Process call chain
-    const callCount = ctx.LParen?.length ?? 0;
-    for (let i = 0; i < callCount; i++) {
-      const args = ctx.argumentList?.[i] ? this.visit(ctx.argumentList[i]) : [];
-      expr = {
-        type: 'CallExpression',
-        callee: expr,
-        arguments: args,
-        location: expr.location,
-      };
+    // Process postfix operations (calls, indexing, slicing)
+    // We need to interleave calls and bracket access in order
+    const callTokens = ctx.LParen ?? [];
+    const bracketTokens = ctx.LBracket ?? [];
+    const allOperations: Array<{ type: 'call' | 'bracket'; index: number; offset: number }> = [
+      ...callTokens.map((t, i) => ({ type: 'call' as const, index: i, offset: t.startOffset })),
+      ...bracketTokens.map((t, i) => ({ type: 'bracket' as const, index: i, offset: t.startOffset })),
+    ].sort((a, b) => a.offset - b.offset);
+
+    for (const op of allOperations) {
+      if (op.type === 'call') {
+        const args = ctx.argumentList?.[op.index] ? this.visit(ctx.argumentList[op.index]) : [];
+        expr = {
+          type: 'CallExpression',
+          callee: expr,
+          arguments: args,
+          location: expr.location,
+        };
+      } else {
+        // Bracket access (index or slice)
+        const indexOrSliceResult = this.visit(ctx.indexOrSlice![op.index]) as
+          | { kind: 'index'; index: AST.Expression }
+          | { kind: 'slice'; start: AST.Expression | null; end: AST.Expression | null };
+
+        if (indexOrSliceResult.kind === 'index') {
+          expr = {
+            type: 'IndexExpression',
+            object: expr,
+            index: indexOrSliceResult.index,
+            location: expr.location,
+          };
+        } else {
+          expr = {
+            type: 'SliceExpression',
+            object: expr,
+            start: indexOrSliceResult.start,
+            end: indexOrSliceResult.end,
+            location: expr.location,
+          };
+        }
+      }
     }
 
     return expr;
+  }
+
+  // Index or slice inside brackets
+  indexOrSlice(ctx: { Comma?: IToken[]; expression?: CstNode[] }):
+    | { kind: 'index'; index: AST.Expression }
+    | { kind: 'slice'; start: AST.Expression | null; end: AST.Expression | null } {
+    const hasComma = (ctx.Comma?.length ?? 0) > 0;
+    const expressions = ctx.expression ?? [];
+
+    if (!hasComma) {
+      // Single index: [expr]
+      return { kind: 'index', index: this.visit(expressions[0]) };
+    }
+
+    // Slice: check if comma comes first
+    // If expressions.length === 1 and comma exists, it's either [,expr] or [expr,]
+    // If expressions.length === 2 and comma exists, it's [expr,expr]
+    // If expressions.length === 0 and comma exists, it's invalid (shouldn't happen)
+
+    if (expressions.length === 0) {
+      // [,] - both omitted (shouldn't happen with current parser)
+      return { kind: 'slice', start: null, end: null };
+    }
+
+    if (expressions.length === 1) {
+      // Either [,expr] or [expr,]
+      // We need to check if comma comes before or after the expression
+      const commaOffset = ctx.Comma![0].startOffset;
+      // Get the expression's approximate offset from its location
+      const exprResult = this.visit(expressions[0]);
+      // If the comma is before the expression, it's [,expr]
+      // Use the LBracket position is not available here, so we check expression's start
+      // Actually, we need to compare comma position with expression position
+      // For [,expr]: comma offset < expression offset
+      // For [expr,]: expression offset < comma offset
+      // The expression CstNode doesn't have offset directly, but we can check the first token
+      const firstExprToken = this.getFirstToken(expressions[0]);
+      if (firstExprToken && commaOffset < firstExprToken.startOffset) {
+        // [,expr]
+        return { kind: 'slice', start: null, end: exprResult };
+      } else {
+        // [expr,]
+        return { kind: 'slice', start: exprResult, end: null };
+      }
+    }
+
+    // [expr,expr]
+    return {
+      kind: 'slice',
+      start: this.visit(expressions[0]),
+      end: this.visit(expressions[1]),
+    };
+  }
+
+  // Helper to get the first token from a CST node (for position checking)
+  private getFirstToken(node: CstNode): IToken | undefined {
+    // Recursively find the first token in the CST
+    for (const key of Object.keys(node.children ?? {})) {
+      const child = (node.children as Record<string, (CstNode | IToken)[]>)[key];
+      if (child && child.length > 0) {
+        const first = child[0];
+        if ('image' in first) {
+          // It's a token
+          return first as IToken;
+        } else if ('children' in first) {
+          // It's a CstNode, recurse
+          const token = this.getFirstToken(first as CstNode);
+          if (token) return token;
+        }
+      }
+    }
+    return undefined;
   }
 
   argumentList(ctx: { expression: CstNode[] }): AST.Expression[] {

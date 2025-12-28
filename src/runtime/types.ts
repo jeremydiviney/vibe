@@ -205,4 +205,11 @@ export type Instruction =
   | { op: 'interpolate_template'; template: string }
 
   // Binary operators
-  | { op: 'binary_op'; operator: string };
+  | { op: 'binary_op'; operator: string }
+
+  // Unary operators
+  | { op: 'unary_op'; operator: string }
+
+  // Array access
+  | { op: 'index_access' }
+  | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean };

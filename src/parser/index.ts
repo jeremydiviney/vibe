@@ -13,6 +13,9 @@ import {
   While,
   For,
   In,
+  And,
+  Or,
+  Not,
   True,
   False,
   Model,
@@ -284,11 +287,15 @@ class VibeParser extends CstParser {
   // Expressions (with operator precedence)
   // Precedence (lowest to highest):
   //   1. AI ops, assignment
-  //   2. comparison (== != < > <= >=)
-  //   3. additive (+ -)
-  //   4. multiplicative (* / %)
-  //   5. range (..)
-  //   6. call, primary
+  //   2. or
+  //   3. and
+  //   4. comparison (== != < > <= >=)
+  //   5. additive (+ -)
+  //   6. multiplicative (* / %)
+  //   7. unary (not, -)
+  //   8. range (..)
+  //   9. postfix (calls, indexing, slicing)
+  //   10. primary
   // ============================================================================
 
   private expression = this.RULE('expression', () => {
@@ -321,9 +328,27 @@ class VibeParser extends CstParser {
         GATE: () => this.LA(1).tokenType === Identifier && this.LA(2).tokenType === Equals,
         ALT: () => this.SUBRULE(this.assignmentExpression),
       },
-      // Comparison and below
-      { ALT: () => this.SUBRULE(this.comparisonExpression) },
+      // Logical or and below
+      { ALT: () => this.SUBRULE(this.orExpression) },
     ]);
+  });
+
+  // Or: or (lowest precedence for logical)
+  private orExpression = this.RULE('orExpression', () => {
+    this.SUBRULE(this.andExpression);
+    this.MANY(() => {
+      this.CONSUME(Or);
+      this.SUBRULE2(this.andExpression);
+    });
+  });
+
+  // And: and
+  private andExpression = this.RULE('andExpression', () => {
+    this.SUBRULE(this.comparisonExpression);
+    this.MANY(() => {
+      this.CONSUME(And);
+      this.SUBRULE2(this.comparisonExpression);
+    });
   });
 
   // Comparison: == != < > <= >=
@@ -356,23 +381,46 @@ class VibeParser extends CstParser {
 
   // Multiplicative: * / %
   private multiplicativeExpression = this.RULE('multiplicativeExpression', () => {
-    this.SUBRULE(this.rangeExpression);
+    this.SUBRULE(this.unaryExpression);
     this.MANY(() => {
       this.OR([
         { ALT: () => this.CONSUME(Star) },
         { ALT: () => this.CONSUME(Slash) },
         { ALT: () => this.CONSUME(Percent) },
       ]);
-      this.SUBRULE2(this.rangeExpression);
+      this.SUBRULE2(this.unaryExpression);
     });
+  });
+
+  // Unary: not, -
+  private unaryExpression = this.RULE('unaryExpression', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(Not);
+          this.SUBRULE(this.unaryExpression);
+        },
+      },
+      {
+        // Unary minus: only when Minus is at start and followed by expression
+        // This is tricky because binary minus also uses Minus token
+        // We use GATE to check this is actually at the start of a unary context
+        GATE: () => this.LA(1).tokenType === Minus,
+        ALT: () => {
+          this.CONSUME(Minus);
+          this.SUBRULE2(this.unaryExpression);
+        },
+      },
+      { ALT: () => this.SUBRULE(this.rangeExpression) },
+    ]);
   });
 
   // Range: ..
   private rangeExpression = this.RULE('rangeExpression', () => {
-    this.SUBRULE(this.callExpression);
+    this.SUBRULE(this.postfixExpression);
     this.OPTION(() => {
       this.CONSUME(DotDot);
-      this.SUBRULE2(this.callExpression);
+      this.SUBRULE2(this.postfixExpression);
     });
   });
 
@@ -390,15 +438,63 @@ class VibeParser extends CstParser {
     ]);
   });
 
-  private callExpression = this.RULE('callExpression', () => {
+  // Postfix: function calls, indexing, slicing
+  private postfixExpression = this.RULE('postfixExpression', () => {
     this.SUBRULE(this.primaryExpression);
     this.MANY(() => {
-      this.CONSUME(LParen);
-      this.OPTION(() => {
-        this.SUBRULE(this.argumentList);
-      });
-      this.CONSUME(RParen);
+      this.OR([
+        // Function call: (args)
+        {
+          ALT: () => {
+            this.CONSUME(LParen);
+            this.OPTION(() => {
+              this.SUBRULE(this.argumentList);
+            });
+            this.CONSUME(RParen);
+          },
+        },
+        // Indexing/slicing: [expr] or [expr,expr] or [,expr] or [expr,]
+        {
+          ALT: () => {
+            this.CONSUME(LBracket);
+            this.SUBRULE(this.indexOrSlice);
+            this.CONSUME(RBracket);
+          },
+        },
+      ]);
     });
+  });
+
+  // Index or slice inside brackets
+  // [expr] = single index
+  // [expr,expr] = slice
+  // [,expr] = slice from start
+  // [expr,] = slice to end
+  private indexOrSlice = this.RULE('indexOrSlice', () => {
+    this.OR([
+      // Starts with comma: [,expr] (slice from start)
+      {
+        GATE: () => this.LA(1).tokenType === Comma,
+        ALT: () => {
+          this.CONSUME(Comma);
+          this.SUBRULE(this.expression);
+        },
+      },
+      // Starts with expression
+      {
+        ALT: () => {
+          this.SUBRULE2(this.expression);
+          // Check if followed by comma (slice)
+          this.OPTION(() => {
+            this.CONSUME2(Comma);
+            // Optional end expression: [expr,] vs [expr,expr]
+            this.OPTION2(() => {
+              this.SUBRULE3(this.expression);
+            });
+          });
+        },
+      },
+    ]);
   });
 
   private argumentList = this.RULE('argumentList', () => {

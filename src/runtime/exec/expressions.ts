@@ -178,6 +178,70 @@ export function execBinaryExpression(state: RuntimeState, expr: AST.BinaryExpres
 }
 
 /**
+ * Unary expression - evaluate operand, apply operator.
+ */
+export function execUnaryExpression(state: RuntimeState, expr: AST.UnaryExpression): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: expr.operand },
+      { op: 'unary_op', operator: expr.operator },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
+ * Index expression - evaluate object, push, evaluate index, access element.
+ */
+export function execIndexExpression(state: RuntimeState, expr: AST.IndexExpression): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: expr.object },
+      { op: 'push_value' },
+      { op: 'exec_expression', expr: expr.index },
+      { op: 'index_access' },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
+ * Slice expression - evaluate object, push, evaluate start/end if present, slice array.
+ */
+export function execSliceExpression(state: RuntimeState, expr: AST.SliceExpression): RuntimeState {
+  const instructions: Array<{ op: string; expr?: AST.Expression; hasStart?: boolean; hasEnd?: boolean }> = [];
+
+  // Push the object first
+  instructions.push({ op: 'exec_expression', expr: expr.object });
+  instructions.push({ op: 'push_value' });
+
+  // Push start if present
+  if (expr.start) {
+    instructions.push({ op: 'exec_expression', expr: expr.start });
+    instructions.push({ op: 'push_value' });
+  }
+
+  // Push end if present
+  if (expr.end) {
+    instructions.push({ op: 'exec_expression', expr: expr.end });
+    instructions.push({ op: 'push_value' });
+  }
+
+  // Slice operation
+  instructions.push({ op: 'slice_access', hasStart: !!expr.start, hasEnd: !!expr.end });
+
+  return {
+    ...state,
+    instructionStack: [
+      ...(instructions as RuntimeState['instructionStack']),
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
  * Range expression - evaluate start and end, build inclusive range array.
  */
 export function execRangeExpression(state: RuntimeState, expr: AST.RangeExpression): RuntimeState {
@@ -302,6 +366,15 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
 
     case 'BinaryExpression':
       return execBinaryExpression(state, expr);
+
+    case 'UnaryExpression':
+      return execUnaryExpression(state, expr);
+
+    case 'IndexExpression':
+      return execIndexExpression(state, expr);
+
+    case 'SliceExpression':
+      return execSliceExpression(state, expr);
 
     default:
       throw new Error(`Unknown expression type: ${(expr as AST.Expression).type}`);

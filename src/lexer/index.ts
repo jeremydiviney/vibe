@@ -161,6 +161,11 @@ export const NumberType = token({ name: 'NumberType', pattern: /number/, longer_
 export const For = token({ name: 'For', pattern: /for/, longer_alt: Identifier });
 export const In = token({ name: 'In', pattern: /in/, longer_alt: Identifier });
 
+// Logical operators (word-based)
+export const And = token({ name: 'And', pattern: /and/, longer_alt: Identifier });
+export const Or = token({ name: 'Or', pattern: /or/, longer_alt: Identifier });
+export const Not = token({ name: 'Not', pattern: /not/, longer_alt: Identifier });
+
 // ============================================================================
 // Literals
 // ============================================================================
@@ -240,6 +245,9 @@ export const allTokens = [
   While,
   For,
   In,
+  And,
+  Or,
+  Not,
   True,
   False,
   Model,

@@ -341,6 +341,70 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return { ...state, valueStack: newStack, lastResult: result };
     }
 
+    case 'unary_op': {
+      const operand = state.lastResult;
+      const result = evaluateUnaryOp(instruction.operator, operand);
+      return { ...state, lastResult: result };
+    }
+
+    case 'index_access': {
+      const index = state.lastResult as number;
+      const arr = state.valueStack[state.valueStack.length - 1] as unknown[];
+      const newStack = state.valueStack.slice(0, -1);
+
+      if (!Array.isArray(arr)) {
+        throw new Error(`Cannot index non-array: ${typeof arr}`);
+      }
+      if (typeof index !== 'number' || !Number.isInteger(index)) {
+        throw new Error(`Array index must be an integer, got ${typeof index}`);
+      }
+      if (index < 0 || index >= arr.length) {
+        throw new Error(`Array index out of bounds: ${index} (length: ${arr.length})`);
+      }
+
+      return { ...state, valueStack: newStack, lastResult: arr[index] };
+    }
+
+    case 'slice_access': {
+      const { hasStart, hasEnd } = instruction;
+
+      // Pop values in reverse order they were pushed
+      let end: number | undefined;
+      let start: number | undefined;
+      let newStack = state.valueStack;
+
+      if (hasEnd) {
+        end = state.valueStack[newStack.length - 1] as number;
+        newStack = newStack.slice(0, -1);
+      }
+      if (hasStart) {
+        start = newStack[newStack.length - 1] as number;
+        newStack = newStack.slice(0, -1);
+      }
+
+      const arr = newStack[newStack.length - 1] as unknown[];
+      newStack = newStack.slice(0, -1);
+
+      if (!Array.isArray(arr)) {
+        throw new Error(`Cannot slice non-array: ${typeof arr}`);
+      }
+
+      // Default values: start=0, end=arr.length-1
+      const startIdx = start ?? 0;
+      const endIdx = end ?? arr.length - 1;
+
+      if (typeof startIdx !== 'number' || !Number.isInteger(startIdx)) {
+        throw new Error(`Slice start must be an integer, got ${typeof startIdx}`);
+      }
+      if (typeof endIdx !== 'number' || !Number.isInteger(endIdx)) {
+        throw new Error(`Slice end must be an integer, got ${typeof endIdx}`);
+      }
+
+      // Inclusive slice (Vibe range-style)
+      const sliced = arr.slice(startIdx, endIdx + 1);
+      return { ...state, valueStack: newStack, lastResult: sliced };
+    }
+
     default:
       throw new Error(`Unknown instruction: ${(instruction as Instruction).op}`);
   }
@@ -375,7 +439,25 @@ function evaluateBinaryOp(op: string, left: unknown, right: unknown): unknown {
     case '>=':
       return (left as number) >= (right as number);
 
+    // Logical operators
+    case 'and':
+      return Boolean(left) && Boolean(right);
+    case 'or':
+      return Boolean(left) || Boolean(right);
+
     default:
       throw new Error(`Unknown binary operator: ${op}`);
+  }
+}
+
+// Evaluate unary operators
+function evaluateUnaryOp(op: string, operand: unknown): unknown {
+  switch (op) {
+    case 'not':
+      return !Boolean(operand);
+    case '-':
+      return -(operand as number);
+    default:
+      throw new Error(`Unknown unary operator: ${op}`);
   }
 }
