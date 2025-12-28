@@ -14,6 +14,7 @@ import {
 } from './exec/statements';
 import { currentFrame } from './state';
 import { RuntimeError } from '../errors';
+import { requireBoolean } from './validation';
 import {
   execExpression,
   execPushValue,
@@ -265,6 +266,44 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
           ...body.body.map(s => ({ op: 'exec_statement' as const, stmt: s })),
           { op: 'exit_block', savedKeys: bodyKeys },
           { op: 'for_in_iterate', variable, items, index: index + 1, body, savedKeys },
+          ...state.instructionStack,
+        ],
+      };
+    }
+
+    case 'while_init': {
+      const { stmt, savedKeys } = instruction;
+      const condition = requireBoolean(state.lastResult, 'while condition');
+
+      if (!condition) {
+        // Condition false - exit loop
+        return state;
+      }
+
+      // Condition true - execute body then re-check condition
+      return {
+        ...state,
+        instructionStack: [
+          { op: 'while_iterate', stmt, savedKeys },
+          ...state.instructionStack,
+        ],
+      };
+    }
+
+    case 'while_iterate': {
+      const { stmt, savedKeys } = instruction;
+      const bodyFrame = currentFrame(state);
+      const bodyKeys = Object.keys(bodyFrame.locals);
+
+      // Execute body, cleanup, re-evaluate condition, loop
+      return {
+        ...state,
+        instructionStack: [
+          { op: 'enter_block', savedKeys: bodyKeys },
+          ...stmt.body.body.map(s => ({ op: 'exec_statement' as const, stmt: s })),
+          { op: 'exit_block', savedKeys: bodyKeys },
+          { op: 'exec_expression', expr: stmt.condition },
+          { op: 'while_init', stmt, savedKeys },
           ...state.instructionStack,
         ],
       };

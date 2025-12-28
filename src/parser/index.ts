@@ -10,10 +10,9 @@ import {
   Return,
   If,
   Else,
+  While,
   For,
   In,
-  Break,
-  Continue,
   True,
   False,
   Model,
@@ -77,8 +76,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.returnStatement) },
       { ALT: () => this.SUBRULE(this.ifStatement) },
       { ALT: () => this.SUBRULE(this.forInStatement) },
-      { ALT: () => this.SUBRULE(this.breakStatement) },
-      { ALT: () => this.SUBRULE(this.continueStatement) },
+      { ALT: () => this.SUBRULE(this.whileStatement) },
       // Distinguish block statement from object literal expression:
       // { identifier : ... } is an object literal, otherwise it's a block
       {
@@ -248,12 +246,11 @@ class VibeParser extends CstParser {
     this.SUBRULE(this.blockStatement);
   });
 
-  private breakStatement = this.RULE('breakStatement', () => {
-    this.CONSUME(Break);
-  });
-
-  private continueStatement = this.RULE('continueStatement', () => {
-    this.CONSUME(Continue);
+  // while condition { ... }
+  private whileStatement = this.RULE('whileStatement', () => {
+    this.CONSUME(While);
+    this.SUBRULE(this.expression);  // Condition
+    this.SUBRULE(this.blockStatement);
   });
 
   private blockStatement = this.RULE('blockStatement', () => {

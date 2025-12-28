@@ -83,8 +83,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.returnStatement) return this.visit(ctx.returnStatement);
     if (ctx.ifStatement) return this.visit(ctx.ifStatement);
     if (ctx.forInStatement) return this.visit(ctx.forInStatement);
-    if (ctx.breakStatement) return this.visit(ctx.breakStatement);
-    if (ctx.continueStatement) return this.visit(ctx.continueStatement);
+    if (ctx.whileStatement) return this.visit(ctx.whileStatement);
     if (ctx.blockStatement) return this.visit(ctx.blockStatement);
     if (ctx.expressionStatement) return this.visit(ctx.expressionStatement);
     throw new Error('Unknown statement type');
@@ -277,17 +276,12 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  breakStatement(ctx: { Break: IToken[] }): AST.BreakStatement {
+  whileStatement(ctx: { While: IToken[]; expression: CstNode[]; blockStatement: CstNode[] }): AST.WhileStatement {
     return {
-      type: 'BreakStatement',
-      location: tokenLocation(ctx.Break[0]),
-    };
-  }
-
-  continueStatement(ctx: { Continue: IToken[] }): AST.ContinueStatement {
-    return {
-      type: 'ContinueStatement',
-      location: tokenLocation(ctx.Continue[0]),
+      type: 'WhileStatement',
+      condition: this.visit(ctx.expression),
+      body: this.visit(ctx.blockStatement),
+      location: tokenLocation(ctx.While[0]),
     };
   }
 

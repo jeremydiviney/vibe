@@ -184,6 +184,10 @@ export type Instruction =
   | { op: 'for_in_init'; stmt: AST.ForInStatement }
   | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[] }
 
+  // While loop
+  | { op: 'while_init'; stmt: AST.WhileStatement; savedKeys: string[] }
+  | { op: 'while_iterate'; stmt: AST.WhileStatement; savedKeys: string[] }
+
   // Value building (for objects, arrays, function args)
   | { op: 'push_value' }  // Push lastResult to valueStack
   | { op: 'build_object'; keys: string[] }  // Pop N values, build object

@@ -144,8 +144,8 @@ function greet(first: text, last: text): text {
 
   test('nested block in function can access parameters', () => {
     const ast = parse(`
-function test(x: text): text {
-  if x {
+function test(x: text, flag: boolean): text {
+  if flag {
     return x
   }
   return x

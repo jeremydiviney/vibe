@@ -31,8 +31,7 @@ export type Statement =
   | ReturnStatement
   | IfStatement
   | ForInStatement
-  | BreakStatement
-  | ContinueStatement
+  | WhileStatement
   | BlockStatement
   | ExpressionStatement;
 
@@ -113,12 +112,10 @@ export interface ForInStatement extends BaseNode {
   body: BlockStatement;
 }
 
-export interface BreakStatement extends BaseNode {
-  type: 'BreakStatement';
-}
-
-export interface ContinueStatement extends BaseNode {
-  type: 'ContinueStatement';
+export interface WhileStatement extends BaseNode {
+  type: 'WhileStatement';
+  condition: Expression;
+  body: BlockStatement;
 }
 
 export interface BlockStatement extends BaseNode {

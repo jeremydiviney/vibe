@@ -62,12 +62,14 @@
   - [x] Loop variable scoping (cleaned up after loop)
   - [x] Nested loops work correctly
   - [x] Non-integer range throws RuntimeError
+- [x] While loop
+  - [x] Syntax: `while condition { ... }`
+  - [x] Condition must be boolean (strict, no truthy coercion)
+  - [x] No break/continue - loop exits only when condition is false
+  - [x] Body variable scoping (cleaned up each iteration)
+  - [x] Runtime and semantic tests
 
 ## Pending
-
-### Control Flow
-- [ ] While loop (`while condition { ... }`)
-- [ ] Implement break/continue (currently stubbed)
 
 ### AI Integration
 - [ ] Implement actual AI model API calls

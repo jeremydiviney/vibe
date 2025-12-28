@@ -105,6 +105,23 @@ export function execForInStatement(state: RuntimeState, stmt: AST.ForInStatement
 }
 
 /**
+ * While statement - evaluate condition and loop.
+ */
+export function execWhileStatement(state: RuntimeState, stmt: AST.WhileStatement): RuntimeState {
+  const frame = currentFrame(state);
+  const savedKeys = Object.keys(frame.locals);
+
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: stmt.condition },
+      { op: 'while_init', stmt, savedKeys },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
  * If branch - decide based on lastResult.
  */
 export function execIfBranch(
@@ -295,13 +312,8 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
     case 'ForInStatement':
       return execForInStatement(state, stmt);
 
-    case 'BreakStatement':
-      // TODO: implement loop break
-      return state;
-
-    case 'ContinueStatement':
-      // TODO: implement loop continue
-      return state;
+    case 'WhileStatement':
+      return execWhileStatement(state, stmt);
 
     case 'BlockStatement':
       return execBlockStatement(state, stmt);

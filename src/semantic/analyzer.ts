@@ -85,6 +85,8 @@ export class SemanticAnalyzer {
 
       case 'IfStatement':
         this.visitExpression(node.condition);
+        // Validate condition is boolean when type is knowable at compile time
+        this.validateConditionType(node.condition, 'if');
         this.visitStatement(node.consequent);
         if (node.alternate) this.visitStatement(node.alternate);
         break;
@@ -98,12 +100,13 @@ export class SemanticAnalyzer {
         this.symbols.exitScope();
         break;
 
-      case 'BreakStatement':
-        // Note: loop checking not implemented yet
-        break;
-
-      case 'ContinueStatement':
-        // Note: loop checking not implemented yet
+      case 'WhileStatement':
+        this.visitExpression(node.condition);
+        // Validate condition is boolean when type is knowable at compile time
+        this.validateConditionType(node.condition, 'while');
+        this.symbols.enterScope();
+        this.visitStatement(node.body);
+        this.symbols.exitScope();
         break;
 
       case 'BlockStatement':
@@ -400,6 +403,17 @@ export class SemanticAnalyzer {
       JSON.parse(value);
     } catch {
       this.error(`Invalid JSON literal`, location);
+    }
+  }
+
+  /**
+   * Validates that a condition expression is boolean when its type is knowable at compile time.
+   * Used for if/while conditions.
+   */
+  private validateConditionType(expr: AST.Expression, context: 'if' | 'while'): void {
+    const exprType = this.getExpressionType(expr);
+    if (exprType && exprType !== 'boolean') {
+      this.error(`${context} condition must be boolean, got ${exprType}`, expr.location);
     }
   }
 

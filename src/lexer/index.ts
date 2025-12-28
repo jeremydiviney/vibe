@@ -47,8 +47,7 @@ export const Function = token({ name: 'Function', pattern: /function/, longer_al
 export const Return = token({ name: 'Return', pattern: /return/, longer_alt: Identifier });
 export const If = token({ name: 'If', pattern: /if/, longer_alt: Identifier });
 export const Else = token({ name: 'Else', pattern: /else/, longer_alt: Identifier });
-export const Break = token({ name: 'Break', pattern: /break/, longer_alt: Identifier });
-export const Continue = token({ name: 'Continue', pattern: /continue/, longer_alt: Identifier });
+export const While = token({ name: 'While', pattern: /while/, longer_alt: Identifier });
 export const True = token({ name: 'True', pattern: /true/, longer_alt: Identifier });
 export const False = token({ name: 'False', pattern: /false/, longer_alt: Identifier });
 export const Model = token({ name: 'Model', pattern: /model/, longer_alt: Identifier });
@@ -222,10 +221,9 @@ export const allTokens = [
   Return,
   If,
   Else,
+  While,
   For,
   In,
-  Break,
-  Continue,
   True,
   False,
   Model,

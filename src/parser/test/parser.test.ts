@@ -327,43 +327,27 @@ if x {
   });
 
   // ============================================================================
-  // Break and Continue
+  // While Loop
   // ============================================================================
 
-  test('break statement', () => {
+  test('while statement', () => {
     const ast = parse(`
-function test() {
-  break
+while keepGoing {
+  let x = 1
 }
 `);
     expect(ast.body[0]).toMatchObject({
-      type: 'FunctionDeclaration',
-      name: 'test',
-      body: {
-        type: 'BlockStatement',
-        body: [
-          {
-            type: 'BreakStatement',
-          },
-        ],
+      type: 'WhileStatement',
+      condition: {
+        type: 'Identifier',
+        name: 'keepGoing',
       },
-    });
-  });
-
-  test('continue statement', () => {
-    const ast = parse(`
-function test() {
-  continue
-}
-`);
-    expect(ast.body[0]).toMatchObject({
-      type: 'FunctionDeclaration',
-      name: 'test',
       body: {
         type: 'BlockStatement',
         body: [
           {
-            type: 'ContinueStatement',
+            type: 'LetDeclaration',
+            name: 'x',
           },
         ],
       },
