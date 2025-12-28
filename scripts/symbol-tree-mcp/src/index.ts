@@ -55,7 +55,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             text_limit: {
               type: 'number',
-              description: 'Maximum output characters. Stops building tree when reached. Default: 10000',
+              description: 'Maximum output characters. Stops building tree when reached. Default: 50000',
             },
             exports_only: {
               type: 'boolean',
@@ -129,7 +129,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Format output
     // When both file and symbol are specified, use file to disambiguate the entry point
     const formatOptions = {
-      textLimit: args.text_limit ?? 10000,
+      textLimit: args.text_limit ?? 50000,
       showFiles: args.show_files ?? true,
       basePath,
       entrySymbol: args.symbol,
