@@ -208,6 +208,22 @@ export function execIndexExpression(state: RuntimeState, expr: AST.IndexExpressi
 }
 
 /**
+ * Member expression - evaluate object, return method reference marker.
+ * The method_call instruction will actually execute the method.
+ */
+export function execMemberExpression(state: RuntimeState, expr: AST.MemberExpression): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: expr.object },
+      { op: 'push_value' },
+      { op: 'literal', value: { __methodRef: true, method: expr.property } },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
  * Slice expression - evaluate object, push, evaluate start/end if present, slice array.
  */
 export function execSliceExpression(state: RuntimeState, expr: AST.SliceExpression): RuntimeState {
@@ -375,6 +391,9 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
 
     case 'SliceExpression':
       return execSliceExpression(state, expr);
+
+    case 'MemberExpression':
+      return execMemberExpression(state, expr);
 
     default:
       throw new Error(`Unknown expression type: ${(expr as AST.Expression).type}`);

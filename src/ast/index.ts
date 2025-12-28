@@ -145,6 +145,7 @@ export type Expression =
   | UnaryExpression
   | IndexExpression
   | SliceExpression
+  | MemberExpression
   | AssignmentExpression
   | CallExpression
   | DoExpression
@@ -230,6 +231,12 @@ export interface SliceExpression extends BaseNode {
   object: Expression;
   start: Expression | null;  // null for arr[,5]
   end: Expression | null;    // null for arr[3,]
+}
+
+export interface MemberExpression extends BaseNode {
+  type: 'MemberExpression';
+  object: Expression;
+  property: string;  // method/property name
 }
 
 export interface AssignmentExpression extends BaseNode {

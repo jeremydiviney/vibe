@@ -59,6 +59,7 @@ import {
   Comma,
   Colon,
   DotDot,
+  Dot,
 } from '../lexer';
 
 class VibeParser extends CstParser {
@@ -438,7 +439,7 @@ class VibeParser extends CstParser {
     ]);
   });
 
-  // Postfix: function calls, indexing, slicing
+  // Postfix: function calls, indexing, slicing, member access
   private postfixExpression = this.RULE('postfixExpression', () => {
     this.SUBRULE(this.primaryExpression);
     this.MANY(() => {
@@ -459,6 +460,13 @@ class VibeParser extends CstParser {
             this.CONSUME(LBracket);
             this.SUBRULE(this.indexOrSlice);
             this.CONSUME(RBracket);
+          },
+        },
+        // Member access: .identifier
+        {
+          ALT: () => {
+            this.CONSUME(Dot);
+            this.CONSUME(Identifier);
           },
         },
       ]);

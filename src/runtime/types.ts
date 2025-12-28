@@ -212,4 +212,7 @@ export type Instruction =
 
   // Array access
   | { op: 'index_access' }
-  | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean };
+  | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean }
+
+  // Method call on object (built-in methods)
+  | { op: 'method_call'; method: string; argCount: number };

@@ -556,23 +556,29 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  // Postfix: function calls, indexing, slicing
+  // Postfix: function calls, indexing, slicing, member access
   postfixExpression(ctx: {
     primaryExpression: CstNode[];
     LParen?: IToken[];
     argumentList?: CstNode[];
     LBracket?: IToken[];
     indexOrSlice?: CstNode[];
+    Dot?: IToken[];
+    Identifier?: IToken[];
   }): AST.Expression {
     let expr = this.visit(ctx.primaryExpression);
 
-    // Process postfix operations (calls, indexing, slicing)
-    // We need to interleave calls and bracket access in order
+    // Process postfix operations (calls, indexing, slicing, member access)
+    // We need to interleave all operations in order
     const callTokens = ctx.LParen ?? [];
     const bracketTokens = ctx.LBracket ?? [];
-    const allOperations: Array<{ type: 'call' | 'bracket'; index: number; offset: number }> = [
+    const dotTokens = ctx.Dot ?? [];
+    const identifierTokens = ctx.Identifier ?? [];
+
+    const allOperations: Array<{ type: 'call' | 'bracket' | 'member'; index: number; offset: number }> = [
       ...callTokens.map((t, i) => ({ type: 'call' as const, index: i, offset: t.startOffset })),
       ...bracketTokens.map((t, i) => ({ type: 'bracket' as const, index: i, offset: t.startOffset })),
+      ...dotTokens.map((t, i) => ({ type: 'member' as const, index: i, offset: t.startOffset })),
     ].sort((a, b) => a.offset - b.offset);
 
     for (const op of allOperations) {
@@ -584,7 +590,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
           arguments: args,
           location: expr.location,
         };
-      } else {
+      } else if (op.type === 'bracket') {
         // Bracket access (index or slice)
         const indexOrSliceResult = this.visit(ctx.indexOrSlice![op.index]) as
           | { kind: 'index'; index: AST.Expression }
@@ -606,6 +612,15 @@ class VibeAstVisitor extends BaseVibeVisitor {
             location: expr.location,
           };
         }
+      } else {
+        // Member access
+        const propertyName = identifierTokens[op.index].image;
+        expr = {
+          type: 'MemberExpression',
+          object: expr,
+          property: propertyName,
+          location: expr.location,
+        };
       }
     }
 

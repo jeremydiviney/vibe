@@ -122,5 +122,60 @@ export function execCallFunction(
     return executeVibeFunction(state, func, args, newValueStack);
   }
 
+  // Handle method call on object (built-in methods)
+  if (typeof callee === 'object' && callee !== null && '__methodRef' in callee) {
+    const { method } = callee as { __methodRef: boolean; method: string };
+    // The object is the item before the method reference on the value stack
+    // Since we've already sliced off argCount+1 items, the object is now at the end of newValueStack
+    const object = newValueStack[newValueStack.length - 1];
+    const finalValueStack = newValueStack.slice(0, -1);
+
+    const result = executeBuiltinMethod(object, method, args);
+
+    return {
+      ...state,
+      valueStack: finalValueStack,
+      lastResult: result,
+    };
+  }
+
   throw new Error('TypeError: Cannot call non-function');
+}
+
+/**
+ * Execute a built-in method on an object.
+ */
+function executeBuiltinMethod(object: unknown, method: string, args: unknown[]): unknown {
+  // Array methods
+  if (Array.isArray(object)) {
+    switch (method) {
+      case 'len':
+        return object.length;
+      case 'push':
+        if (args.length === 0) {
+          throw new Error('push() requires an argument');
+        }
+        object.push(args[0]);
+        return object;  // Return the array for chaining
+      case 'pop':
+        if (object.length === 0) {
+          throw new Error('Cannot pop from empty array');
+        }
+        return object.pop();  // Return the removed element
+      default:
+        throw new Error(`Unknown array method: ${method}`);
+    }
+  }
+
+  // String methods
+  if (typeof object === 'string') {
+    switch (method) {
+      case 'len':
+        return object.length;
+      default:
+        throw new Error(`Unknown string method: ${method}`);
+    }
+  }
+
+  throw new Error(`Cannot call method '${method}' on ${typeof object}`);
 }
