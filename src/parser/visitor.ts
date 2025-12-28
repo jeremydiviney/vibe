@@ -312,7 +312,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // Expressions
   // ============================================================================
 
-  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; callExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
+  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; rangeExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
     if (ctx.Do) {
       return {
         type: 'DoExpression',
@@ -345,7 +345,25 @@ class VibeAstVisitor extends BaseVibeVisitor {
       return this.visit(ctx.assignmentExpression);
     }
 
-    return this.visit(ctx.callExpression!);
+    return this.visit(ctx.rangeExpression!);
+  }
+
+  rangeExpression(ctx: { callExpression: CstNode[]; DotDot?: IToken[] }): AST.Expression {
+    const left = this.visit(ctx.callExpression[0]);
+
+    // If no DotDot, just return the call expression
+    if (!ctx.DotDot) {
+      return left;
+    }
+
+    // Range expression: start..end
+    const right = this.visit(ctx.callExpression[1]);
+    return {
+      type: 'RangeExpression',
+      start: left,
+      end: right,
+      location: left.location,
+    };
   }
 
   assignmentExpression(ctx: { Identifier: IToken[]; expression: CstNode[] }): AST.AssignmentExpression {

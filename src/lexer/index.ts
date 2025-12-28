@@ -200,6 +200,7 @@ export const LBracket = token({ name: 'LBracket', pattern: /\[/ });
 export const RBracket = token({ name: 'RBracket', pattern: /\]/ });
 export const Comma = token({ name: 'Comma', pattern: /,/ });
 export const Colon = token({ name: 'Colon', pattern: /:/ });
+export const DotDot = token({ name: 'DotDot', pattern: /\.\./ });
 
 // ============================================================================
 // All tokens in order (order matters for matching!)
@@ -260,6 +261,7 @@ export const allTokens = [
   RBracket,
   Comma,
   Colon,
+  DotDot,
 ];
 
 // ============================================================================

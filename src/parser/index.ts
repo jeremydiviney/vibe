@@ -41,6 +41,7 @@ import {
   RBracket,
   Comma,
   Colon,
+  DotDot,
 } from '../lexer';
 
 class VibeParser extends CstParser {
@@ -301,9 +302,17 @@ class VibeParser extends CstParser {
         GATE: () => this.LA(1).tokenType === Identifier && this.LA(2).tokenType === Equals,
         ALT: () => this.SUBRULE(this.assignmentExpression),
       },
-      // Call expression or primary
-      { ALT: () => this.SUBRULE(this.callExpression) },
+      // Range, call expression, or primary
+      { ALT: () => this.SUBRULE(this.rangeExpression) },
     ]);
+  });
+
+  private rangeExpression = this.RULE('rangeExpression', () => {
+    this.SUBRULE(this.callExpression);
+    this.OPTION(() => {
+      this.CONSUME(DotDot);
+      this.SUBRULE2(this.callExpression);
+    });
   });
 
   private assignmentExpression = this.RULE('assignmentExpression', () => {

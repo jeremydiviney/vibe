@@ -162,6 +162,48 @@ export function execCollectArgs(state: RuntimeState, count: number): RuntimeStat
 }
 
 /**
+ * Range expression - evaluate start and end, build inclusive range array.
+ */
+export function execRangeExpression(state: RuntimeState, expr: AST.RangeExpression): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: expr.start },
+      { op: 'push_value' },
+      { op: 'exec_expression', expr: expr.end },
+      { op: 'push_value' },
+      { op: 'build_range' },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
+ * Build inclusive range array from value stack [start, end].
+ */
+export function execBuildRange(state: RuntimeState): RuntimeState {
+  const end = state.valueStack[state.valueStack.length - 1];
+  const start = state.valueStack[state.valueStack.length - 2];
+
+  if (typeof start !== 'number' || typeof end !== 'number') {
+    throw new Error(`Range bounds must be numbers, got ${typeof start} and ${typeof end}`);
+  }
+
+  if (!Number.isInteger(start) || !Number.isInteger(end)) {
+    throw new Error(`Range bounds must be integers, got ${start} and ${end}`);
+  }
+
+  const length = end - start + 1;
+  const range = length > 0 ? Array.from({ length }, (_, i) => start + i) : [];
+
+  return {
+    ...state,
+    valueStack: state.valueStack.slice(0, -2),
+    lastResult: range,
+  };
+}
+
+/**
  * Call expression - push callee, args, and call instruction.
  */
 export function execCallExpression(state: RuntimeState, expr: AST.CallExpression): RuntimeState {
@@ -238,6 +280,9 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
 
     case 'TsBlock':
       return execTsBlock(state, expr);
+
+    case 'RangeExpression':
+      return execRangeExpression(state, expr);
 
     default:
       throw new Error(`Unknown expression type: ${(expr as AST.Expression).type}`);

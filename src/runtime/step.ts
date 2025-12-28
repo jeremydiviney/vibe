@@ -19,6 +19,7 @@ import {
   execPushValue,
   execBuildObject,
   execBuildArray,
+  execBuildRange,
   execCollectArgs,
 } from './exec/expressions';
 import {
@@ -213,15 +214,8 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         items = Array.from({ length: items }, (_, i) => i + 1);
       }
 
-      // Handle range: [start, end] with 2 numbers → expand to inclusive range
-      if (Array.isArray(items) && items.length === 2 &&
-          typeof items[0] === 'number' && typeof items[1] === 'number') {
-        const [start, end] = items;
-        if (!Number.isInteger(start) || !Number.isInteger(end)) {
-          throw new RuntimeError(`for-in range bounds must be integers`, { line: 1, column: 1 }, '');
-        }
-        items = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-      }
+      // Note: Explicit ranges now use the `..` operator (e.g., 2..5)
+      // which produces an array before reaching for_in_init
 
       if (!Array.isArray(items)) {
         throw new RuntimeError('for-in requires array or range', { line: 1, column: 1 }, '');
@@ -284,6 +278,9 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
     case 'build_array':
       return execBuildArray(state, instruction.count);
+
+    case 'build_range':
+      return execBuildRange(state);
 
     case 'collect_args':
       return execCollectArgs(state, instruction.count);

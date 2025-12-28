@@ -203,6 +203,20 @@ export class SemanticAnalyzer {
       case 'TemplateLiteral':
         // Template literals are valid (interpolation checked at runtime)
         break;
+
+      case 'RangeExpression':
+        this.visitExpression(node.start);
+        this.visitExpression(node.end);
+        // Check that if both bounds are number literals, start <= end
+        if (node.start.type === 'NumberLiteral' && node.end.type === 'NumberLiteral') {
+          if (node.start.value > node.end.value) {
+            this.error(
+              `Range start (${node.start.value}) must be <= end (${node.end.value})`,
+              node.location
+            );
+          }
+        }
+        break;
     }
   }
 
