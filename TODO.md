@@ -69,6 +69,30 @@
   - [x] Body variable scoping (cleaned up each iteration)
   - [x] Runtime and semantic tests
 
+### Operators and Built-ins
+- [x] Arithmetic operators: `+`, `-`, `*`, `/`, `%`
+  - [x] Proper precedence (multiplicative before additive)
+  - [x] Parentheses for grouping
+- [x] Comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=`
+  - [x] Strict equality for all types
+  - [x] Numeric comparison for ordered operators
+- [x] Logical operators: `and`, `or`, `not` (word-based)
+  - [x] `and` has higher precedence than `or`
+  - [x] `not` is unary with high precedence
+- [x] Array indexing: `arr[i]` (0-based)
+  - [x] Bounds checking
+  - [x] Works with expressions as index
+- [x] Array slicing: `arr[x,y]` with inclusive bounds
+  - [x] `arr[,y]` from start
+  - [x] `arr[x,]` to end
+  - [x] Follows Vibe's inclusive range convention
+- [x] Member access: `obj.property`
+- [x] Built-in methods:
+  - [x] Array: `len()`, `push(item)`, `pop()`
+  - [x] String: `len()`
+  - [x] Array methods mutate in place
+  - [x] Method chaining: `arr.push(1).push(2).len()`
+
 ## Pending
 
 ### AI Integration
