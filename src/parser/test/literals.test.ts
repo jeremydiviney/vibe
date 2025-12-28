@@ -240,3 +240,165 @@ describe('Parser - Object and Array Literals', () => {
     expect(arr.elements).toHaveLength(10);
   });
 });
+
+describe('Parser - Number Literals', () => {
+  test('integer literal', () => {
+    const ast = parse('let x = 42');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      initializer: {
+        type: 'NumberLiteral',
+        value: 42,
+      },
+    });
+  });
+
+  test('negative integer literal', () => {
+    const ast = parse('let x = -5');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      initializer: {
+        type: 'NumberLiteral',
+        value: -5,
+      },
+    });
+  });
+
+  test('decimal literal', () => {
+    const ast = parse('let x = 3.14');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      initializer: {
+        type: 'NumberLiteral',
+        value: 3.14,
+      },
+    });
+  });
+
+  test('negative decimal literal', () => {
+    const ast = parse('let x = -2.5');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      initializer: {
+        type: 'NumberLiteral',
+        value: -2.5,
+      },
+    });
+  });
+
+  test('zero literal', () => {
+    const ast = parse('let x = 0');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      initializer: {
+        type: 'NumberLiteral',
+        value: 0,
+      },
+    });
+  });
+
+  test('number with type annotation', () => {
+    const ast = parse('let x: number = 42');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      typeAnnotation: 'number',
+      initializer: {
+        type: 'NumberLiteral',
+        value: 42,
+      },
+    });
+  });
+
+  test('const number', () => {
+    const ast = parse('const PI: number = 3.14159');
+    expect(ast.body[0]).toMatchObject({
+      type: 'ConstDeclaration',
+      name: 'PI',
+      typeAnnotation: 'number',
+      initializer: {
+        type: 'NumberLiteral',
+        value: 3.14159,
+      },
+    });
+  });
+
+  test('array of numbers', () => {
+    const ast = parse('let nums = [1, 2, 3]');
+    const arr = (ast.body[0] as any).initializer;
+    expect(arr.type).toBe('ArrayLiteral');
+    expect(arr.elements[0].type).toBe('NumberLiteral');
+    expect(arr.elements[0].value).toBe(1);
+    expect(arr.elements[1].value).toBe(2);
+    expect(arr.elements[2].value).toBe(3);
+  });
+
+  test('number array type annotation', () => {
+    const ast = parse('let nums: number[] = [1, 2, 3]');
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      typeAnnotation: 'number[]',
+    });
+  });
+});
+
+describe('Parser - For-In Statement', () => {
+  test('for-in over array', () => {
+    const ast = parse('for item in items { }');
+    expect(ast.body[0]).toMatchObject({
+      type: 'ForInStatement',
+      variable: 'item',
+      iterable: { type: 'Identifier', name: 'items' },
+      body: { type: 'BlockStatement' },
+    });
+  });
+
+  test('for-in over array literal', () => {
+    const ast = parse('for x in [1, 2, 3] { }');
+    expect(ast.body[0]).toMatchObject({
+      type: 'ForInStatement',
+      variable: 'x',
+      iterable: { type: 'ArrayLiteral' },
+    });
+  });
+
+  test('for-in over number (range)', () => {
+    const ast = parse('for i in 5 { }');
+    expect(ast.body[0]).toMatchObject({
+      type: 'ForInStatement',
+      variable: 'i',
+      iterable: { type: 'NumberLiteral', value: 5 },
+    });
+  });
+
+  test('for-in with body statements', () => {
+    const ast = parse(`
+      for item in items {
+        let x = item
+      }
+    `);
+    const forIn = ast.body[0] as any;
+    expect(forIn.type).toBe('ForInStatement');
+    expect(forIn.body.body).toHaveLength(1);
+    expect(forIn.body.body[0].type).toBe('LetDeclaration');
+  });
+
+  test('nested for-in loops', () => {
+    const ast = parse(`
+      for i in 3 {
+        for j in 3 {
+          let x = i
+        }
+      }
+    `);
+    const outer = ast.body[0] as any;
+    expect(outer.type).toBe('ForInStatement');
+    const inner = outer.body.body[0];
+    expect(inner.type).toBe('ForInStatement');
+  });
+});

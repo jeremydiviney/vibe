@@ -23,7 +23,7 @@ export interface ContextVariable {
   kind: 'variable';
   name: string;
   value: unknown;
-  type: 'text' | 'json' | 'boolean' | null;
+  type: 'text' | 'json' | 'boolean' | 'number' | null;
   isConst: boolean;
   // Call stack location info (helps AI understand variable scope)
   frameName: string;      // Name of the function/scope (e.g., "main", "processData")
@@ -179,6 +179,10 @@ export type Instruction =
 
   // Control flow
   | { op: 'if_branch'; consequent: AST.BlockStatement; alternate?: AST.Statement | null }
+
+  // For-in loop
+  | { op: 'for_in_init'; stmt: AST.ForInStatement }
+  | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[] }
 
   // Value building (for objects, arrays, function args)
   | { op: 'push_value' }  // Push lastResult to valueStack

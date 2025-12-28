@@ -209,6 +209,9 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
     case 'BooleanLiteral':
       return { ...state, lastResult: expr.value };
 
+    case 'NumberLiteral':
+      return { ...state, lastResult: expr.value };
+
     case 'ObjectLiteral':
       return execObjectLiteral(state, expr);
 

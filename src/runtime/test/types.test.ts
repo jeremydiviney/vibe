@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { Runtime, type AIProvider } from '../index';
 
-describe('Runtime - Type Coercion', () => {
+describe('Runtime - Type Validation', () => {
   // Mock AI provider
   const mockProvider: AIProvider = {
     execute: async (prompt: string) => prompt,
@@ -474,6 +474,148 @@ describe('Runtime - Type Coercion', () => {
   });
 
   // ============================================================================
+  // Number type - variable declarations
+  // ============================================================================
+
+  test('number type with integer value', async () => {
+    const runtime = createRuntime('let x: number = 42');
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(42);
+  });
+
+  test('number type with decimal value', async () => {
+    const runtime = createRuntime('let x: number = 3.14');
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(3.14);
+  });
+
+  test('number type with negative value', async () => {
+    const runtime = createRuntime('let x: number = -5');
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(-5);
+  });
+
+  test('const number type', async () => {
+    const runtime = createRuntime('const MAX: number = 100');
+    await runtime.run();
+    expect(runtime.getValue('MAX')).toBe(100);
+  });
+
+  test('number type inferred from literal', async () => {
+    const runtime = createRuntime('let x = 42');
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(42);
+  });
+
+  test('number type throws on string literal', async () => {
+    const runtime = createRuntime('let x: number = "pizza"');
+    await expect(runtime.run()).rejects.toThrow("expected number, got string");
+  });
+
+  test('number type throws on boolean literal', async () => {
+    const runtime = createRuntime('let x: number = true');
+    await expect(runtime.run()).rejects.toThrow("expected number, got boolean");
+  });
+
+  test('const number throws on string literal', async () => {
+    const runtime = createRuntime('const MAX: number = "one hundred"');
+    await expect(runtime.run()).rejects.toThrow("expected number, got string");
+  });
+
+  // ============================================================================
+  // Number type - function return types
+  // ============================================================================
+
+  test('function with number return type works', async () => {
+    const runtime = createRuntime(`
+      function getCount(): number {
+        return 42
+      }
+      let result = getCount()
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe(42);
+  });
+
+  test('function with number return type throws on string return', async () => {
+    const runtime = createRuntime(`
+      function getCount(): number {
+        return "forty-two"
+      }
+      let result = getCount()
+    `);
+    await expect(runtime.run()).rejects.toThrow(/expected number, got string/);
+  });
+
+  test('function with number return type throws on boolean return', async () => {
+    const runtime = createRuntime(`
+      function getCount(): number {
+        return true
+      }
+      let result = getCount()
+    `);
+    await expect(runtime.run()).rejects.toThrow(/expected number, got boolean/);
+  });
+
+  // ============================================================================
+  // Number type - function parameters
+  // ============================================================================
+
+  test('function with number parameter accepts number', async () => {
+    const runtime = createRuntime(`
+      function double(n: number): number {
+        return 42
+      }
+      let result = double(21)
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe(42);
+  });
+
+  test('function with number parameter throws on string', async () => {
+    const runtime = createRuntime(`
+      function double(n: number): number {
+        return 42
+      }
+      let result = double("21")
+    `);
+    await expect(runtime.run()).rejects.toThrow(/expected number, got string/);
+  });
+
+  // ============================================================================
+  // Number type - ts block returns
+  // ============================================================================
+
+  test('ts block returning number to number variable works', async () => {
+    const runtime = createRuntime(`
+      let x: number = ts() { return 42 }
+    `);
+    await runtime.run();
+    expect(runtime.getValue('x')).toBe(42);
+  });
+
+  test('ts block returning string to number variable throws', async () => {
+    const runtime = createRuntime(`
+      let x: number = ts() { return "42" }
+    `);
+    await expect(runtime.run()).rejects.toThrow("Variable 'x': expected number, got string");
+  });
+
+  test('ts block returning Infinity to number variable throws', async () => {
+    const runtime = createRuntime(`
+      let x: number = ts() { return Infinity }
+    `);
+    await expect(runtime.run()).rejects.toThrow("must be finite");
+  });
+
+  test('ts block returning NaN to number variable throws', async () => {
+    const runtime = createRuntime(`
+      let x: number = ts() { return NaN }
+    `);
+    await expect(runtime.run()).rejects.toThrow("must be finite");
+  });
+
+  // ============================================================================
   // Array types
   // ============================================================================
 
@@ -493,6 +635,24 @@ describe('Runtime - Type Coercion', () => {
     const runtime = createRuntime('let flags: boolean[] = [true, false, true]');
     await runtime.run();
     expect(runtime.getValue('flags')).toEqual([true, false, true]);
+  });
+
+  test('number[] type with valid number array', async () => {
+    const runtime = createRuntime('let nums: number[] = [1, 2, 3]');
+    await runtime.run();
+    expect(runtime.getValue('nums')).toEqual([1, 2, 3]);
+  });
+
+  test('number[] type with mixed integers and decimals', async () => {
+    const runtime = createRuntime('let nums: number[] = [1, 2.5, -3]');
+    await runtime.run();
+    expect(runtime.getValue('nums')).toEqual([1, 2.5, -3]);
+  });
+
+  test('number[] type throws on string element', async () => {
+    const runtime = createRuntime('let nums: number[] = [1, 2, "three"]');
+    await expect(runtime.run()).rejects.toThrow("nums[2]");
+    await expect(runtime.run()).rejects.toThrow("expected number");
   });
 
   test('text[][] nested array type', async () => {

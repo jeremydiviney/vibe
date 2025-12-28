@@ -12,6 +12,8 @@ import {
   execEnterBlock,
   execExitBlock,
 } from './exec/statements';
+import { currentFrame } from './state';
+import { RuntimeError } from '../errors';
 import {
   execExpression,
   execPushValue,
@@ -195,6 +197,84 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
     case 'if_branch':
       return execIfBranch(state, instruction.consequent, instruction.alternate);
+
+    case 'for_in_init': {
+      const { stmt } = instruction;
+      let items = state.lastResult;
+
+      // Handle range: single number N → [1, 2, ..., N] (inclusive)
+      if (typeof items === 'number') {
+        if (!Number.isInteger(items)) {
+          throw new RuntimeError(`for-in range must be an integer, got ${items}`, { line: 1, column: 1 }, '');
+        }
+        if (items < 0) {
+          throw new RuntimeError(`for-in range must be non-negative, got ${items}`, { line: 1, column: 1 }, '');
+        }
+        items = Array.from({ length: items }, (_, i) => i + 1);
+      }
+
+      // Handle range: [start, end] with 2 numbers → expand to inclusive range
+      if (Array.isArray(items) && items.length === 2 &&
+          typeof items[0] === 'number' && typeof items[1] === 'number') {
+        const [start, end] = items;
+        if (!Number.isInteger(start) || !Number.isInteger(end)) {
+          throw new RuntimeError(`for-in range bounds must be integers`, { line: 1, column: 1 }, '');
+        }
+        items = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+      }
+
+      if (!Array.isArray(items)) {
+        throw new RuntimeError('for-in requires array or range', { line: 1, column: 1 }, '');
+      }
+
+      const frame = currentFrame(state);
+      const savedKeys = Object.keys(frame.locals);
+
+      return {
+        ...state,
+        instructionStack: [
+          { op: 'for_in_iterate', variable: stmt.variable, items, index: 0, body: stmt.body, savedKeys },
+          ...state.instructionStack,
+        ],
+      };
+    }
+
+    case 'for_in_iterate': {
+      const { variable, items, index, body, savedKeys } = instruction;
+
+      if (index >= items.length) {
+        // Loop complete - cleanup scope
+        return execExitBlock(state, savedKeys);
+      }
+
+      // First iteration: declare the loop variable
+      // Subsequent iterations: assign the new value
+      const frame = currentFrame(state);
+      let newState: RuntimeState;
+      if (frame.locals[variable]) {
+        // Variable exists - assign new value
+        newState = execAssignVar({ ...state, lastResult: items[index] }, variable);
+      } else {
+        // First iteration - declare the variable
+        newState = execDeclareVar(state, variable, false, null, items[index]);
+      }
+
+      // Get current local variable names to know what to clean up after body execution
+      const bodyFrame = currentFrame(newState);
+      const bodyKeys = Object.keys(bodyFrame.locals);
+
+      // Push: enter block, body execution, exit block, then next iteration
+      return {
+        ...newState,
+        instructionStack: [
+          { op: 'enter_block', savedKeys: bodyKeys },
+          ...body.body.map(s => ({ op: 'exec_statement' as const, stmt: s })),
+          { op: 'exit_block', savedKeys: bodyKeys },
+          { op: 'for_in_iterate', variable, items, index: index + 1, body, savedKeys },
+          ...state.instructionStack,
+        ],
+      };
+    }
 
     case 'push_value':
       return execPushValue(state);

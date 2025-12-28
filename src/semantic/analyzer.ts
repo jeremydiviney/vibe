@@ -40,9 +40,9 @@ export class SemanticAnalyzer {
         }
         if (node.initializer) {
           this.visitExpression(node.initializer);
-          // Compile-time JSON validation for string literals
-          if (node.typeAnnotation === 'json' && node.initializer.type === 'StringLiteral') {
-            this.validateJsonLiteral(node.initializer.value, node.initializer.location);
+          // Compile-time type validation for literals
+          if (node.typeAnnotation) {
+            this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
           }
         }
         break;
@@ -53,9 +53,9 @@ export class SemanticAnalyzer {
           this.validateTypeAnnotation(node.typeAnnotation, node.location);
         }
         this.visitExpression(node.initializer);
-        // Compile-time JSON validation for string literals
-        if (node.typeAnnotation === 'json' && node.initializer.type === 'StringLiteral') {
-          this.validateJsonLiteral(node.initializer.value, node.initializer.location);
+        // Compile-time type validation for literals
+        if (node.typeAnnotation) {
+          this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
         }
         break;
 
@@ -68,7 +68,11 @@ export class SemanticAnalyzer {
         if (!this.atTopLevel) {
           this.error('Functions can only be declared at global scope', node.location);
         }
-        this.declare(node.name, 'function', node.location, { paramCount: node.params.length });
+        this.declare(node.name, 'function', node.location, {
+          paramCount: node.params.length,
+          paramTypes: node.params.map(p => p.typeAnnotation),
+          returnType: node.returnType,
+        });
         this.visitFunction(node);
         break;
 
@@ -83,6 +87,15 @@ export class SemanticAnalyzer {
         this.visitExpression(node.condition);
         this.visitStatement(node.consequent);
         if (node.alternate) this.visitStatement(node.alternate);
+        break;
+
+      case 'ForInStatement':
+        this.visitExpression(node.iterable);
+        // Enter scope for loop variable
+        this.symbols.enterScope();
+        this.declare(node.variable, 'variable', node.location, { typeAnnotation: null });
+        this.visitStatement(node.body);
+        this.symbols.exitScope();
         break;
 
       case 'BreakStatement':
@@ -120,6 +133,7 @@ export class SemanticAnalyzer {
 
       case 'StringLiteral':
       case 'BooleanLiteral':
+      case 'NumberLiteral':
         // Literals are always valid
         break;
 
@@ -156,6 +170,8 @@ export class SemanticAnalyzer {
         for (const arg of node.arguments) {
           this.visitExpression(arg);
         }
+        // Check argument types against parameter types
+        this.checkCallArguments(node);
         break;
 
       case 'VibeExpression':
@@ -286,6 +302,27 @@ export class SemanticAnalyzer {
     this.inFunction = wasInFunction;
   }
 
+  /**
+   * Check that call arguments match the function's parameter types.
+   */
+  private checkCallArguments(node: AST.CallExpression): void {
+    // Only check if callee is a simple identifier (function name)
+    if (node.callee.type !== 'Identifier') return;
+
+    const funcSymbol = this.symbols.lookup(node.callee.name);
+    if (!funcSymbol || funcSymbol.kind !== 'function') return;
+    if (!funcSymbol.paramTypes) return;
+
+    // Check each argument against corresponding parameter type
+    for (let i = 0; i < node.arguments.length && i < funcSymbol.paramTypes.length; i++) {
+      const arg = node.arguments[i];
+      const expectedType = funcSymbol.paramTypes[i];
+      if (expectedType) {
+        this.validateLiteralType(arg, expectedType, arg.location);
+      }
+    }
+  }
+
   private checkModelType(node: AST.Expression): void {
     if (node.type === 'Identifier') {
       const sym = this.symbols.lookup(node.name);
@@ -338,7 +375,7 @@ export class SemanticAnalyzer {
   private validateTypeAnnotation(type: string, location: SourceLocation): void {
     // Strip array brackets to get base type (handles text[], text[][], etc.)
     const baseType = type.replace(/\[\]/g, '');
-    const validTypes = ['text', 'json', 'prompt', 'boolean'];
+    const validTypes = ['text', 'json', 'prompt', 'boolean', 'number'];
     if (!validTypes.includes(baseType)) {
       this.error(`Unknown type '${baseType}'`, location);
     }
@@ -350,5 +387,106 @@ export class SemanticAnalyzer {
     } catch {
       this.error(`Invalid JSON literal`, location);
     }
+  }
+
+  /**
+   * Validates that an expression is compatible with its type annotation.
+   * Checks literals and variable references with known types.
+   */
+  private validateLiteralType(expr: AST.Expression, type: string, location: SourceLocation): void {
+    // Handle array types
+    if (type.endsWith('[]')) {
+      if (expr.type === 'ArrayLiteral') {
+        const elementType = type.slice(0, -2);
+        for (const element of expr.elements) {
+          this.validateLiteralType(element, elementType, element.location);
+        }
+      }
+      // Non-array literals assigned to array type - let runtime handle
+      return;
+    }
+
+    // Get the source type from the expression
+    const sourceType = this.getExpressionType(expr);
+    if (!sourceType) {
+      // Can't determine type at compile time (function call, AI expression, etc.)
+      // JSON string validation still applies
+      if (type === 'json' && expr.type === 'StringLiteral') {
+        this.validateJsonLiteral(expr.value, location);
+      }
+      return;
+    }
+
+    // Check type compatibility
+    if (!this.typesCompatible(sourceType, type)) {
+      this.error(`Type error: cannot assign ${sourceType} to ${type}`, location);
+    }
+
+    // Additional JSON validation for string literals
+    if (type === 'json' && expr.type === 'StringLiteral') {
+      this.validateJsonLiteral(expr.value, location);
+    }
+  }
+
+  /**
+   * Gets the type of an expression if it can be determined at compile time.
+   * Returns null for expressions that require runtime evaluation.
+   */
+  private getExpressionType(expr: AST.Expression): string | null {
+    switch (expr.type) {
+      case 'StringLiteral':
+      case 'TemplateLiteral':
+        return 'text';
+      case 'BooleanLiteral':
+        return 'boolean';
+      case 'NumberLiteral':
+        return 'number';
+      case 'ObjectLiteral':
+        return 'json';
+      case 'ArrayLiteral':
+        // Could infer array element type, but for now treat as unknown
+        return null;
+      case 'Identifier': {
+        const symbol = this.symbols.lookup(expr.name);
+        if (symbol?.typeAnnotation) {
+          return symbol.typeAnnotation;
+        }
+        return null;
+      }
+      case 'CallExpression': {
+        // Get return type of function if callee is an identifier
+        if (expr.callee.type === 'Identifier') {
+          const funcSymbol = this.symbols.lookup(expr.callee.name);
+          if (funcSymbol?.kind === 'function' && funcSymbol.returnType) {
+            return funcSymbol.returnType;
+          }
+        }
+        return null;
+      }
+      default:
+        // AI expressions, etc. - can't determine at compile time
+        return null;
+    }
+  }
+
+  /**
+   * Checks if sourceType can be assigned to targetType.
+   */
+  private typesCompatible(sourceType: string, targetType: string): boolean {
+    // Exact match
+    if (sourceType === targetType) return true;
+
+    // text and prompt are compatible
+    if ((sourceType === 'text' || sourceType === 'prompt') &&
+        (targetType === 'text' || targetType === 'prompt')) {
+      return true;
+    }
+
+    // json accepts text (will be parsed at runtime)
+    if (targetType === 'json' && sourceType === 'text') {
+      return true;
+    }
+
+    return false;
   }
 }

@@ -46,14 +46,26 @@
   - [x] Extract `exec/frames.ts` - push/pop frame operations (23 lines)
   - [x] `step.ts` contains core stepping + instruction dispatch (223 lines)
 
+### Control Flow
+- [x] Add `number` type
+  - [x] Lexer: `NumberLiteral` token and `NumberType` keyword
+  - [x] AST: `NumberLiteral` interface
+  - [x] Parser: number literal and type annotation support
+  - [x] Semantic analyzer: number type validation
+  - [x] Runtime: number type coercion and validation
+- [x] For-in loop
+  - [x] Syntax: `for item in items { ... }` (array iteration)
+  - [x] Syntax: `for i in 5 { ... }` (range 1-5 inclusive)
+  - [x] Syntax: `for i in [2, 10] { ... }` (explicit range 2-10)
+  - [x] Loop variable scoping (cleaned up after loop)
+  - [x] Nested loops work correctly
+  - [x] Non-integer range throws RuntimeError
+
 ## Pending
 
 ### Control Flow
-- [ ] Looping constructs
-  - [ ] Loop over arrays (`for item in items { ... }`)
-  - [ ] Loop while condition (`while condition { ... }`)
-  - [ ] Loop N times (`repeat N { ... }` or `for i in 0..N { ... }`)
-  - [ ] Implement break/continue (currently stubbed)
+- [ ] While loop (`while condition { ... }`)
+- [ ] Implement break/continue (currently stubbed)
 
 ### AI Integration
 - [ ] Implement actual AI model API calls
@@ -87,5 +99,5 @@
   - [ ] Update skill to invoke script via Bash instead of MCP
   - [ ] Create plugin manifest and structure
   - [ ] Publish to Claude Code plugin marketplace or npm
-  - [ ] Add begin/end line numbers for each symbol in output (helps Claude know exact code block boundaries)
+  - [x] Add begin/end line numbers for each symbol in output (helps Claude know exact code block boundaries)
 

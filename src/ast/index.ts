@@ -30,6 +30,7 @@ export type Statement =
   | FunctionDeclaration
   | ReturnStatement
   | IfStatement
+  | ForInStatement
   | BreakStatement
   | ContinueStatement
   | BlockStatement
@@ -105,6 +106,13 @@ export interface IfStatement extends BaseNode {
   alternate: BlockStatement | IfStatement | null;
 }
 
+export interface ForInStatement extends BaseNode {
+  type: 'ForInStatement';
+  variable: string;           // Loop variable name
+  iterable: Expression;       // Array, number (range), or [start, end]
+  body: BlockStatement;
+}
+
 export interface BreakStatement extends BaseNode {
   type: 'BreakStatement';
 }
@@ -132,6 +140,7 @@ export type Expression =
   | StringLiteral
   | TemplateLiteral
   | BooleanLiteral
+  | NumberLiteral
   | ObjectLiteral
   | ArrayLiteral
   | AssignmentExpression
@@ -159,6 +168,11 @@ export interface TemplateLiteral extends BaseNode {
 export interface BooleanLiteral extends BaseNode {
   type: 'BooleanLiteral';
   value: boolean;
+}
+
+export interface NumberLiteral extends BaseNode {
+  type: 'NumberLiteral';
+  value: number;
 }
 
 export interface ObjectLiteral extends BaseNode {

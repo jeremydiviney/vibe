@@ -91,6 +91,20 @@ export function execIfStatement(state: RuntimeState, stmt: AST.IfStatement): Run
 }
 
 /**
+ * For-in statement - push iterable evaluation and for_in_init.
+ */
+export function execForInStatement(state: RuntimeState, stmt: AST.ForInStatement): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: stmt.iterable },
+      { op: 'for_in_init', stmt },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
  * If branch - decide based on lastResult.
  */
 export function execIfBranch(
@@ -277,6 +291,9 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
 
     case 'IfStatement':
       return execIfStatement(state, stmt);
+
+    case 'ForInStatement':
+      return execForInStatement(state, stmt);
 
     case 'BreakStatement':
       // TODO: implement loop break

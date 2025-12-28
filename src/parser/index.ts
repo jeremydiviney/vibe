@@ -10,6 +10,8 @@ import {
   Return,
   If,
   Else,
+  For,
+  In,
   Break,
   Continue,
   True,
@@ -25,8 +27,10 @@ import {
   JsonType,
   PromptType,
   BooleanType,
+  NumberType,
   StringLiteral,
   TemplateLiteral,
+  NumberLiteral,
   Identifier,
   Equals,
   LParen,
@@ -71,6 +75,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.functionDeclaration) },
       { ALT: () => this.SUBRULE(this.returnStatement) },
       { ALT: () => this.SUBRULE(this.ifStatement) },
+      { ALT: () => this.SUBRULE(this.forInStatement) },
       { ALT: () => this.SUBRULE(this.breakStatement) },
       { ALT: () => this.SUBRULE(this.continueStatement) },
       // Distinguish block statement from object literal expression:
@@ -126,13 +131,14 @@ class VibeParser extends CstParser {
     });
   });
 
-  // Type annotation: text, json, prompt, boolean, or any of these followed by []
+  // Type annotation: text, json, prompt, boolean, number, or any of these followed by []
   private typeAnnotation = this.RULE('typeAnnotation', () => {
     this.OR([
       { ALT: () => this.CONSUME(TextType) },
       { ALT: () => this.CONSUME(JsonType) },
       { ALT: () => this.CONSUME(PromptType) },
       { ALT: () => this.CONSUME(BooleanType) },
+      { ALT: () => this.CONSUME(NumberType) },
     ]);
     // Optional array brackets: text[] or text[][]
     this.MANY(() => {
@@ -232,6 +238,15 @@ class VibeParser extends CstParser {
     });
   });
 
+  // for variable in iterable { ... }
+  private forInStatement = this.RULE('forInStatement', () => {
+    this.CONSUME(For);
+    this.CONSUME(Identifier);  // Loop variable
+    this.CONSUME(In);
+    this.SUBRULE(this.expression);  // Iterable (array, number, or [start, end])
+    this.SUBRULE(this.blockStatement);
+  });
+
   private breakStatement = this.RULE('breakStatement', () => {
     this.CONSUME(Break);
   });
@@ -329,6 +344,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.CONSUME(TsBlock) },  // ts(params) { body }
       { ALT: () => this.CONSUME(StringLiteral) },
       { ALT: () => this.CONSUME(TemplateLiteral) },
+      { ALT: () => this.CONSUME(NumberLiteral) },
       { ALT: () => this.CONSUME(True) },
       { ALT: () => this.CONSUME(False) },
       { ALT: () => this.SUBRULE(this.objectLiteralExpr) },

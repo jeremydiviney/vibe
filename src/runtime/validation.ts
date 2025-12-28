@@ -17,10 +17,13 @@ export function validateAndCoerce(
     if (typeof value === 'boolean') {
       return { value, inferredType: 'boolean' };
     }
+    if (typeof value === 'number') {
+      return { value, inferredType: 'number' };
+    }
     if (typeof value === 'object' && value !== null) {
       return { value, inferredType: 'json' };
     }
-    // For other types (number, null, undefined), no type inference
+    // For other types (null, undefined), no type inference
     return { value, inferredType: null };
   }
 
@@ -75,6 +78,17 @@ export function validateAndCoerce(
       throw new Error(`TypeError: Variable '${varName}': expected boolean, got ${typeof value}`);
     }
     return { value, inferredType: 'boolean' };
+  }
+
+  // Validate number type - must be a finite number
+  if (type === 'number') {
+    if (typeof value !== 'number') {
+      throw new Error(`TypeError: Variable '${varName}': expected number, got ${typeof value}`);
+    }
+    if (!Number.isFinite(value)) {
+      throw new Error(`TypeError: Variable '${varName}': number must be finite, got ${value}`);
+    }
+    return { value, inferredType: 'number' };
   }
 
   // For other types (prompt, etc.), accept as-is

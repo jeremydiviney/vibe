@@ -156,6 +156,11 @@ export const TextType = token({ name: 'TextType', pattern: /text/, longer_alt: I
 export const JsonType = token({ name: 'JsonType', pattern: /json/, longer_alt: Identifier });
 export const PromptType = token({ name: 'PromptType', pattern: /prompt/, longer_alt: Identifier });
 export const BooleanType = token({ name: 'BooleanType', pattern: /boolean/, longer_alt: Identifier });
+export const NumberType = token({ name: 'NumberType', pattern: /number/, longer_alt: Identifier });
+
+// Loop keywords
+export const For = token({ name: 'For', pattern: /for/, longer_alt: Identifier });
+export const In = token({ name: 'In', pattern: /in/, longer_alt: Identifier });
 
 // ============================================================================
 // Literals
@@ -169,6 +174,12 @@ export const StringLiteral = token({
 export const TemplateLiteral = token({
   name: 'TemplateLiteral',
   pattern: /`(?:[^`\\]|\\.|\r?\n)*`/,
+});
+
+// Number literals: integers and decimals (optional leading minus)
+export const NumberLiteral = token({
+  name: 'NumberLiteral',
+  pattern: /-?[0-9]+(\.[0-9]+)?/,
 });
 
 // ============================================================================
@@ -210,6 +221,8 @@ export const allTokens = [
   Return,
   If,
   Else,
+  For,
+  In,
   Break,
   Continue,
   True,
@@ -225,10 +238,12 @@ export const allTokens = [
   JsonType,
   PromptType,
   BooleanType,
+  NumberType,
 
   // Literals
   StringLiteral,
   TemplateLiteral,
+  NumberLiteral,
 
   // Identifier after keywords
   Identifier,

@@ -7,6 +7,8 @@ export interface Symbol {
   kind: SymbolKind;
   location: SourceLocation;
   paramCount?: number;
+  paramTypes?: string[];  // Parameter types for functions
+  returnType?: string | null;  // Return type for functions
   typeAnnotation?: string | null;
 }
 

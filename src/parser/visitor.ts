@@ -82,6 +82,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.functionDeclaration) return this.visit(ctx.functionDeclaration);
     if (ctx.returnStatement) return this.visit(ctx.returnStatement);
     if (ctx.ifStatement) return this.visit(ctx.ifStatement);
+    if (ctx.forInStatement) return this.visit(ctx.forInStatement);
     if (ctx.breakStatement) return this.visit(ctx.breakStatement);
     if (ctx.continueStatement) return this.visit(ctx.continueStatement);
     if (ctx.blockStatement) return this.visit(ctx.blockStatement);
@@ -143,9 +144,9 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; LBracket?: IToken[] }): string {
+  typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; LBracket?: IToken[] }): string {
     // Get base type
-    const baseType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : 'boolean';
+    const baseType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : 'number';
     // Count array brackets
     const bracketCount = ctx.LBracket?.length ?? 0;
     return baseType + '[]'.repeat(bracketCount);
@@ -263,6 +264,16 @@ class VibeAstVisitor extends BaseVibeVisitor {
       consequent: this.visit(ctx.blockStatement[0]),
       alternate,
       location: tokenLocation(ctx.If[0]),
+    };
+  }
+
+  forInStatement(ctx: { For: IToken[]; Identifier: IToken[]; expression: CstNode[]; blockStatement: CstNode[] }): AST.ForInStatement {
+    return {
+      type: 'ForInStatement',
+      variable: ctx.Identifier[0].image,
+      iterable: this.visit(ctx.expression),
+      body: this.visit(ctx.blockStatement),
+      location: tokenLocation(ctx.For[0]),
     };
   }
 
@@ -399,6 +410,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     TsBlock?: IToken[];
     StringLiteral?: IToken[];
     TemplateLiteral?: IToken[];
+    NumberLiteral?: IToken[];
     True?: IToken[];
     False?: IToken[];
     Identifier?: IToken[];
@@ -428,6 +440,14 @@ class VibeAstVisitor extends BaseVibeVisitor {
         type: 'TemplateLiteral',
         value: parseTemplateLiteral(ctx.TemplateLiteral[0]),
         location: tokenLocation(ctx.TemplateLiteral[0]),
+      };
+    }
+
+    if (ctx.NumberLiteral) {
+      return {
+        type: 'NumberLiteral',
+        value: parseFloat(ctx.NumberLiteral[0].image),
+        location: tokenLocation(ctx.NumberLiteral[0]),
       };
     }
 
