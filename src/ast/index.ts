@@ -143,6 +143,7 @@ export type Expression =
   | NumberLiteral
   | ObjectLiteral
   | ArrayLiteral
+  | RangeExpression
   | AssignmentExpression
   | CallExpression
   | DoExpression
@@ -189,6 +190,12 @@ export interface ObjectProperty extends BaseNode {
 export interface ArrayLiteral extends BaseNode {
   type: 'ArrayLiteral';
   elements: Expression[];
+}
+
+export interface RangeExpression extends BaseNode {
+  type: 'RangeExpression';
+  start: Expression;
+  end: Expression;
 }
 
 export interface AssignmentExpression extends BaseNode {

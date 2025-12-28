@@ -265,4 +265,49 @@ describe('Semantic Analyzer - Type Validation', () => {
     const errors = getErrors(code);
     expect(errors).toEqual([]);
   });
+
+  // ============================================================================
+  // Range expression validation
+  // ============================================================================
+
+  test('valid range with start <= end passes', () => {
+    const errors = getErrors('let range = 1..5');
+    expect(errors).toEqual([]);
+  });
+
+  test('valid range with same start and end passes', () => {
+    const errors = getErrors('let range = 3..3');
+    expect(errors).toEqual([]);
+  });
+
+  test('valid range with negative numbers passes', () => {
+    const errors = getErrors('let range = -3..4');
+    expect(errors).toEqual([]);
+  });
+
+  test('valid range with negative to negative passes', () => {
+    const errors = getErrors('let range = -5..-2');
+    expect(errors).toEqual([]);
+  });
+
+  test('invalid range with start > end errors', () => {
+    const errors = getErrors('let range = 5..2');
+    expect(errors).toContain('Range start (5) must be <= end (2)');
+  });
+
+  test('invalid negative range with start > end errors', () => {
+    const errors = getErrors('let range = -2..-5');
+    expect(errors).toContain('Range start (-2) must be <= end (-5)');
+  });
+
+  test('range with variable bounds has no compile-time error', () => {
+    // Can't check at compile time when bounds are variables
+    const code = `
+      let start: number = 5
+      let end: number = 2
+      let range = start..end
+    `;
+    const errors = getErrors(code);
+    expect(errors).toEqual([]);
+  });
 });

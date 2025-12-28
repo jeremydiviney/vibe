@@ -188,6 +188,7 @@ export type Instruction =
   | { op: 'push_value' }  // Push lastResult to valueStack
   | { op: 'build_object'; keys: string[] }  // Pop N values, build object
   | { op: 'build_array'; count: number }  // Pop N values, build array
+  | { op: 'build_range' }  // Pop end, pop start, build inclusive range array
   | { op: 'collect_args'; count: number }  // Pop N values into array for function call
 
   // Literals
