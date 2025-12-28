@@ -56,7 +56,9 @@
 - [x] For-in loop
   - [x] Syntax: `for item in items { ... }` (array iteration)
   - [x] Syntax: `for i in 5 { ... }` (range 1-5 inclusive)
-  - [x] Syntax: `for i in [2, 10] { ... }` (explicit range 2-10)
+  - [x] Syntax: `for i in 2..10 { ... }` (explicit range with `..` operator)
+  - [x] Range operator returns array: `2..5` → `[2,3,4,5]`
+  - [x] Semantic check: start must be <= end for literal bounds
   - [x] Loop variable scoping (cleaned up after loop)
   - [x] Nested loops work correctly
   - [x] Non-integer range throws RuntimeError
