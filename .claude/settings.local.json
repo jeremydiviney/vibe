@@ -41,7 +41,8 @@
       "Bash(wc:*)",
       "Bash(claude mcp restart:*)",
       "Bash(claude mcp --help:*)",
-      "Bash(sort:*)"
+      "Bash(sort:*)",
+      "Skill(symbol-tree)"
     ],
     "deny": [
       "Bash(rm:*)",
