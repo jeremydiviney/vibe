@@ -10,7 +10,10 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "test": "bun test"
+    "test": "bun test --exclude '**/*.integration.test.ts'",
+    "test:watch": "bun test --watch --exclude '**/*.integration.test.ts'",
+    "test:integration": "bun test --include '**/*.integration.test.ts'",
+    "test:all": "bun test"
   },
   "keywords": ["ai", "agent", "orchestration", "dsl", "language"],
   "author": "",
@@ -19,6 +22,9 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "chevrotain": "^11.0.3"
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@google/genai": "^1.34.0",
+    "chevrotain": "^11.0.3",
+    "openai": "^6.15.0"
   }
 }

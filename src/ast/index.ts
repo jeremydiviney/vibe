@@ -9,6 +9,13 @@ interface BaseNode {
 }
 
 // ============================================================================
+// AI Provider Types
+// ============================================================================
+
+/** Supported AI provider types - strictly typed */
+export type AIProviderType = 'anthropic' | 'openai' | 'google';
+
+// ============================================================================
 // Program
 // ============================================================================
 
@@ -77,7 +84,9 @@ export interface ModelConfig extends BaseNode {
   modelName: Expression | null;
   apiKey: Expression | null;
   url: Expression | null;
-  providedFields: string[];  // For semantic validation
+  provider: Expression | null;          // AIProviderType - validated in semantic analyzer
+  maxRetriesOnError: Expression | null; // Non-negative integer
+  providedFields: string[];             // For semantic validation
 }
 
 export interface FunctionParameter {

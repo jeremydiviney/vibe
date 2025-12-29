@@ -271,6 +271,8 @@ export class SemanticAnalyzer {
   private validateModelConfig(node: AST.ModelDeclaration): void {
     const config = node.config;
     const requiredFields = ['name', 'apiKey', 'url'];
+    const optionalFields = ['provider', 'maxRetriesOnError'];
+    const validFields = [...requiredFields, ...optionalFields];
     const provided = new Set(config.providedFields);
 
     // Check for missing required fields
@@ -282,9 +284,36 @@ export class SemanticAnalyzer {
 
     // Check for unknown fields
     for (const field of config.providedFields) {
-      if (!requiredFields.includes(field)) {
+      if (!validFields.includes(field)) {
         this.error(`Model '${node.name}' has unknown field '${field}'`, node.location);
       }
+    }
+
+    // Validate provider is one of the allowed values
+    if (config.provider) {
+      if (config.provider.type === 'StringLiteral') {
+        const validProviders = ['anthropic', 'openai', 'google'];
+        if (!validProviders.includes(config.provider.value)) {
+          this.error(
+            `Invalid provider '${config.provider.value}'. Must be: ${validProviders.join(', ')}`,
+            config.provider.location
+          );
+        }
+      }
+      this.visitExpression(config.provider);
+    }
+
+    // Validate maxRetriesOnError is a non-negative number
+    if (config.maxRetriesOnError) {
+      if (config.maxRetriesOnError.type === 'NumberLiteral') {
+        if (config.maxRetriesOnError.value < 0 || !Number.isInteger(config.maxRetriesOnError.value)) {
+          this.error(
+            `maxRetriesOnError must be a non-negative integer, got ${config.maxRetriesOnError.value}`,
+            config.maxRetriesOnError.location
+          );
+        }
+      }
+      this.visitExpression(config.maxRetriesOnError);
     }
 
     // Visit field expressions (check for undefined variables, etc.)
