@@ -40,7 +40,8 @@
       "Skill(todo)",
       "Bash(wc:*)",
       "Bash(claude mcp restart:*)",
-      "Bash(claude mcp --help:*)"
+      "Bash(claude mcp --help:*)",
+      "Bash(sort:*)"
     ],
     "deny": [
       "Bash(rm:*)",
