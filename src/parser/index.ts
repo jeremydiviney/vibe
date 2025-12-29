@@ -1,70 +1,9 @@
 import { CstParser } from 'chevrotain';
-import {
-  allTokens,
-  Let,
-  Const,
-  Vibe,
-  Do,
-  Ask,
-  Function,
-  Return,
-  If,
-  Else,
-  While,
-  For,
-  In,
-  And,
-  Or,
-  Not,
-  True,
-  False,
-  Model,
-  Default,
-  Local,
-  Import,
-  Export,
-  From,
-  TsBlock,
-  TextType,
-  JsonType,
-  PromptType,
-  BooleanType,
-  NumberType,
-  StringLiteral,
-  TemplateLiteral,
-  NumberLiteral,
-  Identifier,
-  // Comparison operators
-  EqualEqual,
-  NotEqual,
-  LessThan,
-  GreaterThan,
-  LessEqual,
-  GreaterEqual,
-  // Assignment
-  Equals,
-  // Arithmetic operators
-  Plus,
-  Minus,
-  Star,
-  Slash,
-  Percent,
-  // Delimiters
-  LParen,
-  RParen,
-  LBrace,
-  RBrace,
-  LBracket,
-  RBracket,
-  Comma,
-  Colon,
-  DotDot,
-  Dot,
-} from '../lexer';
+import * as T from '../lexer';
 
 class VibeParser extends CstParser {
   constructor() {
-    super(allTokens, {
+    super(T.allTokens, {
       recoveryEnabled: true,
     });
     this.performSelfAnalysis();
@@ -99,7 +38,7 @@ class VibeParser extends CstParser {
       // Distinguish block statement from object literal expression:
       // { identifier : ... } is an object literal, otherwise it's a block
       {
-        GATE: () => !(this.LA(1).tokenType === LBrace && this.LA(2).tokenType === Identifier && this.LA(3).tokenType === Colon),
+        GATE: () => !(this.LA(1).tokenType === T.LBrace && this.LA(2).tokenType === T.Identifier && this.LA(3).tokenType === T.Colon),
         ALT: () => this.SUBRULE(this.blockStatement),
       },
       { ALT: () => this.SUBRULE(this.expressionStatement) },
@@ -108,26 +47,26 @@ class VibeParser extends CstParser {
 
   // import { name1, name2 } from "path"
   private importDeclaration = this.RULE('importDeclaration', () => {
-    this.CONSUME(Import);
-    this.CONSUME(LBrace);
+    this.CONSUME(T.Import);
+    this.CONSUME(T.LBrace);
     this.SUBRULE(this.importSpecifierList);
-    this.CONSUME(RBrace);
-    this.CONSUME(From);
-    this.CONSUME(StringLiteral);
+    this.CONSUME(T.RBrace);
+    this.CONSUME(T.From);
+    this.CONSUME(T.StringLiteral);
   });
 
   // name1, name2, name3
   private importSpecifierList = this.RULE('importSpecifierList', () => {
-    this.CONSUME(Identifier);
+    this.CONSUME(T.Identifier);
     this.MANY(() => {
-      this.CONSUME(Comma);
-      this.CONSUME2(Identifier);
+      this.CONSUME(T.Comma);
+      this.CONSUME2(T.Identifier);
     });
   });
 
   // export function|let|const|model ...
   private exportDeclaration = this.RULE('exportDeclaration', () => {
-    this.CONSUME(Export);
+    this.CONSUME(T.Export);
     this.OR([
       { ALT: () => this.SUBRULE(this.functionDeclaration) },
       { ALT: () => this.SUBRULE(this.letDeclaration) },
@@ -137,14 +76,14 @@ class VibeParser extends CstParser {
   });
 
   private letDeclaration = this.RULE('letDeclaration', () => {
-    this.CONSUME(Let);
-    this.CONSUME(Identifier);
+    this.CONSUME(T.Let);
+    this.CONSUME(T.Identifier);
     this.OPTION(() => {
-      this.CONSUME(Colon);
+      this.CONSUME(T.Colon);
       this.SUBRULE(this.typeAnnotation);
     });
     this.OPTION2(() => {
-      this.CONSUME(Equals);
+      this.CONSUME(T.Equals);
       this.SUBRULE(this.expression);
     });
   });
@@ -152,70 +91,70 @@ class VibeParser extends CstParser {
   // Type annotation: text, json, prompt, boolean, number, or any of these followed by []
   private typeAnnotation = this.RULE('typeAnnotation', () => {
     this.OR([
-      { ALT: () => this.CONSUME(TextType) },
-      { ALT: () => this.CONSUME(JsonType) },
-      { ALT: () => this.CONSUME(PromptType) },
-      { ALT: () => this.CONSUME(BooleanType) },
-      { ALT: () => this.CONSUME(NumberType) },
+      { ALT: () => this.CONSUME(T.TextType) },
+      { ALT: () => this.CONSUME(T.JsonType) },
+      { ALT: () => this.CONSUME(T.PromptType) },
+      { ALT: () => this.CONSUME(T.BooleanType) },
+      { ALT: () => this.CONSUME(T.NumberType) },
     ]);
     // Optional array brackets: text[] or text[][]
     this.MANY(() => {
-      this.CONSUME(LBracket);
-      this.CONSUME(RBracket);
+      this.CONSUME(T.LBracket);
+      this.CONSUME(T.RBracket);
     });
   });
 
   private constDeclaration = this.RULE('constDeclaration', () => {
-    this.CONSUME(Const);
-    this.CONSUME(Identifier);
+    this.CONSUME(T.Const);
+    this.CONSUME(T.Identifier);
     this.OPTION(() => {
-      this.CONSUME(Colon);
+      this.CONSUME(T.Colon);
       this.SUBRULE(this.typeAnnotation);
     });
-    this.CONSUME(Equals);
+    this.CONSUME(T.Equals);
     this.SUBRULE(this.expression);
   });
 
   private modelDeclaration = this.RULE('modelDeclaration', () => {
-    this.CONSUME(Model);
-    this.CONSUME(Identifier);
-    this.CONSUME(Equals);
+    this.CONSUME(T.Model);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Equals);
     this.SUBRULE(this.objectLiteral);
   });
 
   private objectLiteral = this.RULE('objectLiteral', () => {
-    this.CONSUME(LBrace);
+    this.CONSUME(T.LBrace);
     this.OPTION(() => {
       this.SUBRULE(this.propertyList);
     });
-    this.CONSUME(RBrace);
+    this.CONSUME(T.RBrace);
   });
 
   private propertyList = this.RULE('propertyList', () => {
     this.SUBRULE(this.property);
     this.MANY(() => {
-      this.CONSUME(Comma);
+      this.CONSUME(T.Comma);
       this.SUBRULE2(this.property);
     });
   });
 
   private property = this.RULE('property', () => {
-    this.CONSUME(Identifier);
-    this.CONSUME(Colon);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Colon);
     this.SUBRULE(this.expression);
   });
 
   private functionDeclaration = this.RULE('functionDeclaration', () => {
-    this.CONSUME(Function);
-    this.CONSUME(Identifier);
-    this.CONSUME(LParen);
+    this.CONSUME(T.Function);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.LParen);
     this.OPTION(() => {
       this.SUBRULE(this.parameterList);
     });
-    this.CONSUME(RParen);
+    this.CONSUME(T.RParen);
     // Optional return type
     this.OPTION2(() => {
-      this.CONSUME(Colon);
+      this.CONSUME(T.Colon);
       this.SUBRULE(this.typeAnnotation);
     });
     this.SUBRULE(this.blockStatement);
@@ -223,32 +162,32 @@ class VibeParser extends CstParser {
 
   // name: type (type is REQUIRED)
   private parameter = this.RULE('parameter', () => {
-    this.CONSUME(Identifier);
-    this.CONSUME(Colon);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Colon);
     this.SUBRULE(this.typeAnnotation);
   });
 
   private parameterList = this.RULE('parameterList', () => {
     this.SUBRULE(this.parameter);
     this.MANY(() => {
-      this.CONSUME(Comma);
+      this.CONSUME(T.Comma);
       this.SUBRULE2(this.parameter);
     });
   });
 
   private returnStatement = this.RULE('returnStatement', () => {
-    this.CONSUME(Return);
+    this.CONSUME(T.Return);
     this.OPTION(() => {
       this.SUBRULE(this.expression);
     });
   });
 
   private ifStatement = this.RULE('ifStatement', () => {
-    this.CONSUME(If);
+    this.CONSUME(T.If);
     this.SUBRULE(this.expression);
     this.SUBRULE(this.blockStatement);
     this.OPTION(() => {
-      this.CONSUME(Else);
+      this.CONSUME(T.Else);
       this.OR([
         { ALT: () => this.SUBRULE2(this.ifStatement) },
         { ALT: () => this.SUBRULE2(this.blockStatement) },
@@ -258,26 +197,26 @@ class VibeParser extends CstParser {
 
   // for variable in iterable { ... }
   private forInStatement = this.RULE('forInStatement', () => {
-    this.CONSUME(For);
-    this.CONSUME(Identifier);  // Loop variable
-    this.CONSUME(In);
+    this.CONSUME(T.For);
+    this.CONSUME(T.Identifier);  // Loop variable
+    this.CONSUME(T.In);
     this.SUBRULE(this.expression);  // Iterable (array, number, or [start, end])
     this.SUBRULE(this.blockStatement);
   });
 
   // while condition { ... }
   private whileStatement = this.RULE('whileStatement', () => {
-    this.CONSUME(While);
+    this.CONSUME(T.While);
     this.SUBRULE(this.expression);  // Condition
     this.SUBRULE(this.blockStatement);
   });
 
   private blockStatement = this.RULE('blockStatement', () => {
-    this.CONSUME(LBrace);
+    this.CONSUME(T.LBrace);
     this.MANY(() => {
       this.SUBRULE(this.statement);
     });
-    this.CONSUME(RBrace);
+    this.CONSUME(T.RBrace);
   });
 
   private expressionStatement = this.RULE('expressionStatement', () => {
@@ -304,7 +243,7 @@ class VibeParser extends CstParser {
       // AI operations
       {
         ALT: () => {
-          this.CONSUME(Do);
+          this.CONSUME(T.Do);
           this.SUBRULE(this.expression);        // prompt
           this.SUBRULE2(this.expression);       // model
           this.SUBRULE(this.contextSpecifier);  // context
@@ -312,13 +251,13 @@ class VibeParser extends CstParser {
       },
       {
         ALT: () => {
-          this.CONSUME(Vibe);
+          this.CONSUME(T.Vibe);
           this.SUBRULE3(this.expression);
         },
       },
       {
         ALT: () => {
-          this.CONSUME(Ask);
+          this.CONSUME(T.Ask);
           this.SUBRULE4(this.expression);       // prompt
           this.SUBRULE5(this.expression);       // model
           this.SUBRULE2(this.contextSpecifier); // context
@@ -326,7 +265,7 @@ class VibeParser extends CstParser {
       },
       // Assignment expression (identifier = expression)
       {
-        GATE: () => this.LA(1).tokenType === Identifier && this.LA(2).tokenType === Equals,
+        GATE: () => this.LA(1).tokenType === T.Identifier && this.LA(2).tokenType === T.Equals,
         ALT: () => this.SUBRULE(this.assignmentExpression),
       },
       // Logical or and below
@@ -338,7 +277,7 @@ class VibeParser extends CstParser {
   private orExpression = this.RULE('orExpression', () => {
     this.SUBRULE(this.andExpression);
     this.MANY(() => {
-      this.CONSUME(Or);
+      this.CONSUME(T.Or);
       this.SUBRULE2(this.andExpression);
     });
   });
@@ -347,7 +286,7 @@ class VibeParser extends CstParser {
   private andExpression = this.RULE('andExpression', () => {
     this.SUBRULE(this.comparisonExpression);
     this.MANY(() => {
-      this.CONSUME(And);
+      this.CONSUME(T.And);
       this.SUBRULE2(this.comparisonExpression);
     });
   });
@@ -357,12 +296,9 @@ class VibeParser extends CstParser {
     this.SUBRULE(this.additiveExpression);
     this.OPTION(() => {
       this.OR([
-        { ALT: () => this.CONSUME(EqualEqual) },
-        { ALT: () => this.CONSUME(NotEqual) },
-        { ALT: () => this.CONSUME(LessThan) },
-        { ALT: () => this.CONSUME(GreaterThan) },
-        { ALT: () => this.CONSUME(LessEqual) },
-        { ALT: () => this.CONSUME(GreaterEqual) },
+        { ALT: () => this.CONSUME(T.EqualEqual) }, { ALT: () => this.CONSUME(T.NotEqual) },
+        { ALT: () => this.CONSUME(T.LessThan) }, { ALT: () => this.CONSUME(T.GreaterThan) },
+        { ALT: () => this.CONSUME(T.LessEqual) }, { ALT: () => this.CONSUME(T.GreaterEqual) },
       ]);
       this.SUBRULE2(this.additiveExpression);
     });
@@ -372,10 +308,7 @@ class VibeParser extends CstParser {
   private additiveExpression = this.RULE('additiveExpression', () => {
     this.SUBRULE(this.multiplicativeExpression);
     this.MANY(() => {
-      this.OR([
-        { ALT: () => this.CONSUME(Plus) },
-        { ALT: () => this.CONSUME(Minus) },
-      ]);
+      this.OR([{ ALT: () => this.CONSUME(T.Plus) }, { ALT: () => this.CONSUME(T.Minus) }]);
       this.SUBRULE2(this.multiplicativeExpression);
     });
   });
@@ -385,9 +318,8 @@ class VibeParser extends CstParser {
     this.SUBRULE(this.unaryExpression);
     this.MANY(() => {
       this.OR([
-        { ALT: () => this.CONSUME(Star) },
-        { ALT: () => this.CONSUME(Slash) },
-        { ALT: () => this.CONSUME(Percent) },
+        { ALT: () => this.CONSUME(T.Star) }, { ALT: () => this.CONSUME(T.Slash) },
+        { ALT: () => this.CONSUME(T.Percent) },
       ]);
       this.SUBRULE2(this.unaryExpression);
     });
@@ -396,21 +328,10 @@ class VibeParser extends CstParser {
   // Unary: not, -
   private unaryExpression = this.RULE('unaryExpression', () => {
     this.OR([
-      {
-        ALT: () => {
-          this.CONSUME(Not);
-          this.SUBRULE(this.unaryExpression);
-        },
-      },
-      {
-        // Unary minus: only when Minus is at start and followed by expression
-        // This is tricky because binary minus also uses Minus token
-        // We use GATE to check this is actually at the start of a unary context
-        GATE: () => this.LA(1).tokenType === Minus,
-        ALT: () => {
-          this.CONSUME(Minus);
-          this.SUBRULE2(this.unaryExpression);
-        },
+      { ALT: () => { this.CONSUME(T.Not); this.SUBRULE(this.unaryExpression); } },
+      { // Unary minus
+        GATE: () => this.LA(1).tokenType === T.Minus,
+        ALT: () => { this.CONSUME(T.Minus); this.SUBRULE2(this.unaryExpression); },
       },
       { ALT: () => this.SUBRULE(this.rangeExpression) },
     ]);
@@ -419,23 +340,20 @@ class VibeParser extends CstParser {
   // Range: ..
   private rangeExpression = this.RULE('rangeExpression', () => {
     this.SUBRULE(this.postfixExpression);
-    this.OPTION(() => {
-      this.CONSUME(DotDot);
-      this.SUBRULE2(this.postfixExpression);
-    });
+    this.OPTION(() => { this.CONSUME(T.DotDot); this.SUBRULE2(this.postfixExpression); });
   });
 
   private assignmentExpression = this.RULE('assignmentExpression', () => {
-    this.CONSUME(Identifier);
-    this.CONSUME(Equals);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Equals);
     this.SUBRULE(this.expression);
   });
 
   private contextSpecifier = this.RULE('contextSpecifier', () => {
     this.OR([
-      { ALT: () => this.CONSUME(Default) },
-      { ALT: () => this.CONSUME(Local) },
-      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(T.Default) },
+      { ALT: () => this.CONSUME(T.Local) },
+      { ALT: () => this.CONSUME(T.Identifier) },
     ]);
   });
 
@@ -447,28 +365,23 @@ class VibeParser extends CstParser {
         // Function call: (args)
         {
           ALT: () => {
-            this.CONSUME(LParen);
+            this.CONSUME(T.LParen);
             this.OPTION(() => {
               this.SUBRULE(this.argumentList);
             });
-            this.CONSUME(RParen);
+            this.CONSUME(T.RParen);
           },
         },
         // Indexing/slicing: [expr] or [expr,expr] or [,expr] or [expr,]
         {
           ALT: () => {
-            this.CONSUME(LBracket);
+            this.CONSUME(T.LBracket);
             this.SUBRULE(this.indexOrSlice);
-            this.CONSUME(RBracket);
+            this.CONSUME(T.RBracket);
           },
         },
         // Member access: .identifier
-        {
-          ALT: () => {
-            this.CONSUME(Dot);
-            this.CONSUME(Identifier);
-          },
-        },
+        { ALT: () => { this.CONSUME(T.Dot); this.CONSUME(T.Identifier); } },
       ]);
     });
   });
@@ -482,9 +395,9 @@ class VibeParser extends CstParser {
     this.OR([
       // Starts with comma: [,expr] (slice from start)
       {
-        GATE: () => this.LA(1).tokenType === Comma,
+        GATE: () => this.LA(1).tokenType === T.Comma,
         ALT: () => {
-          this.CONSUME(Comma);
+          this.CONSUME(T.Comma);
           this.SUBRULE(this.expression);
         },
       },
@@ -494,7 +407,7 @@ class VibeParser extends CstParser {
           this.SUBRULE2(this.expression);
           // Check if followed by comma (slice)
           this.OPTION(() => {
-            this.CONSUME2(Comma);
+            this.CONSUME2(T.Comma);
             // Optional end expression: [expr,] vs [expr,expr]
             this.OPTION2(() => {
               this.SUBRULE3(this.expression);
@@ -508,52 +421,45 @@ class VibeParser extends CstParser {
   private argumentList = this.RULE('argumentList', () => {
     this.SUBRULE(this.expression);
     this.MANY(() => {
-      this.CONSUME(Comma);
+      this.CONSUME(T.Comma);
       this.SUBRULE2(this.expression);
     });
   });
 
   private primaryExpression = this.RULE('primaryExpression', () => {
     this.OR([
-      { ALT: () => this.CONSUME(TsBlock) },  // ts(params) { body }
-      { ALT: () => this.CONSUME(StringLiteral) },
-      { ALT: () => this.CONSUME(TemplateLiteral) },
-      { ALT: () => this.CONSUME(NumberLiteral) },
-      { ALT: () => this.CONSUME(True) },
-      { ALT: () => this.CONSUME(False) },
+      { ALT: () => this.CONSUME(T.TsBlock) },  // ts(params) { body }
+      { ALT: () => this.CONSUME(T.StringLiteral) },
+      { ALT: () => this.CONSUME(T.TemplateLiteral) },
+      { ALT: () => this.CONSUME(T.NumberLiteral) },
+      { ALT: () => this.CONSUME(T.True) }, { ALT: () => this.CONSUME(T.False) },
       { ALT: () => this.SUBRULE(this.objectLiteralExpr) },
       { ALT: () => this.SUBRULE(this.arrayLiteral) },
-      { ALT: () => this.CONSUME(Identifier) },
-      {
-        ALT: () => {
-          this.CONSUME(LParen);
-          this.SUBRULE(this.expression);
-          this.CONSUME(RParen);
-        },
-      },
+      { ALT: () => this.CONSUME(T.Identifier) },
+      { ALT: () => { this.CONSUME(T.LParen); this.SUBRULE(this.expression); this.CONSUME(T.RParen); } },
     ]);
   });
 
   private objectLiteralExpr = this.RULE('objectLiteralExpr', () => {
-    this.CONSUME(LBrace);
+    this.CONSUME(T.LBrace);
     this.OPTION(() => {
       this.SUBRULE(this.propertyList);
     });
-    this.CONSUME(RBrace);
+    this.CONSUME(T.RBrace);
   });
 
   private arrayLiteral = this.RULE('arrayLiteral', () => {
-    this.CONSUME(LBracket);
+    this.CONSUME(T.LBracket);
     this.OPTION(() => {
       this.SUBRULE(this.elementList);
     });
-    this.CONSUME(RBracket);
+    this.CONSUME(T.RBracket);
   });
 
   private elementList = this.RULE('elementList', () => {
     this.SUBRULE(this.expression);
     this.MANY(() => {
-      this.CONSUME(Comma);
+      this.CONSUME(T.Comma);
       this.SUBRULE2(this.expression);
     });
   });

@@ -1,6 +1,7 @@
 import * as AST from '../ast';
 import { SemanticError, type SourceLocation } from '../errors';
 import { SymbolTable, type SymbolKind } from './symbol-table';
+import { isValidType, typesCompatible, isValidJson, getBaseType } from './types';
 
 export class SemanticAnalyzer {
   private symbols = new SymbolTable();
@@ -34,29 +35,11 @@ export class SemanticAnalyzer {
         break;
 
       case 'LetDeclaration':
-        this.declare(node.name, 'variable', node.location, { typeAnnotation: node.typeAnnotation });
-        if (node.typeAnnotation) {
-          this.validateTypeAnnotation(node.typeAnnotation, node.location);
-        }
-        if (node.initializer) {
-          this.visitExpression(node.initializer);
-          // Compile-time type validation for literals
-          if (node.typeAnnotation) {
-            this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
-          }
-        }
+        this.visitVariableDeclaration(node, 'variable');
         break;
 
       case 'ConstDeclaration':
-        this.declare(node.name, 'constant', node.location, { typeAnnotation: node.typeAnnotation });
-        if (node.typeAnnotation) {
-          this.validateTypeAnnotation(node.typeAnnotation, node.location);
-        }
-        this.visitExpression(node.initializer);
-        // Compile-time type validation for literals
-        if (node.typeAnnotation) {
-          this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
-        }
+        this.visitVariableDeclaration(node, 'constant');
         break;
 
       case 'ModelDeclaration':
@@ -93,7 +76,6 @@ export class SemanticAnalyzer {
 
       case 'ForInStatement':
         this.visitExpression(node.iterable);
-        // Enter scope for loop variable
         this.symbols.enterScope();
         this.declare(node.variable, 'variable', node.location, { typeAnnotation: null });
         this.visitStatement(node.body);
@@ -102,7 +84,6 @@ export class SemanticAnalyzer {
 
       case 'WhileStatement':
         this.visitExpression(node.condition);
-        // Validate condition is boolean when type is knowable at compile time
         this.validateConditionType(node.condition, 'while');
         this.symbols.enterScope();
         this.visitStatement(node.body);
@@ -141,15 +122,11 @@ export class SemanticAnalyzer {
         break;
 
       case 'ObjectLiteral':
-        for (const prop of node.properties) {
-          this.visitExpression(prop.value);
-        }
+        node.properties.forEach((prop) => this.visitExpression(prop.value));
         break;
 
       case 'ArrayLiteral':
-        for (const element of node.elements) {
-          this.visitExpression(element);
-        }
+        node.elements.forEach((element) => this.visitExpression(element));
         break;
 
       case 'AssignmentExpression':
@@ -160,20 +137,12 @@ export class SemanticAnalyzer {
         this.visitExpression(node.prompt);
         this.checkPromptType(node.prompt);
         this.checkModelType(node.model);
-        // Check context variable if it's a variable reference
-        if (node.context.kind === 'variable' && node.context.variable) {
-          if (!this.symbols.lookup(node.context.variable)) {
-            this.error(`'${node.context.variable}' is not defined`, node.context.location);
-          }
-        }
+        this.checkContextVariable(node.context);
         break;
 
       case 'CallExpression':
         this.visitExpression(node.callee);
-        for (const arg of node.arguments) {
-          this.visitExpression(arg);
-        }
-        // Check argument types against parameter types
+        node.arguments.forEach((arg) => this.visitExpression(arg));
         this.checkCallArguments(node);
         break;
 
@@ -186,20 +155,12 @@ export class SemanticAnalyzer {
         this.visitExpression(node.prompt);
         this.checkPromptType(node.prompt);
         this.checkModelType(node.model);
-        // Check context variable if it's a variable reference
-        if (node.context.kind === 'variable' && node.context.variable) {
-          if (!this.symbols.lookup(node.context.variable)) {
-            this.error(`'${node.context.variable}' is not defined`, node.context.location);
-          }
-        }
+        this.checkContextVariable(node.context);
         break;
 
       case 'TsBlock':
-        // Validate that all parameters are defined variables
         for (const param of node.params) {
-          if (!this.symbols.lookup(param)) {
-            this.error(`'${param}' is not defined`, node.location);
-          }
+          if (!this.symbols.lookup(param)) this.error(`'${param}' is not defined`, node.location);
         }
         break;
 
@@ -210,16 +171,52 @@ export class SemanticAnalyzer {
       case 'RangeExpression':
         this.visitExpression(node.start);
         this.visitExpression(node.end);
-        // Check that if both bounds are number literals, start <= end
         if (node.start.type === 'NumberLiteral' && node.end.type === 'NumberLiteral') {
           if (node.start.value > node.end.value) {
-            this.error(
-              `Range start (${node.start.value}) must be <= end (${node.end.value})`,
-              node.location
-            );
+            this.error(`Range start (${node.start.value}) must be <= end (${node.end.value})`, node.location);
           }
         }
         break;
+
+      case 'BinaryExpression':
+        this.visitExpression(node.left);
+        this.visitExpression(node.right);
+        break;
+
+      case 'UnaryExpression':
+        this.visitExpression(node.operand);
+        break;
+
+      case 'IndexExpression':
+        this.visitExpression(node.object);
+        this.visitExpression(node.index);
+        break;
+
+      case 'SliceExpression':
+        this.visitExpression(node.object);
+        if (node.start) this.visitExpression(node.start);
+        if (node.end) this.visitExpression(node.end);
+        break;
+
+      case 'MemberExpression':
+        this.visitExpression(node.object);
+        break;
+    }
+  }
+
+  private visitVariableDeclaration(
+    node: AST.LetDeclaration | AST.ConstDeclaration,
+    kind: 'variable' | 'constant'
+  ): void {
+    this.declare(node.name, kind, node.location, { typeAnnotation: node.typeAnnotation });
+    if (node.typeAnnotation) {
+      this.validateTypeAnnotation(node.typeAnnotation, node.location);
+    }
+    if (node.initializer) {
+      this.visitExpression(node.initializer);
+      if (node.typeAnnotation) {
+        this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
+      }
     }
   }
 
@@ -340,6 +337,14 @@ export class SemanticAnalyzer {
     }
   }
 
+  private checkContextVariable(context: AST.ContextSpecifier): void {
+    if (context.kind === 'variable' && context.variable) {
+      if (!this.symbols.lookup(context.variable)) {
+        this.error(`'${context.variable}' is not defined`, context.location);
+      }
+    }
+  }
+
   private checkModelType(node: AST.Expression): void {
     if (node.type === 'Identifier') {
       const sym = this.symbols.lookup(node.name);
@@ -390,18 +395,13 @@ export class SemanticAnalyzer {
   }
 
   private validateTypeAnnotation(type: string, location: SourceLocation): void {
-    // Strip array brackets to get base type (handles text[], text[][], etc.)
-    const baseType = type.replace(/\[\]/g, '');
-    const validTypes = ['text', 'json', 'prompt', 'boolean', 'number'];
-    if (!validTypes.includes(baseType)) {
-      this.error(`Unknown type '${baseType}'`, location);
+    if (!isValidType(type)) {
+      this.error(`Unknown type '${getBaseType(type)}'`, location);
     }
   }
 
   private validateJsonLiteral(value: string, location: SourceLocation): void {
-    try {
-      JSON.parse(value);
-    } catch {
+    if (!isValidJson(value)) {
       this.error(`Invalid JSON literal`, location);
     }
   }
@@ -446,7 +446,7 @@ export class SemanticAnalyzer {
     }
 
     // Check type compatibility
-    if (!this.typesCompatible(sourceType, type)) {
+    if (!typesCompatible(sourceType, type)) {
       this.error(`Type error: cannot assign ${sourceType} to ${type}`, location);
     }
 
@@ -497,24 +497,4 @@ export class SemanticAnalyzer {
     }
   }
 
-  /**
-   * Checks if sourceType can be assigned to targetType.
-   */
-  private typesCompatible(sourceType: string, targetType: string): boolean {
-    // Exact match
-    if (sourceType === targetType) return true;
-
-    // text and prompt are compatible
-    if ((sourceType === 'text' || sourceType === 'prompt') &&
-        (targetType === 'text' || targetType === 'prompt')) {
-      return true;
-    }
-
-    // json accepts text (will be parsed at runtime)
-    if (targetType === 'json' && sourceType === 'text') {
-      return true;
-    }
-
-    return false;
-  }
 }
