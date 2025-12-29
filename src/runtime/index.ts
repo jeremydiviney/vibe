@@ -68,6 +68,12 @@ export {
   getStateSummary,
 } from './serialize';
 
+// Re-export AI provider implementations
+export { createRealAIProvider, createMockAIProvider } from './ai-provider';
+
+// Re-export AI module
+export * from './ai';
+
 // Legacy imports for backward compatibility
 import * as AST from '../ast';
 import type { RuntimeState, AIOperation } from './types';

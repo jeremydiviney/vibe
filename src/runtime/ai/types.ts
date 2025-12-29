@@ -1,0 +1,57 @@
+// AI Module Type Definitions
+
+import type { AIProviderType } from '../../ast';
+
+// Re-export for convenience
+export type { AIProviderType };
+
+/** Target types for AI responses */
+export type TargetType = 'text' | 'json' | 'boolean' | 'number' | null;
+
+/** Model configuration from Vibe model declaration */
+export interface ModelConfig {
+  name: string;
+  apiKey: string;
+  url: string | null;
+  provider?: AIProviderType;
+  maxRetriesOnError?: number;
+}
+
+/** AI request for all providers */
+export interface AIRequest {
+  operationType: 'do' | 'ask' | 'vibe';
+  prompt: string;
+  contextText: string;
+  targetType: TargetType;
+  model: ModelConfig;
+}
+
+/** AI response from all providers */
+export interface AIResponse {
+  content: string;
+  parsedValue: unknown;
+  usage?: { inputTokens: number; outputTokens: number };
+}
+
+/** Custom error for AI operations */
+export class AIError extends Error {
+  readonly statusCode?: number;
+  readonly isRetryable: boolean;
+
+  constructor(message: string, statusCode?: number, isRetryable = false) {
+    super(message);
+    this.name = 'AIError';
+    this.statusCode = statusCode;
+    this.isRetryable = isRetryable;
+  }
+}
+
+/** Provider executor function signature */
+export type ProviderExecutor = (request: AIRequest) => Promise<AIResponse>;
+
+/** Retry options */
+export interface RetryOptions {
+  maxRetries: number;
+  baseDelayMs?: number;
+  maxDelayMs?: number;
+}

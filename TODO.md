@@ -96,12 +96,21 @@
 ## Pending
 
 ### AI Integration
-- [ ] Implement actual AI model API calls
-  - [ ] HTTP client for model endpoints
-  - [ ] Support for OpenAI-compatible APIs
-  - [ ] Support for Anthropic API
+- [x] Implement actual AI model API calls
+  - [x] Support for OpenAI-compatible APIs (using official SDK)
+  - [x] Support for Anthropic API (using official SDK)
+  - [x] Support for Google Gemini API (using official SDK)
+  - [x] Error handling and retries (exponential backoff on 5xx/429)
+  - [x] Structured outputs (type-aware responses)
+  - [x] New model config fields: `provider`, `maxRetriesOnError`
+  - [x] Provider auto-detection from URL + explicit override
+  - [x] Unit tests for AI module (70 tests)
   - [ ] Handle streaming responses
-  - [ ] Error handling and retries
+- [ ] Anthropic prompt caching optimization
+  - [ ] Add `anthropic-beta: prompt-caching-2024-07-31` header support
+  - [ ] Use `cache_control: { type: "ephemeral" }` for system prompts
+  - [ ] Consider extended 1-hour TTL option for long-running sessions
+  - [ ] See: https://docs.claude.com/en/docs/build-with-claude/prompt-caching
 
 ### Language Features
 - [ ] Implement the `vibe` keyword

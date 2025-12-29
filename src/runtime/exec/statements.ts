@@ -51,6 +51,15 @@ export function extractStringValue(expr: AST.Expression | null): string | null {
 }
 
 /**
+ * Extract number value from an expression (for model config).
+ */
+export function extractNumberValue(expr: AST.Expression | null): number | null {
+  if (!expr) return null;
+  if (expr.type === 'NumberLiteral') return expr.value;
+  return null;
+}
+
+/**
  * Model declaration - store model config in locals.
  */
 export function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclaration): RuntimeState {
@@ -59,6 +68,8 @@ export function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclara
     name: extractStringValue(stmt.config.modelName),
     apiKey: extractStringValue(stmt.config.apiKey),
     url: extractStringValue(stmt.config.url),
+    provider: extractStringValue(stmt.config.provider),
+    maxRetriesOnError: extractNumberValue(stmt.config.maxRetriesOnError),
   };
 
   const frame = currentFrame(state);
