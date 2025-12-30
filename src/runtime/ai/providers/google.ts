@@ -67,11 +67,14 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
     // Extract content
     const content = response.text ?? '';
 
-    // Extract usage from response
-    const usage = response.usageMetadata
+    // Extract usage from response including cached and thinking tokens
+    const meta = response.usageMetadata as Record<string, unknown> | undefined;
+    const usage = meta
       ? {
-          inputTokens: response.usageMetadata.promptTokenCount ?? 0,
-          outputTokens: response.usageMetadata.candidatesTokenCount ?? 0,
+          inputTokens: Number(meta.promptTokenCount ?? 0),
+          outputTokens: Number(meta.candidatesTokenCount ?? 0),
+          cachedInputTokens: meta.cachedContentTokenCount ? Number(meta.cachedContentTokenCount) : undefined,
+          thinkingTokens: meta.thoughtsTokenCount ? Number(meta.thoughtsTokenCount) : undefined,
         }
       : undefined;
 

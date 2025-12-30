@@ -18,18 +18,20 @@ model testModel = {
 }
 `;
 
-interface RunVibeOptions {
-  logAiInteractions?: boolean;
-}
-
-async function runVibe(source: string, options?: RunVibeOptions): Promise<Runtime> {
+async function runVibe(source: string, logAi = true): Promise<Runtime> {
   const program = parse(MODEL_CONFIG + source);
   const runtime = new Runtime(
     program,
     createRealAIProvider(() => runtime.getState()),
-    { logAiInteractions: options?.logAiInteractions }
+    { logAiInteractions: logAi }
   );
   await runtime.run();
+
+  if (logAi) {
+    const interactions = runtime.getAIInteractions();
+    console.log('\n' + formatAIInteractions(interactions));
+  }
+
   return runtime;
 }
 

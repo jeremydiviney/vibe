@@ -7,12 +7,12 @@ class MockAIProvider implements AIProvider {
   public askUserCalls: string[] = [];
   public askUserResponse = 'mock response';
 
-  async execute(prompt: string): Promise<string> {
-    return `[AI Response to: ${prompt}]`;
+  async execute(prompt: string) {
+    return { value: `[AI Response to: ${prompt}]` };
   }
 
-  async generateCode(prompt: string): Promise<string> {
-    return `let result = "generated"`;
+  async generateCode() {
+    return { value: `let result = "generated"` };
   }
 
   async askUser(prompt: string): Promise<string> {
@@ -126,13 +126,13 @@ let x = ask "test" m default
 `);
 
     const provider: AIProvider = {
-      async execute(prompt: string) {
-        return '';
+      async execute() {
+        return { value: '' };
       },
-      async generateCode(prompt: string) {
-        return '';
+      async generateCode() {
+        return { value: '' };
       },
-      async askUser(prompt: string) {
+      async askUser() {
         return 'response';
       },
     };

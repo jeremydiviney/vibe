@@ -5,8 +5,8 @@ import { Runtime, type AIProvider } from '../index';
 describe('Runtime - Type Validation', () => {
   // Mock AI provider
   const mockProvider: AIProvider = {
-    execute: async (prompt: string) => prompt,
-    generateCode: async () => 'let result = "generated"',
+    execute: async (prompt: string) => ({ value: prompt }),
+    generateCode: async () => ({ value: 'let result = "generated"' }),
     askUser: async () => 'user response',
   };
 
@@ -182,8 +182,8 @@ describe('Runtime - Type Validation', () => {
 
   test('json type parses AI response as JSON', async () => {
     const jsonProvider: AIProvider = {
-      execute: async () => '{"result": "from AI"}',
-      generateCode: async () => '',
+      execute: async () => ({ value: '{"result": "from AI"}' }),
+      generateCode: async () => ({ value: '' }),
       askUser: async () => '',
     };
 
@@ -203,8 +203,8 @@ describe('Runtime - Type Validation', () => {
 
   test('json type throws if AI returns invalid JSON', async () => {
     const invalidProvider: AIProvider = {
-      execute: async () => 'not valid json',
-      generateCode: async () => '',
+      execute: async () => ({ value: 'not valid json' }),
+      generateCode: async () => ({ value: '' }),
       askUser: async () => '',
     };
 

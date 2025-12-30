@@ -123,6 +123,10 @@
   - [ ] Capture line/column in parser for AST nodes
   - [ ] Include source location in AI interaction logs
   - [ ] Better error messages with line numbers
+- [ ] Context improvements for AI conversation history
+  - [ ] Show AI response attribution: `summary = (AI response)` instead of just `summary: "..."`
+  - [ ] Helps AI understand that variable values came from its own prior responses
+  - [ ] Distinguishes AI-generated values from user-defined constants
 
 ### Language Features
 - [ ] Implement the `vibe` keyword

@@ -10,10 +10,10 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "test": "bun test --exclude '**/*.integration.test.ts'",
-    "test:watch": "bun test --watch --exclude '**/*.integration.test.ts'",
-    "test:integration": "bun test tests/integration/ --max-concurrency=3",
-    "test:all": "bun test"
+    "test": "bun test src/",
+    "test:watch": "bun test --watch src/",
+    "test:integration": "bun test tests/integration/ --timeout 120000",
+    "test:all": "bun test src/ tests/integration/ --timeout 120000"
   },
   "keywords": ["ai", "agent", "orchestration", "dsl", "language"],
   "author": "",

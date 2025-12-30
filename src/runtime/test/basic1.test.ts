@@ -5,13 +5,13 @@ import { Runtime, AIProvider } from '../index';
 // Mock AI provider for testing
 function createMockProvider(doResponse: string): AIProvider {
   return {
-    async execute(prompt: string): Promise<string> {
-      return doResponse;
+    async execute() {
+      return { value: doResponse };
     },
-    async generateCode(prompt: string): Promise<string> {
-      return `let result = "generated"`;
+    async generateCode() {
+      return { value: `let result = "generated"` };
     },
-    async askUser(prompt: string): Promise<string> {
+    async askUser(): Promise<string> {
       return 'user input';
     },
   };

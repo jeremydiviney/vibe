@@ -26,11 +26,23 @@ export interface AIRequest {
   model: ModelConfig;
 }
 
+/** Detailed token usage from AI providers */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  // Cached tokens (prompt caching)
+  cachedInputTokens?: number;
+  // Tokens used to create cache (Anthropic)
+  cacheCreationTokens?: number;
+  // Reasoning/thinking tokens (OpenAI o1, Claude extended thinking)
+  thinkingTokens?: number;
+}
+
 /** AI response from all providers */
 export interface AIResponse {
   content: string;
   parsedValue: unknown;
-  usage?: { inputTokens: number; outputTokens: number };
+  usage?: TokenUsage;
 }
 
 /** Custom error for AI operations */

@@ -1,7 +1,7 @@
 // Real AI Provider Implementation
 // Uses the AI module to make actual API calls
 
-import type { AIProvider } from './index';
+import type { AIProvider, AIExecutionResult } from './index';
 import type { RuntimeState } from './types';
 import { executeAI, type VibeModelValue, type TargetType } from './ai';
 import { buildGlobalContext, formatContextForAI } from './context';
@@ -56,7 +56,7 @@ function getTargetType(state: RuntimeState): TargetType {
  */
 export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
   return {
-    async execute(prompt: string): Promise<unknown> {
+    async execute(prompt: string): Promise<AIExecutionResult> {
       const state = getState();
       if (!state.pendingAI) {
         throw new Error('No pending AI request');
@@ -84,11 +84,14 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         targetType
       );
 
-      // Return the parsed value directly (number, boolean, array, etc.)
-      return response.parsedValue ?? response.content;
+      // Return the parsed value and usage
+      return {
+        value: response.parsedValue ?? response.content,
+        usage: response.usage,
+      };
     },
 
-    async generateCode(prompt: string): Promise<string> {
+    async generateCode(prompt: string): Promise<AIExecutionResult> {
       // For vibe expressions, use default model or first available model
       const state = getState();
       if (!state.pendingAI) {
@@ -119,7 +122,10 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         'text' // Code is always text
       );
 
-      return String(response.content);
+      return {
+        value: String(response.content),
+        usage: response.usage,
+      };
     },
 
     async askUser(prompt: string): Promise<string> {
@@ -137,11 +143,11 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
  */
 export function createMockAIProvider(): AIProvider {
   return {
-    async execute(prompt: string): Promise<unknown> {
-      return `[AI Response to: ${prompt}]`;
+    async execute(prompt: string): Promise<AIExecutionResult> {
+      return { value: `[AI Response to: ${prompt}]` };
     },
-    async generateCode(prompt: string): Promise<string> {
-      return `// Generated code for: ${prompt}`;
+    async generateCode(prompt: string): Promise<AIExecutionResult> {
+      return { value: `// Generated code for: ${prompt}` };
     },
     async askUser(prompt: string): Promise<string> {
       return `[User input for: ${prompt}]`;

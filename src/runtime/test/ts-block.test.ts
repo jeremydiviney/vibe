@@ -5,13 +5,13 @@ import { Runtime, AIProvider, clearFunctionCache, getFunctionCacheSize, TsBlockE
 // Mock AI provider for testing
 function createMockProvider(): AIProvider {
   return {
-    async execute(prompt: string): Promise<string> {
-      return 'ai response';
+    async execute() {
+      return { value: 'ai response' };
     },
-    async generateCode(prompt: string): Promise<string> {
-      return 'generated code';
+    async generateCode() {
+      return { value: 'generated code' };
     },
-    async askUser(prompt: string): Promise<string> {
+    async askUser(): Promise<string> {
       return 'user input';
     },
   };
@@ -345,11 +345,11 @@ describe('Runtime - TypeScript Blocks', () => {
 
   test('ts block processes AI response', async () => {
     const provider: AIProvider = {
-      async execute(): Promise<string> {
-        return '{"name": "alice", "score": 95}';
+      async execute() {
+        return { value: '{"name": "alice", "score": 95}' };
       },
-      async generateCode(): Promise<string> {
-        return '';
+      async generateCode() {
+        return { value: '' };
       },
       async askUser(): Promise<string> {
         return '';

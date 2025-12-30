@@ -93,22 +93,16 @@ export function getContextForAI(state: RuntimeState, context: AST.ContextSpecifi
 
 /**
  * AI Do - pause for AI response.
+ * Note: The prompt is added to orderedEntries in resumeWithAIResponse (after completion),
+ * not here, so it doesn't appear in context before the AI call completes.
  */
 export function execAIDo(state: RuntimeState, model: string, context: AST.ContextSpecifier): RuntimeState {
   const prompt = String(state.lastResult);
   const contextData = getContextForAI(state, context);
 
-  // Add prompt to ordered entries in current frame
-  const frame = currentFrame(state);
-  const newOrderedEntries = [...frame.orderedEntries, { kind: 'prompt' as const, aiType: 'do' as const, prompt }];
-
   return {
     ...state,
     status: 'awaiting_ai',
-    callStack: [
-      ...state.callStack.slice(0, -1),
-      { ...frame, orderedEntries: newOrderedEntries },
-    ],
     pendingAI: {
       type: 'do',
       prompt,
@@ -128,22 +122,16 @@ export function execAIDo(state: RuntimeState, model: string, context: AST.Contex
 
 /**
  * AI Ask - pause for user input.
+ * Note: The prompt is added to orderedEntries in resumeWithUserInput (after completion),
+ * not here, so it doesn't appear in context before the user responds.
  */
 export function execAIAsk(state: RuntimeState, model: string, context: AST.ContextSpecifier): RuntimeState {
   const prompt = String(state.lastResult);
   const contextData = getContextForAI(state, context);
 
-  // Add prompt to ordered entries in current frame
-  const frame = currentFrame(state);
-  const newOrderedEntries = [...frame.orderedEntries, { kind: 'prompt' as const, aiType: 'ask' as const, prompt }];
-
   return {
     ...state,
     status: 'awaiting_user',
-    callStack: [
-      ...state.callStack.slice(0, -1),
-      { ...frame, orderedEntries: newOrderedEntries },
-    ],
     pendingAI: {
       type: 'ask',
       prompt,
@@ -163,22 +151,16 @@ export function execAIAsk(state: RuntimeState, model: string, context: AST.Conte
 
 /**
  * AI Vibe - pause for code generation.
+ * Note: The prompt is added to orderedEntries in resumeWithAIResponse (after completion),
+ * not here, so it doesn't appear in context before the AI call completes.
  */
 export function execAIVibe(state: RuntimeState, model: string, context: AST.ContextSpecifier): RuntimeState {
   const prompt = String(state.lastResult);
   const contextData = getContextForAI(state, context);
 
-  // Add prompt to ordered entries in current frame
-  const frame = currentFrame(state);
-  const newOrderedEntries = [...frame.orderedEntries, { kind: 'prompt' as const, aiType: 'vibe' as const, prompt }];
-
   return {
     ...state,
     status: 'awaiting_ai',
-    callStack: [
-      ...state.callStack.slice(0, -1),
-      { ...frame, orderedEntries: newOrderedEntries },
-    ],
     pendingAI: {
       type: 'vibe',
       prompt,
