@@ -55,11 +55,14 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     const textBlock = response.content.find((block) => block.type === 'text');
     const content = textBlock?.type === 'text' ? textBlock.text : '';
 
-    // Extract usage
-    const usage = response.usage
+    // Extract usage including cache tokens
+    const rawUsage = response.usage as Record<string, unknown> | undefined;
+    const usage = rawUsage
       ? {
-          inputTokens: response.usage.input_tokens,
-          outputTokens: response.usage.output_tokens,
+          inputTokens: Number(rawUsage.input_tokens ?? 0),
+          outputTokens: Number(rawUsage.output_tokens ?? 0),
+          cachedInputTokens: rawUsage.cache_read_input_tokens ? Number(rawUsage.cache_read_input_tokens) : undefined,
+          cacheCreationTokens: rawUsage.cache_creation_input_tokens ? Number(rawUsage.cache_creation_input_tokens) : undefined,
         }
       : undefined;
 

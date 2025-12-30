@@ -69,10 +69,11 @@ export function resumeWithAIResponse(
   }
 
   const responseStr = typeof response === 'string' ? response : JSON.stringify(response);
+  const pendingAI = state.pendingAI;
 
   const aiOp: AIOperation = {
-    type: state.pendingAI.type,
-    prompt: state.pendingAI.prompt,
+    type: pendingAI.type,
+    prompt: pendingAI.prompt,
     response: responseStr,
     timestamp: Date.now(),
   };
@@ -82,10 +83,22 @@ export function resumeWithAIResponse(
     ? [...state.aiInteractions, interaction]
     : state.aiInteractions;
 
+  // Add the completed prompt to orderedEntries in current frame
+  const frame = state.callStack[state.callStack.length - 1];
+  const newOrderedEntries = [
+    ...frame.orderedEntries,
+    { kind: 'prompt' as const, aiType: pendingAI.type as 'do' | 'ask' | 'vibe', prompt: pendingAI.prompt }
+  ];
+  const updatedCallStack = [
+    ...state.callStack.slice(0, -1),
+    { ...frame, orderedEntries: newOrderedEntries },
+  ];
+
   return {
     ...state,
     status: 'running',
     lastResult: response,
+    callStack: updatedCallStack,
     aiHistory: [...state.aiHistory, aiOp],
     aiInteractions,
     pendingAI: null,
@@ -93,8 +106,8 @@ export function resumeWithAIResponse(
       ...state.executionLog,
       {
         timestamp: Date.now(),
-        instructionType: `ai_${state.pendingAI.type}_response`,
-        details: { prompt: state.pendingAI.prompt },
+        instructionType: `ai_${pendingAI.type}_response`,
+        details: { prompt: pendingAI.prompt },
         result: responseStr,
       },
     ],
@@ -107,17 +120,31 @@ export function resumeWithUserInput(state: RuntimeState, input: string): Runtime
     throw new Error('Cannot resume: not awaiting user input');
   }
 
+  const pendingAI = state.pendingAI;
+
   const aiOp: AIOperation = {
     type: 'ask',
-    prompt: state.pendingAI.prompt,
+    prompt: pendingAI.prompt,
     response: input,
     timestamp: Date.now(),
   };
+
+  // Add the completed prompt to orderedEntries in current frame
+  const frame = state.callStack[state.callStack.length - 1];
+  const newOrderedEntries = [
+    ...frame.orderedEntries,
+    { kind: 'prompt' as const, aiType: 'ask' as const, prompt: pendingAI.prompt }
+  ];
+  const updatedCallStack = [
+    ...state.callStack.slice(0, -1),
+    { ...frame, orderedEntries: newOrderedEntries },
+  ];
 
   return {
     ...state,
     status: 'running',
     lastResult: input,
+    callStack: updatedCallStack,
     aiHistory: [...state.aiHistory, aiOp],
     pendingAI: null,
     executionLog: [
@@ -125,7 +152,7 @@ export function resumeWithUserInput(state: RuntimeState, input: string): Runtime
       {
         timestamp: Date.now(),
         instructionType: 'user_input_response',
-        details: { prompt: state.pendingAI.prompt },
+        details: { prompt: pendingAI.prompt },
         result: input,
       },
     ],

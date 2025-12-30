@@ -40,16 +40,30 @@ function formatInteraction(interaction: AIInteraction, index: number): string {
   lines.push('```');
 
   // Metadata
-  const meta: string[] = [];
-  if (interaction.usage) {
-    meta.push(`**Tokens:** ${interaction.usage.inputTokens} in / ${interaction.usage.outputTokens} out`);
-  }
-  if (interaction.durationMs) {
-    meta.push(`**Duration:** ${interaction.durationMs}ms`);
-  }
-  if (meta.length > 0) {
+  if (interaction.usage || interaction.durationMs) {
     lines.push('');
-    lines.push(meta.join(' | '));
+
+    // Token usage
+    if (interaction.usage) {
+      const { inputTokens, outputTokens, cachedInputTokens, cacheCreationTokens, thinkingTokens } = interaction.usage;
+      let tokenStr = `**Tokens:** ${inputTokens} in`;
+      if (cachedInputTokens) {
+        tokenStr += ` (${cachedInputTokens} cached)`;
+      }
+      if (cacheCreationTokens) {
+        tokenStr += ` (${cacheCreationTokens} cache write)`;
+      }
+      tokenStr += ` / ${outputTokens} out`;
+      if (thinkingTokens) {
+        tokenStr += ` (${thinkingTokens} thinking)`;
+      }
+      lines.push(tokenStr);
+    }
+
+    // Duration
+    if (interaction.durationMs) {
+      lines.push(`**Duration:** ${interaction.durationMs}ms`);
+    }
   }
 
   return lines.join('\n');

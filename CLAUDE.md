@@ -22,8 +22,16 @@ src/
 bun run start              # Run the CLI
 bun run dev                # Watch mode
 bun run src/index.ts <file.vibe>  # Run a vibe program
-bun test                   # Run tests
 ```
+
+## Test Commands
+```bash
+bun run test               # Unit tests only (~1s) - USE THIS
+bun run test:integration   # Integration tests (real API calls, ~40s)
+bun run test:all           # Everything
+```
+
+**Note:** `bun test` (without `run`) bypasses npm scripts and runs ALL tests including slow integration tests. Always use `bun run test` for fast unit tests.
 
 ---
 

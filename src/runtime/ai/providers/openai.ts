@@ -72,11 +72,16 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     // Extract content
     const content = completion.choices[0]?.message?.content ?? '';
 
-    // Extract usage
-    const usage = completion.usage
+    // Extract usage including cached and reasoning tokens
+    const rawUsage = completion.usage as Record<string, unknown> | undefined;
+    const promptDetails = rawUsage?.prompt_tokens_details as Record<string, unknown> | undefined;
+    const completionDetails = rawUsage?.completion_tokens_details as Record<string, unknown> | undefined;
+    const usage = rawUsage
       ? {
-          inputTokens: completion.usage.prompt_tokens,
-          outputTokens: completion.usage.completion_tokens,
+          inputTokens: Number(rawUsage.prompt_tokens ?? 0),
+          outputTokens: Number(rawUsage.completion_tokens ?? 0),
+          cachedInputTokens: promptDetails?.cached_tokens ? Number(promptDetails.cached_tokens) : undefined,
+          thinkingTokens: completionDetails?.reasoning_tokens ? Number(completionDetails.reasoning_tokens) : undefined,
         }
       : undefined;
 

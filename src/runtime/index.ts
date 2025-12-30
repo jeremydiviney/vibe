@@ -80,6 +80,7 @@ export { formatAIInteractions, dumpAIInteractions, saveAIInteractions } from './
 
 // Legacy imports for backward compatibility
 import * as AST from '../ast';
+import { dirname } from 'path';
 import type { RuntimeState, AIInteraction } from './types';
 import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult } from './state';
 import { step, runUntilPause } from './step';
@@ -87,11 +88,21 @@ import { evalTsBlock } from './ts-eval';
 import { loadImports, getImportedTsFunction } from './modules';
 import { buildGlobalContext, formatContextForAI } from './context';
 import { buildMessages } from './ai/formatters';
+import { saveAIInteractions } from './ai-logger';
+
+// Token usage from AI providers
+import type { TokenUsage } from './ai/types';
+
+// AI execution result with optional usage
+export interface AIExecutionResult {
+  value: unknown;
+  usage?: TokenUsage;
+}
 
 // AI provider interface (for external callers)
 export interface AIProvider {
-  execute(prompt: string): Promise<unknown>;
-  generateCode(prompt: string): Promise<string>;
+  execute(prompt: string): Promise<AIExecutionResult>;
+  generateCode(prompt: string): Promise<AIExecutionResult>;
   askUser(prompt: string): Promise<string>;
 }
 
@@ -201,28 +212,29 @@ export class Runtime {
           );
         }
 
-        let response: unknown;
+        let result: AIExecutionResult;
         if (pendingAI.type === 'do') {
-          response = await this.aiProvider.execute(pendingAI.prompt);
+          result = await this.aiProvider.execute(pendingAI.prompt);
         } else if (pendingAI.type === 'vibe') {
-          response = await this.aiProvider.generateCode(pendingAI.prompt);
+          result = await this.aiProvider.generateCode(pendingAI.prompt);
         } else {
-          response = await this.aiProvider.execute(pendingAI.prompt);
+          result = await this.aiProvider.execute(pendingAI.prompt);
         }
 
         // Create interaction record if logging
         const interaction: AIInteraction | undefined = this.logAiInteractions ? {
           type: pendingAI.type,
           prompt: pendingAI.prompt,
-          response,
+          response: result.value,
           timestamp: startTime,
           model: pendingAI.model,
           messages,
           targetType,
+          usage: result.usage,
           durationMs: Date.now() - startTime,
         } : undefined;
 
-        this.state = resumeWithAIResponse(this.state, response, interaction);
+        this.state = resumeWithAIResponse(this.state, result.value, interaction);
       } else {
         // Handle user input
         if (!this.state.pendingAI) {
@@ -237,10 +249,23 @@ export class Runtime {
     }
 
     if (this.state.status === 'error') {
+      // Save logs even on error if logging enabled
+      this.saveLogsIfEnabled();
       throw new Error(this.state.error ?? 'Unknown runtime error');
     }
 
+    // Save logs on successful completion
+    this.saveLogsIfEnabled();
+
     return this.state.lastResult;
+  }
+
+  // Save AI interaction logs if logging is enabled
+  private saveLogsIfEnabled(): void {
+    if (this.logAiInteractions && this.state.aiInteractions.length > 0) {
+      const projectRoot = dirname(this.basePath);
+      saveAIInteractions(this.state.aiInteractions, projectRoot);
+    }
   }
 
   // Step through one instruction at a time

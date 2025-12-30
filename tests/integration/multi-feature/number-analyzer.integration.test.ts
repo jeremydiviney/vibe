@@ -3,7 +3,7 @@
 // Importantly tests that AI can see variables from context
 
 import { describe, test, expect } from 'vitest';
-import { Runtime } from '../../../src/runtime';
+import { Runtime, formatAIInteractions } from '../../../src/runtime';
 import { createRealAIProvider } from '../../../src/runtime/ai-provider';
 import { parse } from '../../../src/parser/parse';
 
@@ -72,10 +72,20 @@ let summary: text = do "Using the variables total, evenCount, oddCount, and cate
 let result: json = do "Return a JSON object with fields: analyzed, evenCount, oddCount, summary. Use the values from context variables: total for analyzed, evenCount, oddCount, and summary." analyzer default
 `;
 
-async function runVibe(source: string): Promise<Runtime> {
+async function runVibe(source: string, logAi = true): Promise<Runtime> {
   const program = parse(source);
-  const runtime = new Runtime(program, createRealAIProvider(() => runtime.getState()));
+  const runtime = new Runtime(
+    program,
+    createRealAIProvider(() => runtime.getState()),
+    { logAiInteractions: logAi }
+  );
   await runtime.run();
+
+  if (logAi) {
+    const interactions = runtime.getAIInteractions();
+    console.log('\n' + formatAIInteractions(interactions));
+  }
+
   return runtime;
 }
 

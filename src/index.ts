@@ -10,17 +10,16 @@ export * from './errors';
 
 import { parse } from './parser/parse';
 import { analyze } from './semantic';
-import { Runtime, AIProvider, createRealAIProvider, dumpAIInteractions, saveAIInteractions } from './runtime';
-import { dirname } from 'path';
+import { Runtime, AIProvider, createRealAIProvider, dumpAIInteractions } from './runtime';
 
 // Simple mock AI provider for testing
 class MockAIProvider implements AIProvider {
-  async execute(prompt: string): Promise<string> {
-    return `[AI Response to: ${prompt}]`;
+  async execute(prompt: string) {
+    return { value: `[AI Response to: ${prompt}]` };
   }
 
-  async generateCode(prompt: string): Promise<string> {
-    return `// Generated code for: ${prompt}\nlet result = "generated"`;
+  async generateCode(prompt: string) {
+    return { value: `// Generated code for: ${prompt}\nlet result = "generated"` };
   }
 
   async askUser(prompt: string): Promise<string> {
@@ -95,16 +94,11 @@ async function main(): Promise<void> {
 
     const result = await runtime.run();
 
-    // Dump and save AI interactions if logging was enabled
+    // Dump AI interactions if logging was enabled (auto-saved by Runtime)
     if (logAi) {
       const interactions = runtime.getAIInteractions();
       if (interactions.length > 0) {
         dumpAIInteractions(interactions);
-        const projectRoot = dirname(filePath);
-        const savedPath = saveAIInteractions(interactions, projectRoot);
-        if (savedPath) {
-          console.log(`AI interaction log saved to: ${savedPath}`);
-        }
       }
     }
 

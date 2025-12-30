@@ -63,6 +63,18 @@ export interface AIOperation {
   timestamp: number;
 }
 
+// Detailed token usage from AI providers
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  // Cached tokens (prompt caching)
+  cachedInputTokens?: number;
+  // Tokens used to create cache (Anthropic)
+  cacheCreationTokens?: number;
+  // Reasoning/thinking tokens (OpenAI o1, Claude extended thinking)
+  thinkingTokens?: number;
+}
+
 // Detailed AI interaction for debugging/logging
 // Captures the exact messages sent to the model
 export interface AIInteraction {
@@ -74,7 +86,7 @@ export interface AIInteraction {
   // The exact messages sent to the AI model
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
   targetType: string | null;
-  usage?: { inputTokens: number; outputTokens: number };
+  usage?: TokenUsage;
   durationMs?: number;
 }
 
