@@ -1,0 +1,12 @@
+// Basic AI Integration Test
+// Tests the most fundamental AI operation: a simple prompt
+
+model testModel = {
+  name: "gpt-5-mini",
+  apiKey: OPENAI_API_KEY,
+  url: "https://api.openai.com/v1",
+  provider: "openai"
+}
+
+// Test: Basic text response - model should reply with exactly "PONG"
+let greeting = do "Reply with exactly: PONG" testModel default

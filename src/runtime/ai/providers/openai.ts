@@ -43,7 +43,9 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     };
 
     // Add structured output format if target type specified
-    if (targetType) {
+    // Skip structured output for json types (requires knowing schema upfront)
+    const isJsonType = targetType === 'json' || targetType === 'json[]';
+    if (targetType && !isJsonType) {
       const schema = typeToSchema(targetType);
       if (schema) {
         params.response_format = {

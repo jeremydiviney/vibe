@@ -12,7 +12,7 @@
     "dev": "bun --watch src/index.ts",
     "test": "bun test --exclude '**/*.integration.test.ts'",
     "test:watch": "bun test --watch --exclude '**/*.integration.test.ts'",
-    "test:integration": "bun test --include '**/*.integration.test.ts'",
+    "test:integration": "bun test tests/integration/ --max-concurrency=3",
     "test:all": "bun test"
   },
   "keywords": ["ai", "agent", "orchestration", "dsl", "language"],

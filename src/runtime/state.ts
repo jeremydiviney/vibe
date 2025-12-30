@@ -49,15 +49,17 @@ export function createFrame(name: string, parentFrameIndex: number | null = null
 }
 
 // Resume execution after AI response
-export function resumeWithAIResponse(state: RuntimeState, response: string): RuntimeState {
+export function resumeWithAIResponse(state: RuntimeState, response: unknown): RuntimeState {
   if (state.status !== 'awaiting_ai' || !state.pendingAI) {
     throw new Error('Cannot resume: not awaiting AI response');
   }
 
+  const responseStr = typeof response === 'string' ? response : JSON.stringify(response);
+
   const aiOp: AIOperation = {
     type: state.pendingAI.type,
     prompt: state.pendingAI.prompt,
-    response,
+    response: responseStr,
     timestamp: Date.now(),
   };
 
@@ -73,7 +75,7 @@ export function resumeWithAIResponse(state: RuntimeState, response: string): Run
         timestamp: Date.now(),
         instructionType: `ai_${state.pendingAI.type}_response`,
         details: { prompt: state.pendingAI.prompt },
-        result: response,
+        result: responseStr,
       },
     ],
   };
