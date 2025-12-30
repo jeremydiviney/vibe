@@ -34,15 +34,15 @@
       "Bash(grep:*)",
       "Bash(mv:*)",
       "WebSearch",
-      "Bash(claude mcp list:*)",
-      "Bash(claude mcp get:*)",
+
       "mcp__symbol-tree__symbol_tree",
       "Skill(todo)",
       "Bash(wc:*)",
-      "Bash(claude mcp restart:*)",
-      "Bash(claude mcp --help:*)",
+      "Bash(claude mcp *)",
       "Bash(sort:*)",
-      "Skill(symbol-tree)"
+      "Skill(symbol-tree)",
+      "WebFetch(domain:*)",
+      "Bash(git push:*)"
     ],
     "deny": [
       "Bash(rm:*)",
