@@ -56,7 +56,7 @@ function getTargetType(state: RuntimeState): TargetType {
  */
 export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
   return {
-    async execute(prompt: string): Promise<string> {
+    async execute(prompt: string): Promise<unknown> {
       const state = getState();
       if (!state.pendingAI) {
         throw new Error('No pending AI request');
@@ -84,8 +84,8 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         targetType
       );
 
-      // Return the parsed value as string (the runtime will handle it)
-      return String(response.parsedValue ?? response.content);
+      // Return the parsed value directly (number, boolean, array, etc.)
+      return response.parsedValue ?? response.content;
     },
 
     async generateCode(prompt: string): Promise<string> {
@@ -137,7 +137,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
  */
 export function createMockAIProvider(): AIProvider {
   return {
-    async execute(prompt: string): Promise<string> {
+    async execute(prompt: string): Promise<unknown> {
       return `[AI Response to: ${prompt}]`;
     },
     async generateCode(prompt: string): Promise<string> {

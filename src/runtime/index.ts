@@ -84,7 +84,7 @@ import { loadImports, getImportedTsFunction } from './modules';
 
 // AI provider interface (for external callers)
 export interface AIProvider {
-  execute(prompt: string): Promise<string>;
+  execute(prompt: string): Promise<unknown>;
   generateCode(prompt: string): Promise<string>;
   askUser(prompt: string): Promise<string>;
 }
@@ -160,7 +160,7 @@ export class Runtime {
           throw new Error('State awaiting AI but no pending AI request');
         }
 
-        let response: string;
+        let response: unknown;
         if (this.state.pendingAI.type === 'do') {
           response = await this.aiProvider.execute(this.state.pendingAI.prompt);
         } else if (this.state.pendingAI.type === 'vibe') {
