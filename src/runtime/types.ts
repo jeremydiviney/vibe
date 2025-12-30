@@ -63,6 +63,21 @@ export interface AIOperation {
   timestamp: number;
 }
 
+// Detailed AI interaction for debugging/logging
+// Captures the exact messages sent to the model
+export interface AIInteraction {
+  type: 'do' | 'vibe' | 'ask';
+  prompt: string;
+  response: unknown;
+  timestamp: number;
+  model: string;
+  // The exact messages sent to the AI model
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  targetType: string | null;
+  usage?: { inputTokens: number; outputTokens: number };
+  durationMs?: number;
+}
+
 // Execution log entry for tracking what happened
 export interface ExecutionEntry {
   timestamp: number;
@@ -131,6 +146,10 @@ export interface RuntimeState {
   lastResult: unknown;
   aiHistory: AIOperation[];
   executionLog: ExecutionEntry[];
+
+  // AI interaction logging (opt-in for debugging)
+  logAiInteractions: boolean;
+  aiInteractions: AIInteraction[];
 
   // Context (rebuilt before each instruction)
   localContext: ContextEntry[];

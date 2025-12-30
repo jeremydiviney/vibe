@@ -1,8 +1,16 @@
 import * as AST from '../ast';
-import type { RuntimeState, AIOperation, StackFrame } from './types';
+import type { RuntimeState, AIOperation, AIInteraction, StackFrame } from './types';
+
+// Options for creating initial state
+export interface InitialStateOptions {
+  logAiInteractions?: boolean;
+}
 
 // Create initial runtime state from a program AST
-export function createInitialState(program: AST.Program): RuntimeState {
+export function createInitialState(
+  program: AST.Program,
+  options?: InitialStateOptions
+): RuntimeState {
   // Collect function declarations
   const functions: Record<string, AST.FunctionDeclaration> = {};
   for (const stmt of program.body) {
@@ -29,6 +37,8 @@ export function createInitialState(program: AST.Program): RuntimeState {
     lastResult: null,
     aiHistory: [],
     executionLog: [],
+    logAiInteractions: options?.logAiInteractions ?? false,
+    aiInteractions: [],
     localContext: [],
     globalContext: [],
     pendingAI: null,
@@ -49,7 +59,11 @@ export function createFrame(name: string, parentFrameIndex: number | null = null
 }
 
 // Resume execution after AI response
-export function resumeWithAIResponse(state: RuntimeState, response: unknown): RuntimeState {
+export function resumeWithAIResponse(
+  state: RuntimeState,
+  response: unknown,
+  interaction?: AIInteraction
+): RuntimeState {
   if (state.status !== 'awaiting_ai' || !state.pendingAI) {
     throw new Error('Cannot resume: not awaiting AI response');
   }
@@ -63,11 +77,17 @@ export function resumeWithAIResponse(state: RuntimeState, response: unknown): Ru
     timestamp: Date.now(),
   };
 
+  // Add interaction to log if provided and logging is enabled
+  const aiInteractions = state.logAiInteractions && interaction
+    ? [...state.aiInteractions, interaction]
+    : state.aiInteractions;
+
   return {
     ...state,
     status: 'running',
     lastResult: response,
     aiHistory: [...state.aiHistory, aiOp],
+    aiInteractions,
     pendingAI: null,
     executionLog: [
       ...state.executionLog,

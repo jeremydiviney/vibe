@@ -10,7 +10,8 @@ export * from './errors';
 
 import { parse } from './parser/parse';
 import { analyze } from './semantic';
-import { Runtime, AIProvider } from './runtime';
+import { Runtime, AIProvider, createRealAIProvider, dumpAIInteractions, saveAIInteractions } from './runtime';
+import { dirname } from 'path';
 
 // Simple mock AI provider for testing
 class MockAIProvider implements AIProvider {
@@ -47,9 +48,16 @@ export async function runVibe(source: string, aiProvider?: AIProvider): Promise<
 async function main(): Promise<void> {
   const args = Bun.argv.slice(2);
 
-  if (args.length === 0) {
+  // Parse flags
+  const logAi = args.includes('--log-ai');
+  const fileArgs = args.filter(arg => !arg.startsWith('--'));
+
+  if (fileArgs.length === 0) {
     console.log('Vibe - AI Agent Orchestration Language');
-    console.log('Usage: bun run src/index.ts <file.vibe>');
+    console.log('Usage: bun run src/index.ts [options] <file.vibe>');
+    console.log('');
+    console.log('Options:');
+    console.log('  --log-ai    Show detailed AI interaction logs');
     console.log('');
     console.log('Example program:');
     console.log('  let x = "hello"');
@@ -60,17 +68,46 @@ async function main(): Promise<void> {
     return;
   }
 
-  const file = Bun.file(args[0]);
+  const filePath = fileArgs[0];
+  const file = Bun.file(filePath);
 
   if (!(await file.exists())) {
-    console.error(`Error: File not found: ${args[0]}`);
+    console.error(`Error: File not found: ${filePath}`);
     process.exit(1);
   }
 
   const source = await file.text();
 
   try {
-    const result = await runVibe(source);
+    // Parse and analyze
+    const ast = parse(source);
+    const errors = analyze(ast, source);
+    if (errors.length > 0) {
+      throw errors[0];
+    }
+
+    // Create runtime with logging option
+    const runtime = new Runtime(
+      ast,
+      createRealAIProvider(() => runtime.getState()),
+      { basePath: filePath, logAiInteractions: logAi }
+    );
+
+    const result = await runtime.run();
+
+    // Dump and save AI interactions if logging was enabled
+    if (logAi) {
+      const interactions = runtime.getAIInteractions();
+      if (interactions.length > 0) {
+        dumpAIInteractions(interactions);
+        const projectRoot = dirname(filePath);
+        const savedPath = saveAIInteractions(interactions, projectRoot);
+        if (savedPath) {
+          console.log(`AI interaction log saved to: ${savedPath}`);
+        }
+      }
+    }
+
     if (result !== null && result !== undefined) {
       console.log('Result:', result);
     }

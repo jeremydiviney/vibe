@@ -5,6 +5,7 @@ export type {
   Variable,
   ContextVariable,
   AIOperation,
+  AIInteraction,
   ExecutionEntry,
   PendingAI,
   PendingTS,
@@ -74,13 +75,18 @@ export { createRealAIProvider, createMockAIProvider } from './ai-provider';
 // Re-export AI module
 export * from './ai';
 
+// Re-export AI interaction logging utilities
+export { formatAIInteractions, dumpAIInteractions, saveAIInteractions } from './ai-logger';
+
 // Legacy imports for backward compatibility
 import * as AST from '../ast';
-import type { RuntimeState, AIOperation } from './types';
+import type { RuntimeState, AIInteraction } from './types';
 import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult } from './state';
 import { step, runUntilPause } from './step';
 import { evalTsBlock } from './ts-eval';
 import { loadImports, getImportedTsFunction } from './modules';
+import { buildGlobalContext, formatContextForAI } from './context';
+import { buildMessages } from './ai/formatters';
 
 // AI provider interface (for external callers)
 export interface AIProvider {
@@ -91,7 +97,8 @@ export interface AIProvider {
 
 // Runtime options
 export interface RuntimeOptions {
-  basePath?: string;  // Base path for resolving imports (defaults to cwd)
+  basePath?: string;           // Base path for resolving imports (defaults to cwd)
+  logAiInteractions?: boolean; // Capture detailed AI interaction logs for debugging
 }
 
 // Legacy Runtime class - convenience wrapper around functional API
@@ -100,9 +107,11 @@ export class Runtime {
   private aiProvider: AIProvider;
   private basePath: string;
   private importsLoaded: boolean = false;
+  private logAiInteractions: boolean;
 
   constructor(program: AST.Program, aiProvider: AIProvider, options?: RuntimeOptions) {
-    this.state = createInitialState(program);
+    this.logAiInteractions = options?.logAiInteractions ?? false;
+    this.state = createInitialState(program, { logAiInteractions: this.logAiInteractions });
     this.aiProvider = aiProvider;
     this.basePath = options?.basePath ?? process.cwd() + '/main.vibe';
   }
@@ -117,6 +126,11 @@ export class Runtime {
 
     const variable = frame.locals[name];
     return variable?.value;
+  }
+
+  // Get all AI interactions (for debugging)
+  getAIInteractions(): AIInteraction[] {
+    return [...this.state.aiInteractions];
   }
 
   // Run the program to completion, handling AI calls and TS evaluation
@@ -160,15 +174,55 @@ export class Runtime {
           throw new Error('State awaiting AI but no pending AI request');
         }
 
-        let response: unknown;
-        if (this.state.pendingAI.type === 'do') {
-          response = await this.aiProvider.execute(this.state.pendingAI.prompt);
-        } else if (this.state.pendingAI.type === 'vibe') {
-          response = await this.aiProvider.generateCode(this.state.pendingAI.prompt);
-        } else {
-          response = await this.aiProvider.execute(this.state.pendingAI.prompt);
+        const startTime = Date.now();
+        const pendingAI = this.state.pendingAI;
+
+        // Capture messages if logging is enabled
+        let messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+        let targetType: string | null = null;
+
+        if (this.logAiInteractions) {
+          // Build context and messages exactly as the AI provider would
+          const context = buildGlobalContext(this.state);
+          const formattedContext = formatContextForAI(context);
+
+          // Get target type from next instruction
+          const nextInstruction = this.state.instructionStack[0];
+          if (nextInstruction?.op === 'declare_var' && nextInstruction.type) {
+            targetType = nextInstruction.type;
+          }
+
+          // Build the actual messages sent to the model
+          messages = buildMessages(
+            pendingAI.prompt,
+            formattedContext.text,
+            targetType as 'text' | 'json' | 'boolean' | 'number' | null,
+            true // supportsStructuredOutput - assume true for logging
+          );
         }
-        this.state = resumeWithAIResponse(this.state, response);
+
+        let response: unknown;
+        if (pendingAI.type === 'do') {
+          response = await this.aiProvider.execute(pendingAI.prompt);
+        } else if (pendingAI.type === 'vibe') {
+          response = await this.aiProvider.generateCode(pendingAI.prompt);
+        } else {
+          response = await this.aiProvider.execute(pendingAI.prompt);
+        }
+
+        // Create interaction record if logging
+        const interaction: AIInteraction | undefined = this.logAiInteractions ? {
+          type: pendingAI.type,
+          prompt: pendingAI.prompt,
+          response,
+          timestamp: startTime,
+          model: pendingAI.model,
+          messages,
+          targetType,
+          durationMs: Date.now() - startTime,
+        } : undefined;
+
+        this.state = resumeWithAIResponse(this.state, response, interaction);
       } else {
         // Handle user input
         if (!this.state.pendingAI) {

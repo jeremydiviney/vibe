@@ -111,6 +111,18 @@
   - [ ] Use `cache_control: { type: "ephemeral" }` for system prompts
   - [ ] Consider extended 1-hour TTL option for long-running sessions
   - [ ] See: https://docs.claude.com/en/docs/build-with-claude/prompt-caching
+- [ ] Tool/function calling support
+  - [ ] Define tool schemas in Vibe
+  - [ ] Pass tools to AI providers
+  - [ ] Handle tool call responses and execute tools
+- [ ] Parallel AI calls
+  - [ ] Auto-parallelize independent AI calls (no data dependencies)
+  - [ ] Or add explicit `parallel` keyword for concurrent execution
+  - [ ] Configurable concurrency limit
+- [ ] Source location tracking
+  - [ ] Capture line/column in parser for AST nodes
+  - [ ] Include source location in AI interaction logs
+  - [ ] Better error messages with line numbers
 
 ### Language Features
 - [ ] Implement the `vibe` keyword

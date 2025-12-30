@@ -1,0 +1,59 @@
+// Number Analyzer - Comprehensive Integration Test
+// Tests: model, variables, types, AI calls, loops, conditionals, functions, arrays, operators, context
+
+model analyzer = {
+  name: "gpt-5-mini",
+  apiKey: OPENAI_API_KEY,
+  url: "https://api.openai.com/v1",
+  provider: "openai"
+}
+
+// Function to check if a number is even
+function isEven(n: number): boolean {
+  return n % 2 == 0
+}
+
+// Function to categorize a number
+function categorize(n: number): text {
+  if n < 0 {
+    return "negative"
+  }
+  if n == 0 {
+    return "zero"
+  }
+  if n > 100 {
+    return "large"
+  }
+  return "small"
+}
+
+// Get a list of numbers from AI
+let numbers: number[] = do "Return a JSON array of exactly 5 integers between -50 and 150. Mix of negative, zero, and positive." analyzer default
+
+// Initialize counters and result arrays
+let evenCount: number = 0
+let oddCount: number = 0
+let categories: text[] = []
+
+// Process each number
+for num in numbers {
+  // Check even/odd
+  if isEven(num) {
+    evenCount = evenCount + 1
+  } else {
+    oddCount = oddCount + 1
+  }
+
+  // Get category and add to list
+  let cat = categorize(num)
+  categories.push(cat)
+}
+
+// Calculate total
+let total: number = evenCount + oddCount
+
+// Get AI summary - reference variables by name, AI sees them in context
+let summary: text = do "Using the variables total, evenCount, oddCount, and categories from context, write a one-sentence summary of the number analysis." analyzer default
+
+// Final result - AI should read variable values from context
+let result: json = do "Return a JSON object with fields: analyzed, evenCount, oddCount, summary. Use the values from context variables: total for analyzed, evenCount, oddCount, and summary." analyzer default

@@ -2,7 +2,7 @@
 // Tests real API calls with OpenAI gpt-5-mini for all return types
 
 import { describe, test, expect } from 'vitest';
-import { Runtime } from '../../../src/runtime';
+import { Runtime, formatAIInteractions } from '../../../src/runtime';
 import { createRealAIProvider } from '../../../src/runtime/ai-provider';
 import { parse } from '../../../src/parser/parse';
 
@@ -18,9 +18,17 @@ model testModel = {
 }
 `;
 
-async function runVibe(source: string): Promise<Runtime> {
+interface RunVibeOptions {
+  logAiInteractions?: boolean;
+}
+
+async function runVibe(source: string, options?: RunVibeOptions): Promise<Runtime> {
   const program = parse(MODEL_CONFIG + source);
-  const runtime = new Runtime(program, createRealAIProvider(() => runtime.getState()));
+  const runtime = new Runtime(
+    program,
+    createRealAIProvider(() => runtime.getState()),
+    { logAiInteractions: options?.logAiInteractions }
+  );
   await runtime.run();
   return runtime;
 }
