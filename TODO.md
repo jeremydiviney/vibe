@@ -124,10 +124,11 @@
   - [x] Add required `location: SourceLocation` to all Instruction types
   - [x] Propagate location from AST nodes to Instructions during execution
   - [x] RuntimeError uses instruction location for accurate error messages
-- [ ] Context improvements for AI conversation history
-  - [ ] Show AI response attribution: `summary = (AI response)` instead of just `summary: "..."`
-  - [ ] Helps AI understand that variable values came from its own prior responses
-  - [ ] Distinguishes AI-generated values from user-defined constants
+- [x] Context improvements for AI conversation history
+  - [x] Track value source on variables (`ai`, `user`, or `undefined`)
+  - [x] Show AI responses with `<--` prefix vs `-` for regular variables
+  - [x] Format: `--> do: "prompt"` followed by `<-- varName: response`
+  - [x] Helps AI understand conversation flow and its prior responses
 
 ### Language Features
 - [ ] Implement the `vibe` keyword
@@ -154,4 +155,7 @@
   - [ ] Create plugin manifest and structure
   - [ ] Publish to Claude Code plugin marketplace or npm
   - [x] Add begin/end line numbers for each symbol in output (helps Claude know exact code block boundaries)
+  - [ ] Add TypeScript types, interfaces, and enums to symbol tree output
+    - [ ] Include in symbol summary section with start/end line numbers
+    - [ ] Show type aliases, interface definitions, enum declarations
 
