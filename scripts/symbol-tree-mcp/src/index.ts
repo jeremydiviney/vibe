@@ -6,8 +6,8 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { extractSymbols, findSymbol } from './symbol-extractor.js';
-import { formatSymbolTree, formatByFile, formatAdjacencyList } from './formatter.js';
+import { extractSymbols, findSymbol } from './extraction.js';
+import { formatSymbolTree, formatByFile, formatAdjacencyList } from './formatters.js';
 import path from 'path';
 
 const server = new Server(
