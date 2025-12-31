@@ -33,11 +33,10 @@ Manage project tasks using the `todo.md` file as the source of truth.
    - Move it to the Completed section with `- [x]` format
    - Include any sub-items if applicable
 
-5. **Managing completed items (archiving):**
-   - Keep only the **5 most recent** completed items in the Completed section
-   - When Completed exceeds 5 items, move older items to an Archive section at the bottom
-   - Keep only the **5 most recent** archived items in the Archive section
-   - Delete items that fall off the Archive (oldest first)
+5. **Managing completed items:**
+   - Keep only the **10 most recent** completed items in the Completed section
+   - When Completed exceeds 10 items, delete the oldest items
+   - No separate archive section - just maintain last 10 completed
    - This keeps the todo.md file focused and scannable
 
 6. **Starting work:**

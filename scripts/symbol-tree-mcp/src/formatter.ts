@@ -206,6 +206,91 @@ function formatChildren(
   return lines;
 }
 
+// Type symbol kinds for filtering
+const TYPE_KINDS = new Set(['interface', 'type', 'enum']);
+
+// Check if a symbol is a type symbol (interface, type, enum, or class with type info)
+function isTypeSymbol(symbol: SymbolInfo): boolean {
+  if (TYPE_KINDS.has(symbol.kind)) return true;
+  // Classes with extends/implements/typeUses are also type symbols
+  if (symbol.kind === 'class' && (symbol.extends || symbol.implements || symbol.typeUses)) return true;
+  return false;
+}
+
+// Check if a symbol is a function symbol (function, or class with call children)
+function isFunctionSymbol(symbol: SymbolInfo): boolean {
+  return symbol.kind === 'function' || symbol.kind === 'class';
+}
+
+// Build a type dependency graph for recursive type tree expansion
+function buildTypeDependencyGraph(typeSymbols: FlatSymbol[]): Map<string, { extends?: string[], uses?: string[] }> {
+  const graph = new Map<string, { extends?: string[], uses?: string[] }>();
+
+  for (const symbol of typeSymbols) {
+    if (symbol.extends || symbol.typeUses) {
+      graph.set(symbol.name, {
+        extends: symbol.extends,
+        uses: symbol.typeUses
+      });
+    }
+  }
+
+  return graph;
+}
+
+// Format type dependencies as a recursive tree
+function formatTypeDependencyTree(
+  symbol: FlatSymbol,
+  typeGraph: Map<string, { extends?: string[], uses?: string[] }>,
+  indent: string,
+  visited: Set<string>,
+  maxDepth: number
+): string[] {
+  const lines: string[] = [];
+  if (maxDepth <= 0) return lines;
+
+  const deps = typeGraph.get(symbol.name);
+  if (!deps) return lines;
+
+  const allDeps: { kind: string, name: string }[] = [];
+
+  if (deps.extends) {
+    for (const ext of deps.extends) {
+      allDeps.push({ kind: 'extends', name: ext });
+    }
+  }
+  if (deps.uses) {
+    for (const use of deps.uses) {
+      allDeps.push({ kind: 'uses', name: use });
+    }
+  }
+
+  for (let i = 0; i < allDeps.length; i++) {
+    const dep = allDeps[i];
+    const isLast = i === allDeps.length - 1;
+    const prefix = isLast ? '└─ ' : '├─ ';
+    const childIndent = isLast ? '   ' : '│  ';
+
+    lines.push(`${indent}${prefix}${dep.kind}: ${dep.name}`);
+
+    // Recursively expand if not visited and has dependencies
+    if (!visited.has(dep.name) && typeGraph.has(dep.name)) {
+      visited.add(dep.name);
+      const childLines = formatTypeDependencyTree(
+        { name: dep.name } as FlatSymbol,
+        typeGraph,
+        indent + childIndent,
+        visited,
+        maxDepth - 1
+      );
+      lines.push(...childLines);
+      visited.delete(dep.name);
+    }
+  }
+
+  return lines;
+}
+
 export function formatSymbolTree(
   fileSymbols: FileSymbols[],
   options: FormatOptions = {}
@@ -224,6 +309,10 @@ export function formatSymbolTree(
   if (flatSymbols.length === 0) {
     return 'No symbols found.';
   }
+
+  // Separate type symbols from function symbols
+  const typeSymbols = flatSymbols.filter(isTypeSymbol);
+  const functionSymbols = flatSymbols.filter(isFunctionSymbol);
 
   // Build call graph and find reachable symbols if depth limiting
   let reachableSymbols: Set<string> | null = null;
@@ -254,24 +343,98 @@ export function formatSymbolTree(
     reachableSymbols = findReachableSymbols(entryPoints, callGraph, depth);
   }
 
-  // Filter symbols if we have a reachability constraint
-  const filteredSymbols = reachableSymbols
-    ? flatSymbols.filter(s => reachableSymbols!.has(s.name))
-    : flatSymbols;
+  // Filter function symbols if we have a reachability constraint
+  const filteredFunctionSymbols = reachableSymbols
+    ? functionSymbols.filter(s => reachableSymbols!.has(s.name))
+    : functionSymbols;
 
   const lines: string[] = [];
   let currentLength = 0;
   let truncated = false;
 
-  // BREADTH-FIRST with proper tree output:
-  // Pass 1: Output all top-level symbols (headers only, no children)
-  // Pass 2: Output each symbol with its full tree (header + children)
+  // Section 1: TYPE SYMBOLS (interfaces, types, enums)
+  if (typeSymbols.length > 0) {
+    lines.push('=== TYPE SYMBOLS ===');
+    currentLength += 21;
 
-  // Pass 1: Quick overview of all symbols
+    for (const symbol of typeSymbols) {
+      let line = `${symbol.kind} ${symbol.name}`;
+      if (showFiles) {
+        line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
+      }
+
+      const lineLength = line.length + 1;
+      if (currentLength + lineLength > textLimit) {
+        truncated = true;
+        break;
+      }
+      lines.push(line);
+      currentLength += lineLength;
+    }
+
+    if (truncated) {
+      lines.push('');
+      lines.push('[truncated - text_limit reached]');
+      return lines.join('\n');
+    }
+
+    // Section 2: TYPE DEPENDENCIES (recursive trees)
+    const typesWithDeps = typeSymbols.filter(s =>
+      s.extends || s.implements || s.typeUses
+    );
+
+    if (typesWithDeps.length > 0) {
+      lines.push('');
+      lines.push('=== TYPE DEPENDENCIES ===');
+      currentLength += 27;
+
+      const typeGraph = buildTypeDependencyGraph(typeSymbols);
+
+      for (const symbol of typesWithDeps) {
+        // Type header
+        let header = `\n${symbol.kind} ${symbol.name}`;
+        if (showFiles) {
+          header += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
+        }
+
+        if (currentLength + header.length + 1 > textLimit) {
+          truncated = true;
+          break;
+        }
+        lines.push(header);
+        currentLength += header.length + 1;
+
+        // Format type dependencies as tree
+        const visited = new Set<string>([symbol.name]);
+        const depLines = formatTypeDependencyTree(symbol, typeGraph, '', visited, 5);
+        for (const line of depLines) {
+          const lineLength = line.length + 1;
+          if (currentLength + lineLength > textLimit) {
+            truncated = true;
+            break;
+          }
+          lines.push(line);
+          currentLength += lineLength;
+        }
+
+        if (truncated) break;
+      }
+    }
+
+    if (truncated) {
+      lines.push('');
+      lines.push('[truncated - text_limit reached]');
+      return lines.join('\n');
+    }
+
+    lines.push('');
+  }
+
+  // Section 3: SYMBOLS OVERVIEW (functions, classes)
   lines.push('=== SYMBOLS OVERVIEW ===');
   currentLength += 24;
 
-  for (const symbol of filteredSymbols) {
+  for (const symbol of filteredFunctionSymbols) {
     let line = `${symbol.kind} ${symbol.name}`;
     if (symbol.signature) {
       line += symbol.signature;
@@ -295,8 +458,8 @@ export function formatSymbolTree(
     return lines.join('\n');
   }
 
-  // Pass 2: Full trees for symbols with children or outer scope access
-  const symbolsWithDetails = filteredSymbols.filter(s =>
+  // Section 4: DETAILED MEMBERS (full trees for functions with children)
+  const symbolsWithDetails = filteredFunctionSymbols.filter(s =>
     (s.children && s.children.length > 0) ||
     (s.outerReads && s.outerReads.length > 0) ||
     (s.outerWrites && s.outerWrites.length > 0)
@@ -457,6 +620,10 @@ export function formatAdjacencyList(
     return 'No symbols found.';
   }
 
+  // Separate type symbols from function symbols
+  const typeSymbols = flatSymbols.filter(isTypeSymbol);
+  const functionSymbols = flatSymbols.filter(isFunctionSymbol);
+
   // Build call graph and find reachable symbols if depth limiting
   let reachableSymbols: Set<string> | null = null;
   if (depth !== Infinity) {
@@ -487,19 +654,90 @@ export function formatAdjacencyList(
   }
 
   // Filter symbols if we have a reachability constraint
-  const filteredSymbols = reachableSymbols
-    ? flatSymbols.filter(s => reachableSymbols!.has(s.name))
-    : flatSymbols;
+  const filteredFunctionSymbols = reachableSymbols
+    ? functionSymbols.filter(s => reachableSymbols!.has(s.name))
+    : functionSymbols;
 
   const lines: string[] = [];
   let currentLength = 0;
   let truncated = false;
 
-  // Section 1: SYMBOLS (flat list with signatures)
+  // Section 1: TYPE SYMBOLS (interfaces, types, enums)
+  if (typeSymbols.length > 0) {
+    lines.push('=== TYPE SYMBOLS ===');
+    currentLength += 21;
+
+    for (const symbol of typeSymbols) {
+      let line = `${symbol.kind} ${symbol.name}`;
+      if (showFiles) {
+        line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
+      }
+
+      const lineLength = line.length + 1;
+      if (currentLength + lineLength > textLimit) {
+        truncated = true;
+        break;
+      }
+      lines.push(line);
+      currentLength += lineLength;
+    }
+
+    if (truncated) {
+      lines.push('[truncated - text_limit reached]');
+      return lines.join('\n');
+    }
+
+    // Section 2: TYPE DEPENDENCIES
+    const typesWithDeps = typeSymbols.filter(s =>
+      s.extends || s.implements || s.typeUses
+    );
+
+    if (typesWithDeps.length > 0) {
+      lines.push('');
+      lines.push('=== TYPE DEPENDENCIES ===');
+      currentLength += 27;
+
+      for (const symbol of typesWithDeps) {
+        const depLines: string[] = [];
+        depLines.push(`${symbol.name}:`);
+
+        if (symbol.extends && symbol.extends.length > 0) {
+          depLines.push(`  extends: ${symbol.extends.join(', ')}`);
+        }
+        if (symbol.implements && symbol.implements.length > 0) {
+          depLines.push(`  implements: ${symbol.implements.join(', ')}`);
+        }
+        if (symbol.typeUses && symbol.typeUses.length > 0) {
+          depLines.push(`  uses: ${symbol.typeUses.join(', ')}`);
+        }
+
+        for (const line of depLines) {
+          const lineLength = line.length + 1;
+          if (currentLength + lineLength > textLimit) {
+            truncated = true;
+            break;
+          }
+          lines.push(line);
+          currentLength += lineLength;
+        }
+
+        if (truncated) break;
+      }
+    }
+
+    if (truncated) {
+      lines.push('[truncated - text_limit reached]');
+      return lines.join('\n');
+    }
+
+    lines.push('');
+  }
+
+  // Section 3: SYMBOLS (functions, classes - flat list with signatures)
   lines.push('=== SYMBOLS ===');
   currentLength += 16;
 
-  for (const symbol of filteredSymbols) {
+  for (const symbol of filteredFunctionSymbols) {
     let line = `${symbol.kind} ${symbol.name}`;
     if (symbol.signature) {
       line += symbol.signature;
@@ -522,7 +760,7 @@ export function formatAdjacencyList(
     return lines.join('\n');
   }
 
-  // Section 2: DEPENDENCIES (grouped by symbol)
+  // Section 4: DEPENDENCIES (grouped by symbol)
   lines.push('');
   lines.push('=== DEPENDENCIES ===');
   currentLength += 22;
@@ -564,7 +802,7 @@ export function formatAdjacencyList(
     return depLines;
   };
 
-  for (const symbol of filteredSymbols) {
+  for (const symbol of filteredFunctionSymbols) {
     // Format function dependencies
     if (symbol.kind === 'function') {
       const depLines = formatSymbolDeps(symbol.name, symbol);

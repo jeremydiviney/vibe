@@ -15,6 +15,7 @@ This is not optional. The symbol tree tool provides:
 - Instant overview of file/module structure
 - Function signatures and relationships
 - Call graphs showing what calls what
+- **Type symbols** (interfaces, types, enums) with dependency graphs
 - All without reading hundreds of lines of implementation
 
 This saves tokens and gives better context faster than file searches.
@@ -81,6 +82,12 @@ Only use `format: "tree"` when you specifically need to see nested call hierarch
 Each symbol shows location as: `(file:startLine-endLine)`
 
 Example: `function parse(source: string): Program (parser\parse.ts:10-25)`
+
+**Output Sections:**
+- `=== TYPE SYMBOLS ===` - Interfaces, types, and enums with line numbers
+- `=== TYPE DEPENDENCIES ===` - Shows which types extend/use other types (recursive trees in tree format)
+- `=== SYMBOLS ===` - Functions and classes with signatures
+- `=== DEPENDENCIES ===` - Function call graphs (what calls what)
 
 **Using with Read tool:**
 - `offset`: Use `startLine` to begin reading at the symbol
