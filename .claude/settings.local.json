@@ -38,7 +38,7 @@
       "mcp__symbol-tree__symbol_tree",
       "Skill(todo)",
       "Bash(wc:*)",
-      "Bash(claude mcp *)",
+      "Bash(claude mcp:*)",
       "Bash(sort:*)",
       "Skill(symbol-tree)",
       "WebFetch(domain:*)",
