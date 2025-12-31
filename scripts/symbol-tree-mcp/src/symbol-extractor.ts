@@ -4,7 +4,7 @@ import path from 'path';
 
 export interface SymbolInfo {
   name: string;
-  kind: 'function' | 'class' | 'interface' | 'type' | 'variable' | 'method' | 'property' | 'enum' | 'namespace' | 'calls' | 'uses' | 'reads' | 'writes';
+  kind: 'function' | 'class' | 'interface' | 'type' | 'variable' | 'method' | 'property' | 'enum' | 'namespace' | 'calls' | 'uses' | 'reads' | 'writes' | 'extends' | 'implements';
   signature?: string;
   exported: boolean;
   line: number;
@@ -12,6 +12,9 @@ export interface SymbolInfo {
   sourceFile?: string;  // For calls/uses - shows which file the called function is from (only when ambiguous)
   outerReads?: string[];   // Variables read from outer scope
   outerWrites?: string[];  // Variables written to outer scope
+  extends?: string[];      // For interfaces/classes that extend others
+  implements?: string[];   // For classes implementing interfaces
+  typeUses?: string[];     // Types referenced in the definition
   children?: SymbolInfo[];
 }
 
@@ -403,6 +406,115 @@ function extractInterfaceMembers(node: ts.InterfaceDeclaration, sourceFile: ts.S
     });
 }
 
+// Extract type dependencies from a type node (interfaces, type aliases, classes)
+// Returns arrays of: extends, implements, and uses (type references)
+function extractTypeDependencies(
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.ClassDeclaration | ts.EnumDeclaration,
+  sourceFile: ts.SourceFile,
+  allTypeNames: Set<string>
+): { extends?: string[], implements?: string[], uses?: string[] } {
+  const extendsTypes: string[] = [];
+  const implementsTypes: string[] = [];
+  const usesTypes = new Set<string>();
+
+  // Extract heritage clauses (extends/implements)
+  if (ts.isInterfaceDeclaration(node) || ts.isClassDeclaration(node)) {
+    if (node.heritageClauses) {
+      for (const clause of node.heritageClauses) {
+        for (const type of clause.types) {
+          const typeName = type.expression.getText(sourceFile);
+          if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+            extendsTypes.push(typeName);
+          } else if (clause.token === ts.SyntaxKind.ImplementsKeyword) {
+            implementsTypes.push(typeName);
+          }
+        }
+      }
+    }
+  }
+
+  // Collect type references from within the type definition
+  function collectTypeReferences(typeNode: ts.Node) {
+    // Type reference like `SomeType` or `SomeType<T>`
+    if (ts.isTypeReferenceNode(typeNode)) {
+      const typeName = typeNode.typeName.getText(sourceFile);
+      // Only include if it's a known type in our codebase
+      if (allTypeNames.has(typeName)) {
+        usesTypes.add(typeName);
+      }
+      // Also check type arguments
+      if (typeNode.typeArguments) {
+        for (const arg of typeNode.typeArguments) {
+          collectTypeReferences(arg);
+        }
+      }
+      return;
+    }
+
+    // Recurse into child nodes
+    ts.forEachChild(typeNode, collectTypeReferences);
+  }
+
+  // For type aliases, collect from the type definition
+  if (ts.isTypeAliasDeclaration(node)) {
+    collectTypeReferences(node.type);
+  }
+
+  // For interfaces, collect from members
+  if (ts.isInterfaceDeclaration(node)) {
+    for (const member of node.members) {
+      if (ts.isPropertySignature(member) && member.type) {
+        collectTypeReferences(member.type);
+      }
+      if (ts.isMethodSignature(member)) {
+        // Check return type
+        if (member.type) {
+          collectTypeReferences(member.type);
+        }
+        // Check parameter types
+        for (const param of member.parameters) {
+          if (param.type) {
+            collectTypeReferences(param.type);
+          }
+        }
+      }
+    }
+  }
+
+  // For classes, collect from members and constructor
+  if (ts.isClassDeclaration(node)) {
+    for (const member of node.members) {
+      if (ts.isPropertyDeclaration(member) && member.type) {
+        collectTypeReferences(member.type);
+      }
+      if (ts.isMethodDeclaration(member)) {
+        if (member.type) {
+          collectTypeReferences(member.type);
+        }
+        for (const param of member.parameters) {
+          if (param.type) {
+            collectTypeReferences(param.type);
+          }
+        }
+      }
+    }
+  }
+
+  // Remove extends/implements from uses (they're already tracked separately)
+  for (const ext of extendsTypes) {
+    usesTypes.delete(ext);
+  }
+  for (const impl of implementsTypes) {
+    usesTypes.delete(impl);
+  }
+
+  return {
+    extends: extendsTypes.length > 0 ? extendsTypes : undefined,
+    implements: implementsTypes.length > 0 ? implementsTypes : undefined,
+    uses: usesTypes.size > 0 ? Array.from(usesTypes).sort() : undefined
+  };
+}
+
 function extractSymbolsFromNode(
   node: ts.Node,
   sourceFile: ts.SourceFile,
@@ -522,26 +634,42 @@ function extractSymbolsFromNode(
 
 // First pass: collect all symbol names for call graph resolution
 // Returns a map of name -> list of file paths where it's defined
-function collectSymbolNamesWithFiles(sourceFile: ts.SourceFile, nameToFiles: Map<string, string[]>): void {
+// Also populates typeNames set with interface/type/enum names
+function collectSymbolNamesWithFiles(
+  sourceFile: ts.SourceFile,
+  nameToFiles: Map<string, string[]>,
+  typeNames: Set<string>
+): void {
   const filePath = sourceFile.fileName;
 
   function visit(node: ts.Node) {
     let name: string | null = null;
+    let isType = false;
 
     if (ts.isFunctionDeclaration(node) && node.name) {
       name = node.name.getText(sourceFile);
     } else if (ts.isClassDeclaration(node) && node.name) {
       name = node.name.getText(sourceFile);
+      isType = true; // Classes are also types
     } else if (ts.isInterfaceDeclaration(node)) {
       name = node.name.getText(sourceFile);
+      isType = true;
     } else if (ts.isTypeAliasDeclaration(node)) {
       name = node.name.getText(sourceFile);
+      isType = true;
+    } else if (ts.isEnumDeclaration(node)) {
+      name = node.name.getText(sourceFile);
+      isType = true;
     }
 
     if (name) {
       const files = nameToFiles.get(name) ?? [];
       files.push(filePath);
       nameToFiles.set(name, files);
+
+      if (isType) {
+        typeNames.add(name);
+      }
     }
 
     ts.forEachChild(node, visit);
@@ -652,6 +780,106 @@ function extractSymbolsWithCallGraph(
   };
 }
 
+// Extract type symbols (interfaces, types, enums) with their dependencies
+function extractTypeSymbols(
+  sourceFile: ts.SourceFile,
+  allTypeNames: Set<string>,
+  exportsOnly: boolean
+): FileSymbols | null {
+  const symbols: SymbolInfo[] = [];
+
+  function visit(node: ts.Node) {
+    // Interface declarations
+    if (ts.isInterfaceDeclaration(node)) {
+      const exported = isExported(node);
+      if (exportsOnly && !exported) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+
+      const deps = extractTypeDependencies(node, sourceFile, allTypeNames);
+      symbols.push({
+        name: node.name.getText(sourceFile),
+        kind: 'interface',
+        exported,
+        line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
+        extends: deps.extends,
+        typeUses: deps.uses
+      });
+    }
+
+    // Type alias declarations
+    if (ts.isTypeAliasDeclaration(node)) {
+      const exported = isExported(node);
+      if (exportsOnly && !exported) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+
+      const deps = extractTypeDependencies(node, sourceFile, allTypeNames);
+      symbols.push({
+        name: node.name.getText(sourceFile),
+        kind: 'type',
+        signature: getSignature(node, sourceFile),
+        exported,
+        line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
+        typeUses: deps.uses
+      });
+    }
+
+    // Enum declarations
+    if (ts.isEnumDeclaration(node)) {
+      const exported = isExported(node);
+      if (exportsOnly && !exported) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+
+      symbols.push({
+        name: node.name.getText(sourceFile),
+        kind: 'enum',
+        exported,
+        line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1
+      });
+    }
+
+    // Class declarations (as types)
+    if (ts.isClassDeclaration(node) && node.name) {
+      const exported = isExported(node);
+      if (exportsOnly && !exported) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+
+      const deps = extractTypeDependencies(node, sourceFile, allTypeNames);
+      symbols.push({
+        name: node.name.getText(sourceFile),
+        kind: 'class',
+        exported,
+        line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        endLine: sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1,
+        extends: deps.extends,
+        implements: deps.implements,
+        typeUses: deps.uses
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  ts.forEachChild(sourceFile, visit);
+
+  if (symbols.length === 0) return null;
+
+  return {
+    filePath: sourceFile.fileName,
+    symbols
+  };
+}
+
 export async function extractSymbols(options: ExtractOptions): Promise<FileSymbols[]> {
   const {
     path: basePath = process.cwd(),
@@ -694,8 +922,9 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
 
   // First pass: collect ALL symbol names across all files, tracking which files they appear in
   const nameToFiles = new Map<string, string[]>();
+  const allTypeNames = new Set<string>(); // Track type symbols (interfaces, types, enums, classes)
   for (const sourceFile of allSourceFiles) {
-    collectSymbolNamesWithFiles(sourceFile, nameToFiles);
+    collectSymbolNamesWithFiles(sourceFile, nameToFiles, allTypeNames);
   }
 
   // Build set of all symbol names and detect ambiguous names (defined in multiple files)
@@ -705,6 +934,15 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
       .filter(([_, fileList]) => fileList.length > 1)
       .map(([name]) => name)
   );
+
+  // Extract type symbols (interfaces, types, enums) with their dependencies
+  const typeSymbols: FileSymbols[] = [];
+  for (const sourceFile of allSourceFiles) {
+    const typeFileSymbols = extractTypeSymbols(sourceFile, allTypeNames, exportsOnly);
+    if (typeFileSymbols) {
+      typeSymbols.push(typeFileSymbols);
+    }
+  }
 
   // Second pass: extract symbols with DIRECT call graphs from ALL files (for complete call map)
   const allFileSymbols: FileSymbols[] = [];
@@ -846,6 +1084,43 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
       for (const s of reachableSymbols) {
         includedSymbols.add(s.name);
       }
+    }
+  }
+
+  // Merge type symbols into results
+  // For each type symbol file, merge type symbols into corresponding results entry
+  const resultsByPath = new Map<string, FileSymbols>();
+  for (const result of results) {
+    resultsByPath.set(path.resolve(result.filePath), result);
+  }
+
+  for (const typeFile of typeSymbols) {
+    const normalizedPath = path.resolve(typeFile.filePath);
+
+    // Only add type symbols from target files
+    if (!targetFilePaths.has(normalizedPath)) continue;
+
+    const existingFile = resultsByPath.get(normalizedPath);
+
+    if (existingFile) {
+      // Merge type symbols into existing file
+      const existingNames = new Set(existingFile.symbols.map(s => s.name));
+
+      for (const typeSym of typeFile.symbols) {
+        const existing = existingFile.symbols.find(s => s.name === typeSym.name);
+        if (existing) {
+          // Merge type dependency info into existing symbol (e.g., class)
+          existing.extends = typeSym.extends;
+          existing.implements = typeSym.implements;
+          existing.typeUses = typeSym.typeUses;
+        } else {
+          // Add new type symbol (interface, type alias, enum)
+          existingFile.symbols.push(typeSym);
+        }
+      }
+    } else {
+      // Add new file entry for type-only file
+      results.push(typeFile);
     }
   }
 
