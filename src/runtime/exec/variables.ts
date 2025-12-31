@@ -44,9 +44,12 @@ export function execDeclareVar(
   // Use explicit type if provided, otherwise use inferred type
   const finalType = type ?? inferredType;
 
+  // Copy source from lastResultSource if using lastResult (not explicit initialValue)
+  const source = initialValue !== undefined ? undefined : state.lastResultSource;
+
   const newLocals = {
     ...frame.locals,
-    [name]: { value: validatedValue, isConst, typeAnnotation: finalType },
+    [name]: { value: validatedValue, isConst, typeAnnotation: finalType, source },
   };
 
   // Add variable to ordered entries for context tracking
@@ -54,6 +57,7 @@ export function execDeclareVar(
 
   const newState: RuntimeState = {
     ...state,
+    lastResultSource: undefined,  // Clear after consuming
     callStack: [
       ...state.callStack.slice(0, -1),
       { ...frame, locals: newLocals, orderedEntries: newOrderedEntries },
@@ -94,12 +98,13 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
-    [name]: { ...variable, value: validatedValue },
+    [name]: { ...variable, value: validatedValue, source: state.lastResultSource },
   };
 
   // Update the correct frame in the call stack
   return {
     ...state,
+    lastResultSource: undefined,  // Clear after consuming
     callStack: [
       ...state.callStack.slice(0, frameIndex),
       { ...frame, locals: newLocals },

@@ -24,6 +24,7 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
           value: variable.value,
           type: variable.typeAnnotation as 'text' | 'json' | null,
           isConst: variable.isConst,
+          source: variable.source,
           frameName: frame.name,
           frameDepth: frameIndex,
         }];
@@ -60,6 +61,7 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
           value: variable.value,
           type: variable.typeAnnotation as 'text' | 'json' | null,
           isConst: variable.isConst,
+          source: variable.source,
           frameName: frame.name,
           frameDepth,
         }];
@@ -160,7 +162,9 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
         const typeStr = entry.type ? ` (${entry.type})` : '';
         const valueStr =
           typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value);
-        lines.push(`${indent}  - ${entry.name}${typeStr}: ${valueStr}`);
+        // Use <-- for AI/user responses, - for regular variables
+        const prefix = entry.source === 'ai' || entry.source === 'user' ? '<--' : '-';
+        lines.push(`${indent}  ${prefix} ${entry.name}${typeStr}: ${valueStr}`);
       } else {
         // Prompt entry
         lines.push(`${indent}  --> ${entry.aiType}: "${entry.prompt}"`);

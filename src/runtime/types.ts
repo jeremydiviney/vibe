@@ -11,11 +11,15 @@ export type RuntimeStatus =
   | 'completed'
   | 'error';
 
+// Source of a variable's value
+export type ValueSource = 'ai' | 'user' | undefined;
+
 // Variable entry with mutability flag and optional type
 export interface Variable {
   value: unknown;
   isConst: boolean;
   typeAnnotation: string | null;
+  source?: ValueSource;  // Where the value came from (AI response, user input, or code)
 }
 
 // Variable in context (for AI calls)
@@ -26,6 +30,7 @@ export interface ContextVariable {
   value: unknown;
   type: 'text' | 'json' | 'boolean' | 'number' | null;
   isConst: boolean;
+  source?: ValueSource;   // Where the value came from (AI response, user input, or code)
   // Call stack location info (helps AI understand variable scope)
   frameName: string;      // Name of the function/scope (e.g., "main", "processData")
   frameDepth: number;     // 0 = deepest/current frame, higher = older frames
@@ -163,6 +168,7 @@ export interface RuntimeState {
 
   // Results
   lastResult: unknown;
+  lastResultSource: ValueSource;  // Tracks source of lastResult (ai/user/undefined)
   aiHistory: AIOperation[];
   executionLog: ExecutionEntry[];
 
