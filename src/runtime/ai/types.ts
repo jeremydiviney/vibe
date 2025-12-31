@@ -8,6 +8,9 @@ export type { AIProviderType };
 /** Target types for AI responses */
 export type TargetType = 'text' | 'json' | 'boolean' | 'number' | null;
 
+/** Thinking level for extended reasoning */
+export type ThinkingLevel = 'none' | 'low' | 'medium' | 'high' | 'max';
+
 /** Model configuration from Vibe model declaration */
 export interface ModelConfig {
   name: string;
@@ -15,6 +18,7 @@ export interface ModelConfig {
   url: string | null;
   provider?: AIProviderType;
   maxRetriesOnError?: number;
+  thinkingLevel?: ThinkingLevel;
 }
 
 /** AI request for all providers */

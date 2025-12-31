@@ -84,6 +84,12 @@ export interface AIInteraction {
   response: unknown;
   timestamp: number;
   model: string;
+  // Model details for logging
+  modelDetails?: {
+    name: string;
+    provider: string;
+    url?: string;
+  };
   // The exact messages sent to the AI model
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
   targetType: string | null;

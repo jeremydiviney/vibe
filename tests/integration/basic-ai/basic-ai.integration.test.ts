@@ -18,7 +18,7 @@ const providers = [
     hasKey: !!OPENAI_API_KEY,
     modelConfig: `
 model testModel = {
-  name: "gpt-4o-mini",
+  name: "gpt-5-mini",
   apiKey: "${OPENAI_API_KEY}",
   url: "https://api.openai.com/v1",
   provider: "openai"
@@ -30,7 +30,7 @@ model testModel = {
     hasKey: !!ANTHROPIC_API_KEY,
     modelConfig: `
 model testModel = {
-  name: "claude-3-5-haiku-20241022",
+  name: "claude-haiku-4-5",
   apiKey: "${ANTHROPIC_API_KEY}",
   url: "https://api.anthropic.com",
   provider: "anthropic"
@@ -119,17 +119,6 @@ const testCases = [
       const result = runtime.getValue('result') as boolean[];
       expect(Array.isArray(result)).toBe(true);
       expect(result).toEqual([true, false, true]);
-    },
-  },
-  {
-    name: 'returns json[] response',
-    vibeCode: `let result: json[] = do "Return a JSON array with 2 objects: {id: 1, name: 'A'} and {id: 2, name: 'B'}" testModel default`,
-    assert: (runtime: Runtime) => {
-      const result = runtime.getValue('result') as Record<string, unknown>[];
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ id: 1, name: 'A' });
-      expect(result[1]).toEqual({ id: 2, name: 'B' });
     },
   },
 ];

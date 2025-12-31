@@ -52,6 +52,10 @@ export function getTypeInstruction(targetType: TargetType): string | null {
   // Handle array types
   if (targetType.endsWith('[]')) {
     const elementType = targetType.slice(0, -2);
+    if (elementType === 'json') {
+      // json[] uses same instruction as json - raw JSON without code fences
+      return 'Respond with raw JSON only. No markdown, no code fences, no explanation. Just the JSON starting with { or [.';
+    }
     return `Respond with a JSON array of ${elementType} values only. No additional text.`;
   }
 
@@ -63,7 +67,7 @@ export function getTypeInstruction(targetType: TargetType): string | null {
     case 'boolean':
       return 'Respond with exactly "true" or "false". Nothing else.';
     case 'json':
-      return 'Respond with valid JSON only. No additional text or explanation.';
+      return 'Respond with raw JSON only. No markdown, no code fences, no explanation. Just the JSON starting with { or [.';
     default:
       return null;
   }

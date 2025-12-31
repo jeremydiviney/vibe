@@ -7,19 +7,55 @@ import { Runtime, formatAIInteractions } from '../../../src/runtime';
 import { createRealAIProvider } from '../../../src/runtime/ai-provider';
 import { parse } from '../../../src/parser/parse';
 
+// API Keys from environment
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const hasOpenAIKey = !!OPENAI_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-const SOURCE = `
-// Number Analyzer - Comprehensive Integration Test
-// Tests: model, variables, types, AI calls, loops, conditionals, functions, arrays, operators, context
-
+// Provider configurations
+const providers = [
+  {
+    name: 'OpenAI',
+    hasKey: !!OPENAI_API_KEY,
+    modelConfig: `
 model analyzer = {
-  name: "gpt-4o-mini",
+  name: "gpt-5-mini",
   apiKey: "${OPENAI_API_KEY}",
   url: "https://api.openai.com/v1",
   provider: "openai"
 }
+`,
+  },
+  {
+    name: 'Anthropic',
+    hasKey: !!ANTHROPIC_API_KEY,
+    modelConfig: `
+model analyzer = {
+  name: "claude-haiku-4-5",
+  apiKey: "${ANTHROPIC_API_KEY}",
+  url: "https://api.anthropic.com",
+  provider: "anthropic",
+  thinkingLevel: "high"
+}
+`,
+  },
+  {
+    name: 'Google',
+    hasKey: !!GOOGLE_API_KEY,
+    modelConfig: `
+model analyzer = {
+  name: "gemini-3-flash-preview",
+  apiKey: "${GOOGLE_API_KEY}",
+  provider: "google"
+}
+`,
+  },
+];
+
+// Shared Vibe program (model config is prepended)
+const VIBE_PROGRAM = `
+// Number Analyzer - Comprehensive Integration Test
+// Tests: model, variables, types, AI calls, loops, conditionals, functions, arrays, operators, context
 
 // Function to check if a number is even
 function isEven(n: number): boolean {
@@ -72,8 +108,8 @@ let summary: text = do "Using the variables total, evenCount, oddCount, and cate
 let result: json = do "Return a JSON object with fields: analyzed, evenCount, oddCount, summary. Use the values from context variables: total for analyzed, evenCount, oddCount, and summary." analyzer default
 `;
 
-async function runVibe(source: string, logAi = true): Promise<Runtime> {
-  const program = parse(source);
+async function runVibe(modelConfig: string, logAi = true): Promise<Runtime> {
+  const program = parse(modelConfig + VIBE_PROGRAM);
   const runtime = new Runtime(
     program,
     createRealAIProvider(() => runtime.getState()),
@@ -89,62 +125,68 @@ async function runVibe(source: string, logAi = true): Promise<Runtime> {
   return runtime;
 }
 
-describe.skipIf(!hasOpenAIKey)('Multi-Feature Integration', () => {
-  test('number analyzer - full workflow with context', async () => {
-    const runtime = await runVibe(SOURCE);
+function runAssertions(runtime: Runtime) {
+  // Check numbers array was populated
+  const numbers = runtime.getValue('numbers') as number[];
+  expect(Array.isArray(numbers)).toBe(true);
+  expect(numbers).toHaveLength(5);
+  numbers.forEach(n => {
+    expect(typeof n).toBe('number');
+    expect(n).toBeGreaterThanOrEqual(-50);
+    expect(n).toBeLessThanOrEqual(150);
+  });
 
-    // Check numbers array was populated
-    const numbers = runtime.getValue('numbers') as number[];
-    expect(Array.isArray(numbers)).toBe(true);
-    expect(numbers).toHaveLength(5);
-    numbers.forEach(n => {
-      expect(typeof n).toBe('number');
-      expect(n).toBeGreaterThanOrEqual(-50);
-      expect(n).toBeLessThanOrEqual(150);
-    });
+  // Check counters
+  const evenCount = runtime.getValue('evenCount') as number;
+  const oddCount = runtime.getValue('oddCount') as number;
+  expect(typeof evenCount).toBe('number');
+  expect(typeof oddCount).toBe('number');
+  expect(evenCount + oddCount).toBe(5);
 
-    // Check counters
-    const evenCount = runtime.getValue('evenCount') as number;
-    const oddCount = runtime.getValue('oddCount') as number;
-    expect(typeof evenCount).toBe('number');
-    expect(typeof oddCount).toBe('number');
-    expect(evenCount + oddCount).toBe(5);
+  // Verify even/odd counting is correct
+  const actualEven = numbers.filter(n => n % 2 === 0).length;
+  const actualOdd = numbers.filter(n => n % 2 !== 0).length;
+  expect(evenCount).toBe(actualEven);
+  expect(oddCount).toBe(actualOdd);
 
-    // Verify even/odd counting is correct
-    const actualEven = numbers.filter(n => n % 2 === 0).length;
-    const actualOdd = numbers.filter(n => n % 2 !== 0).length;
-    expect(evenCount).toBe(actualEven);
-    expect(oddCount).toBe(actualOdd);
+  // Check categories array
+  const categories = runtime.getValue('categories') as string[];
+  expect(Array.isArray(categories)).toBe(true);
+  expect(categories).toHaveLength(5);
 
-    // Check categories array
-    const categories = runtime.getValue('categories') as string[];
-    expect(Array.isArray(categories)).toBe(true);
-    expect(categories).toHaveLength(5);
+  // Verify categories match the categorize function logic
+  numbers.forEach((n, i) => {
+    const expectedCat = n < 0 ? 'negative' : n === 0 ? 'zero' : n > 100 ? 'large' : 'small';
+    expect(categories[i]).toBe(expectedCat);
+  });
 
-    // Verify categories match the categorize function logic
-    numbers.forEach((n, i) => {
-      const expectedCat = n < 0 ? 'negative' : n === 0 ? 'zero' : n > 100 ? 'large' : 'small';
-      expect(categories[i]).toBe(expectedCat);
-    });
+  // Check total
+  const total = runtime.getValue('total') as number;
+  expect(total).toBe(5);
 
-    // Check total
-    const total = runtime.getValue('total') as number;
-    expect(total).toBe(5);
+  // Check summary is a non-empty string
+  const summary = runtime.getValue('summary') as string;
+  expect(typeof summary).toBe('string');
+  expect(summary.length).toBeGreaterThan(10);
 
-    // Check summary is a non-empty string
-    const summary = runtime.getValue('summary') as string;
-    expect(typeof summary).toBe('string');
-    expect(summary.length).toBeGreaterThan(10);
+  // Check final result object - AI should have read values from context
+  const result = runtime.getValue('result') as Record<string, unknown>;
+  expect(typeof result).toBe('object');
+  expect(result).not.toBeNull();
 
-    // Check final result object - AI should have read values from context
-    const result = runtime.getValue('result') as Record<string, unknown>;
-    expect(typeof result).toBe('object');
-    expect(result).not.toBeNull();
+  // The AI should have correctly read these values from context
+  expect(result.analyzed).toBe(5);
+  expect(result.evenCount).toBe(evenCount);
+  expect(result.oddCount).toBe(oddCount);
+  expect(typeof result.summary).toBe('string');
+}
 
-    // The AI should have correctly read these values from context
-    expect(result.analyzed).toBe(5);
-    expect(result.evenCount).toBe(evenCount);
-    expect(result.oddCount).toBe(oddCount);
-    expect(typeof result.summary).toBe('string');
-  }, 60000);
-});
+// Generate tests for each provider
+for (const provider of providers) {
+  describe.skipIf(!provider.hasKey)(`${provider.name} Multi-Feature Integration`, () => {
+    test('number analyzer - full workflow with context', async () => {
+      const runtime = await runVibe(provider.modelConfig);
+      runAssertions(runtime);
+    }, 120000);
+  });
+}

@@ -77,15 +77,34 @@ export function formatAIInteractions(interactions: AIInteraction[]): string {
     return 'No AI interactions recorded.';
   }
 
-  const header = [
+  // Collect unique models used
+  const modelsUsed = new Map<string, { name: string; provider: string; url?: string }>();
+  for (const interaction of interactions) {
+    if (interaction.modelDetails && !modelsUsed.has(interaction.model)) {
+      modelsUsed.set(interaction.model, interaction.modelDetails);
+    }
+  }
+
+  // Build header with model info
+  const headerLines = [
     '# AI Interaction Log',
     '',
     `Total interactions: ${interactions.length}`,
-    '',
-    '---',
-    '',
-  ].join('\n');
+  ];
 
+  if (modelsUsed.size > 0) {
+    headerLines.push('');
+    headerLines.push('## Models Used');
+    for (const [varName, details] of modelsUsed) {
+      headerLines.push(`- **${varName}**: ${details.name} (${details.provider})`);
+    }
+  }
+
+  headerLines.push('');
+  headerLines.push('---');
+  headerLines.push('');
+
+  const header = headerLines.join('\n');
   const formatted = interactions.map((interaction, i) => formatInteraction(interaction, i));
 
   return header + formatted.join('\n\n---\n\n');

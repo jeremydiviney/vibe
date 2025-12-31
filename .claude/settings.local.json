@@ -47,7 +47,9 @@
       "Bash(source .env)",
       "Bash(set +a)",
       "Bash(xargs:*)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:docs.anthropic.com)"
     ],
     "deny": [
       "Bash(rm:*)",

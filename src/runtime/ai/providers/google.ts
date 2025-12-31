@@ -1,7 +1,7 @@
 // Google Generative AI Provider Implementation using official SDK
 
 import { GoogleGenAI } from '@google/genai';
-import type { AIRequest, AIResponse } from '../types';
+import type { AIRequest, AIResponse, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildSystemMessage, buildContextMessage, buildPromptMessage } from '../formatters';
 import { typeToSchema, parseResponse } from '../schema';
@@ -9,6 +9,15 @@ import { typeToSchema, parseResponse } from '../schema';
 /** Google provider configuration */
 export const GOOGLE_CONFIG = {
   supportsStructuredOutput: true,
+};
+
+/** Map thinking level to Google Gemini 3 thinkingLevel */
+const THINKING_LEVEL_MAP: Record<ThinkingLevel, string | null> = {
+  none: null,       // Don't set thinkingConfig
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  max: 'high',      // Gemini 3 Flash max is 'high'
 };
 
 /**
@@ -38,6 +47,15 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
   try {
     // Build generation config
     const generationConfig: Record<string, unknown> = {};
+
+    // Add thinking config if level specified
+    const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
+    const googleThinkingLevel = thinkingLevel ? THINKING_LEVEL_MAP[thinkingLevel] : null;
+    if (googleThinkingLevel) {
+      generationConfig.thinkingConfig = {
+        thinkingLevel: googleThinkingLevel,
+      };
+    }
 
     // Add structured output schema if target type specified
     // Skip for json/json[] - Google requires non-empty properties for objects

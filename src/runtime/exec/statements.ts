@@ -71,6 +71,7 @@ export function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclara
     url: extractStringValue(stmt.config.url),
     provider: extractStringValue(stmt.config.provider),
     maxRetriesOnError: extractNumberValue(stmt.config.maxRetriesOnError),
+    thinkingLevel: extractStringValue(stmt.config.thinkingLevel),
   };
 
   const frame = currentFrame(state);

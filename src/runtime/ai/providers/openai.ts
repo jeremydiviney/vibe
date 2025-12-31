@@ -1,7 +1,7 @@
 // OpenAI Provider Implementation using official SDK
 
 import OpenAI from 'openai';
-import type { AIRequest, AIResponse } from '../types';
+import type { AIRequest, AIResponse, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildMessages } from '../formatters';
 import { typeToSchema, parseResponse } from '../schema';
@@ -10,6 +10,15 @@ import { typeToSchema, parseResponse } from '../schema';
 export const OPENAI_CONFIG = {
   defaultUrl: 'https://api.openai.com/v1',
   supportsStructuredOutput: true,
+};
+
+/** Map thinking level to OpenAI reasoning_effort */
+const REASONING_EFFORT_MAP: Record<ThinkingLevel, string> = {
+  none: 'none',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  max: 'xhigh',  // OpenAI uses 'xhigh' for max reasoning
 };
 
 /**
@@ -42,10 +51,15 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       })),
     };
 
+    // Add reasoning effort if thinking level specified
+    const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
+    if (thinkingLevel) {
+      (params as Record<string, unknown>).reasoning_effort = REASONING_EFFORT_MAP[thinkingLevel];
+    }
+
     // Add structured output format if target type specified
-    const isJsonType = targetType === 'json' || targetType === 'json[]';
-    if (targetType && isJsonType) {
-      // Use JSON mode for json/json[] - ensures valid JSON without requiring schema
+    if (targetType === 'json') {
+      // Use JSON mode for json - ensures valid JSON without requiring schema
       params.response_format = { type: 'json_object' };
     } else if (targetType) {
       const schema = typeToSchema(targetType);
@@ -90,17 +104,10 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     // Parse value from structured output or raw content
     let parsedValue: unknown;
     if (targetType && params.response_format) {
-      // Structured output wraps in { value: ... }
+      // Structured output wraps in { value: ... }, JSON mode returns raw JSON
       try {
         const parsed = JSON.parse(content);
-        // For json[], JSON mode returns an object wrapper - extract the array
-        if (targetType === 'json[]' && !Array.isArray(parsed) && typeof parsed === 'object') {
-          const values = Object.values(parsed as Record<string, unknown>);
-          const arrayValue = values.find((v) => Array.isArray(v));
-          parsedValue = arrayValue ?? parsed;
-        } else {
-          parsedValue = parsed.value ?? parsed;
-        }
+        parsedValue = parsed.value ?? parsed;
       } catch {
         parsedValue = parseResponse(content, targetType);
       }

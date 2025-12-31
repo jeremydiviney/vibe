@@ -86,6 +86,7 @@ export interface ModelConfig extends BaseNode {
   url: Expression | null;
   provider: Expression | null;          // AIProviderType - validated in semantic analyzer
   maxRetriesOnError: Expression | null; // Non-negative integer
+  thinkingLevel: Expression | null;     // "none" | "low" | "medium" | "high" | "max"
   providedFields: string[];             // For semantic validation
 }
 
