@@ -27,10 +27,16 @@ class MockAIProvider implements AIProvider {
   }
 }
 
+// Options for running a vibe program
+export interface RunVibeOptions {
+  aiProvider?: AIProvider;
+  file?: string;
+}
+
 // Main function to run a vibe program
-export async function runVibe(source: string, aiProvider?: AIProvider): Promise<unknown> {
+export async function runVibe(source: string, options?: RunVibeOptions): Promise<unknown> {
   // 1. Parse
-  const ast = parse(source);
+  const ast = parse(source, { file: options?.file });
 
   // 2. Semantic analysis
   const errors = analyze(ast, source);
@@ -39,7 +45,7 @@ export async function runVibe(source: string, aiProvider?: AIProvider): Promise<
   }
 
   // 3. Runtime
-  const runtime = new Runtime(ast, aiProvider ?? new MockAIProvider());
+  const runtime = new Runtime(ast, options?.aiProvider ?? new MockAIProvider(), { basePath: options?.file });
   return runtime.run();
 }
 
@@ -79,7 +85,7 @@ async function main(): Promise<void> {
 
   try {
     // Parse and analyze
-    const ast = parse(source);
+    const ast = parse(source, { file: filePath });
     const errors = analyze(ast, source);
     if (errors.length > 0) {
       throw errors[0];

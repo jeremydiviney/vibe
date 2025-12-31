@@ -120,10 +120,12 @@ export function step(state: RuntimeState): RuntimeState {
   try {
     return executeInstruction(newState, instruction);
   } catch (error) {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
     return {
       ...newState,
       status: 'error',
-      error: error instanceof Error ? error.message : String(error),
+      error: errorObj.message,
+      errorObject: errorObj,
     };
   }
 }
@@ -156,13 +158,13 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execExpression(state, instruction.expr);
 
     case 'exec_statements':
-      return execStatements(state, instruction.stmts, instruction.index);
+      return execStatements(state, instruction.stmts, instruction.index, instruction.location);
 
     case 'declare_var':
-      return execDeclareVar(state, instruction.name, instruction.isConst, instruction.type);
+      return execDeclareVar(state, instruction.name, instruction.isConst, instruction.type, undefined, instruction.location);
 
     case 'assign_var':
-      return execAssignVar(state, instruction.name);
+      return execAssignVar(state, instruction.name, instruction.location);
 
     case 'call_function':
       return execCallFunction(state, instruction.funcName, instruction.argCount);
@@ -207,10 +209,10 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       // Handle range: single number N → [1, 2, ..., N] (inclusive)
       if (typeof items === 'number') {
         if (!Number.isInteger(items)) {
-          throw new RuntimeError(`for-in range must be an integer, got ${items}`, { line: 1, column: 1 }, '');
+          throw new RuntimeError(`for-in range must be an integer, got ${items}`, instruction.location, '');
         }
         if (items < 0) {
-          throw new RuntimeError(`for-in range must be non-negative, got ${items}`, { line: 1, column: 1 }, '');
+          throw new RuntimeError(`for-in range must be non-negative, got ${items}`, instruction.location, '');
         }
         items = Array.from({ length: items }, (_, i) => i + 1);
       }
@@ -219,7 +221,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       // which produces an array before reaching for_in_init
 
       if (!Array.isArray(items)) {
-        throw new RuntimeError('for-in requires array or range', { line: 1, column: 1 }, '');
+        throw new RuntimeError('for-in requires array or range', instruction.location, '');
       }
 
       const frame = currentFrame(state);
@@ -228,7 +230,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return {
         ...state,
         instructionStack: [
-          { op: 'for_in_iterate', variable: stmt.variable, items, index: 0, body: stmt.body, savedKeys },
+          { op: 'for_in_iterate', variable: stmt.variable, items, index: 0, body: stmt.body, savedKeys, location: instruction.location },
           ...state.instructionStack,
         ],
       };
@@ -262,10 +264,10 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return {
         ...newState,
         instructionStack: [
-          { op: 'enter_block', savedKeys: bodyKeys },
-          ...body.body.map(s => ({ op: 'exec_statement' as const, stmt: s })),
-          { op: 'exit_block', savedKeys: bodyKeys },
-          { op: 'for_in_iterate', variable, items, index: index + 1, body, savedKeys },
+          { op: 'enter_block', savedKeys: bodyKeys, location: instruction.location },
+          ...body.body.map(s => ({ op: 'exec_statement' as const, stmt: s, location: s.location })),
+          { op: 'exit_block', savedKeys: bodyKeys, location: instruction.location },
+          { op: 'for_in_iterate', variable, items, index: index + 1, body, savedKeys, location: instruction.location },
           ...state.instructionStack,
         ],
       };
@@ -284,7 +286,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return {
         ...state,
         instructionStack: [
-          { op: 'while_iterate', stmt, savedKeys },
+          { op: 'while_iterate', stmt, savedKeys, location: instruction.location },
           ...state.instructionStack,
         ],
       };
@@ -299,11 +301,11 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return {
         ...state,
         instructionStack: [
-          { op: 'enter_block', savedKeys: bodyKeys },
-          ...stmt.body.body.map(s => ({ op: 'exec_statement' as const, stmt: s })),
-          { op: 'exit_block', savedKeys: bodyKeys },
-          { op: 'exec_expression', expr: stmt.condition },
-          { op: 'while_init', stmt, savedKeys },
+          { op: 'enter_block', savedKeys: bodyKeys, location: instruction.location },
+          ...stmt.body.body.map(s => ({ op: 'exec_statement' as const, stmt: s, location: s.location })),
+          { op: 'exit_block', savedKeys: bodyKeys, location: instruction.location },
+          { op: 'exec_expression', expr: stmt.condition, location: stmt.condition.location },
+          { op: 'while_init', stmt, savedKeys, location: instruction.location },
           ...state.instructionStack,
         ],
       };

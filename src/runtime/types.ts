@@ -1,4 +1,5 @@
 import * as AST from '../ast';
+import type { SourceLocation } from '../errors';
 
 // Runtime status
 export type RuntimeStatus =
@@ -174,76 +175,78 @@ export interface RuntimeState {
 
   // Error info
   error: string | null;
+  errorObject: Error | null;
 }
 
 // Instructions - what to execute next
+// All instructions have a location for error reporting
 export type Instruction =
   // Execute AST nodes
-  | { op: 'exec_statement'; stmt: AST.Statement }
-  | { op: 'exec_expression'; expr: AST.Expression }
-  | { op: 'exec_statements'; stmts: AST.Statement[]; index: number }
+  | { op: 'exec_statement'; stmt: AST.Statement; location: SourceLocation }
+  | { op: 'exec_expression'; expr: AST.Expression; location: SourceLocation }
+  | { op: 'exec_statements'; stmts: AST.Statement[]; index: number; location: SourceLocation }
 
   // Variable operations (use lastResult)
-  | { op: 'declare_var'; name: string; isConst: boolean; type: string | null }
-  | { op: 'assign_var'; name: string }
+  | { op: 'declare_var'; name: string; isConst: boolean; type: string | null; location: SourceLocation }
+  | { op: 'assign_var'; name: string; location: SourceLocation }
 
   // Function calls
-  | { op: 'call_function'; funcName: string; argCount: number }
-  | { op: 'push_frame'; name: string }
-  | { op: 'pop_frame' }
-  | { op: 'return_value' }
+  | { op: 'call_function'; funcName: string; argCount: number; location: SourceLocation }
+  | { op: 'push_frame'; name: string; location: SourceLocation }
+  | { op: 'pop_frame'; location: SourceLocation }
+  | { op: 'return_value'; location: SourceLocation }
 
   // Block scoping
-  | { op: 'enter_block'; savedKeys: string[] }
-  | { op: 'exit_block'; savedKeys: string[] }
+  | { op: 'enter_block'; savedKeys: string[]; location: SourceLocation }
+  | { op: 'exit_block'; savedKeys: string[]; location: SourceLocation }
 
   // AI operations (pause points)
-  | { op: 'ai_do'; model: string; context: AST.ContextSpecifier }
-  | { op: 'ai_ask'; model: string; context: AST.ContextSpecifier }
-  | { op: 'ai_vibe'; model: string; context: AST.ContextSpecifier }
+  | { op: 'ai_do'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
+  | { op: 'ai_ask'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
+  | { op: 'ai_vibe'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
 
   // TypeScript evaluation (pause point)
-  | { op: 'ts_eval'; params: string[]; body: string }
+  | { op: 'ts_eval'; params: string[]; body: string; location: SourceLocation }
 
   // Imported TS function call (pause point)
-  | { op: 'call_imported_ts'; funcName: string; argCount: number }
+  | { op: 'call_imported_ts'; funcName: string; argCount: number; location: SourceLocation }
 
   // Control flow
-  | { op: 'if_branch'; consequent: AST.BlockStatement; alternate?: AST.Statement | null }
+  | { op: 'if_branch'; consequent: AST.BlockStatement; alternate?: AST.Statement | null; location: SourceLocation }
 
   // For-in loop
-  | { op: 'for_in_init'; stmt: AST.ForInStatement }
-  | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[] }
+  | { op: 'for_in_init'; stmt: AST.ForInStatement; location: SourceLocation }
+  | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[]; location: SourceLocation }
 
   // While loop
-  | { op: 'while_init'; stmt: AST.WhileStatement; savedKeys: string[] }
-  | { op: 'while_iterate'; stmt: AST.WhileStatement; savedKeys: string[] }
+  | { op: 'while_init'; stmt: AST.WhileStatement; savedKeys: string[]; location: SourceLocation }
+  | { op: 'while_iterate'; stmt: AST.WhileStatement; savedKeys: string[]; location: SourceLocation }
 
   // Value building (for objects, arrays, function args)
-  | { op: 'push_value' }  // Push lastResult to valueStack
-  | { op: 'build_object'; keys: string[] }  // Pop N values, build object
-  | { op: 'build_array'; count: number }  // Pop N values, build array
-  | { op: 'build_range' }  // Pop end, pop start, build inclusive range array
-  | { op: 'collect_args'; count: number }  // Pop N values into array for function call
+  | { op: 'push_value'; location: SourceLocation }
+  | { op: 'build_object'; keys: string[]; location: SourceLocation }
+  | { op: 'build_array'; count: number; location: SourceLocation }
+  | { op: 'build_range'; location: SourceLocation }
+  | { op: 'collect_args'; count: number; location: SourceLocation }
 
   // Literals
-  | { op: 'literal'; value: unknown }
+  | { op: 'literal'; value: unknown; location: SourceLocation }
 
   // String interpolation
-  | { op: 'interpolate_string'; template: string }
+  | { op: 'interpolate_string'; template: string; location: SourceLocation }
 
   // Template literal interpolation (${var} syntax)
-  | { op: 'interpolate_template'; template: string }
+  | { op: 'interpolate_template'; template: string; location: SourceLocation }
 
   // Binary operators
-  | { op: 'binary_op'; operator: string }
+  | { op: 'binary_op'; operator: string; location: SourceLocation }
 
   // Unary operators
-  | { op: 'unary_op'; operator: string }
+  | { op: 'unary_op'; operator: string; location: SourceLocation }
 
   // Array access
-  | { op: 'index_access' }
-  | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean }
+  | { op: 'index_access'; location: SourceLocation }
+  | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean; location: SourceLocation }
 
   // Method call on object (built-in methods)
-  | { op: 'method_call'; method: string; argCount: number };
+  | { op: 'method_call'; method: string; argCount: number; location: SourceLocation };

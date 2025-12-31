@@ -251,7 +251,8 @@ export class Runtime {
     if (this.state.status === 'error') {
       // Save logs even on error if logging enabled
       this.saveLogsIfEnabled();
-      throw new Error(this.state.error ?? 'Unknown runtime error');
+      // Throw the original error object to preserve location info
+      throw this.state.errorObject ?? new Error(this.state.error ?? 'Unknown runtime error');
     }
 
     // Save logs on successful completion

@@ -274,6 +274,24 @@ describe('Runtime - Type Validation', () => {
     await expect(runtime.run()).rejects.toThrow("Variable 'x': expected boolean, got string");
   });
 
+  test('runtime error includes correct line number', async () => {
+    const runtime = createRuntime(`
+let first = "ok"
+let second = "also ok"
+let bad: boolean = "not a boolean"
+let fourth = "never reached"
+`);
+    try {
+      await runtime.run();
+      expect.unreachable('Should have thrown');
+    } catch (e) {
+      expect(e).toBeInstanceOf(Error);
+      const err = e as Error & { location?: { line: number; column: number } };
+      expect(err.location).toBeDefined();
+      expect(err.location?.line).toBe(4); // line 4: let bad: boolean = "not a boolean"
+    }
+  });
+
   // ============================================================================
   // Boolean type - function returns
   // ============================================================================

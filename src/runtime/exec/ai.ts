@@ -19,8 +19,8 @@ export function execDoExpression(state: RuntimeState, expr: AST.DoExpression): R
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.prompt },
-      { op: 'ai_do', model: extractModelName(expr.model), context: expr.context },
+      { op: 'exec_expression', expr: expr.prompt, location: expr.prompt.location },
+      { op: 'ai_do', model: extractModelName(expr.model), context: expr.context, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -33,8 +33,8 @@ export function execAskExpression(state: RuntimeState, expr: AST.AskExpression):
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.prompt },
-      { op: 'ai_ask', model: extractModelName(expr.model), context: expr.context },
+      { op: 'exec_expression', expr: expr.prompt, location: expr.prompt.location },
+      { op: 'ai_ask', model: extractModelName(expr.model), context: expr.context, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -52,8 +52,8 @@ export function execVibeExpression(state: RuntimeState, expr: AST.VibeExpression
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.prompt },
-      { op: 'ai_vibe', model: 'default', context: defaultContext },
+      { op: 'exec_expression', expr: expr.prompt, location: expr.prompt.location },
+      { op: 'ai_vibe', model: 'default', context: defaultContext, location: expr.location },
       ...state.instructionStack,
     ],
   };

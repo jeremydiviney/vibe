@@ -1,6 +1,7 @@
 // Statement execution helpers: declarations, control flow
 
 import * as AST from '../../ast';
+import type { SourceLocation } from '../../errors';
 import type { RuntimeState, Variable } from '../types';
 import { currentFrame } from '../state';
 import { requireBoolean, validateAndCoerce } from '../validation';
@@ -15,8 +16,8 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
     return {
       ...state,
       instructionStack: [
-        { op: 'exec_expression', expr: stmt.initializer },
-        { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation },
+        { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
+        { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, location: stmt.location },
         ...state.instructionStack,
       ],
     };
@@ -33,8 +34,8 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: stmt.initializer },
-      { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation },
+      { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
+      { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, location: stmt.location },
       ...state.instructionStack,
     ],
   };
@@ -94,8 +95,8 @@ export function execIfStatement(state: RuntimeState, stmt: AST.IfStatement): Run
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: stmt.condition },
-      { op: 'if_branch', consequent: stmt.consequent, alternate: stmt.alternate },
+      { op: 'exec_expression', expr: stmt.condition, location: stmt.condition.location },
+      { op: 'if_branch', consequent: stmt.consequent, alternate: stmt.alternate, location: stmt.location },
       ...state.instructionStack,
     ],
   };
@@ -108,8 +109,8 @@ export function execForInStatement(state: RuntimeState, stmt: AST.ForInStatement
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: stmt.iterable },
-      { op: 'for_in_init', stmt },
+      { op: 'exec_expression', expr: stmt.iterable, location: stmt.iterable.location },
+      { op: 'for_in_init', stmt, location: stmt.location },
       ...state.instructionStack,
     ],
   };
@@ -125,8 +126,8 @@ export function execWhileStatement(state: RuntimeState, stmt: AST.WhileStatement
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: stmt.condition },
-      { op: 'while_init', stmt, savedKeys },
+      { op: 'exec_expression', expr: stmt.condition, location: stmt.condition.location },
+      { op: 'while_init', stmt, savedKeys, location: stmt.location },
       ...state.instructionStack,
     ],
   };
@@ -146,7 +147,7 @@ export function execIfBranch(
     return {
       ...state,
       instructionStack: [
-        { op: 'exec_statement', stmt: consequent },
+        { op: 'exec_statement', stmt: consequent, location: consequent.location },
         ...state.instructionStack,
       ],
     };
@@ -154,7 +155,7 @@ export function execIfBranch(
     return {
       ...state,
       instructionStack: [
-        { op: 'exec_statement', stmt: alternate },
+        { op: 'exec_statement', stmt: alternate, location: alternate.location },
         ...state.instructionStack,
       ],
     };
@@ -172,13 +173,13 @@ export function execBlockStatement(state: RuntimeState, stmt: AST.BlockStatement
 
   // Push statements in order (we pop from front, so first statement first)
   const stmtInstructions = stmt.body
-    .map((s) => ({ op: 'exec_statement' as const, stmt: s }));
+    .map((s) => ({ op: 'exec_statement' as const, stmt: s, location: s.location }));
 
   return {
     ...state,
     instructionStack: [
       ...stmtInstructions,
-      { op: 'exit_block', savedKeys },
+      { op: 'exit_block', savedKeys, location: stmt.location },
       ...state.instructionStack,
     ],
   };
@@ -222,8 +223,8 @@ export function execReturnStatement(state: RuntimeState, stmt: AST.ReturnStateme
     return {
       ...state,
       instructionStack: [
-        { op: 'exec_expression', expr: stmt.value },
-        { op: 'return_value' },
+        { op: 'exec_expression', expr: stmt.value, location: stmt.value.location },
+        { op: 'return_value', location: stmt.location },
         ...state.instructionStack,
       ],
     };
@@ -273,16 +274,17 @@ export function execReturnValue(state: RuntimeState): RuntimeState {
 /**
  * Execute statements at index - sequential statement execution.
  */
-export function execStatements(state: RuntimeState, stmts: AST.Statement[], index: number): RuntimeState {
+export function execStatements(state: RuntimeState, stmts: AST.Statement[], index: number, location: SourceLocation): RuntimeState {
   if (index >= stmts.length) {
     return state;
   }
 
+  const stmt = stmts[index];
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_statement', stmt: stmts[index] },
-      { op: 'exec_statements', stmts, index: index + 1 },
+      { op: 'exec_statement', stmt, location: stmt.location },
+      { op: 'exec_statements', stmts, index: index + 1, location },
       ...state.instructionStack,
     ],
   };
@@ -333,7 +335,7 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
       return {
         ...state,
         instructionStack: [
-          { op: 'exec_expression', expr: stmt.expression },
+          { op: 'exec_expression', expr: stmt.expression, location: stmt.expression.location },
           ...state.instructionStack,
         ],
       };

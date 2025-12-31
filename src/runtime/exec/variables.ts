@@ -1,5 +1,6 @@
 // Variable handling: lookup, declare, assign
 
+import type { SourceLocation } from '../../errors';
 import type { RuntimeState, Variable, StackFrame } from '../types';
 import { currentFrame } from '../state';
 import { validateAndCoerce } from '../validation';
@@ -28,7 +29,8 @@ export function execDeclareVar(
   name: string,
   isConst: boolean,
   type: string | null,
-  initialValue?: unknown
+  initialValue?: unknown,
+  location?: SourceLocation
 ): RuntimeState {
   const frame = currentFrame(state);
 
@@ -37,7 +39,7 @@ export function execDeclareVar(
   }
 
   const value = initialValue !== undefined ? initialValue : state.lastResult;
-  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name);
+  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name, location);
 
   // Use explicit type if provided, otherwise use inferred type
   const finalType = type ?? inferredType;
@@ -73,7 +75,7 @@ export function execDeclareVar(
 /**
  * Assign a value to an existing variable (from lastResult).
  */
-export function execAssignVar(state: RuntimeState, name: string): RuntimeState {
+export function execAssignVar(state: RuntimeState, name: string, location?: SourceLocation): RuntimeState {
   // Walk scope chain to find the variable
   const found = lookupVariable(state, name);
 
@@ -87,7 +89,7 @@ export function execAssignVar(state: RuntimeState, name: string): RuntimeState {
     throw new Error(`TypeError: Cannot assign to constant '${name}'`);
   }
 
-  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name);
+  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name, location);
 
   const frame = state.callStack[frameIndex];
   const newLocals = {
