@@ -34,7 +34,6 @@
       "Bash(grep:*)",
       "Bash(mv:*)",
       "WebSearch",
-
       "mcp__symbol-tree__symbol_tree",
       "Skill(todo)",
       "Bash(wc:*)",
@@ -42,7 +41,13 @@
       "Bash(sort:*)",
       "Skill(symbol-tree)",
       "WebFetch(domain:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(taskkill:*)",
+      "Bash(set -a)",
+      "Bash(source .env)",
+      "Bash(set +a)",
+      "Bash(xargs:*)",
+      "WebFetch(domain:ai.google.dev)"
     ],
     "deny": [
       "Bash(rm:*)",
