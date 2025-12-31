@@ -43,9 +43,11 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     };
 
     // Add structured output format if target type specified
-    // Skip structured output for json types (requires knowing schema upfront)
     const isJsonType = targetType === 'json' || targetType === 'json[]';
-    if (targetType && !isJsonType) {
+    if (targetType && isJsonType) {
+      // Use JSON mode for json/json[] - ensures valid JSON without requiring schema
+      params.response_format = { type: 'json_object' };
+    } else if (targetType) {
       const schema = typeToSchema(targetType);
       if (schema) {
         params.response_format = {
@@ -91,7 +93,14 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       // Structured output wraps in { value: ... }
       try {
         const parsed = JSON.parse(content);
-        parsedValue = parsed.value ?? parsed;
+        // For json[], JSON mode returns an object wrapper - extract the array
+        if (targetType === 'json[]' && !Array.isArray(parsed) && typeof parsed === 'object') {
+          const values = Object.values(parsed as Record<string, unknown>);
+          const arrayValue = values.find((v) => Array.isArray(v));
+          parsedValue = arrayValue ?? parsed;
+        } else {
+          parsedValue = parsed.value ?? parsed;
+        }
       } catch {
         parsedValue = parseResponse(content, targetType);
       }

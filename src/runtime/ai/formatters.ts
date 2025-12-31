@@ -33,18 +33,26 @@ export function buildContextMessage(contextText: string): string | null {
 /**
  * Build the prompt message with optional type instruction.
  * For providers without structured output support, appends type instruction.
+ * For json/json[] types, always adds instruction since structured output can't enforce unknown schemas.
  */
 export function buildPromptMessage(
   prompt: string,
   targetType: TargetType,
   supportsStructuredOutput: boolean
 ): string {
-  // If provider supports structured output, type is enforced via schema
-  if (supportsStructuredOutput || !targetType) {
+  if (!targetType) {
     return prompt;
   }
 
-  // For providers without structured output, append type instruction
+  // json/json[] types always need instruction - structured output can't handle unknown schemas
+  const isJsonType = targetType === 'json' || targetType === 'json[]';
+
+  // Skip type instruction if provider uses structured output (except for json types)
+  if (supportsStructuredOutput && !isJsonType) {
+    return prompt;
+  }
+
+  // Append type instruction
   const typeInstruction = getTypeInstruction(targetType);
   if (!typeInstruction) {
     return prompt;

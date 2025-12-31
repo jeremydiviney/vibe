@@ -40,7 +40,9 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
     const generationConfig: Record<string, unknown> = {};
 
     // Add structured output schema if target type specified
-    if (targetType) {
+    // Skip for json/json[] - Google requires non-empty properties for objects
+    const isJsonType = targetType === 'json' || targetType === 'json[]';
+    if (targetType && !isJsonType) {
       const schema = typeToSchema(targetType);
       if (schema) {
         generationConfig.responseMimeType = 'application/json';

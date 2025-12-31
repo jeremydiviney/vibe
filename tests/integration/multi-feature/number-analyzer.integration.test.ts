@@ -15,7 +15,7 @@ const SOURCE = `
 // Tests: model, variables, types, AI calls, loops, conditionals, functions, arrays, operators, context
 
 model analyzer = {
-  name: "gpt-5-mini",
+  name: "gpt-4o-mini",
   apiKey: "${OPENAI_API_KEY}",
   url: "https://api.openai.com/v1",
   provider: "openai"
