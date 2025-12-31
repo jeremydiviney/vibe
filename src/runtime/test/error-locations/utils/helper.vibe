@@ -1,0 +1,5 @@
+export function processData(): text {
+  let valid = "some text"
+  let invalid: number = "not a number"
+  return valid
+}

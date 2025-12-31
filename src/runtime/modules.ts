@@ -112,7 +112,8 @@ async function loadVibeModuleRecursive(
 
   // Read and parse the .vibe file
   const source = await Bun.file(modulePath).text();
-  const program = parse(source);
+  // Use import source path for error messages (relative path as written in import)
+  const program = parse(source, { file: importDecl.source });
 
   // Extract exports from the program
   const exports = extractVibeExports(program);

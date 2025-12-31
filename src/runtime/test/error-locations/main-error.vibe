@@ -1,0 +1,4 @@
+let first = "ok"
+let second = "also ok"
+let bad: boolean = "not a boolean"
+let fourth = "never reached"

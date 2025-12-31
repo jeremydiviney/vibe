@@ -1,5 +1,7 @@
 // Type validation and coercion utilities
 
+import { RuntimeError, type SourceLocation } from '../errors';
+
 /**
  * Validates a value against a type annotation and coerces if necessary.
  * Returns { value, inferredType } where inferredType is set when no explicit type was given.
@@ -7,7 +9,8 @@
 export function validateAndCoerce(
   value: unknown,
   type: string | null,
-  varName: string
+  varName: string,
+  location?: SourceLocation
 ): { value: unknown; inferredType: string | null } {
   // If no type annotation, infer from JavaScript type
   if (!type) {
@@ -32,12 +35,12 @@ export function validateAndCoerce(
     const elementType = type.slice(0, -2);  // "text[]" -> "text", "text[][]" -> "text[]"
 
     if (!Array.isArray(value)) {
-      throw new Error(`TypeError: Variable '${varName}': expected ${type} (array), got ${typeof value}`);
+      throw new RuntimeError(`Variable '${varName}': expected ${type} (array), got ${typeof value}`, location);
     }
 
     // Validate each element recursively
     const validatedElements = value.map((elem, i) => {
-      const { value: validated } = validateAndCoerce(elem, elementType, `${varName}[${i}]`);
+      const { value: validated } = validateAndCoerce(elem, elementType, `${varName}[${i}]`, location);
       return validated;
     });
 
@@ -47,7 +50,7 @@ export function validateAndCoerce(
   // Validate text type - must be a string
   if (type === 'text') {
     if (typeof value !== 'string') {
-      throw new Error(`TypeError: Variable '${varName}': expected text (string), got ${typeof value}`);
+      throw new RuntimeError(`Variable '${varName}': expected text (string), got ${typeof value}`, location);
     }
     return { value, inferredType: 'text' };
   }
@@ -61,13 +64,13 @@ export function validateAndCoerce(
       try {
         result = JSON.parse(value);
       } catch {
-        throw new Error(`TypeError: Variable '${varName}': invalid JSON string`);
+        throw new RuntimeError(`Variable '${varName}': invalid JSON string`, location);
       }
     }
 
     // Validate the result is an object or array (not a primitive)
     if (typeof result !== 'object' || result === null) {
-      throw new Error(`TypeError: Variable '${varName}': expected JSON (object or array), got ${typeof value}`);
+      throw new RuntimeError(`Variable '${varName}': expected JSON (object or array), got ${typeof value}`, location);
     }
     return { value: result, inferredType: 'json' };
   }
@@ -75,7 +78,7 @@ export function validateAndCoerce(
   // Validate boolean type - must be a boolean
   if (type === 'boolean') {
     if (typeof value !== 'boolean') {
-      throw new Error(`TypeError: Variable '${varName}': expected boolean, got ${typeof value}`);
+      throw new RuntimeError(`Variable '${varName}': expected boolean, got ${typeof value}`, location);
     }
     return { value, inferredType: 'boolean' };
   }
@@ -83,10 +86,10 @@ export function validateAndCoerce(
   // Validate number type - must be a finite number
   if (type === 'number') {
     if (typeof value !== 'number') {
-      throw new Error(`TypeError: Variable '${varName}': expected number, got ${typeof value}`);
+      throw new RuntimeError(`Variable '${varName}': expected number, got ${typeof value}`, location);
     }
     if (!Number.isFinite(value)) {
-      throw new Error(`TypeError: Variable '${varName}': number must be finite, got ${value}`);
+      throw new RuntimeError(`Variable '${varName}': number must be finite, got ${value}`, location);
     }
     return { value, inferredType: 'number' };
   }

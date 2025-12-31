@@ -51,6 +51,7 @@ function executeVibeFunction(
   const bodyInstructions = func.body.body.map((s) => ({
     op: 'exec_statement' as const,
     stmt: s,
+    location: s.location,
   }));
 
   return {
@@ -59,7 +60,7 @@ function executeVibeFunction(
     callStack: [...state.callStack, newFrame],
     instructionStack: [
       ...bodyInstructions,
-      { op: 'pop_frame' },
+      { op: 'pop_frame', location: func.body.location },
       ...state.instructionStack,
     ],
     lastResult: null,

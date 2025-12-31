@@ -1,0 +1,3 @@
+import { processData } from "./utils/helper.vibe"
+
+let result = processData()

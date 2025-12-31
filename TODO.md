@@ -119,10 +119,11 @@
   - [ ] Auto-parallelize independent AI calls (no data dependencies)
   - [ ] Or add explicit `parallel` keyword for concurrent execution
   - [ ] Configurable concurrency limit
-- [ ] Source location tracking
-  - [ ] Capture line/column in parser for AST nodes
-  - [ ] Include source location in AI interaction logs
-  - [ ] Better error messages with line numbers
+- [x] Source location tracking
+  - [x] Capture line/column in parser for AST nodes (already done via Chevrotain)
+  - [x] Add required `location: SourceLocation` to all Instruction types
+  - [x] Propagate location from AST nodes to Instructions during execution
+  - [x] RuntimeError uses instruction location for accurate error messages
 - [ ] Context improvements for AI conversation history
   - [ ] Show AI response attribution: `summary = (AI response)` instead of just `summary: "..."`
   - [ ] Helps AI understand that variable values came from its own prior responses

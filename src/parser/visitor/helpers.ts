@@ -4,6 +4,17 @@ import type { IToken, CstNode } from 'chevrotain';
 import type { SourceLocation } from '../../errors';
 import type * as AST from '../../ast';
 
+// Current file being parsed (set before parsing, used in tokenLocation)
+let currentFile: string | undefined;
+
+/**
+ * Set the current file path for location tracking.
+ * Call this before parsing a file.
+ */
+export function setCurrentFile(file: string | undefined): void {
+  currentFile = file;
+}
+
 /**
  * Get location from a token.
  */
@@ -11,6 +22,7 @@ export function tokenLocation(token: IToken): SourceLocation {
   return {
     line: token.startLine ?? 1,
     column: token.startColumn ?? 1,
+    file: currentFile,
   };
 }
 

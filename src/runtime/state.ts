@@ -22,7 +22,7 @@ export function createInitialState(
   // Create initial instruction stack with all top-level statements
   // We pop from the front, so first statement should be at index 0
   const instructionStack = program.body
-    .map((stmt) => ({ op: 'exec_statement' as const, stmt }));
+    .map((stmt) => ({ op: 'exec_statement' as const, stmt, location: stmt.location }));
 
   return {
     status: 'running',
@@ -45,6 +45,7 @@ export function createInitialState(
     pendingTS: null,
     pendingImportedTsCall: null,
     error: null,
+    errorObject: null,
   };
 }
 

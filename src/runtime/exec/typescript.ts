@@ -43,7 +43,7 @@ export function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeStat
   return {
     ...state,
     instructionStack: [
-      { op: 'ts_eval', params: expr.params, body: expr.body },
+      { op: 'ts_eval', params: expr.params, body: expr.body, location: expr.location },
       ...state.instructionStack,
     ],
   };

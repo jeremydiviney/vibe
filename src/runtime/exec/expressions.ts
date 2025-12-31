@@ -52,8 +52,8 @@ export function execAssignmentExpression(state: RuntimeState, expr: AST.Assignme
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.value },
-      { op: 'assign_var', name: expr.target.name },
+      { op: 'exec_expression', expr: expr.value, location: expr.value.location },
+      { op: 'assign_var', name: expr.target.name, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -70,15 +70,15 @@ export function execObjectLiteral(state: RuntimeState, expr: AST.ObjectLiteral):
   // Evaluate properties in order, push to value stack, then build
   const keys = expr.properties.map((p) => p.key);
   const propInstructions = expr.properties.flatMap((p) => [
-    { op: 'exec_expression' as const, expr: p.value },
-    { op: 'push_value' as const },
+    { op: 'exec_expression' as const, expr: p.value, location: p.value.location },
+    { op: 'push_value' as const, location: p.value.location },
   ]);
 
   return {
     ...state,
     instructionStack: [
       ...propInstructions,
-      { op: 'build_object', keys },
+      { op: 'build_object', keys, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -93,15 +93,15 @@ export function execArrayLiteral(state: RuntimeState, expr: AST.ArrayLiteral): R
   }
 
   const elemInstructions = expr.elements.flatMap((e) => [
-    { op: 'exec_expression' as const, expr: e },
-    { op: 'push_value' as const },
+    { op: 'exec_expression' as const, expr: e, location: e.location },
+    { op: 'push_value' as const, location: e.location },
   ]);
 
   return {
     ...state,
     instructionStack: [
       ...elemInstructions,
-      { op: 'build_array', count: expr.elements.length },
+      { op: 'build_array', count: expr.elements.length, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -168,10 +168,10 @@ export function execBinaryExpression(state: RuntimeState, expr: AST.BinaryExpres
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.left },
-      { op: 'push_value' },
-      { op: 'exec_expression', expr: expr.right },
-      { op: 'binary_op', operator: expr.operator },
+      { op: 'exec_expression', expr: expr.left, location: expr.left.location },
+      { op: 'push_value', location: expr.left.location },
+      { op: 'exec_expression', expr: expr.right, location: expr.right.location },
+      { op: 'binary_op', operator: expr.operator, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -184,8 +184,8 @@ export function execUnaryExpression(state: RuntimeState, expr: AST.UnaryExpressi
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.operand },
-      { op: 'unary_op', operator: expr.operator },
+      { op: 'exec_expression', expr: expr.operand, location: expr.operand.location },
+      { op: 'unary_op', operator: expr.operator, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -198,10 +198,10 @@ export function execIndexExpression(state: RuntimeState, expr: AST.IndexExpressi
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.object },
-      { op: 'push_value' },
-      { op: 'exec_expression', expr: expr.index },
-      { op: 'index_access' },
+      { op: 'exec_expression', expr: expr.object, location: expr.object.location },
+      { op: 'push_value', location: expr.object.location },
+      { op: 'exec_expression', expr: expr.index, location: expr.index.location },
+      { op: 'index_access', location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -215,9 +215,9 @@ export function execMemberExpression(state: RuntimeState, expr: AST.MemberExpres
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.object },
-      { op: 'push_value' },
-      { op: 'literal', value: { __methodRef: true, method: expr.property } },
+      { op: 'exec_expression', expr: expr.object, location: expr.object.location },
+      { op: 'push_value', location: expr.object.location },
+      { op: 'literal', value: { __methodRef: true, method: expr.property }, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -227,31 +227,31 @@ export function execMemberExpression(state: RuntimeState, expr: AST.MemberExpres
  * Slice expression - evaluate object, push, evaluate start/end if present, slice array.
  */
 export function execSliceExpression(state: RuntimeState, expr: AST.SliceExpression): RuntimeState {
-  const instructions: Array<{ op: string; expr?: AST.Expression; hasStart?: boolean; hasEnd?: boolean }> = [];
+  const instructions: RuntimeState['instructionStack'] = [];
 
   // Push the object first
-  instructions.push({ op: 'exec_expression', expr: expr.object });
-  instructions.push({ op: 'push_value' });
+  instructions.push({ op: 'exec_expression', expr: expr.object, location: expr.object.location });
+  instructions.push({ op: 'push_value', location: expr.object.location });
 
   // Push start if present
   if (expr.start) {
-    instructions.push({ op: 'exec_expression', expr: expr.start });
-    instructions.push({ op: 'push_value' });
+    instructions.push({ op: 'exec_expression', expr: expr.start, location: expr.start.location });
+    instructions.push({ op: 'push_value', location: expr.start.location });
   }
 
   // Push end if present
   if (expr.end) {
-    instructions.push({ op: 'exec_expression', expr: expr.end });
-    instructions.push({ op: 'push_value' });
+    instructions.push({ op: 'exec_expression', expr: expr.end, location: expr.end.location });
+    instructions.push({ op: 'push_value', location: expr.end.location });
   }
 
   // Slice operation
-  instructions.push({ op: 'slice_access', hasStart: !!expr.start, hasEnd: !!expr.end });
+  instructions.push({ op: 'slice_access', hasStart: !!expr.start, hasEnd: !!expr.end, location: expr.location });
 
   return {
     ...state,
     instructionStack: [
-      ...(instructions as RuntimeState['instructionStack']),
+      ...instructions,
       ...state.instructionStack,
     ],
   };
@@ -264,11 +264,11 @@ export function execRangeExpression(state: RuntimeState, expr: AST.RangeExpressi
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.start },
-      { op: 'push_value' },
-      { op: 'exec_expression', expr: expr.end },
-      { op: 'push_value' },
-      { op: 'build_range' },
+      { op: 'exec_expression', expr: expr.start, location: expr.start.location },
+      { op: 'push_value', location: expr.start.location },
+      { op: 'exec_expression', expr: expr.end, location: expr.end.location },
+      { op: 'push_value', location: expr.end.location },
+      { op: 'build_range', location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -305,17 +305,17 @@ export function execBuildRange(state: RuntimeState): RuntimeState {
 export function execCallExpression(state: RuntimeState, expr: AST.CallExpression): RuntimeState {
   // Evaluate callee and all arguments, then call
   const argInstructions = expr.arguments.flatMap((arg) => [
-    { op: 'exec_expression' as const, expr: arg },
-    { op: 'push_value' as const },
+    { op: 'exec_expression' as const, expr: arg, location: arg.location },
+    { op: 'push_value' as const, location: arg.location },
   ]);
 
   return {
     ...state,
     instructionStack: [
-      { op: 'exec_expression', expr: expr.callee },
-      { op: 'push_value' },  // Save callee to value stack
+      { op: 'exec_expression', expr: expr.callee, location: expr.callee.location },
+      { op: 'push_value', location: expr.callee.location },  // Save callee to value stack
       ...argInstructions,
-      { op: 'call_function', funcName: '', argCount: expr.arguments.length },
+      { op: 'call_function', funcName: '', argCount: expr.arguments.length, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -330,7 +330,7 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
       return {
         ...state,
         instructionStack: [
-          { op: 'interpolate_string', template: expr.value },
+          { op: 'interpolate_string', template: expr.value, location: expr.location },
           ...state.instructionStack,
         ],
       };
@@ -339,7 +339,7 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
       return {
         ...state,
         instructionStack: [
-          { op: 'interpolate_template', template: expr.value },
+          { op: 'interpolate_template', template: expr.value, location: expr.location },
           ...state.instructionStack,
         ],
       };
