@@ -58,10 +58,11 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     }
 
     // Add structured output format if target type specified
+    // Skip for text - just return raw text without structured output
     if (targetType === 'json') {
       // Use JSON mode for json - ensures valid JSON without requiring schema
       params.response_format = { type: 'json_object' };
-    } else if (targetType) {
+    } else if (targetType && targetType !== 'text') {
       const schema = typeToSchema(targetType);
       if (schema) {
         params.response_format = {
