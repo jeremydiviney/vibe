@@ -49,7 +49,9 @@
       "Bash(xargs:*)",
       "WebFetch(domain:ai.google.dev)",
       "WebFetch(domain:platform.openai.com)",
-      "WebFetch(domain:docs.anthropic.com)"
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:claude.com)"
     ],
     "deny": [
       "Bash(rm:*)",
