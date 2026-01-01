@@ -18,7 +18,7 @@
   - [ ] Parser support (already exists?)
   - [ ] Runtime execution
 
-### Context Management Features (Future)
+### Context Management Features
 - [ ] Context checkpoints beyond local/global
 - [ ] Context orchestration functions
 - [ ] Variable visibility modifiers
@@ -27,6 +27,13 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Context modes for loops and functions
+  - [x] Trailing keywords: `forget`, `verbose`, `compress("prompt")`
+  - [x] Snapshot values in orderedEntries (not references)
+  - [x] Scope-enter/scope-exit markers for context output
+  - [x] Store AI response in prompt entry when AI returns
+  - [x] Default behavior: verbose (keep full history)
 
 - [x] Anthropic prompt caching optimization
   - [x] Progressive chunked caching for growing context
@@ -70,6 +77,3 @@
   - [x] Syntax: `text[]`, `boolean[]`, `json[]`, nested arrays
   - [x] Strict runtime validation of element types
 
-- [x] Scoping & Expression Evaluation
-  - [x] C-style scope chain (function → global)
-  - [x] No closures - functions always pure

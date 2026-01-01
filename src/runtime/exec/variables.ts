@@ -52,8 +52,18 @@ export function execDeclareVar(
     [name]: { value: validatedValue, isConst, typeAnnotation: finalType, source },
   };
 
-  // Add variable to ordered entries for context tracking
-  const newOrderedEntries = [...frame.orderedEntries, { kind: 'variable' as const, name }];
+  // Add variable to ordered entries with snapshotted value for context tracking
+  const newOrderedEntries = [
+    ...frame.orderedEntries,
+    {
+      kind: 'variable' as const,
+      name,
+      value: validatedValue,  // Snapshot at assignment time
+      type: finalType,
+      isConst,
+      source,
+    },
+  ];
 
   const newState: RuntimeState = {
     ...state,
@@ -101,13 +111,27 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     [name]: { ...variable, value: validatedValue, source: state.lastResultSource },
   };
 
+  // Add assignment to ordered entries with snapshotted value for context tracking
+  // This captures the history of value changes
+  const newOrderedEntries = [
+    ...frame.orderedEntries,
+    {
+      kind: 'variable' as const,
+      name,
+      value: validatedValue,  // Snapshot at assignment time
+      type: variable.typeAnnotation,
+      isConst: false,  // Assignments only happen to non-const variables
+      source: state.lastResultSource,
+    },
+  ];
+
   // Update the correct frame in the call stack
   return {
     ...state,
     lastResultSource: undefined,  // Clear after consuming
     callStack: [
       ...state.callStack.slice(0, frameIndex),
-      { ...frame, locals: newLocals },
+      { ...frame, locals: newLocals, orderedEntries: newOrderedEntries },
       ...state.callStack.slice(frameIndex + 1),
     ],
     executionLog: [

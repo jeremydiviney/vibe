@@ -85,11 +85,16 @@ export function resumeWithAIResponse(
     ? [...state.aiInteractions, interaction]
     : state.aiInteractions;
 
-  // Add the completed prompt to orderedEntries in current frame
+  // Add the completed prompt to orderedEntries in current frame (with response for history)
   const frame = state.callStack[state.callStack.length - 1];
   const newOrderedEntries = [
     ...frame.orderedEntries,
-    { kind: 'prompt' as const, aiType: pendingAI.type as 'do' | 'ask' | 'vibe', prompt: pendingAI.prompt }
+    {
+      kind: 'prompt' as const,
+      aiType: pendingAI.type as 'do' | 'ask' | 'vibe',
+      prompt: pendingAI.prompt,
+      response,  // Include response for context history
+    }
   ];
   const updatedCallStack = [
     ...state.callStack.slice(0, -1),
@@ -132,11 +137,16 @@ export function resumeWithUserInput(state: RuntimeState, input: string): Runtime
     timestamp: Date.now(),
   };
 
-  // Add the completed prompt to orderedEntries in current frame
+  // Add the completed prompt to orderedEntries in current frame (with response for history)
   const frame = state.callStack[state.callStack.length - 1];
   const newOrderedEntries = [
     ...frame.orderedEntries,
-    { kind: 'prompt' as const, aiType: 'ask' as const, prompt: pendingAI.prompt }
+    {
+      kind: 'prompt' as const,
+      aiType: 'ask' as const,
+      prompt: pendingAI.prompt,
+      response: input,  // Include user input for context history
+    }
   ];
   const updatedCallStack = [
     ...state.callStack.slice(0, -1),

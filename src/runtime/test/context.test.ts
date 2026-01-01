@@ -125,9 +125,12 @@ describe('Context Building Functions', () => {
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
+    // With snapshotting, context preserves history: both 'initial' and 'updated' entries
     const context = buildLocalContext(state);
-    const xVar = context.find((v) => v.name === 'x');
-    expect(xVar?.value).toBe('updated');
+    const xEntries = context.filter((v) => v.name === 'x');
+    expect(xEntries).toHaveLength(2);
+    expect(xEntries[0]?.value).toBe('initial');
+    expect(xEntries[1]?.value).toBe('updated');
   });
 
   test('context works with nested function calls and shows frame depth', () => {
@@ -335,9 +338,10 @@ describe('Context Building Functions', () => {
     if (state.callStack[1]?.locals['blockVar']?.value === 'updated_block') {
       const localCtxUpdated = normalizeContext(buildLocalContext(state));
 
-      // blockVar should have updated value
-      const blockVar = localCtxUpdated.find((v) => v.name === 'blockVar');
-      expect(blockVar?.value).toBe('updated_block');
+      // With snapshotting, blockVar has two entries - find the last one (updated value)
+      const blockVarEntries = localCtxUpdated.filter((v) => v.name === 'blockVar');
+      const lastBlockVar = blockVarEntries[blockVarEntries.length - 1];
+      expect(lastBlockVar?.value).toBe('updated_block');
     }
 
     // Run to completion

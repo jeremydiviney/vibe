@@ -1,10 +1,11 @@
-import type { RuntimeState, ContextVariable, ContextEntry, ContextPrompt } from './types';
+import type { RuntimeState, ContextEntry, ContextVariable, ContextPrompt } from './types';
 
 // Types that are filtered from context (config/instructions, not data for AI)
 const FILTERED_TYPES = ['model', 'prompt'];
 
 // Build local context - entries from current frame only
 // Pure function: takes full state, returns context array
+// Uses snapshotted values from entries for accurate history
 // Note: Model and prompt variables are filtered out (they are config/instructions, not data for AI context)
 export function buildLocalContext(state: RuntimeState): ContextEntry[] {
   const frameIndex = state.callStack.length - 1;
@@ -14,35 +15,61 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
   return frame.orderedEntries
     .flatMap((entry): ContextEntry[] => {
       if (entry.kind === 'variable') {
-        const variable = frame.locals[entry.name];
-        if (!variable || FILTERED_TYPES.includes(variable.typeAnnotation ?? '')) {
+        // Filter out model and prompt types
+        if (FILTERED_TYPES.includes(entry.type ?? '')) {
           return [];
         }
-        return [{
+        // Use snapshotted value from entry
+        const contextVar: ContextEntry = {
           kind: 'variable',
           name: entry.name,
-          value: variable.value,
-          type: variable.typeAnnotation as 'text' | 'json' | null,
-          isConst: variable.isConst,
-          source: variable.source,
+          value: entry.value,  // Snapshotted value
+          type: entry.type as 'text' | 'json' | 'boolean' | 'number' | null,
+          isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,
           frameDepth: frameIndex,
-        }];
-      } else {
-        // Prompt entry
-        return [{
+        };
+        // Only include source if defined
+        if (entry.source !== undefined) {
+          (contextVar as ContextVariable).source = entry.source;
+        }
+        return [contextVar];
+      } else if (entry.kind === 'prompt') {
+        const contextPrompt: ContextEntry = {
           kind: 'prompt',
           aiType: entry.aiType,
           prompt: entry.prompt,
           frameName: frame.name,
           frameDepth: frameIndex,
+        };
+        // Only include response if defined
+        if (entry.response !== undefined) {
+          (contextPrompt as ContextPrompt).response = entry.response;
+        }
+        return [contextPrompt];
+      } else if (entry.kind === 'scope-enter' || entry.kind === 'scope-exit') {
+        return [{
+          kind: entry.kind,
+          scopeType: entry.scopeType,
+          label: entry.label,
+          frameName: frame.name,
+          frameDepth: frameIndex,
+        }];
+      } else if (entry.kind === 'summary') {
+        return [{
+          kind: 'summary',
+          text: entry.text,
+          frameName: frame.name,
+          frameDepth: frameIndex,
         }];
       }
+      return [];
     });
 }
 
 // Build global context - entries from all frames in call stack
 // Pure function: takes full state, returns context array
+// Uses snapshotted values from entries for accurate history
 // Note: Model and prompt variables are filtered out (they are config/instructions, not data for AI context)
 // Entries are returned with frameDepth: 0 = entry frame, higher = deeper in call stack
 export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
@@ -51,30 +78,55 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
 
     return frame.orderedEntries.flatMap((entry): ContextEntry[] => {
       if (entry.kind === 'variable') {
-        const variable = frame.locals[entry.name];
-        if (!variable || FILTERED_TYPES.includes(variable.typeAnnotation ?? '')) {
+        // Filter out model and prompt types
+        if (FILTERED_TYPES.includes(entry.type ?? '')) {
           return [];
         }
-        return [{
+        // Use snapshotted value from entry
+        const contextVar: ContextEntry = {
           kind: 'variable',
           name: entry.name,
-          value: variable.value,
-          type: variable.typeAnnotation as 'text' | 'json' | null,
-          isConst: variable.isConst,
-          source: variable.source,
+          value: entry.value,  // Snapshotted value
+          type: entry.type as 'text' | 'json' | 'boolean' | 'number' | null,
+          isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,
           frameDepth,
-        }];
-      } else {
-        // Prompt entry
-        return [{
+        };
+        // Only include source if defined
+        if (entry.source !== undefined) {
+          (contextVar as ContextVariable).source = entry.source;
+        }
+        return [contextVar];
+      } else if (entry.kind === 'prompt') {
+        const contextPrompt: ContextEntry = {
           kind: 'prompt',
           aiType: entry.aiType,
           prompt: entry.prompt,
           frameName: frame.name,
           frameDepth,
+        };
+        // Only include response if defined
+        if (entry.response !== undefined) {
+          (contextPrompt as ContextPrompt).response = entry.response;
+        }
+        return [contextPrompt];
+      } else if (entry.kind === 'scope-enter' || entry.kind === 'scope-exit') {
+        return [{
+          kind: entry.kind,
+          scopeType: entry.scopeType,
+          label: entry.label,
+          frameName: frame.name,
+          frameDepth,
+        }];
+      } else if (entry.kind === 'summary') {
+        return [{
+          kind: 'summary',
+          text: entry.text,
+          frameName: frame.name,
+          frameDepth,
         }];
       }
+      return [];
     });
   });
 }
@@ -165,9 +217,25 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
         // Use <-- for AI/user responses, - for regular variables
         const prefix = entry.source === 'ai' || entry.source === 'user' ? '<--' : '-';
         lines.push(`${indent}  ${prefix} ${entry.name}${typeStr}: ${valueStr}`);
-      } else {
-        // Prompt entry
+      } else if (entry.kind === 'prompt') {
+        // Prompt entry with optional response
         lines.push(`${indent}  --> ${entry.aiType}: "${entry.prompt}"`);
+        if (entry.response !== undefined) {
+          const responseStr =
+            typeof entry.response === 'object' ? JSON.stringify(entry.response) : String(entry.response);
+          lines.push(`${indent}  <-- ${responseStr}`);
+        }
+      } else if (entry.kind === 'scope-enter') {
+        // Scope enter marker
+        const labelStr = entry.label ? ` ${entry.label}` : '';
+        lines.push(`${indent}  ==> ${entry.scopeType}${labelStr}`);
+      } else if (entry.kind === 'scope-exit') {
+        // Scope exit marker
+        const labelStr = entry.label ? ` ${entry.label}` : '';
+        lines.push(`${indent}  <== ${entry.scopeType}${labelStr}`);
+      } else if (entry.kind === 'summary') {
+        // Summary from compress mode
+        lines.push(`${indent}  [summary] ${entry.text}`);
       }
     }
 

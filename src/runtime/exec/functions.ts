@@ -31,7 +31,14 @@ function createFunctionFrame(
       isConst: false,
       typeAnnotation: param.typeAnnotation,
     };
-    newFrame.orderedEntries.push({ kind: 'variable' as const, name: param.name });
+    // Include snapshotted value in ordered entries for context tracking
+    newFrame.orderedEntries.push({
+      kind: 'variable' as const,
+      name: param.name,
+      value: validatedValue,
+      type: param.typeAnnotation,
+      isConst: false,  // Parameters are not const
+    });
   }
 
   return newFrame;

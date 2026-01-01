@@ -16,6 +16,16 @@ interface BaseNode {
 export type AIProviderType = 'anthropic' | 'openai' | 'google';
 
 // ============================================================================
+// Context Modes
+// ============================================================================
+
+/** Context mode for loops and functions - controls what happens on exit */
+export type ContextMode =
+  | 'verbose'                    // Keep full history
+  | 'forget'                     // Discard all context from block
+  | { compress: string | null }; // AI summarizes (with optional prompt)
+
+// ============================================================================
 // Program
 // ============================================================================
 
@@ -101,6 +111,7 @@ export interface FunctionDeclaration extends BaseNode {
   params: FunctionParameter[];
   returnType: string | null;  // Optional return type
   body: BlockStatement;
+  contextMode?: ContextMode;  // What happens to context on function exit
 }
 
 export interface ReturnStatement extends BaseNode {
@@ -120,12 +131,14 @@ export interface ForInStatement extends BaseNode {
   variable: string;           // Loop variable name
   iterable: Expression;       // Array, number (range), or [start, end]
   body: BlockStatement;
+  contextMode?: ContextMode;  // What happens to context on loop exit
 }
 
 export interface WhileStatement extends BaseNode {
   type: 'WhileStatement';
   condition: Expression;
   body: BlockStatement;
+  contextMode?: ContextMode;  // What happens to context on loop exit
 }
 
 export interface BlockStatement extends BaseNode {

@@ -158,12 +158,13 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return { type: 'ObjectProperty', key: ctx.Identifier[0].image, value: this.visit(ctx.expression), location: tokenLocation(ctx.Identifier[0]) };
   }
 
-  functionDeclaration(ctx: { Function: IToken[]; Identifier: IToken[]; parameterList?: CstNode[]; typeAnnotation?: CstNode[]; blockStatement: CstNode[] }): AST.FunctionDeclaration {
+  functionDeclaration(ctx: { Function: IToken[]; Identifier: IToken[]; parameterList?: CstNode[]; typeAnnotation?: CstNode[]; blockStatement: CstNode[]; contextMode?: CstNode[] }): AST.FunctionDeclaration {
     return {
       type: 'FunctionDeclaration', name: ctx.Identifier[0].image,
       params: ctx.parameterList ? this.visit(ctx.parameterList) : [],
       returnType: ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null,
       body: this.visit(ctx.blockStatement), location: tokenLocation(ctx.Function[0]),
+      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
     };
   }
 
@@ -184,12 +185,33 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return { type: 'IfStatement', condition: this.visit(ctx.expression), consequent: this.visit(ctx.blockStatement[0]), alternate, location: tokenLocation(ctx.If[0]) };
   }
 
-  forInStatement(ctx: { For: IToken[]; Identifier: IToken[]; expression: CstNode[]; blockStatement: CstNode[] }): AST.ForInStatement {
-    return { type: 'ForInStatement', variable: ctx.Identifier[0].image, iterable: this.visit(ctx.expression), body: this.visit(ctx.blockStatement), location: tokenLocation(ctx.For[0]) };
+  forInStatement(ctx: { For: IToken[]; Identifier: IToken[]; expression: CstNode[]; blockStatement: CstNode[]; contextMode?: CstNode[] }): AST.ForInStatement {
+    return {
+      type: 'ForInStatement',
+      variable: ctx.Identifier[0].image,
+      iterable: this.visit(ctx.expression),
+      body: this.visit(ctx.blockStatement),
+      location: tokenLocation(ctx.For[0]),
+      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
+    };
   }
 
-  whileStatement(ctx: { While: IToken[]; expression: CstNode[]; blockStatement: CstNode[] }): AST.WhileStatement {
-    return { type: 'WhileStatement', condition: this.visit(ctx.expression), body: this.visit(ctx.blockStatement), location: tokenLocation(ctx.While[0]) };
+  whileStatement(ctx: { While: IToken[]; expression: CstNode[]; blockStatement: CstNode[]; contextMode?: CstNode[] }): AST.WhileStatement {
+    return {
+      type: 'WhileStatement',
+      condition: this.visit(ctx.expression),
+      body: this.visit(ctx.blockStatement),
+      location: tokenLocation(ctx.While[0]),
+      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
+    };
+  }
+
+  contextMode(ctx: { Forget?: IToken[]; Verbose?: IToken[]; Compress?: IToken[]; StringLiteral?: IToken[] }): AST.ContextMode {
+    if (ctx.Forget) return 'forget';
+    if (ctx.Verbose) return 'verbose';
+    // Compress with optional prompt
+    const prompt = ctx.StringLiteral ? parseStringLiteral(ctx.StringLiteral[0]) : null;
+    return { compress: prompt };
   }
 
   blockStatement(ctx: { LBrace: IToken[]; statement?: CstNode[] }): AST.BlockStatement {

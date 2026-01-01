@@ -161,6 +161,11 @@ export const NumberType = token({ name: 'NumberType', pattern: /number/, longer_
 export const For = token({ name: 'For', pattern: /for/, longer_alt: Identifier });
 export const In = token({ name: 'In', pattern: /in/, longer_alt: Identifier });
 
+// Context mode keywords
+export const Forget = token({ name: 'Forget', pattern: /forget/, longer_alt: Identifier });
+export const Verbose = token({ name: 'Verbose', pattern: /verbose/, longer_alt: Identifier });
+export const Compress = token({ name: 'Compress', pattern: /compress/, longer_alt: Identifier });
+
 // Logical operators (word-based)
 export const And = token({ name: 'And', pattern: /and/, longer_alt: Identifier });
 export const Or = token({ name: 'Or', pattern: /or/, longer_alt: Identifier });
@@ -244,6 +249,10 @@ export const allTokens = [
   If,
   Else,
   While,
+  // Context mode keywords (Forget must come before For since 'forget' starts with 'for')
+  Forget,
+  Verbose,
+  Compress,
   For,
   In,
   And,

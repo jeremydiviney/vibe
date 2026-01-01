@@ -41,17 +41,62 @@ export interface ContextPrompt {
   kind: 'prompt';
   aiType: 'do' | 'ask' | 'vibe';
   prompt: string;
+  response?: unknown;  // Included when AI returns
   frameName: string;
   frameDepth: number;
 }
 
-// Context entry - either a variable or a prompt
-export type ContextEntry = ContextVariable | ContextPrompt;
+// Scope marker in context (entering/exiting loops/functions)
+export interface ContextScopeMarker {
+  kind: 'scope-enter' | 'scope-exit';
+  scopeType: 'for' | 'while' | 'function';
+  label?: string;
+  frameName: string;
+  frameDepth: number;
+}
+
+// Summary in context (from compress mode)
+export interface ContextSummary {
+  kind: 'summary';
+  text: string;
+  frameName: string;
+  frameDepth: number;
+}
+
+// Context entry - variable, prompt, scope marker, or summary
+export type ContextEntry = ContextVariable | ContextPrompt | ContextScopeMarker | ContextSummary;
 
 // Ordered entry - tracks order of variable assignments and AI prompts in a frame
+// Values are snapshotted at assignment time for accurate history
 export type FrameEntry =
-  | { kind: 'variable'; name: string }
-  | { kind: 'prompt'; aiType: 'do' | 'ask' | 'vibe'; prompt: string };
+  | {
+      kind: 'variable';
+      name: string;
+      value: unknown;           // Snapshot at assignment time
+      type: string | null;
+      isConst: boolean;
+      source?: 'ai' | 'user';
+    }
+  | {
+      kind: 'prompt';
+      aiType: 'do' | 'ask' | 'vibe';
+      prompt: string;
+      response?: unknown;       // Added when AI returns
+    }
+  | {
+      kind: 'summary';          // For compress mode
+      text: string;
+    }
+  | {
+      kind: 'scope-enter';      // Marker for entering loop/function
+      scopeType: 'for' | 'while' | 'function';
+      label?: string;           // e.g., function name or "for n in items"
+    }
+  | {
+      kind: 'scope-exit';       // Marker for leaving loop/function
+      scopeType: 'for' | 'while' | 'function';
+      label?: string;
+    };
 
 // Stack frame (serializable - uses Record instead of Map)
 export interface StackFrame {
@@ -229,11 +274,12 @@ export type Instruction =
 
   // For-in loop
   | { op: 'for_in_init'; stmt: AST.ForInStatement; location: SourceLocation }
-  | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[]; location: SourceLocation }
+  | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[]; contextMode?: AST.ContextMode; label: string; entryIndex: number; location: SourceLocation }
 
   // While loop
   | { op: 'while_init'; stmt: AST.WhileStatement; savedKeys: string[]; location: SourceLocation }
-  | { op: 'while_iterate'; stmt: AST.WhileStatement; savedKeys: string[]; location: SourceLocation }
+  | { op: 'while_iterate'; stmt: AST.WhileStatement; savedKeys: string[]; contextMode?: AST.ContextMode; label: string; entryIndex: number; location: SourceLocation }
+  | { op: 'while_check'; stmt: AST.WhileStatement; savedKeys: string[]; contextMode?: AST.ContextMode; label: string; entryIndex: number; location: SourceLocation }
 
   // Value building (for objects, arrays, function args)
   | { op: 'push_value'; location: SourceLocation }

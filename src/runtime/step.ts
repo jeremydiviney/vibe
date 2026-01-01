@@ -1,6 +1,7 @@
 // Core stepping and instruction execution
 
-import type { RuntimeState, Instruction } from './types';
+import type { RuntimeState, Instruction, StackFrame, FrameEntry } from './types';
+import type { ContextMode } from '../ast';
 import { buildLocalContext, buildGlobalContext } from './context';
 import { execDeclareVar, execAssignVar } from './exec/variables';
 import { execAIDo, execAIAsk, execAIVibe } from './exec/ai';
@@ -30,6 +31,51 @@ import {
 } from './exec/typescript';
 import { execCallFunction } from './exec/functions';
 import { execPushFrame, execPopFrame } from './exec/frames';
+
+/**
+ * Apply context mode on scope exit.
+ * - verbose: keep all entries (add scope-exit marker)
+ * - forget: remove all entries added during scope (back to entryIndex)
+ * - compress: TODO - call AI to summarize and replace entries with summary
+ */
+function applyContextMode(
+  state: RuntimeState,
+  frame: StackFrame,
+  contextMode: ContextMode,
+  entryIndex: number,
+  scopeType: 'for' | 'while' | 'function',
+  label: string
+): RuntimeState {
+  let newOrderedEntries: FrameEntry[];
+
+  if (contextMode === 'forget') {
+    // Forget: remove all entries from scope (back to before scope-enter)
+    newOrderedEntries = frame.orderedEntries.slice(0, entryIndex);
+  } else if (contextMode === 'verbose' || typeof contextMode === 'object') {
+    // Verbose or compress: add scope-exit marker
+    // For compress, we'll handle the actual summarization later (requires AI call)
+    newOrderedEntries = [
+      ...frame.orderedEntries,
+      { kind: 'scope-exit' as const, scopeType, label },
+    ];
+
+    // TODO: For compress mode, queue an AI call to summarize and replace entries
+    if (typeof contextMode === 'object' && 'compress' in contextMode) {
+      // For now, just mark as scope-exit
+      // Compress summarization will be a follow-up feature
+    }
+  } else {
+    newOrderedEntries = frame.orderedEntries;
+  }
+
+  return {
+    ...state,
+    callStack: [
+      ...state.callStack.slice(0, -1),
+      { ...frame, orderedEntries: newOrderedEntries },
+    ],
+  };
+}
 
 // Get the next instruction that will be executed (or null if done/paused)
 export function getNextInstruction(state: RuntimeState): Instruction | null {
@@ -227,21 +273,40 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const frame = currentFrame(state);
       const savedKeys = Object.keys(frame.locals);
 
-      return {
+      // Add scope-enter marker
+      const label = stmt.variable;
+      const entryIndex = frame.orderedEntries.length;
+      const newOrderedEntries = [
+        ...frame.orderedEntries,
+        { kind: 'scope-enter' as const, scopeType: 'for' as const, label },
+      ];
+      const updatedState = {
         ...state,
+        callStack: [
+          ...state.callStack.slice(0, -1),
+          { ...frame, orderedEntries: newOrderedEntries },
+        ],
+      };
+
+      return {
+        ...updatedState,
         instructionStack: [
-          { op: 'for_in_iterate', variable: stmt.variable, items, index: 0, body: stmt.body, savedKeys, location: instruction.location },
+          { op: 'for_in_iterate', variable: stmt.variable, items, index: 0, body: stmt.body, savedKeys, contextMode: stmt.contextMode, label, entryIndex, location: instruction.location },
           ...state.instructionStack,
         ],
       };
     }
 
     case 'for_in_iterate': {
-      const { variable, items, index, body, savedKeys } = instruction;
+      const { variable, items, index, body, savedKeys, contextMode, label, entryIndex } = instruction;
 
       if (index >= items.length) {
-        // Loop complete - cleanup scope
-        return execExitBlock(state, savedKeys);
+        // Loop complete - add scope-exit marker and apply context mode
+        const frame = currentFrame(state);
+        const exitState = applyContextMode(state, frame, contextMode ?? 'verbose', entryIndex, 'for', label);
+
+        // Cleanup scope variables
+        return execExitBlock(exitState, savedKeys);
       }
 
       // First iteration: declare the loop variable
@@ -267,7 +332,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
           { op: 'enter_block', savedKeys: bodyKeys, location: instruction.location },
           ...body.body.map(s => ({ op: 'exec_statement' as const, stmt: s, location: s.location })),
           { op: 'exit_block', savedKeys: bodyKeys, location: instruction.location },
-          { op: 'for_in_iterate', variable, items, index: index + 1, body, savedKeys, location: instruction.location },
+          { op: 'for_in_iterate', variable, items, index: index + 1, body, savedKeys, contextMode, label, entryIndex, location: instruction.location },
           ...state.instructionStack,
         ],
       };
@@ -278,26 +343,42 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const condition = requireBoolean(state.lastResult, 'while condition');
 
       if (!condition) {
-        // Condition false - exit loop
+        // Condition false - exit loop (first check, no scope entered yet)
         return state;
       }
 
+      // Add scope-enter marker on first true condition
+      const frame = currentFrame(state);
+      const label = undefined;
+      const entryIndex = frame.orderedEntries.length;
+      const newOrderedEntries = [
+        ...frame.orderedEntries,
+        { kind: 'scope-enter' as const, scopeType: 'while' as const },
+      ];
+      const updatedState = {
+        ...state,
+        callStack: [
+          ...state.callStack.slice(0, -1),
+          { ...frame, orderedEntries: newOrderedEntries },
+        ],
+      };
+
       // Condition true - execute body then re-check condition
       return {
-        ...state,
+        ...updatedState,
         instructionStack: [
-          { op: 'while_iterate', stmt, savedKeys, location: instruction.location },
+          { op: 'while_iterate', stmt, savedKeys, contextMode: stmt.contextMode, label, entryIndex, location: instruction.location },
           ...state.instructionStack,
         ],
       };
     }
 
     case 'while_iterate': {
-      const { stmt, savedKeys } = instruction;
+      const { stmt, savedKeys, contextMode, label, entryIndex } = instruction;
       const bodyFrame = currentFrame(state);
       const bodyKeys = Object.keys(bodyFrame.locals);
 
-      // Execute body, cleanup, re-evaluate condition, loop
+      // Execute body, cleanup, re-evaluate condition, then check if loop continues
       return {
         ...state,
         instructionStack: [
@@ -305,7 +386,30 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
           ...stmt.body.body.map(s => ({ op: 'exec_statement' as const, stmt: s, location: s.location })),
           { op: 'exit_block', savedKeys: bodyKeys, location: instruction.location },
           { op: 'exec_expression', expr: stmt.condition, location: stmt.condition.location },
-          { op: 'while_init', stmt, savedKeys, location: instruction.location },
+          { op: 'while_check', stmt, savedKeys, contextMode, label, entryIndex, location: instruction.location },
+          ...state.instructionStack,
+        ],
+      };
+    }
+
+    case 'while_check': {
+      const { stmt, savedKeys, contextMode, label, entryIndex } = instruction;
+      const condition = requireBoolean(state.lastResult, 'while condition');
+
+      if (!condition) {
+        // Loop complete - add scope-exit marker and apply context mode
+        const frame = currentFrame(state);
+        const exitState = applyContextMode(state, frame, contextMode ?? 'verbose', entryIndex, 'while', label);
+
+        // Cleanup scope variables
+        return execExitBlock(exitState, savedKeys);
+      }
+
+      // Condition still true - continue loop
+      return {
+        ...state,
+        instructionStack: [
+          { op: 'while_iterate', stmt, savedKeys, contextMode, label, entryIndex, location: instruction.location },
           ...state.instructionStack,
         ],
       };

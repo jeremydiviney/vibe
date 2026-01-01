@@ -144,6 +144,7 @@ class VibeParser extends CstParser {
     this.SUBRULE(this.expression);
   });
 
+  // function name(params): returnType { ... } [forget|verbose|compress]
   private functionDeclaration = this.RULE('functionDeclaration', () => {
     this.CONSUME(T.Function);
     this.CONSUME(T.Identifier);
@@ -158,6 +159,9 @@ class VibeParser extends CstParser {
       this.SUBRULE(this.typeAnnotation);
     });
     this.SUBRULE(this.blockStatement);
+    this.OPTION3(() => {
+      this.SUBRULE(this.contextMode);
+    });
   });
 
   // name: type (type is REQUIRED)
@@ -195,20 +199,44 @@ class VibeParser extends CstParser {
     });
   });
 
-  // for variable in iterable { ... }
+  // for variable in iterable { ... } [forget|verbose|compress]
   private forInStatement = this.RULE('forInStatement', () => {
     this.CONSUME(T.For);
     this.CONSUME(T.Identifier);  // Loop variable
     this.CONSUME(T.In);
     this.SUBRULE(this.expression);  // Iterable (array, number, or [start, end])
     this.SUBRULE(this.blockStatement);
+    this.OPTION(() => {
+      this.SUBRULE(this.contextMode);
+    });
   });
 
-  // while condition { ... }
+  // while condition { ... } [forget|verbose|compress]
   private whileStatement = this.RULE('whileStatement', () => {
     this.CONSUME(T.While);
     this.SUBRULE(this.expression);  // Condition
     this.SUBRULE(this.blockStatement);
+    this.OPTION(() => {
+      this.SUBRULE(this.contextMode);
+    });
+  });
+
+  // Context mode: forget | verbose | compress | compress("prompt")
+  private contextMode = this.RULE('contextMode', () => {
+    this.OR([
+      { ALT: () => this.CONSUME(T.Forget) },
+      { ALT: () => this.CONSUME(T.Verbose) },
+      {
+        ALT: () => {
+          this.CONSUME(T.Compress);
+          this.OPTION(() => {
+            this.CONSUME(T.LParen);
+            this.CONSUME(T.StringLiteral);
+            this.CONSUME(T.RParen);
+          });
+        },
+      },
+    ]);
   });
 
   private blockStatement = this.RULE('blockStatement', () => {

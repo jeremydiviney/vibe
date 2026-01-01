@@ -111,19 +111,20 @@ describe('AI Context Tests', () => {
     expect(state.status).toBe('awaiting_ai');
     expect(state.pendingAI?.prompt).toBe('Summarize this');
 
-    // Context at second AI call: inputData, do prompt, analyzed (in execution order)
+    // Context at second AI call: inputData, do prompt with response, analyzed (in execution order)
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, source: undefined, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', response: 'analysis result', frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'analyzed', value: 'analysis result', type: 'text', isConst: false, source: 'ai', frameName: '<entry>', frameDepth: 0 },
     ]);
 
-    // Verify formatted text context at second pause - shows execution order with prompt
+    // Verify formatted text context at second pause - shows execution order with prompt and response
     const formatted2 = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted2.text).toBe(
       `  <entry> (current scope)
     - inputData (text): raw data
     --> do: "Analyze this"
+    <-- analysis result
     <-- analyzed (text): analysis result`
     );
 
@@ -141,12 +142,12 @@ describe('AI Context Tests', () => {
     expect(locals['SUMMARIZE_PROMPT'].value).toBe('Summarize this');
     expect(locals['summary'].value).toBe('summary result');
 
-    // Context at completion - includes all variables and prompts in execution order
+    // Context at completion - includes all variables and prompts (with responses) in execution order
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, source: undefined, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', response: 'analysis result', frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'analyzed', value: 'analysis result', type: 'text', isConst: false, source: 'ai', frameName: '<entry>', frameDepth: 0 },
-      { kind: 'prompt', aiType: 'do', prompt: 'Summarize this', frameName: '<entry>', frameDepth: 0 },
+      { kind: 'prompt', aiType: 'do', prompt: 'Summarize this', response: 'summary result', frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'summary', value: 'summary result', type: 'text', isConst: false, source: 'ai', frameName: '<entry>', frameDepth: 0 },
     ]);
 
@@ -156,8 +157,10 @@ describe('AI Context Tests', () => {
       `  <entry> (current scope)
     - inputData (text): raw data
     --> do: "Analyze this"
+    <-- analysis result
     <-- analyzed (text): analysis result
     --> do: "Summarize this"
+    <-- summary result
     <-- summary (text): summary result`
     );
   });
@@ -590,23 +593,23 @@ Variables from the VIBE language call stack.
     // Local context: helper's frame only (depth 2 = called from main which is called from entry)
     // Note: function parameters now have explicit type annotations
     expect(state.localContext).toEqual([
-      { kind: 'variable', name: 'value', value: 'test', type: 'text', isConst: false, source: undefined, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, source: undefined, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'helperVar', value: 'helper value', type: 'text', isConst: false, source: undefined, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'value', value: 'test', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'helperVar', value: 'helper value', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
     ]);
 
     // Global context: <entry> (depth 0) + main (depth 1) + helper (depth 2), models filtered
     // Note: mainResult now has the response from checkpoint 1, and prompt is included
     expect(state.globalContext).toEqual([
-      { kind: 'variable', name: 'GLOBAL_CONST', value: 'global', type: 'text', isConst: true, source: undefined, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'variable', name: 'input', value: 'test', type: 'text', isConst: false, source: undefined, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, source: undefined, frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, source: undefined, frameName: 'main', frameDepth: 1 },
-      { kind: 'prompt', aiType: 'do', prompt: 'main work with test', frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'GLOBAL_CONST', value: 'global', type: 'text', isConst: true, frameName: '<entry>', frameDepth: 0 },
+      { kind: 'variable', name: 'input', value: 'test', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, frameName: 'main', frameDepth: 1 },
+      { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
+      { kind: 'prompt', aiType: 'do', prompt: 'main work with test', response: 'main response', frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'mainResult', value: 'main response', type: 'text', isConst: false, source: 'ai', frameName: 'main', frameDepth: 1 },
-      { kind: 'variable', name: 'value', value: 'test', type: 'text', isConst: false, source: undefined, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, source: undefined, frameName: 'helper', frameDepth: 2 },
-      { kind: 'variable', name: 'helperVar', value: 'helper value', type: 'text', isConst: false, source: undefined, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'value', value: 'test', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, frameName: 'helper', frameDepth: 2 },
+      { kind: 'variable', name: 'helperVar', value: 'helper value', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
     ]);
 
     // Verify formatted context preserves declaration order at checkpoint 2
@@ -616,6 +619,7 @@ Variables from the VIBE language call stack.
     // Verify formatted text with nested call stack (3 frames: entry=0, main=1, helper=2)
     // All entries together, grouped by frame with indentation
     // Entry is leftmost (least indented), deeper calls are more indented
+    // Prompts now include response on next line
     expect(formatted2.text).toBe(
       `## VIBE Program Context
 Variables from the VIBE language call stack.
@@ -628,6 +632,7 @@ Variables from the VIBE language call stack.
       - MAIN_CONST (text): main const
       - mainVar (text): main value
       --> do: "main work with test"
+      <-- main response
       <-- mainResult (text): main response
 
       helper (current scope)
@@ -704,11 +709,17 @@ Variables from the VIBE language call stack.
     expect(frame.locals['result'].value).toBe('overwritten by code');
     expect(frame.locals['result'].source).toBeUndefined();
 
-    // Verify context shows it as regular variable (no AI attribution)
-    const resultEntry = state.localContext.find(
+    // Verify context shows history: first AI-sourced entry, then code-sourced entry
+    // With snapshotting, both entries are preserved
+    const resultEntries = state.localContext.filter(
       (e): e is ContextVariable => e.kind === 'variable' && e.name === 'result'
     );
-    expect(resultEntry?.source).toBeUndefined();
+    // First entry is AI-sourced
+    expect(resultEntries[0]?.source).toBe('ai');
+    expect(resultEntries[0]?.value).toBe('ai generated value');
+    // Second entry is code-sourced (no AI attribution)
+    expect(resultEntries[1]?.source).toBeUndefined();
+    expect(resultEntries[1]?.value).toBe('overwritten by code');
   });
 
   test('variable source is ai immediately after AI response assignment', () => {
