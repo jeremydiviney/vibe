@@ -74,6 +74,24 @@ export function getTypeInstruction(targetType: TargetType): string | null {
 }
 
 /**
+ * Strip markdown code fences from content if present.
+ * Handles: ```json ... ```, ``` ... ```, etc.
+ */
+function stripCodeFences(content: string): string {
+  const trimmed = content.trim();
+
+  // Match ```lang or ``` at start, and ``` at end
+  const fencePattern = /^```(?:\w+)?\s*\n?([\s\S]*?)\n?```$/;
+  const match = trimmed.match(fencePattern);
+
+  if (match) {
+    return match[1].trim();
+  }
+
+  return trimmed;
+}
+
+/**
  * Parse a string response according to the target type.
  * Returns the parsed value or throws on parse failure.
  */
@@ -99,23 +117,27 @@ export function parseResponse(content: string, targetType: TargetType): unknown 
       throw new Error(`Failed to parse response as boolean: "${trimmed}"`);
     }
     case 'json': {
+      // Strip markdown code fences if present (LLMs sometimes add them despite instructions)
+      const jsonContent = stripCodeFences(trimmed);
       try {
-        return JSON.parse(trimmed);
+        return JSON.parse(jsonContent);
       } catch {
-        throw new Error(`Failed to parse response as JSON: "${trimmed}"`);
+        throw new Error(`Failed to parse response as JSON: "${jsonContent}"`);
       }
     }
     default:
       // Handle array types
       if (targetType.endsWith('[]')) {
+        // Strip markdown code fences if present (LLMs sometimes add them despite instructions)
+        const arrayContent = stripCodeFences(trimmed);
         try {
-          const arr = JSON.parse(trimmed);
+          const arr = JSON.parse(arrayContent);
           if (!Array.isArray(arr)) {
             throw new Error(`Expected array, got ${typeof arr}`);
           }
           return arr;
         } catch (e) {
-          throw new Error(`Failed to parse response as array: "${trimmed}"`);
+          throw new Error(`Failed to parse response as array: "${arrayContent}"`);
         }
       }
       return content;
