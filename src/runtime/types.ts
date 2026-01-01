@@ -94,6 +94,7 @@ export interface AIInteraction {
     name: string;
     provider: string;
     url?: string;
+    thinkingLevel?: string;
   };
   // The exact messages sent to the AI model
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;

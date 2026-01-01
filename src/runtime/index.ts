@@ -222,12 +222,28 @@ export class Runtime {
         }
 
         // Create interaction record if logging
+        let modelDetails: AIInteraction['modelDetails'];
+        if (this.logAiInteractions) {
+          // Get model details from state
+          const modelVar = this.state.callStack[0]?.locals?.[pendingAI.model];
+          if (modelVar?.value && typeof modelVar.value === 'object') {
+            const mv = modelVar.value as Record<string, unknown>;
+            modelDetails = {
+              name: String(mv.name ?? ''),
+              provider: String(mv.provider ?? ''),
+              url: mv.url ? String(mv.url) : undefined,
+              thinkingLevel: mv.thinkingLevel ? String(mv.thinkingLevel) : undefined,
+            };
+          }
+        }
+
         const interaction: AIInteraction | undefined = this.logAiInteractions ? {
           type: pendingAI.type,
           prompt: pendingAI.prompt,
           response: result.value,
           timestamp: startTime,
           model: pendingAI.model,
+          modelDetails,
           messages,
           targetType,
           usage: result.usage,

@@ -78,7 +78,7 @@ export function formatAIInteractions(interactions: AIInteraction[]): string {
   }
 
   // Collect unique models used
-  const modelsUsed = new Map<string, { name: string; provider: string; url?: string }>();
+  const modelsUsed = new Map<string, { name: string; provider: string; url?: string; thinkingLevel?: string }>();
   for (const interaction of interactions) {
     if (interaction.modelDetails && !modelsUsed.has(interaction.model)) {
       modelsUsed.set(interaction.model, interaction.modelDetails);
@@ -96,7 +96,14 @@ export function formatAIInteractions(interactions: AIInteraction[]): string {
     headerLines.push('');
     headerLines.push('## Models Used');
     for (const [varName, details] of modelsUsed) {
-      headerLines.push(`- **${varName}**: ${details.name} (${details.provider})`);
+      let modelLine = `- **${varName}**: \`${details.name}\` via ${details.provider}`;
+      if (details.url) {
+        modelLine += ` @ ${details.url}`;
+      }
+      if (details.thinkingLevel) {
+        modelLine += ` (thinking: ${details.thinkingLevel})`;
+      }
+      headerLines.push(modelLine);
     }
   }
 
