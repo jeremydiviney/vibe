@@ -25,7 +25,7 @@ let numbers: number[] = [${numbers.join(', ')}]
 let sum: number = 0
 
 for n in numbers {
-  let result: number = do "Add {n} to {sum}. Return only the numeric result." calc default
+  let result: number = do "Add n to sum. Return only the number." calc default
   sum = result
 }
 `;
