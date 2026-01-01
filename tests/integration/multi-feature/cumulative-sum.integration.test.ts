@@ -11,7 +11,8 @@ const shouldRun = !!ANTHROPIC_API_KEY;
 
 // Generate random integers for the test
 const numbers = Array.from({ length: 5 }, () => Math.floor(Math.random() * 20) - 5);
-const expectedSum = numbers.reduce((a, b) => a + b, 0);
+const bonusNumber = Math.floor(Math.random() * 10) + 1;
+const expectedSum = numbers.reduce((a, b) => a + b, 0) + bonusNumber;
 
 const VIBE_PROGRAM = `
 model calc = {
@@ -28,6 +29,9 @@ for n in numbers {
   let result: number = do "Add n to sum. Return only the number." calc default
   sum = result
 }
+
+let bonus: number = ${bonusNumber}
+let final: number = do "Add bonus to sum. Return only the number." calc default
 `;
 
 async function runTest(logAi = true): Promise<Runtime> {
@@ -48,20 +52,20 @@ async function runTest(logAi = true): Promise<Runtime> {
 
 describe.skipIf(!shouldRun)('Cumulative Sum Integration', () => {
   test('AI adds numbers correctly in a loop', async () => {
-    console.log(`\nTest numbers: [${numbers.join(', ')}]`);
+    console.log(`\nTest numbers: [${numbers.join(', ')}] + bonus ${bonusNumber}`);
     console.log(`Expected sum: ${expectedSum}`);
 
     const runtime = await runTest();
 
-    const finalSum = runtime.getValue('sum') as number;
+    const finalSum = runtime.getValue('final') as number;
     console.log(`AI computed sum: ${finalSum}`);
 
     // AI should compute the correct sum
     expect(finalSum).toBe(expectedSum);
 
-    // Verify we made the right number of AI calls
+    // Verify we made the right number of AI calls (loop + bonus)
     const interactions = runtime.getAIInteractions();
-    expect(interactions.length).toBe(numbers.length);
+    expect(interactions.length).toBe(numbers.length + 1);
 
     // Each interaction should be a number response
     for (const interaction of interactions) {
