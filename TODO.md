@@ -4,9 +4,6 @@
 
 ### AI Integration
 - [ ] Handle streaming responses
-- [ ] Anthropic prompt caching optimization
-  - [ ] Add `anthropic-beta: prompt-caching-2024-07-31` header support
-  - [ ] Use `cache_control: { type: "ephemeral" }` for system prompts
 - [ ] Tool/function calling support
   - [ ] Define tool schemas in Vibe
   - [ ] Pass tools to AI providers
@@ -30,6 +27,11 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Anthropic prompt caching optimization
+  - [x] Progressive chunked caching for growing context
+  - [x] `cache_control: { type: "ephemeral" }` on system prompt
+  - [x] Cache breakpoint on 2nd-to-last chunk (latest can change freely)
 
 - [x] Add TypeScript types, interfaces, and enums to symbol tree output
   - [x] Include in symbol summary section with start/end line numbers
@@ -71,6 +73,3 @@
 - [x] Scoping & Expression Evaluation
   - [x] C-style scope chain (function → global)
   - [x] No closures - functions always pure
-
-- [x] Developer Tools
-  - [x] Symbol tree visualization tool with call graphs

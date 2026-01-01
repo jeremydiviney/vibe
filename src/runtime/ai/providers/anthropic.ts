@@ -3,8 +3,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AIRequest, AIResponse, TargetType, ThinkingLevel } from '../types';
 import { AIError } from '../types';
-import { buildMessages } from '../formatters';
+import { buildSystemMessage, buildPromptMessage } from '../formatters';
 import { parseResponse, typeToSchema } from '../schema';
+import { chunkContextForCaching } from '../cache-chunking';
 
 /** Anthropic provider configuration */
 export const ANTHROPIC_CONFIG = {
@@ -74,29 +75,40 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
   const outputFormat = buildOutputFormat(targetType);
   const useStructuredOutput = outputFormat !== null;
 
-  // Build messages (include type instruction for json/json[] or if no structured output)
-  const messages = buildMessages(
-    prompt,
-    contextText,
-    targetType,
-    useStructuredOutput
-  );
+  // Build system message with cache control
+  const systemMessage = buildSystemMessage();
 
-  // Extract system message and user messages
-  const systemMessage = messages.find((m) => m.role === 'system')?.content ?? '';
-  const userMessages = messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+  // Build prompt message (with type instruction if needed)
+  const promptMessage = buildPromptMessage(prompt, targetType, useStructuredOutput);
+
+  // Chunk context for progressive caching
+  const { chunks, cacheBreakpointIndex } = chunkContextForCaching(contextText);
+
+  // Build user messages: context chunks + prompt
+  const userMessages = [
+    // Context chunks as separate messages (if any)
+    ...chunks.map((chunk, i) => ({
+      role: 'user' as const,
+      content: i === 0 ? `Here is the current program context:\n\n${chunk.content}` : chunk.content,
+      // Cache control on 2nd-to-last chunk to allow latest chunk to change
+      ...(i === cacheBreakpointIndex ? { cache_control: { type: 'ephemeral' as const } } : {}),
+    })),
+    // Prompt is always last (never cached)
+    { role: 'user' as const, content: promptMessage },
+  ];
 
   try {
-    // Build request params
+    // Build request params with cache control on system message
     const params: Record<string, unknown> = {
       model: model.name,
-      max_tokens: 16384,  // Increased to support thinking tokens
-      system: systemMessage,
+      max_tokens: 16384, // Increased to support thinking tokens
+      system: [
+        {
+          type: 'text',
+          text: systemMessage,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       messages: userMessages,
     };
 
