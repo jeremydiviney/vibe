@@ -26,15 +26,18 @@ export interface ToolRoundResult {
  *
  * @param toolCalls - Tool calls from the AI response
  * @param toolRegistry - Registry to look up tools
+ * @param rootDir - Root directory for file operation sandboxing
  * @param onToolCall - Optional callback for each tool execution
  * @returns Results of all tool calls
  */
 export async function executeToolCalls(
   toolCalls: AIToolCall[],
   toolRegistry: ToolRegistry,
+  rootDir: string,
   onToolCall?: (call: AIToolCall, result: unknown, error?: string) => void
 ): Promise<AIToolResult[]> {
   const results: AIToolResult[] = [];
+  const context = { rootDir };
 
   for (const call of toolCalls) {
     const tool = toolRegistry.get(call.toolName);
@@ -47,7 +50,7 @@ export async function executeToolCalls(
     }
 
     try {
-      const result = await tool.executor(call.args);
+      const result = await tool.executor(call.args, context);
       results.push({ toolCallId: call.id, result });
       onToolCall?.(call, result);
     } catch (err) {
@@ -66,6 +69,7 @@ export async function executeToolCalls(
  *
  * @param initialRequest - The initial AI request
  * @param toolRegistry - Registry of available tools
+ * @param rootDir - Root directory for file operation sandboxing
  * @param executeProvider - Function to execute AI requests
  * @param options - Tool loop options
  * @returns Final AI response after all tool calls are complete
@@ -73,6 +77,7 @@ export async function executeToolCalls(
 export async function executeWithTools(
   initialRequest: AIRequest,
   toolRegistry: ToolRegistry,
+  rootDir: string,
   executeProvider: (request: AIRequest) => Promise<AIResponse>,
   options: ToolLoopOptions = {}
 ): Promise<{ response: AIResponse; rounds: ToolRoundResult[] }> {
@@ -88,7 +93,7 @@ export async function executeWithTools(
     roundCount++;
 
     // Execute all tool calls in this round
-    const results = await executeToolCalls(response.toolCalls, toolRegistry, onToolCall);
+    const results = await executeToolCalls(response.toolCalls, toolRegistry, rootDir, onToolCall);
 
     // Record this round
     rounds.push({

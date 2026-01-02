@@ -122,6 +122,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const { response, rounds } = await executeWithTools(
         request,
         state.toolRegistry,
+        state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
         { maxRounds: 10 }
       );
@@ -176,6 +177,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const { response, rounds } = await executeWithTools(
         request,
         state.toolRegistry,
+        state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
         { maxRounds: 10 }
       );

@@ -442,9 +442,9 @@ let x = "init"
 
       const schemas = runtime.getState().toolRegistry.getSchemas();
 
-      // Check some known builtin tools are present
-      const builtinNames = ['sleep', 'now', 'jsonParse', 'jsonStringify', 'env', 'fetch'];
-      for (const name of builtinNames) {
+      // Check some known standard tools are present
+      const standardToolNames = ['sleep', 'now', 'jsonParse', 'jsonStringify', 'env', 'readFile'];
+      for (const name of standardToolNames) {
         expect(schemas.find(s => s.name === name)).toBeDefined();
       }
     });

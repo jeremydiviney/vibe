@@ -268,8 +268,9 @@ export class Runtime {
           throw new Error(`Tool '${toolName}' not found in registry`);
         }
 
-        // Execute the tool - let errors propagate
-        const result = await tool.executor(args);
+        // Execute the tool with context - let errors propagate
+        const context = { rootDir: this.state.rootDir };
+        const result = await tool.executor(args, context);
         this.state = resumeWithToolResult(this.state, result);
       } else {
         // Handle user input

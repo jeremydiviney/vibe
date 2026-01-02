@@ -1,11 +1,12 @@
 import * as AST from '../ast';
 import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall } from './types';
-import { createToolRegistryWithBuiltins, builtinTools } from './tools';
+import { createToolRegistryWithBuiltins } from './tools';
 import type { ToolRoundResult } from './ai/tool-loop';
 
 // Options for creating initial state
 export interface InitialStateOptions {
   logAiInteractions?: boolean;
+  rootDir?: string;  // Root directory for file operation sandboxing (defaults to cwd)
 }
 
 // Create initial runtime state from a program AST
@@ -48,7 +49,8 @@ export function createInitialState(
     pendingTS: null,
     pendingImportedTsCall: null,
     pendingToolCall: null,
-    toolRegistry: createToolRegistryWithBuiltins(builtinTools),
+    toolRegistry: createToolRegistryWithBuiltins(),
+    rootDir: options?.rootDir ?? process.cwd(),
     error: null,
     errorObject: null,
   };

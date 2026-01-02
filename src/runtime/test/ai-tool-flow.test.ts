@@ -78,6 +78,7 @@ function createToolCallingAIProvider(
           targetType: null,
         },
         toolRegistry,
+        process.cwd(),  // Test rootDir for path sandboxing
         mockProviderExecutor,
         { maxRounds: 10 }
       );

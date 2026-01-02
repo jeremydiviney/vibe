@@ -8,6 +8,9 @@ import type { AIToolCall, AIRequest, AIResponse } from '../types';
 import type { ToolRegistry, RegisteredTool, ToolSchema } from '../../tools/types';
 import { createToolRegistry } from '../../tools/registry';
 
+// Test rootDir for tool context
+const TEST_ROOT_DIR = process.cwd();
+
 // Helper to create a mock tool registry
 function createMockRegistry(tools: RegisteredTool[]): ToolRegistry {
   const registry = createToolRegistry();
@@ -41,7 +44,7 @@ describe('executeToolCalls', () => {
       { id: 'call_1', toolName: 'add', args: { a: 2, b: 3 } },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry);
+    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual({ toolCallId: 'call_1', result: 5 });
@@ -58,7 +61,7 @@ describe('executeToolCalls', () => {
       { id: 'call_2', toolName: 'multiply', args: { a: 4, b: 5 } },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry);
+    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(2);
     expect(results[0]).toEqual({ toolCallId: 'call_1', result: 5 });
@@ -72,7 +75,7 @@ describe('executeToolCalls', () => {
       { id: 'call_1', toolName: 'unknown', args: {} },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry);
+    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual({
@@ -92,7 +95,7 @@ describe('executeToolCalls', () => {
       { id: 'call_1', toolName: 'failing', args: {} },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry);
+    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual({
@@ -112,7 +115,7 @@ describe('executeToolCalls', () => {
 
     const callbacks: Array<{ call: AIToolCall; result: unknown; error?: string }> = [];
 
-    await executeToolCalls(toolCalls, registry, (call, result, error) => {
+    await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR, (call, result, error) => {
       callbacks.push({ call, result, error });
     });
 
@@ -145,6 +148,7 @@ describe('executeWithTools', () => {
     const { response, rounds } = await executeWithTools(
       request,
       registry,
+      TEST_ROOT_DIR,
       executeProvider
     );
 
@@ -189,6 +193,7 @@ describe('executeWithTools', () => {
     const { response, rounds } = await executeWithTools(
       request,
       registry,
+      TEST_ROOT_DIR,
       executeProvider
     );
 
@@ -244,6 +249,7 @@ describe('executeWithTools', () => {
     const { response, rounds } = await executeWithTools(
       request,
       registry,
+      TEST_ROOT_DIR,
       executeProvider
     );
 
@@ -278,6 +284,7 @@ describe('executeWithTools', () => {
     const { rounds } = await executeWithTools(
       request,
       registry,
+      TEST_ROOT_DIR,
       executeProvider,
       { maxRounds: 3 }
     );
