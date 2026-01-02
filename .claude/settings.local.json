@@ -51,7 +51,8 @@
       "WebFetch(domain:platform.openai.com)",
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:www.anthropic.com)",
-      "WebFetch(domain:claude.com)"
+      "WebFetch(domain:claude.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [
       "Bash(rm:*)",
