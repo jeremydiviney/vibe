@@ -1,6 +1,7 @@
 // AI Module Type Definitions
 
 import type { AIProviderType } from '../../ast';
+import type { ToolSchema } from '../tools/types';
 
 // Re-export for convenience
 export type { AIProviderType };
@@ -28,6 +29,10 @@ export interface AIRequest {
   contextText: string;
   targetType: TargetType;
   model: ModelConfig;
+  /** Available tools for function calling */
+  tools?: ToolSchema[];
+  /** Tool results from previous call (for multi-turn) */
+  toolResults?: AIToolResult[];
 }
 
 /** Detailed token usage from AI providers */
@@ -42,11 +47,38 @@ export interface TokenUsage {
   thinkingTokens?: number;
 }
 
+/** Tool call parsed from AI response */
+export interface AIToolCall {
+  /** Provider-assigned ID for the tool call */
+  id: string;
+  /** Name of the tool to call */
+  toolName: string;
+  /** Arguments parsed from the tool call */
+  args: Record<string, unknown>;
+}
+
+/** Tool result to send back in follow-up request */
+export interface AIToolResult {
+  /** ID of the tool call this result is for */
+  toolCallId: string;
+  /** Successful result value */
+  result?: unknown;
+  /** Error message if the tool call failed */
+  error?: string;
+}
+
+/** Why the model stopped generating */
+export type AIStopReason = 'end' | 'tool_use' | 'length' | 'content_filter';
+
 /** AI response from all providers */
 export interface AIResponse {
   content: string;
   parsedValue: unknown;
   usage?: TokenUsage;
+  /** Tool calls from the model (if any) */
+  toolCalls?: AIToolCall[];
+  /** Why the model stopped generating */
+  stopReason?: AIStopReason;
 }
 
 /** Custom error for AI operations */

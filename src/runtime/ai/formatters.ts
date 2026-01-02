@@ -1,6 +1,7 @@
 // Message formatting utilities for AI providers
 
 import type { TargetType } from './types';
+import type { ToolSchema } from '../tools/types';
 import { getTypeInstruction } from './schema';
 
 /** Message structure for AI providers */
@@ -28,6 +29,24 @@ export function buildContextMessage(contextText: string): string | null {
   if (!trimmed) return null;
 
   return `Here is the current program context:\n\n${trimmed}`;
+}
+
+/**
+ * Build system message describing available tools.
+ * Returns null if no tools are provided.
+ */
+export function buildToolSystemMessage(tools: ToolSchema[]): string | null {
+  if (!tools.length) return null;
+
+  const toolList = tools
+    .map((t) => {
+      const params = t.parameters.map((p) => p.name).join(', ');
+      const desc = t.description ? `: ${t.description}` : '';
+      return `- ${t.name}(${params})${desc}`;
+    })
+    .join('\n');
+
+  return `You have access to the following tools:\n${toolList}\n\nCall tools when needed to complete the task.`;
 }
 
 /**
@@ -63,17 +82,26 @@ export function buildPromptMessage(
 
 /**
  * Build messages array for chat-style APIs (OpenAI, Anthropic).
- * Returns: [system, context?, prompt]
+ * Returns: [system, tools?, context?, prompt]
  */
 export function buildMessages(
   prompt: string,
   contextText: string,
   targetType: TargetType,
-  supportsStructuredOutput: boolean
+  supportsStructuredOutput: boolean,
+  tools?: ToolSchema[]
 ): Message[] {
   const messages: Message[] = [
     { role: 'system', content: buildSystemMessage() },
   ];
+
+  // Add tool descriptions as second system message
+  if (tools?.length) {
+    const toolMessage = buildToolSystemMessage(tools);
+    if (toolMessage) {
+      messages.push({ role: 'system', content: toolMessage });
+    }
+  }
 
   const contextMessage = buildContextMessage(contextText);
   if (contextMessage) {

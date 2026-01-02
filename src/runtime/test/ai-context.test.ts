@@ -4,6 +4,7 @@ import {
   createInitialState,
   runUntilPause,
   resumeWithAIResponse,
+  buildLocalContext,
   type ContextVariable,
 } from '../index';
 import { formatContextForAI } from '../context';
@@ -747,5 +748,327 @@ Variables from the VIBE language call stack.
       (e): e is ContextVariable => e.kind === 'variable' && e.name === 'result'
     );
     expect(resultEntry?.source).toBe('ai');
+  });
+});
+
+describe('Tool Call Context Formatting', () => {
+  // These are unit tests for formatContextForAI - they directly set up orderedEntries
+  // to test the formatter in isolation. For full integration tests that actually
+  // execute tools through the AI provider, see ai-tool-integration.test.ts
+
+  test('tool call with result is formatted correctly', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Set up tool call entry directly to test formatter
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push({
+      kind: 'tool-call',
+      toolName: 'getWeather',
+      args: { city: 'Seattle' },
+      result: { temp: 55, condition: 'rainy' },
+    });
+
+    // Rebuild context
+    state = { ...state, localContext: buildLocalContext(state) };
+
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    - x (text): test
+    [tool] getWeather({"city":"Seattle"})
+    [result] {"temp":55,"condition":"rainy"}`
+    );
+  });
+
+  test('tool call with error is formatted correctly', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add a failed tool call entry
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push({
+      kind: 'tool-call',
+      toolName: 'readFile',
+      args: { path: '/nonexistent.txt' },
+      error: 'File not found',
+    });
+
+    // Rebuild context
+    state = { ...state, localContext: buildLocalContext(state) };
+
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    - x (text): test
+    [tool] readFile({"path":"/nonexistent.txt"})
+    [error] File not found`
+    );
+  });
+
+  test('multiple tool calls are formatted in order', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add multiple tool call entries
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push(
+      {
+        kind: 'tool-call',
+        toolName: 'fetch',
+        args: { url: 'https://api.example.com/data' },
+        result: { status: 'ok' },
+      },
+      {
+        kind: 'tool-call',
+        toolName: 'jsonParse',
+        args: { text: '{"key":"value"}' },
+        result: { key: 'value' },
+      }
+    );
+
+    // Rebuild context
+    state = { ...state, localContext: buildLocalContext(state) };
+
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    - x (text): test
+    [tool] fetch({"url":"https://api.example.com/data"})
+    [result] {"status":"ok"}
+    [tool] jsonParse({"text":"{\\"key\\":\\"value\\"}"})
+    [result] {"key":"value"}`
+    );
+  });
+
+  test('tool calls mixed with prompts are formatted correctly', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add a tool call followed by a prompt
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push(
+      {
+        kind: 'tool-call',
+        toolName: 'getWeather',
+        args: { city: 'Seattle' },
+        result: { temp: 55 },
+      },
+      {
+        kind: 'prompt',
+        aiType: 'do' as const,
+        prompt: 'Summarize the weather',
+        response: 'It is 55 degrees in Seattle',
+      }
+    );
+
+    // Rebuild context
+    state = { ...state, localContext: buildLocalContext(state) };
+
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    - x (text): test
+    [tool] getWeather({"city":"Seattle"})
+    [result] {"temp":55}
+    --> do: "Summarize the weather"
+    <-- It is 55 degrees in Seattle`
+    );
+  });
+
+  test('tool call without result (pending) is formatted correctly', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add a tool call without result (simulating pending state)
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push({
+      kind: 'tool-call',
+      toolName: 'longRunningTask',
+      args: { input: 'data' },
+      // No result or error - pending
+    });
+
+    // Rebuild context
+    state = { ...state, localContext: buildLocalContext(state) };
+
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    - x (text): test
+    [tool] longRunningTask({"input":"data"})`
+    );
+  });
+
+  test('full AI call flow with tool calls shows complete context', () => {
+    // Simulates: do "What's the weather in Seattle and SF?" -> AI calls tools -> final response
+    // Note: model variables are filtered from context (they are config, not data)
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      let weather: text = do "What's the weather in Seattle and San Francisco?" m default
+    `);
+
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+    expect(state.status).toBe('awaiting_ai');
+
+    // Simulate the AI response with tool rounds
+    // Round 1: AI calls two tools in parallel
+    const toolRounds = [
+      {
+        toolCalls: [
+          { id: 'call_1', toolName: 'getWeather', args: { city: 'Seattle' } },
+          { id: 'call_2', toolName: 'getWeather', args: { city: 'San Francisco' } },
+        ],
+        results: [
+          { toolCallId: 'call_1', result: { temp: 55, condition: 'rainy' } },
+          { toolCallId: 'call_2', result: { temp: 68, condition: 'sunny' } },
+        ],
+      },
+    ];
+
+    // Resume with AI response (after tool calls completed)
+    state = resumeWithAIResponse(
+      state,
+      'Seattle is 55°F and rainy. San Francisco is 68°F and sunny.',
+      undefined, // no interaction log
+      toolRounds
+    );
+    state = runUntilPause(state);
+    expect(state.status).toBe('completed');
+
+    // Verify the variable was assigned
+    const frame = state.callStack[0];
+    expect(frame.locals['weather'].value).toBe('Seattle is 55°F and rainy. San Francisco is 68°F and sunny.');
+
+    // Verify the context shows: AI call → tool calls → response
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "What's the weather in Seattle and San Francisco?"
+    [tool] getWeather({"city":"Seattle"})
+    [result] {"temp":55,"condition":"rainy"}
+    [tool] getWeather({"city":"San Francisco"})
+    [result] {"temp":68,"condition":"sunny"}
+    <-- Seattle is 55°F and rainy. San Francisco is 68°F and sunny.
+    <-- weather (text): Seattle is 55°F and rainy. San Francisco is 68°F and sunny.`
+    );
+  });
+
+  test('multiple rounds of tool calls show in context', () => {
+    // Simulates: do -> AI calls tool -> AI calls another tool -> final response
+    // Note: model variables are filtered from context
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      let result: text = do "Find user 123 and get their orders" m default
+    `);
+
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+    expect(state.status).toBe('awaiting_ai');
+
+    // Simulate multiple rounds of tool calls
+    const toolRounds = [
+      // Round 1: Get user info
+      {
+        toolCalls: [
+          { id: 'call_1', toolName: 'getUser', args: { id: 123 } },
+        ],
+        results: [
+          { toolCallId: 'call_1', result: { name: 'Alice', email: 'alice@example.com' } },
+        ],
+      },
+      // Round 2: Get orders for that user
+      {
+        toolCalls: [
+          { id: 'call_2', toolName: 'getOrders', args: { userId: 123 } },
+        ],
+        results: [
+          // Note: JSON.stringify removes trailing zeros (149.50 -> 149.5)
+          { toolCallId: 'call_2', result: [{ orderId: 'A1', total: 99.99 }, { orderId: 'A2', total: 149.5 }] },
+        ],
+      },
+    ];
+
+    state = resumeWithAIResponse(
+      state,
+      'Alice (alice@example.com) has 2 orders totaling $249.49.',
+      undefined,
+      toolRounds
+    );
+    state = runUntilPause(state);
+    expect(state.status).toBe('completed');
+
+    // Verify context shows: AI call → tool calls → response
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "Find user 123 and get their orders"
+    [tool] getUser({"id":123})
+    [result] {"name":"Alice","email":"alice@example.com"}
+    [tool] getOrders({"userId":123})
+    [result] [{"orderId":"A1","total":99.99},{"orderId":"A2","total":149.5}]
+    <-- Alice (alice@example.com) has 2 orders totaling $249.49.
+    <-- result (text): Alice (alice@example.com) has 2 orders totaling $249.49.`
+    );
+  });
+
+  test('tool call with error followed by retry shows in context', () => {
+    // Note: model variables are filtered from context
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      let data: text = do "Read the config file" m default
+    `);
+
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+    expect(state.status).toBe('awaiting_ai');
+
+    // Simulate: first tool call fails, AI retries with different path
+    const toolRounds = [
+      {
+        toolCalls: [
+          { id: 'call_1', toolName: 'readFile', args: { path: '/etc/config.json' } },
+        ],
+        results: [
+          { toolCallId: 'call_1', error: 'Permission denied' },
+        ],
+      },
+      {
+        toolCalls: [
+          { id: 'call_2', toolName: 'readFile', args: { path: './config.json' } },
+        ],
+        results: [
+          { toolCallId: 'call_2', result: '{"setting": "value"}' },
+        ],
+      },
+    ];
+
+    state = resumeWithAIResponse(
+      state,
+      'Found config with setting=value',
+      undefined,
+      toolRounds
+    );
+    state = runUntilPause(state);
+    expect(state.status).toBe('completed');
+
+    // Verify context shows: AI call → error → retry → response
+    const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "Read the config file"
+    [tool] readFile({"path":"/etc/config.json"})
+    [error] Permission denied
+    [tool] readFile({"path":"./config.json"})
+    [result] {"setting": "value"}
+    <-- Found config with setting=value
+    <-- data (text): Found config with setting=value`
+    );
   });
 });

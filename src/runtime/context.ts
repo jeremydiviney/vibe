@@ -1,4 +1,4 @@
-import type { RuntimeState, ContextEntry, ContextVariable, ContextPrompt } from './types';
+import type { RuntimeState, ContextEntry, ContextVariable, ContextPrompt, ContextToolCall } from './types';
 
 // Types that are filtered from context (config/instructions, not data for AI)
 const FILTERED_TYPES = ['model', 'prompt'];
@@ -35,16 +35,20 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
         }
         return [contextVar];
       } else if (entry.kind === 'prompt') {
-        const contextPrompt: ContextEntry = {
+        const contextPrompt: ContextPrompt = {
           kind: 'prompt',
           aiType: entry.aiType,
           prompt: entry.prompt,
           frameName: frame.name,
           frameDepth: frameIndex,
         };
+        // Include toolCalls if present
+        if (entry.toolCalls && entry.toolCalls.length > 0) {
+          contextPrompt.toolCalls = entry.toolCalls;
+        }
         // Only include response if defined
         if (entry.response !== undefined) {
-          (contextPrompt as ContextPrompt).response = entry.response;
+          contextPrompt.response = entry.response;
         }
         return [contextPrompt];
       } else if (entry.kind === 'scope-enter' || entry.kind === 'scope-exit') {
@@ -62,6 +66,21 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
           frameName: frame.name,
           frameDepth: frameIndex,
         }];
+      } else if (entry.kind === 'tool-call') {
+        const toolEntry: ContextToolCall = {
+          kind: 'tool-call',
+          toolName: entry.toolName,
+          args: entry.args,
+          frameName: frame.name,
+          frameDepth: frameIndex,
+        };
+        if (entry.result !== undefined) {
+          toolEntry.result = entry.result;
+        }
+        if (entry.error !== undefined) {
+          toolEntry.error = entry.error;
+        }
+        return [toolEntry];
       }
       return [];
     });
@@ -98,16 +117,20 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
         }
         return [contextVar];
       } else if (entry.kind === 'prompt') {
-        const contextPrompt: ContextEntry = {
+        const contextPrompt: ContextPrompt = {
           kind: 'prompt',
           aiType: entry.aiType,
           prompt: entry.prompt,
           frameName: frame.name,
           frameDepth,
         };
+        // Include toolCalls if present
+        if (entry.toolCalls && entry.toolCalls.length > 0) {
+          contextPrompt.toolCalls = entry.toolCalls;
+        }
         // Only include response if defined
         if (entry.response !== undefined) {
-          (contextPrompt as ContextPrompt).response = entry.response;
+          contextPrompt.response = entry.response;
         }
         return [contextPrompt];
       } else if (entry.kind === 'scope-enter' || entry.kind === 'scope-exit') {
@@ -125,6 +148,21 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
           frameName: frame.name,
           frameDepth,
         }];
+      } else if (entry.kind === 'tool-call') {
+        const toolEntry: ContextToolCall = {
+          kind: 'tool-call',
+          toolName: entry.toolName,
+          args: entry.args,
+          frameName: frame.name,
+          frameDepth,
+        };
+        if (entry.result !== undefined) {
+          toolEntry.result = entry.result;
+        }
+        if (entry.error !== undefined) {
+          toolEntry.error = entry.error;
+        }
+        return [toolEntry];
       }
       return [];
     });
@@ -218,8 +256,23 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
         const prefix = entry.source === 'ai' || entry.source === 'user' ? '<--' : '-';
         lines.push(`${indent}  ${prefix} ${entry.name}${typeStr}: ${valueStr}`);
       } else if (entry.kind === 'prompt') {
-        // Prompt entry with optional response
+        // Prompt entry: AI call → tool calls → response
         lines.push(`${indent}  --> ${entry.aiType}: "${entry.prompt}"`);
+        // Format tool calls in order (between prompt and response)
+        if (entry.toolCalls && entry.toolCalls.length > 0) {
+          for (const toolCall of entry.toolCalls) {
+            const argsStr = JSON.stringify(toolCall.args);
+            lines.push(`${indent}  [tool] ${toolCall.toolName}(${argsStr})`);
+            if (toolCall.error) {
+              lines.push(`${indent}  [error] ${toolCall.error}`);
+            } else if (toolCall.result !== undefined) {
+              const resultStr =
+                typeof toolCall.result === 'object' ? JSON.stringify(toolCall.result) : String(toolCall.result);
+              lines.push(`${indent}  [result] ${resultStr}`);
+            }
+          }
+        }
+        // Final AI response
         if (entry.response !== undefined) {
           const responseStr =
             typeof entry.response === 'object' ? JSON.stringify(entry.response) : String(entry.response);
@@ -236,6 +289,17 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
       } else if (entry.kind === 'summary') {
         // Summary from compress mode
         lines.push(`${indent}  [summary] ${entry.text}`);
+      } else if (entry.kind === 'tool-call') {
+        // Tool call with args and result/error
+        const argsStr = JSON.stringify(entry.args);
+        lines.push(`${indent}  [tool] ${entry.toolName}(${argsStr})`);
+        if (entry.error) {
+          lines.push(`${indent}  [error] ${entry.error}`);
+        } else if (entry.result !== undefined) {
+          const resultStr =
+            typeof entry.result === 'object' ? JSON.stringify(entry.result) : String(entry.result);
+          lines.push(`${indent}  [result] ${resultStr}`);
+        }
       }
     }
 

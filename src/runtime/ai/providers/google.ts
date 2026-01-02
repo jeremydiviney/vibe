@@ -1,10 +1,11 @@
 // Google Generative AI Provider Implementation using official SDK
 
 import { GoogleGenAI } from '@google/genai';
-import type { AIRequest, AIResponse, ThinkingLevel } from '../types';
+import type { AIRequest, AIResponse, AIToolCall, ThinkingLevel } from '../types';
 import { AIError } from '../types';
-import { buildSystemMessage, buildContextMessage, buildPromptMessage } from '../formatters';
+import { buildSystemMessage, buildContextMessage, buildPromptMessage, buildToolSystemMessage } from '../formatters';
 import { typeToSchema, parseResponse } from '../schema';
+import { toGoogleFunctionDeclarations } from '../tool-schema';
 
 /** Google provider configuration */
 export const GOOGLE_CONFIG = {
@@ -20,17 +21,27 @@ const THINKING_LEVEL_MAP: Record<ThinkingLevel, string | null> = {
   max: 'high',      // Gemini 3 Flash max is 'high'
 };
 
+/** Generate a unique ID for tool calls (Google doesn't provide one) */
+function generateToolCallId(): string {
+  return `call_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
 /**
  * Execute an AI request using the Google Gen AI SDK.
  */
 export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model } = request;
+  const { prompt, contextText, targetType, model, tools } = request;
 
   // Create Google Gen AI client
   const client = new GoogleGenAI({ apiKey: model.apiKey });
 
   // Build combined prompt (Google uses a simpler message format)
-  const systemInstruction = buildSystemMessage();
+  const baseSystemInstruction = buildSystemMessage();
+  const toolSystemMessage = tools?.length ? buildToolSystemMessage(tools) : null;
+  const systemInstruction = toolSystemMessage
+    ? `${baseSystemInstruction}\n\n${toolSystemMessage}`
+    : baseSystemInstruction;
+
   const contextMessage = buildContextMessage(contextText);
   const promptMessage = buildPromptMessage(
     prompt,
@@ -75,18 +86,52 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       }
     }
 
+    // Build config with optional tools
+    const config: Record<string, unknown> = {
+      systemInstruction,
+      ...generationConfig,
+    };
+
+    // Add tools if provided
+    if (tools?.length) {
+      config.tools = [{ functionDeclarations: toGoogleFunctionDeclarations(tools) }];
+    }
+
     // Make API request
     const response = await client.models.generateContent({
       model: model.name,
       contents: combinedPrompt,
-      config: {
-        systemInstruction,
-        ...generationConfig,
-      },
+      config,
     });
 
-    // Extract content
+    // Extract text content
     const content = response.text ?? '';
+
+    // Extract function calls from response parts
+    const responseParts = (response.candidates?.[0]?.content?.parts ?? []) as Array<{
+      text?: string;
+      functionCall?: { name: string; args: Record<string, unknown> };
+    }>;
+    const functionCallParts = responseParts.filter((p) => p.functionCall);
+    let toolCalls: AIToolCall[] | undefined;
+    if (functionCallParts.length > 0) {
+      toolCalls = functionCallParts.map((p) => ({
+        id: generateToolCallId(),
+        toolName: p.functionCall!.name,
+        args: p.functionCall!.args,
+      }));
+    }
+
+    // Determine stop reason
+    const finishReason = response.candidates?.[0]?.finishReason as string | undefined;
+    const stopReason =
+      finishReason === 'STOP'
+        ? (toolCalls?.length ? 'tool_use' : 'end')
+        : finishReason === 'MAX_TOKENS'
+          ? 'length'
+          : finishReason === 'SAFETY'
+            ? 'content_filter'
+            : 'end';
 
     // Extract usage from response including cached and thinking tokens
     const meta = response.usageMetadata as Record<string, unknown> | undefined;
@@ -113,7 +158,7 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       parsedValue = parseResponse(content, targetType);
     }
 
-    return { content, parsedValue, usage };
+    return { content, parsedValue, usage, toolCalls, stopReason };
   } catch (error) {
     // Handle Google API errors
     if (error instanceof Error) {

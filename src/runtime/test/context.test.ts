@@ -364,3 +364,91 @@ describe('Context Building Functions', () => {
     expect(finalGlobalCtx).toEqual(finalLocalCtx);
   });
 });
+
+describe('Tool Call Context Entries', () => {
+  test('tool-call entries in orderedEntries appear in context', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add a tool-call entry directly to test buildLocalContext handles them
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push({
+      kind: 'tool-call',
+      toolName: 'getWeather',
+      args: { city: 'Seattle' },
+      result: { temp: 55, condition: 'rainy' },
+    });
+
+    const context = buildLocalContext(state);
+
+    // Should have the variable and the tool call
+    expect(context).toHaveLength(2);
+
+    const toolCall = context.find((e) => e.kind === 'tool-call');
+    expect(toolCall).toBeDefined();
+    expect(toolCall?.kind).toBe('tool-call');
+    if (toolCall?.kind === 'tool-call') {
+      expect(toolCall.toolName).toBe('getWeather');
+      expect(toolCall.args).toEqual({ city: 'Seattle' });
+      expect(toolCall.result).toEqual({ temp: 55, condition: 'rainy' });
+      expect(toolCall.frameName).toBe('<entry>');
+      expect(toolCall.frameDepth).toBe(0);
+    }
+  });
+
+  test('tool-call entries with errors appear in context', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add a failed tool call
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push({
+      kind: 'tool-call',
+      toolName: 'readFile',
+      args: { path: '/nonexistent' },
+      error: 'File not found',
+    });
+
+    const context = buildLocalContext(state);
+
+    const toolCall = context.find((e) => e.kind === 'tool-call');
+    expect(toolCall).toBeDefined();
+    if (toolCall?.kind === 'tool-call') {
+      expect(toolCall.toolName).toBe('readFile');
+      expect(toolCall.error).toBe('File not found');
+      expect(toolCall.result).toBeUndefined();
+    }
+  });
+
+  test('multiple tool calls appear in order', () => {
+    const ast = parse('let x = "test"');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Add multiple tool calls
+    const frame = state.callStack[state.callStack.length - 1];
+    frame.orderedEntries.push(
+      {
+        kind: 'tool-call',
+        toolName: 'step1',
+        args: {},
+        result: 'done1',
+      },
+      {
+        kind: 'tool-call',
+        toolName: 'step2',
+        args: {},
+        result: 'done2',
+      }
+    );
+
+    const context = buildLocalContext(state);
+    const toolCalls = context.filter((e) => e.kind === 'tool-call');
+
+    expect(toolCalls).toHaveLength(2);
+    expect(toolCalls[0].kind === 'tool-call' && toolCalls[0].toolName).toBe('step1');
+    expect(toolCalls[1].kind === 'tool-call' && toolCalls[1].toolName).toBe('step2');
+  });
+});
