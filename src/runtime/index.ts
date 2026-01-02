@@ -94,11 +94,13 @@ import { saveAIInteractions } from './ai-logger';
 
 // Token usage from AI providers
 import type { TokenUsage } from './ai/types';
+import type { ToolRoundResult } from './ai/tool-loop';
 
-// AI execution result with optional usage
+// AI execution result with optional usage and tool rounds
 export interface AIExecutionResult {
   value: unknown;
   usage?: TokenUsage;
+  toolRounds?: ToolRoundResult[];  // Tool calling rounds that occurred during execution
 }
 
 // AI provider interface (for external callers)
@@ -253,7 +255,7 @@ export class Runtime {
           durationMs: Date.now() - startTime,
         } : undefined;
 
-        this.state = resumeWithAIResponse(this.state, result.value, interaction);
+        this.state = resumeWithAIResponse(this.state, result.value, interaction, result.toolRounds);
       } else if (this.state.status === 'awaiting_tool') {
         // Handle tool calls
         if (!this.state.pendingToolCall) {

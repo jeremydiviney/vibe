@@ -38,11 +38,20 @@ export interface ContextVariable {
   frameDepth: number;     // 0 = deepest/current frame, higher = older frames
 }
 
+// Tool call within a prompt (AI-initiated tool execution during the prompt)
+export interface PromptToolCall {
+  toolName: string;
+  args: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+}
+
 // Prompt in context (when AI function is called)
 export interface ContextPrompt {
   kind: 'prompt';
   aiType: 'do' | 'ask' | 'vibe';
   prompt: string;
+  toolCalls?: PromptToolCall[];  // Tool calls made during this prompt (before response)
   response?: unknown;  // Included when AI returns
   frameName: string;
   frameDepth: number;
@@ -65,8 +74,19 @@ export interface ContextSummary {
   frameDepth: number;
 }
 
-// Context entry - variable, prompt, scope marker, or summary
-export type ContextEntry = ContextVariable | ContextPrompt | ContextScopeMarker | ContextSummary;
+// Tool call in context (AI-initiated tool execution)
+export interface ContextToolCall {
+  kind: 'tool-call';
+  toolName: string;
+  args: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+  frameName: string;
+  frameDepth: number;
+}
+
+// Context entry - variable, prompt, scope marker, summary, or tool call
+export type ContextEntry = ContextVariable | ContextPrompt | ContextScopeMarker | ContextSummary | ContextToolCall;
 
 // Ordered entry - tracks order of variable assignments and AI prompts in a frame
 // Values are snapshotted at assignment time for accurate history
@@ -83,7 +103,8 @@ export type FrameEntry =
       kind: 'prompt';
       aiType: 'do' | 'ask' | 'vibe';
       prompt: string;
-      response?: unknown;       // Added when AI returns
+      toolCalls?: PromptToolCall[];  // Tool calls made during this prompt
+      response?: unknown;            // Added when AI returns
     }
   | {
       kind: 'summary';          // For compress mode
@@ -98,6 +119,13 @@ export type FrameEntry =
       kind: 'scope-exit';       // Marker for leaving loop/function
       scopeType: 'for' | 'while' | 'function';
       label?: string;
+    }
+  | {
+      kind: 'tool-call';        // AI-initiated tool call
+      toolName: string;
+      args: Record<string, unknown>;
+      result?: unknown;
+      error?: string;
     };
 
 // Stack frame (serializable - uses Record instead of Map)
@@ -318,4 +346,7 @@ export type Instruction =
 
   // Tool operations
   | { op: 'exec_tool_declaration'; decl: AST.ToolDeclaration; location: SourceLocation }
-  | { op: 'call_tool'; toolName: string; argCount: number; location: SourceLocation };
+  | { op: 'call_tool'; toolName: string; argCount: number; location: SourceLocation }
+
+  // AI tool call result (for context building)
+  | { op: 'ai_tool_call_result'; toolName: string; args: unknown; result: unknown; error?: string; location: SourceLocation };

@@ -1,6 +1,7 @@
 import * as AST from '../ast';
-import type { RuntimeState, AIOperation, AIInteraction, StackFrame } from './types';
+import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall } from './types';
 import { createToolRegistryWithBuiltins, builtinTools } from './tools';
+import type { ToolRoundResult } from './ai/tool-loop';
 
 // Options for creating initial state
 export interface InitialStateOptions {
@@ -67,7 +68,8 @@ export function createFrame(name: string, parentFrameIndex: number | null = null
 export function resumeWithAIResponse(
   state: RuntimeState,
   response: unknown,
-  interaction?: AIInteraction
+  interaction?: AIInteraction,
+  toolRounds?: ToolRoundResult[]
 ): RuntimeState {
   if (state.status !== 'awaiting_ai' || !state.pendingAI) {
     throw new Error('Cannot resume: not awaiting AI response');
@@ -88,16 +90,38 @@ export function resumeWithAIResponse(
     ? [...state.aiInteractions, interaction]
     : state.aiInteractions;
 
-  // Add the completed prompt to orderedEntries in current frame (with response for history)
+  // Build ordered entries with prompt containing embedded tool calls
   const frame = state.callStack[state.callStack.length - 1];
+
+  // Convert tool rounds to PromptToolCall format (embedded in prompt entry)
+  const toolCalls: PromptToolCall[] = (toolRounds ?? []).flatMap((round) =>
+    round.toolCalls.map((call, index) => {
+      const result = round.results[index];
+      const toolCall: PromptToolCall = {
+        toolName: call.toolName,
+        args: call.args,
+      };
+      if (result?.error) {
+        toolCall.error = result.error;
+      } else if (result?.result !== undefined) {
+        toolCall.result = result.result;
+      }
+      return toolCall;
+    })
+  );
+
+  // Create prompt entry with embedded tool calls (order: prompt → tools → response)
+  const promptEntry: FrameEntry = {
+    kind: 'prompt' as const,
+    aiType: pendingAI.type as 'do' | 'ask' | 'vibe',
+    prompt: pendingAI.prompt,
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    response,  // Include response for context history
+  };
+
   const newOrderedEntries = [
     ...frame.orderedEntries,
-    {
-      kind: 'prompt' as const,
-      aiType: pendingAI.type as 'do' | 'ask' | 'vibe',
-      prompt: pendingAI.prompt,
-      response,  // Include response for context history
-    }
+    promptEntry,
   ];
   const updatedCallStack = [
     ...state.callStack.slice(0, -1),
@@ -118,7 +142,7 @@ export function resumeWithAIResponse(
       {
         timestamp: Date.now(),
         instructionType: `ai_${pendingAI.type}_response`,
-        details: { prompt: pendingAI.prompt },
+        details: { prompt: pendingAI.prompt, toolRounds: toolRounds?.length ?? 0 },
         result: responseStr,
       },
     ],

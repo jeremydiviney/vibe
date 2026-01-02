@@ -1,11 +1,12 @@
 // Anthropic Provider Implementation using official SDK
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { AIRequest, AIResponse, TargetType, ThinkingLevel } from '../types';
+import type { AIRequest, AIResponse, AIToolCall, TargetType, ThinkingLevel } from '../types';
 import { AIError } from '../types';
-import { buildSystemMessage, buildPromptMessage } from '../formatters';
+import { buildSystemMessage, buildPromptMessage, buildToolSystemMessage } from '../formatters';
 import { parseResponse, typeToSchema } from '../schema';
 import { chunkContextForCaching } from '../cache-chunking';
+import { toAnthropicTools } from '../tool-schema';
 
 /** Anthropic provider configuration */
 export const ANTHROPIC_CONFIG = {
@@ -63,7 +64,7 @@ function buildOutputFormat(targetType: TargetType): Record<string, unknown> | nu
  * Uses structured outputs (beta) for Claude 4.5 models.
  */
 export async function executeAnthropic(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model } = request;
+  const { prompt, contextText, targetType, model, tools } = request;
 
   // Create Anthropic client
   const client = new Anthropic({
@@ -75,8 +76,9 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
   const outputFormat = buildOutputFormat(targetType);
   const useStructuredOutput = outputFormat !== null;
 
-  // Build system message with cache control
+  // Build system messages
   const systemMessage = buildSystemMessage();
+  const toolSystemMessage = tools?.length ? buildToolSystemMessage(tools) : null;
 
   // Build prompt message (with type instruction if needed)
   const promptMessage = buildPromptMessage(prompt, targetType, useStructuredOutput);
@@ -98,19 +100,34 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
   ];
 
   try {
+    // Build system array with optional tool descriptions
+    const systemBlocks = [
+      {
+        type: 'text',
+        text: systemMessage,
+        cache_control: { type: 'ephemeral' },
+      },
+    ];
+    if (toolSystemMessage) {
+      systemBlocks.push({
+        type: 'text',
+        text: toolSystemMessage,
+        cache_control: { type: 'ephemeral' },
+      });
+    }
+
     // Build request params with cache control on system message
     const params: Record<string, unknown> = {
       model: model.name,
       max_tokens: 16384, // Increased to support thinking tokens
-      system: [
-        {
-          type: 'text',
-          text: systemMessage,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
+      system: systemBlocks,
       messages: userMessages,
     };
+
+    // Add tools if provided
+    if (tools?.length) {
+      params.tools = toAnthropicTools(tools);
+    }
 
     // Add extended thinking if level specified and not 'none'
     const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
@@ -139,9 +156,31 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
       betas,
     } as Parameters<typeof client.beta.messages.create>[0]);
 
-    // Extract content from response
+    // Extract text content from response
     const textBlock = response.content.find((block) => block.type === 'text');
     const content = textBlock?.type === 'text' ? textBlock.text : '';
+
+    // Extract tool_use blocks
+    const toolUseBlocks = response.content.filter(
+      (block): block is { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
+        block.type === 'tool_use'
+    );
+    let toolCalls: AIToolCall[] | undefined;
+    if (toolUseBlocks.length > 0) {
+      toolCalls = toolUseBlocks.map((block) => ({
+        id: block.id,
+        toolName: block.name,
+        args: block.input,
+      }));
+    }
+
+    // Determine stop reason
+    const stopReason =
+      response.stop_reason === 'tool_use'
+        ? 'tool_use'
+        : response.stop_reason === 'max_tokens'
+          ? 'length'
+          : 'end';
 
     // Extract usage including cache and thinking tokens
     const rawUsage = response.usage as Record<string, unknown> | undefined;
@@ -164,7 +203,7 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
       parsedValue = content;
     }
 
-    return { content, parsedValue, usage };
+    return { content, parsedValue, usage, toolCalls, stopReason };
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;

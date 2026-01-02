@@ -1,10 +1,11 @@
 // OpenAI Provider Implementation using official SDK
 
 import OpenAI from 'openai';
-import type { AIRequest, AIResponse, ThinkingLevel } from '../types';
+import type { AIRequest, AIResponse, AIToolCall, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildMessages } from '../formatters';
 import { typeToSchema, parseResponse } from '../schema';
+import { toOpenAITools } from '../tool-schema';
 
 /** OpenAI provider configuration */
 export const OPENAI_CONFIG = {
@@ -25,7 +26,7 @@ const REASONING_EFFORT_MAP: Record<ThinkingLevel, string> = {
  * Execute an AI request using the OpenAI SDK.
  */
 export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model } = request;
+  const { prompt, contextText, targetType, model, tools } = request;
 
   // Create OpenAI client
   const client = new OpenAI({
@@ -38,7 +39,8 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     prompt,
     contextText,
     targetType,
-    OPENAI_CONFIG.supportsStructuredOutput
+    OPENAI_CONFIG.supportsStructuredOutput,
+    tools
   );
 
   try {
@@ -50,6 +52,11 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
         content: m.content,
       })),
     };
+
+    // Add tools if provided
+    if (tools?.length) {
+      params.tools = toOpenAITools(tools) as OpenAI.ChatCompletionTool[];
+    }
 
     // Add reasoning effort if thinking level specified
     const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
@@ -86,8 +93,10 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     // Make API request
     const completion = await client.chat.completions.create(params);
 
-    // Extract content
-    const content = completion.choices[0]?.message?.content ?? '';
+    // Extract message
+    const message = completion.choices[0]?.message;
+    const content = message?.content ?? '';
+    const finishReason = completion.choices[0]?.finish_reason;
 
     // Extract usage including cached and reasoning tokens
     const rawUsage = completion.usage as Record<string, unknown> | undefined;
@@ -101,6 +110,26 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
           thinkingTokens: completionDetails?.reasoning_tokens ? Number(completionDetails.reasoning_tokens) : undefined,
         }
       : undefined;
+
+    // Parse tool calls if present
+    let toolCalls: AIToolCall[] | undefined;
+    if (message?.tool_calls?.length) {
+      toolCalls = message.tool_calls.map((tc) => ({
+        id: tc.id,
+        toolName: tc.function.name,
+        args: JSON.parse(tc.function.arguments),
+      }));
+    }
+
+    // Determine stop reason
+    const stopReason =
+      finishReason === 'tool_calls'
+        ? 'tool_use'
+        : finishReason === 'length'
+          ? 'length'
+          : finishReason === 'content_filter'
+            ? 'content_filter'
+            : 'end';
 
     // Parse value from structured output or raw content
     let parsedValue: unknown;
@@ -116,7 +145,7 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       parsedValue = parseResponse(content, targetType);
     }
 
-    return { content, parsedValue, usage };
+    return { content, parsedValue, usage, toolCalls, stopReason };
   } catch (error) {
     if (error instanceof OpenAI.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;

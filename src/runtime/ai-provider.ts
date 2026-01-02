@@ -3,7 +3,10 @@
 
 import type { AIProvider, AIExecutionResult } from './index';
 import type { RuntimeState } from './types';
-import { executeAI, type VibeModelValue, type TargetType } from './ai';
+import type { VibeModelValue, TargetType, AIRequest, ModelConfig, AIProviderType } from './ai';
+import { detectProvider, getProviderExecutor, buildAIRequest } from './ai';
+import { withRetry } from './ai/retry';
+import { executeWithTools, type ToolRoundResult } from './ai/tool-loop';
 import { buildGlobalContext, formatContextForAI } from './context';
 
 /**
@@ -51,6 +54,29 @@ function getTargetType(state: RuntimeState): TargetType {
 }
 
 /**
+ * Build model config from runtime model value.
+ */
+function buildModelConfig(modelValue: VibeModelValue): ModelConfig {
+  if (!modelValue.name) {
+    throw new Error('Model name is required');
+  }
+  if (!modelValue.apiKey) {
+    throw new Error('API key is required');
+  }
+
+  const provider: AIProviderType =
+    (modelValue.provider as AIProviderType) ?? detectProvider(modelValue.url);
+
+  return {
+    name: modelValue.name,
+    apiKey: modelValue.apiKey,
+    url: modelValue.url,
+    provider,
+    maxRetriesOnError: modelValue.maxRetriesOnError ?? undefined,
+  };
+}
+
+/**
  * Create a real AI provider that uses actual API calls.
  * The provider needs access to runtime state to get model configs.
  */
@@ -75,19 +101,36 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // Determine target type from pending variable declaration
       const targetType = getTargetType(state);
 
-      // Execute AI call
-      const response = await executeAI(
-        modelValue,
-        prompt,
-        formattedContext.text,
-        state.pendingAI.type,
-        targetType
+      // Build model config and request
+      const model = buildModelConfig(modelValue);
+      const operationType = state.pendingAI.type;
+
+      // Get tool schemas from registry
+      const tools = state.toolRegistry.getSchemas();
+
+      // Build the request with tools
+      const request: AIRequest = {
+        ...buildAIRequest(model, prompt, formattedContext.text, operationType, targetType),
+        tools: tools.length > 0 ? tools : undefined,
+      };
+
+      // Get provider executor (provider is always defined after buildModelConfig)
+      const execute = getProviderExecutor(model.provider!);
+
+      // Execute with tool loop (handles multi-turn tool calling)
+      const maxRetries = modelValue.maxRetriesOnError ?? 3;
+      const { response, rounds } = await executeWithTools(
+        request,
+        state.toolRegistry,
+        (req) => withRetry(() => execute(req), { maxRetries }),
+        { maxRounds: 10 }
       );
 
-      // Return the parsed value and usage
+      // Return the parsed value, usage, and tool rounds
       return {
         value: response.parsedValue ?? response.content,
         usage: response.usage,
+        toolRounds: rounds.length > 0 ? rounds : undefined,
       };
     },
 
@@ -113,18 +156,34 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const context = buildGlobalContext(state);
       const formattedContext = formatContextForAI(context);
 
-      // Execute AI call for code generation
-      const response = await executeAI(
-        modelValue,
-        prompt,
-        formattedContext.text,
-        'vibe',
-        'text' // Code is always text
+      // Build model config and request
+      const model = buildModelConfig(modelValue);
+
+      // Get tool schemas from registry
+      const tools = state.toolRegistry.getSchemas();
+
+      // Build the request with tools
+      const request: AIRequest = {
+        ...buildAIRequest(model, prompt, formattedContext.text, 'vibe', 'text'),
+        tools: tools.length > 0 ? tools : undefined,
+      };
+
+      // Get provider executor (provider is always defined after buildModelConfig)
+      const execute = getProviderExecutor(model.provider!);
+
+      // Execute with tool loop (handles multi-turn tool calling)
+      const maxRetries = modelValue.maxRetriesOnError ?? 3;
+      const { response, rounds } = await executeWithTools(
+        request,
+        state.toolRegistry,
+        (req) => withRetry(() => execute(req), { maxRetries }),
+        { maxRounds: 10 }
       );
 
       return {
         value: String(response.content),
         usage: response.usage,
+        toolRounds: rounds.length > 0 ? rounds : undefined,
       };
     },
 
