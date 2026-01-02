@@ -129,6 +129,7 @@ export interface ToolDeclaration extends BaseNode {
   params: ToolParameter[];
   returnType: string | null;  // Optional return type
   description?: string;       // From @description decorator, for AI schema
+  paramDecorators?: string[]; // Names from @param decorators (for validation)
   body: BlockStatement;
 }
 

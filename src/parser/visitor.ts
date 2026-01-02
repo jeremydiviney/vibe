@@ -172,6 +172,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   toolDeclaration(ctx: { Tool: IToken[]; Identifier: IToken[]; toolParameterList?: CstNode[]; toolTypeAnnotation?: CstNode[]; toolMetadata?: CstNode[]; blockStatement: CstNode[] }): AST.ToolDeclaration {
     // Build param descriptions map from @param metadata
     const paramDescriptions: Record<string, string> = {};
+    const paramDecorators: string[] = [];  // Track @param names for validation
     let description: string | undefined;
 
     if (ctx.toolMetadata) {
@@ -181,6 +182,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
           description = result.text;
         } else {
           paramDescriptions[result.name] = result.text;
+          paramDecorators.push(result.name);
         }
       }
     }
@@ -193,7 +195,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
         }))
       : [];
 
-    return {
+    const node: AST.ToolDeclaration = {
       type: 'ToolDeclaration',
       name: ctx.Identifier[0].image,
       params,
@@ -202,6 +204,13 @@ class VibeAstVisitor extends BaseVibeVisitor {
       body: this.visit(ctx.blockStatement),
       location: tokenLocation(ctx.Tool[0]),
     };
+
+    // Only include paramDecorators if there are any (for validation)
+    if (paramDecorators.length > 0) {
+      node.paramDecorators = paramDecorators;
+    }
+
+    return node;
   }
 
   toolTypeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Identifier?: IToken[]; LBracket?: IToken[] }): string {

@@ -32,6 +32,26 @@ export function buildContextMessage(contextText: string): string | null {
 }
 
 /**
+ * Format a JsonSchema as a readable type string.
+ * Examples: "string", "number", "{name: string, age: number}", "string[]"
+ */
+function formatJsonSchemaType(schema: ToolSchema['parameters'][0]['type']): string {
+  if (schema.type === 'array') {
+    const itemType = schema.items ? formatJsonSchemaType(schema.items) : 'any';
+    return `${itemType}[]`;
+  }
+
+  if (schema.type === 'object' && schema.properties) {
+    const props = Object.entries(schema.properties)
+      .map(([name, propSchema]) => `${name}: ${formatJsonSchemaType(propSchema)}`)
+      .join(', ');
+    return `{${props}}`;
+  }
+
+  return schema.type;
+}
+
+/**
  * Build system message describing available tools.
  * Returns null if no tools are provided.
  */
@@ -40,9 +60,28 @@ export function buildToolSystemMessage(tools: ToolSchema[]): string | null {
 
   const toolList = tools
     .map((t) => {
-      const params = t.parameters.map((p) => p.name).join(', ');
-      const desc = t.description ? `: ${t.description}` : '';
-      return `- ${t.name}(${params})${desc}`;
+      // Format: name(param: type, param: type)
+      const signature = t.parameters
+        .map((p) => `${p.name}: ${formatJsonSchemaType(p.type)}`)
+        .join(', ');
+
+      const lines: string[] = [`- ${t.name}(${signature})`];
+
+      // Add tool description
+      if (t.description) {
+        lines.push(`    ${t.description}`);
+      }
+
+      // Add parameter descriptions if any exist
+      const paramDescs = t.parameters.filter((p) => p.description);
+      if (paramDescs.length > 0) {
+        lines.push('    Parameters:');
+        for (const p of paramDescs) {
+          lines.push(`      ${p.name}: ${p.description}`);
+        }
+      }
+
+      return lines.join('\n');
     })
     .join('\n');
 
