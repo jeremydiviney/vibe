@@ -1,7 +1,7 @@
 // Basic AI Integration Tests
 // Tests real API calls with OpenAI, Anthropic, and Google for all return types
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 import { Runtime, formatAIInteractions } from '../../../src/runtime';
 import { createRealAIProvider } from '../../../src/runtime/ai-provider';
 import { parse } from '../../../src/parser/parse';

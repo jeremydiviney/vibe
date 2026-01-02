@@ -2,7 +2,7 @@
 // Tests multiple Vibe features working together with real AI calls
 // Importantly tests that AI can see variables from context
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 import { Runtime, formatAIInteractions } from '../../../src/runtime';
 import { createRealAIProvider } from '../../../src/runtime/ai-provider';
 import { parse } from '../../../src/parser/parse';

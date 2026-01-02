@@ -1,6 +1,6 @@
 // Schema generation tests
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 import {
   typeToSchema,
   getTypeInstruction,

@@ -1,6 +1,6 @@
 // Retry logic tests
 
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, mock } from 'bun:test';
 import {
   isRetryableError,
   calculateDelay,
@@ -89,7 +89,7 @@ describe('createAIErrorFromResponse', () => {
 
 describe('withRetry', () => {
   test('returns result on first success', async () => {
-    const fn = vi.fn().mockResolvedValue('success');
+    const fn = mock().mockResolvedValue('success');
     const result = await withRetry(fn, { maxRetries: 3 });
 
     expect(result).toBe('success');
@@ -97,8 +97,7 @@ describe('withRetry', () => {
   });
 
   test('retries on retryable error', async () => {
-    const fn = vi
-      .fn()
+    const fn = mock()
       .mockRejectedValueOnce(new AIError('Rate limited', 429, true))
       .mockResolvedValue('success');
 
@@ -109,14 +108,14 @@ describe('withRetry', () => {
   });
 
   test('does not retry on non-retryable error', async () => {
-    const fn = vi.fn().mockRejectedValue(new AIError('Bad request', 400, false));
+    const fn = mock().mockRejectedValue(new AIError('Bad request', 400, false));
 
     await expect(withRetry(fn, { maxRetries: 3 })).rejects.toThrow('Bad request');
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   test('throws after max retries', async () => {
-    const fn = vi.fn().mockRejectedValue(new AIError('Rate limited', 429, true));
+    const fn = mock().mockRejectedValue(new AIError('Rate limited', 429, true));
 
     await expect(
       withRetry(fn, { maxRetries: 2, baseDelayMs: 10 })
@@ -126,8 +125,7 @@ describe('withRetry', () => {
   });
 
   test('retries on network errors', async () => {
-    const fn = vi
-      .fn()
+    const fn = mock()
       .mockRejectedValueOnce(new Error('network error'))
       .mockResolvedValue('success');
 

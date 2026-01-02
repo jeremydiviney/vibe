@@ -1,6 +1,6 @@
 // Client tests
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 import { detectProvider, getProviderExecutor, buildAIRequest } from '../client';
 import { executeOpenAI } from '../providers/openai';
 import { executeAnthropic } from '../providers/anthropic';
