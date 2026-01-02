@@ -45,6 +45,7 @@ export type Statement =
   | ConstDeclaration
   | ModelDeclaration
   | FunctionDeclaration
+  | ToolDeclaration
   | ReturnStatement
   | IfStatement
   | ForInStatement
@@ -112,6 +113,23 @@ export interface FunctionDeclaration extends BaseNode {
   returnType: string | null;  // Optional return type
   body: BlockStatement;
   contextMode?: ContextMode;  // What happens to context on function exit
+}
+
+// Tool parameter with optional description for AI schema
+export interface ToolParameter {
+  name: string;
+  typeAnnotation: string;     // Vibe type or imported TS type name
+  description?: string;       // From @param decorator, for AI schema
+}
+
+// Tool declaration - function-like but with AI-callable schema
+export interface ToolDeclaration extends BaseNode {
+  type: 'ToolDeclaration';
+  name: string;
+  params: ToolParameter[];
+  returnType: string | null;  // Optional return type
+  description?: string;       // From @description decorator, for AI schema
+  body: BlockStatement;
 }
 
 export interface ReturnStatement extends BaseNode {

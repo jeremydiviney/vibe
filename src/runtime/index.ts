@@ -9,6 +9,7 @@ export type {
   ExecutionEntry,
   PendingAI,
   PendingTS,
+  PendingToolCall,
   TsModule,
   VibeModule,
   ExportedItem,
@@ -33,6 +34,7 @@ export {
   resumeWithUserInput,
   resumeWithTsResult,
   resumeWithImportedTsResult,
+  resumeWithToolResult,
   pauseExecution,
   resumeExecution,
   currentFrame,
@@ -82,7 +84,7 @@ export { formatAIInteractions, dumpAIInteractions, saveAIInteractions } from './
 import * as AST from '../ast';
 import { dirname } from 'path';
 import type { RuntimeState, AIInteraction } from './types';
-import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult } from './state';
+import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult } from './state';
 import { step, runUntilPause } from './step';
 import { evalTsBlock } from './ts-eval';
 import { loadImports, getImportedTsFunction } from './modules';
@@ -155,11 +157,12 @@ export class Runtime {
     // Run until pause or complete
     this.state = runUntilPause(this.state);
 
-    // Handle AI calls and TS evaluation in a loop
+    // Handle AI calls, TS evaluation, and tool calls in a loop
     while (
       this.state.status === 'awaiting_ai' ||
       this.state.status === 'awaiting_user' ||
-      this.state.status === 'awaiting_ts'
+      this.state.status === 'awaiting_ts' ||
+      this.state.status === 'awaiting_tool'
     ) {
       if (this.state.status === 'awaiting_ts') {
         if (this.state.pendingTS) {
@@ -251,6 +254,21 @@ export class Runtime {
         } : undefined;
 
         this.state = resumeWithAIResponse(this.state, result.value, interaction);
+      } else if (this.state.status === 'awaiting_tool') {
+        // Handle tool calls
+        if (!this.state.pendingToolCall) {
+          throw new Error('State awaiting tool but no pending tool call');
+        }
+
+        const { toolName, args } = this.state.pendingToolCall;
+        const tool = this.state.toolRegistry.get(toolName);
+        if (!tool) {
+          throw new Error(`Tool '${toolName}' not found in registry`);
+        }
+
+        // Execute the tool - let errors propagate
+        const result = await tool.executor(args);
+        this.state = resumeWithToolResult(this.state, result);
       } else {
         // Handle user input
         if (!this.state.pendingAI) {
@@ -316,6 +334,10 @@ export enum RuntimeStatus {
   AWAITING_AI_RESPONSE = 'awaiting_ai',
   AWAITING_USER_INPUT = 'awaiting_user',
   AWAITING_TS = 'awaiting_ts',
+  AWAITING_TOOL = 'awaiting_tool',
   COMPLETED = 'completed',
   ERROR = 'error',
 }
+
+// Re-export tool system
+export * from './tools';

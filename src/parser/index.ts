@@ -31,6 +31,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.constDeclaration) },
       { ALT: () => this.SUBRULE(this.modelDeclaration) },
       { ALT: () => this.SUBRULE(this.functionDeclaration) },
+      { ALT: () => this.SUBRULE(this.toolDeclaration) },
       { ALT: () => this.SUBRULE(this.returnStatement) },
       { ALT: () => this.SUBRULE(this.ifStatement) },
       { ALT: () => this.SUBRULE(this.forInStatement) },
@@ -161,6 +162,78 @@ class VibeParser extends CstParser {
     this.SUBRULE(this.blockStatement);
     this.OPTION3(() => {
       this.SUBRULE(this.contextMode);
+    });
+  });
+
+  // tool name(params): returnType @description "..." @param name "..." { ... }
+  private toolDeclaration = this.RULE('toolDeclaration', () => {
+    this.CONSUME(T.Tool);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.LParen);
+    this.OPTION(() => {
+      this.SUBRULE(this.toolParameterList);
+    });
+    this.CONSUME(T.RParen);
+    // Optional return type
+    this.OPTION2(() => {
+      this.CONSUME(T.Colon);
+      this.SUBRULE(this.toolTypeAnnotation);
+    });
+    // Optional metadata (@description, @param)
+    this.MANY(() => {
+      this.SUBRULE(this.toolMetadata);
+    });
+    this.SUBRULE(this.blockStatement);
+  });
+
+  // Tool type annotation: can be a built-in type or an Identifier (imported TS type)
+  private toolTypeAnnotation = this.RULE('toolTypeAnnotation', () => {
+    this.OR([
+      { ALT: () => this.CONSUME(T.TextType) },
+      { ALT: () => this.CONSUME(T.JsonType) },
+      { ALT: () => this.CONSUME(T.PromptType) },
+      { ALT: () => this.CONSUME(T.BooleanType) },
+      { ALT: () => this.CONSUME(T.NumberType) },
+      { ALT: () => this.CONSUME(T.Identifier) },  // Imported TS type
+    ]);
+    // Optional array brackets
+    this.MANY(() => {
+      this.CONSUME(T.LBracket);
+      this.CONSUME(T.RBracket);
+    });
+  });
+
+  // Tool metadata: @description "text" or @param name "text"
+  private toolMetadata = this.RULE('toolMetadata', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(T.AtDescription);
+          this.CONSUME(T.StringLiteral);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME(T.AtParam);
+          this.CONSUME(T.Identifier);
+          this.CONSUME2(T.StringLiteral);
+        },
+      },
+    ]);
+  });
+
+  // Tool parameter: name: type (allows imported TS types as type annotation)
+  private toolParameter = this.RULE('toolParameter', () => {
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Colon);
+    this.SUBRULE(this.toolTypeAnnotation);
+  });
+
+  private toolParameterList = this.RULE('toolParameterList', () => {
+    this.SUBRULE(this.toolParameter);
+    this.MANY(() => {
+      this.CONSUME(T.Comma);
+      this.SUBRULE2(this.toolParameter);
     });
   });
 

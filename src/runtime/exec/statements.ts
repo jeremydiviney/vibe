@@ -314,6 +314,16 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
       // Functions are already collected at init, nothing to do
       return state;
 
+    case 'ToolDeclaration':
+      // Register the tool at runtime
+      return {
+        ...state,
+        instructionStack: [
+          { op: 'exec_tool_declaration', decl: stmt, location: stmt.location },
+          ...state.instructionStack,
+        ],
+      };
+
     case 'ModelDeclaration':
       return execModelDeclaration(state, stmt);
 

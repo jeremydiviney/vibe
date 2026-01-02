@@ -1,5 +1,6 @@
 import * as AST from '../ast';
 import type { RuntimeState, AIOperation, AIInteraction, StackFrame } from './types';
+import { createToolRegistryWithBuiltins, builtinTools } from './tools';
 
 // Options for creating initial state
 export interface InitialStateOptions {
@@ -45,6 +46,8 @@ export function createInitialState(
     pendingAI: null,
     pendingTS: null,
     pendingImportedTsCall: null,
+    pendingToolCall: null,
+    toolRegistry: createToolRegistryWithBuiltins(builtinTools),
     error: null,
     errorObject: null,
   };
@@ -214,6 +217,39 @@ export function resumeWithImportedTsResult(state: RuntimeState, result: unknown)
         instructionType: 'imported_ts_call_result',
         details: { funcName: state.pendingImportedTsCall.funcName },
         result,
+      },
+    ],
+  };
+}
+
+// Resume execution after tool call
+export function resumeWithToolResult(
+  state: RuntimeState,
+  result: unknown,
+  error?: string
+): RuntimeState {
+  if (state.status !== 'awaiting_tool' || !state.pendingToolCall) {
+    throw new Error('Cannot resume: not awaiting tool result');
+  }
+
+  const pendingTool = state.pendingToolCall;
+  const finalResult = error ? { error } : result;
+
+  return {
+    ...state,
+    status: 'running',
+    lastResult: finalResult,
+    pendingToolCall: null,
+    executionLog: [
+      ...state.executionLog,
+      {
+        timestamp: Date.now(),
+        instructionType: 'tool_call_result',
+        details: {
+          toolName: pendingTool.toolName,
+          hasError: !!error,
+        },
+        result: finalResult,
       },
     ],
   };

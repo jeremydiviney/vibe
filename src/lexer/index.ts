@@ -44,6 +44,7 @@ export const Vibe = token({ name: 'Vibe', pattern: /vibe/, longer_alt: Identifie
 export const Do = token({ name: 'Do', pattern: /do/, longer_alt: Identifier });
 export const Ask = token({ name: 'Ask', pattern: /ask/, longer_alt: Identifier });
 export const Function = token({ name: 'Function', pattern: /function/, longer_alt: Identifier });
+export const Tool = token({ name: 'Tool', pattern: /tool/, longer_alt: Identifier });
 export const Return = token({ name: 'Return', pattern: /return/, longer_alt: Identifier });
 export const If = token({ name: 'If', pattern: /if/, longer_alt: Identifier });
 export const Else = token({ name: 'Else', pattern: /else/, longer_alt: Identifier });
@@ -166,6 +167,10 @@ export const Forget = token({ name: 'Forget', pattern: /forget/, longer_alt: Ide
 export const Verbose = token({ name: 'Verbose', pattern: /verbose/, longer_alt: Identifier });
 export const Compress = token({ name: 'Compress', pattern: /compress/, longer_alt: Identifier });
 
+// Tool metadata decorators
+export const AtDescription = token({ name: 'AtDescription', pattern: /@description/ });
+export const AtParam = token({ name: 'AtParam', pattern: /@param/ });
+
 // Logical operators (word-based)
 export const And = token({ name: 'And', pattern: /and/, longer_alt: Identifier });
 export const Or = token({ name: 'Or', pattern: /or/, longer_alt: Identifier });
@@ -245,6 +250,7 @@ export const allTokens = [
   Do,
   Ask,
   Function,
+  Tool,
   Return,
   If,
   Else,
@@ -253,6 +259,9 @@ export const allTokens = [
   Forget,
   Verbose,
   Compress,
+  // Tool metadata decorators (must come before For/other identifiers)
+  AtDescription,
+  AtParam,
   For,
   In,
   And,

@@ -25,6 +25,7 @@
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/genai": "^1.34.0",
     "chevrotain": "^11.0.3",
-    "openai": "^6.15.0"
+    "openai": "^6.15.0",
+    "typescript": "^5.9.3"
   }
 }

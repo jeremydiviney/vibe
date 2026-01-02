@@ -31,6 +31,7 @@ import {
 } from './exec/typescript';
 import { execCallFunction } from './exec/functions';
 import { execPushFrame, execPopFrame } from './exec/frames';
+import { execToolDeclaration, execCallTool } from './exec/tools';
 
 /**
  * Apply context mode on scope exit.
@@ -510,6 +511,13 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const sliced = arr.slice(startIdx, endIdx + 1);
       return { ...state, valueStack: newStack, lastResult: sliced };
     }
+
+    // Tool operations
+    case 'exec_tool_declaration':
+      return execToolDeclaration(state, instruction.decl);
+
+    case 'call_tool':
+      return execCallTool(state, instruction.toolName, instruction.argCount);
 
     default:
       throw new Error(`Unknown instruction: ${(instruction as Instruction).op}`);

@@ -130,6 +130,41 @@ export function execCallFunction(
     return executeVibeFunction(state, func, args, newValueStack);
   }
 
+  // Handle tool call
+  if (typeof callee === 'object' && callee !== null && '__vibeTool' in callee) {
+    const toolName = (callee as { __vibeTool: boolean; name: string }).name;
+    const tool = state.toolRegistry.get(toolName);
+
+    if (!tool) {
+      throw new Error(`ReferenceError: Tool '${toolName}' is not defined`);
+    }
+
+    // Build args object from positional arguments
+    const argsObj: Record<string, unknown> = {};
+    tool.schema.parameters.forEach((param, i) => {
+      argsObj[param.name] = args[i];
+    });
+
+    return {
+      ...state,
+      valueStack: newValueStack,
+      status: 'awaiting_tool',
+      pendingToolCall: {
+        toolName,
+        toolCallId: `tool-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        args: argsObj,
+      },
+      executionLog: [
+        ...state.executionLog,
+        {
+          timestamp: Date.now(),
+          instructionType: 'tool_call_request',
+          details: { toolName, args: argsObj },
+        },
+      ],
+    };
+  }
+
   // Handle method call on object (built-in methods)
   if (typeof callee === 'object' && callee !== null && '__methodRef' in callee) {
     const { method } = callee as { __methodRef: boolean; method: string };

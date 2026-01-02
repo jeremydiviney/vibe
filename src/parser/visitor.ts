@@ -58,6 +58,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.constDeclaration) return this.visit(ctx.constDeclaration);
     if (ctx.modelDeclaration) return this.visit(ctx.modelDeclaration);
     if (ctx.functionDeclaration) return this.visit(ctx.functionDeclaration);
+    if (ctx.toolDeclaration) return this.visit(ctx.toolDeclaration);
     if (ctx.returnStatement) return this.visit(ctx.returnStatement);
     if (ctx.ifStatement) return this.visit(ctx.ifStatement);
     if (ctx.forInStatement) return this.visit(ctx.forInStatement);
@@ -166,6 +167,70 @@ class VibeAstVisitor extends BaseVibeVisitor {
       body: this.visit(ctx.blockStatement), location: tokenLocation(ctx.Function[0]),
       contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
     };
+  }
+
+  toolDeclaration(ctx: { Tool: IToken[]; Identifier: IToken[]; toolParameterList?: CstNode[]; toolTypeAnnotation?: CstNode[]; toolMetadata?: CstNode[]; blockStatement: CstNode[] }): AST.ToolDeclaration {
+    // Build param descriptions map from @param metadata
+    const paramDescriptions: Record<string, string> = {};
+    let description: string | undefined;
+
+    if (ctx.toolMetadata) {
+      for (const metadata of ctx.toolMetadata) {
+        const result = this.visit(metadata) as { type: 'description'; text: string } | { type: 'param'; name: string; text: string };
+        if (result.type === 'description') {
+          description = result.text;
+        } else {
+          paramDescriptions[result.name] = result.text;
+        }
+      }
+    }
+
+    // Get parameters and attach descriptions
+    const params: AST.ToolParameter[] = ctx.toolParameterList
+      ? (this.visit(ctx.toolParameterList) as AST.ToolParameter[]).map((p) => ({
+          ...p,
+          description: paramDescriptions[p.name],
+        }))
+      : [];
+
+    return {
+      type: 'ToolDeclaration',
+      name: ctx.Identifier[0].image,
+      params,
+      returnType: ctx.toolTypeAnnotation ? this.visit(ctx.toolTypeAnnotation) : null,
+      description,
+      body: this.visit(ctx.blockStatement),
+      location: tokenLocation(ctx.Tool[0]),
+    };
+  }
+
+  toolTypeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Identifier?: IToken[]; LBracket?: IToken[] }): string {
+    // Get base type - could be built-in or imported type name
+    const baseType = ctx.TextType ? 'text'
+      : ctx.JsonType ? 'json'
+      : ctx.PromptType ? 'prompt'
+      : ctx.BooleanType ? 'boolean'
+      : ctx.NumberType ? 'number'
+      : ctx.Identifier![0].image;  // Imported TS type
+    // Count array brackets
+    const bracketCount = ctx.LBracket?.length ?? 0;
+    return baseType + '[]'.repeat(bracketCount);
+  }
+
+  toolMetadata(ctx: { AtDescription?: IToken[]; AtParam?: IToken[]; Identifier?: IToken[]; StringLiteral: IToken[] }): { type: 'description'; text: string } | { type: 'param'; name: string; text: string } {
+    if (ctx.AtDescription) {
+      return { type: 'description', text: parseStringLiteral(ctx.StringLiteral[0]) };
+    }
+    // @param name "text"
+    return { type: 'param', name: ctx.Identifier![0].image, text: parseStringLiteral(ctx.StringLiteral[0]) };
+  }
+
+  toolParameter(ctx: { Identifier: IToken[]; toolTypeAnnotation: CstNode[] }): AST.ToolParameter {
+    return { name: ctx.Identifier[0].image, typeAnnotation: this.visit(ctx.toolTypeAnnotation) };
+  }
+
+  toolParameterList(ctx: { toolParameter: CstNode[] }): AST.ToolParameter[] {
+    return ctx.toolParameter.map((p) => this.visit(p));
   }
 
   parameter(ctx: { Identifier: IToken[]; typeAnnotation: CstNode[] }): AST.FunctionParameter {

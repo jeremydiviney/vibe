@@ -1,5 +1,6 @@
 import * as AST from '../ast';
 import type { SourceLocation } from '../errors';
+import type { ToolRegistry, PendingToolCall } from './tools/types';
 
 // Runtime status
 export type RuntimeStatus =
@@ -8,6 +9,7 @@ export type RuntimeStatus =
   | 'awaiting_ai'
   | 'awaiting_user'
   | 'awaiting_ts'
+  | 'awaiting_tool'
   | 'completed'
   | 'error';
 
@@ -230,6 +232,10 @@ export interface RuntimeState {
   pendingAI: PendingAI | null;
   pendingTS: PendingTS | null;
   pendingImportedTsCall: PendingImportedTsCall | null;
+  pendingToolCall: PendingToolCall | null;
+
+  // Tool registry (built-in and user-defined tools)
+  toolRegistry: ToolRegistry;
 
   // Error info
   error: string | null;
@@ -308,4 +314,8 @@ export type Instruction =
   | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean; location: SourceLocation }
 
   // Method call on object (built-in methods)
-  | { op: 'method_call'; method: string; argCount: number; location: SourceLocation };
+  | { op: 'method_call'; method: string; argCount: number; location: SourceLocation }
+
+  // Tool operations
+  | { op: 'exec_tool_declaration'; decl: AST.ToolDeclaration; location: SourceLocation }
+  | { op: 'call_tool'; toolName: string; argCount: number; location: SourceLocation };

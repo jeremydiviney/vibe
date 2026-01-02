@@ -4,10 +4,10 @@
 
 ### AI Integration
 - [ ] Handle streaming responses
-- [ ] Tool/function calling support
-  - [ ] Define tool schemas in Vibe
-  - [ ] Pass tools to AI providers
-  - [ ] Handle tool call responses and execute tools
+- [ ] AI tool calling integration
+  - [ ] Pass tool schemas to AI providers
+  - [ ] Extract tool call requests from AI responses
+  - [ ] Execute tool calls and send results back to AI
 - [ ] Parallel AI calls
   - [ ] Auto-parallelize independent AI calls (no data dependencies)
   - [ ] Configurable concurrency limit
@@ -27,6 +27,13 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Tool calling system (foundation)
+  - [x] Tool registry with built-in tools (sleep, now, jsonParse, jsonStringify, env, etc.)
+  - [x] `tool` keyword for user-defined tools with `@description` and `@param` decorators
+  - [x] TypeScript type extraction for complex parameter types (JSON Schema)
+  - [x] Tool execution via `awaiting_tool` status and `resumeWithToolResult`
+  - [x] Tools callable like functions in Vibe code
 
 - [x] Context modes for loops and functions
   - [x] Trailing keywords: `forget`, `verbose`, `compress("prompt")`

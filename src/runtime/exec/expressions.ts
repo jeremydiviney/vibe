@@ -26,6 +26,11 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
     return { ...state, lastResult: { __vibeFunction: true, name: expr.name } };
   }
 
+  // Check if it's a registered tool
+  if (state.toolRegistry.has(expr.name)) {
+    return { ...state, lastResult: { __vibeTool: true, name: expr.name } };
+  }
+
   // Check if it's an imported TS function
   if (isImportedTsFunction(state, expr.name)) {
     return { ...state, lastResult: { __vibeImportedTsFunction: true, name: expr.name } };
