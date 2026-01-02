@@ -27,8 +27,16 @@ export interface ToolSchema {
   returns?: JsonSchema;
 }
 
+// Context passed to tool executors
+export interface ToolContext {
+  rootDir: string;  // Root directory for path sandboxing
+}
+
 // Tool executor function signature
-export type ToolExecutor = (args: Record<string, unknown>) => Promise<unknown>;
+export type ToolExecutor = (
+  args: Record<string, unknown>,
+  context?: ToolContext
+) => Promise<unknown>;
 
 // Registered tool (built-in or user-defined)
 export interface RegisteredTool {
@@ -43,6 +51,7 @@ export interface RegisteredTool {
 // Tool registry interface
 export interface ToolRegistry {
   register(tool: RegisteredTool): void;
+  registerAll(tools: RegisteredTool[]): void;
   get(name: string): RegisteredTool | undefined;
   has(name: string): boolean;
   list(): RegisteredTool[];

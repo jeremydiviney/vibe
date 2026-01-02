@@ -1,5 +1,5 @@
 import type { RegisteredTool, ToolRegistry, ToolSchema } from './types';
-import { builtinTools } from './builtin';
+import { standardTools } from './builtin';
 
 /**
  * Create a new tool registry.
@@ -12,6 +12,12 @@ export function createToolRegistry(): ToolRegistry {
     register(tool: RegisteredTool): void {
       // Allow overwriting existing tools (user tools can shadow builtins)
       tools.set(tool.name, tool);
+    },
+
+    registerAll(toolsToAdd: RegisteredTool[]): void {
+      for (const tool of toolsToAdd) {
+        tools.set(tool.name, tool);
+      }
     },
 
     get(name: string): RegisteredTool | undefined {
@@ -33,12 +39,10 @@ export function createToolRegistry(): ToolRegistry {
 }
 
 /**
- * Create a tool registry pre-populated with built-in tools.
+ * Create a tool registry pre-populated with standard tools.
  */
 export function createToolRegistryWithBuiltins(): ToolRegistry {
   const registry = createToolRegistry();
-  for (const tool of builtinTools) {
-    registry.register(tool);
-  }
+  registry.registerAll(standardTools);
   return registry;
 }

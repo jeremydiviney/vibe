@@ -265,6 +265,9 @@ export interface RuntimeState {
   // Tool registry (built-in and user-defined tools)
   toolRegistry: ToolRegistry;
 
+  // Root directory for file operation sandboxing
+  rootDir: string;
+
   // Error info
   error: string | null;
   errorObject: Error | null;

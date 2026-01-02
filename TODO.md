@@ -19,6 +19,13 @@
 - [ ] Context orchestration functions
 - [ ] Variable visibility modifiers
 
+### Builtin Tools
+- [ ] Anchor-based edit tool for efficient large block replacement
+  - [ ] `start_anchor` + `end_anchor` instead of full `old_string`
+  - [ ] Non-greedy match between anchors
+  - [ ] Validate exactly 1 match (same safety as current edit)
+  - [ ] ~50% token reduction for large function replacements
+
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
 
