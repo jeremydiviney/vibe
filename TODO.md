@@ -26,6 +26,11 @@
   - [ ] Validate exactly 1 match (same safety as current edit)
   - [ ] ~50% token reduction for large function replacements
 
+### Integration Tests & Examples
+- [ ] Tool-calling integration test with real AI (glob, readFile, writeFile, edit)
+- [ ] Real-world example: number guessing game
+- [ ] Real-world example: file organizer script
+
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
 
