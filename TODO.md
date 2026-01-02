@@ -4,10 +4,6 @@
 
 ### AI Integration
 - [ ] Handle streaming responses
-- [ ] AI tool calling integration
-  - [ ] Pass tool schemas to AI providers
-  - [ ] Extract tool call requests from AI responses
-  - [ ] Execute tool calls and send results back to AI
 - [ ] Parallel AI calls
   - [ ] Auto-parallelize independent AI calls (no data dependencies)
   - [ ] Configurable concurrency limit
@@ -27,6 +23,15 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] AI-initiated tool calling (Phase 5)
+  - [x] Tool schema conversion for OpenAI, Anthropic, Google providers
+  - [x] Tool call parsing from AI responses (all 3 providers)
+  - [x] Multi-turn tool execution loop (`executeWithTools`)
+  - [x] Tool calls embedded in prompt entries for proper context ordering
+  - [x] Context shows: AI call → tool calls → results → final response
+  - [x] Flow tests with mock AI provider executing real tools
+  - [x] Loop context modes (forget/verbose) properly handle tool calls
 
 - [x] Tool calling system (foundation)
   - [x] Tool registry with built-in tools (sleep, now, jsonParse, jsonStringify, env, etc.)
@@ -74,13 +79,4 @@
   - [x] Add `number` type with full support
   - [x] For-in loop with array iteration and range syntax
   - [x] While loop with strict boolean condition
-
-- [x] Operators and Built-ins
-  - [x] Arithmetic, comparison, logical operators with proper precedence
-  - [x] Array indexing, slicing, member access
-  - [x] Built-in methods: len(), push(), pop()
-
-- [x] Type System (arrays)
-  - [x] Syntax: `text[]`, `boolean[]`, `json[]`, nested arrays
-  - [x] Strict runtime validation of element types
 
