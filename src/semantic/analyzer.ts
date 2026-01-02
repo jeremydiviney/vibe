@@ -104,6 +104,18 @@ export class SemanticAnalyzer {
       case 'ExpressionStatement':
         this.visitExpression(node.expression);
         break;
+
+      case 'ToolDeclaration':
+        if (!this.atTopLevel) {
+          this.error('Tools can only be declared at global scope', node.location);
+        }
+        this.declare(node.name, 'function', node.location, {
+          paramCount: node.params.length,
+          paramTypes: node.params.map(p => p.typeAnnotation),
+          returnType: node.returnType,
+        });
+        this.validateToolDeclaration(node);
+        break;
     }
   }
 
@@ -320,6 +332,55 @@ export class SemanticAnalyzer {
     if (config.modelName) this.visitExpression(config.modelName);
     if (config.apiKey) this.visitExpression(config.apiKey);
     if (config.url) this.visitExpression(config.url);
+  }
+
+  private validateToolDeclaration(node: AST.ToolDeclaration): void {
+    // Validate @param decorators reference actual parameters
+    if (node.paramDecorators) {
+      const paramNames = new Set(node.params.map(p => p.name));
+      for (const decoratorName of node.paramDecorators) {
+        if (!paramNames.has(decoratorName)) {
+          this.error(
+            `@param '${decoratorName}' does not match any parameter in tool '${node.name}'. ` +
+            `Valid parameters: ${node.params.map(p => p.name).join(', ') || '(none)'}`,
+            node.location
+          );
+        }
+      }
+    }
+
+    // Validate parameter type annotations (allow both Vibe types and imported types)
+    for (const param of node.params) {
+      // Basic Vibe types and arrays are always valid
+      // Imported types (like CustomerInfo) are validated at runtime
+      const baseType = param.typeAnnotation.replace(/\[\]$/, '');
+      const isVibeType = ['text', 'json', 'boolean', 'number', 'prompt'].includes(baseType);
+      if (!isVibeType) {
+        // Could be an imported type - check if it's declared
+        const symbol = this.symbols.lookup(baseType);
+        if (!symbol) {
+          this.error(
+            `Unknown type '${baseType}' in tool parameter '${param.name}'`,
+            node.location
+          );
+        }
+      }
+    }
+
+    // Validate return type if present
+    if (node.returnType) {
+      const baseType = node.returnType.replace(/\[\]$/, '');
+      const isVibeType = ['text', 'json', 'boolean', 'number', 'prompt'].includes(baseType);
+      if (!isVibeType) {
+        const symbol = this.symbols.lookup(baseType);
+        if (!symbol) {
+          this.error(
+            `Unknown return type '${baseType}' in tool '${node.name}'`,
+            node.location
+          );
+        }
+      }
+    }
   }
 
   private visitFunction(node: AST.FunctionDeclaration): void {
