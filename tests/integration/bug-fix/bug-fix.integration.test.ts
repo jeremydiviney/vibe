@@ -42,11 +42,14 @@ export function findMax(numbers: number[]): number {
 
 // Vibe program - AI uses tools to read file, diagnose, and fix
 const VIBE_PROGRAM = `
+import { readFile, edit } from "system/tools"
+
 model fixer = {
   name: "claude-haiku-4-5",
   apiKey: "${ANTHROPIC_API_KEY}",
   url: "https://api.anthropic.com",
-  provider: "anthropic"
+  provider: "anthropic",
+  tools: [readFile, edit]
 }
 
 let result: text = do "There's a file 'buggy-code.ts' with array utility functions.
