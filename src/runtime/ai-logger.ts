@@ -29,6 +29,30 @@ function formatInteraction(interaction: AIInteraction, index: number): string {
     lines.push('');
   }
 
+  // Tool calls (if any)
+  if (interaction.toolRounds && interaction.toolRounds.length > 0) {
+    lines.push('### Tool Calls');
+    lines.push('');
+    for (let i = 0; i < interaction.toolRounds.length; i++) {
+      const round = interaction.toolRounds[i];
+      lines.push(`**Round ${i + 1}:**`);
+      for (let j = 0; j < round.toolCalls.length; j++) {
+        const call = round.toolCalls[j];
+        const result = round.results[j];
+        lines.push(`- \`${call.toolName}(${JSON.stringify(call.args)})\``);
+        if (result?.error) {
+          lines.push(`  → Error: ${result.error}`);
+        } else if (result?.result !== undefined) {
+          const resultStr = typeof result.result === 'string'
+            ? (result.result.length > 200 ? result.result.slice(0, 200) + '...' : result.result)
+            : JSON.stringify(result.result);
+          lines.push(`  → ${resultStr}`);
+        }
+      }
+      lines.push('');
+    }
+  }
+
   // Response
   lines.push('### Response');
   lines.push('```');
