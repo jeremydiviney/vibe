@@ -40,3 +40,4 @@ coverage/
 
 # Test temp files
 .test-tmp/
+**/.test-workspace/

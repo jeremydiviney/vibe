@@ -176,6 +176,11 @@ export interface AIInteraction {
   targetType: string | null;
   usage?: TokenUsage;
   durationMs?: number;
+  // Tool calling rounds that occurred during execution
+  toolRounds?: Array<{
+    toolCalls: Array<{ id: string; toolName: string; args: Record<string, unknown> }>;
+    results: Array<{ toolCallId: string; result?: unknown; error?: string }>;
+  }>;
 }
 
 // Execution log entry for tracking what happened

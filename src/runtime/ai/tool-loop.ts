@@ -104,6 +104,7 @@ export async function executeWithTools(
     // Make follow-up request with tool results
     request = {
       ...request,
+      previousToolCalls: response.toolCalls,
       toolResults: results,
     };
     response = await executeProvider(request);

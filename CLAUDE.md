@@ -29,9 +29,25 @@ bun run src/index.ts <file.vibe>  # Run a vibe program
 bun run test               # Unit tests only (~1s) - USE THIS
 bun run test:integration   # Integration tests (real API calls, ~40s)
 bun run test:all           # Everything
+
+# Run a SINGLE test file (bypasses npm scripts, avoids running all tests)
+bun test path/to/specific.test.ts
 ```
 
-**Note:** `bun test` (without `run`) bypasses npm scripts and runs ALL tests including slow integration tests. Always use `bun run test` for fast unit tests.
+**Note:** `bun test` (without `run`) bypasses npm scripts. Use `bun test path/to/file.test.ts` to run a single specific test file. Never use bare `bun test` without a path - it runs ALL tests including slow integration tests.
+
+### Integration Test Policy
+
+**IMPORTANT:** Do NOT run the full integration test suite (`bun run test:integration` or `bun run test:all`) unless explicitly requested by the user.
+
+- Integration tests make real API calls and cost money
+- They are slow (~40s+) and should not be run routinely
+- When verifying changes, run only:
+  - `bun run test` for unit tests (fast, free)
+  - A single targeted integration test if specifically relevant to current work
+  - 1-2 integration tests as a smoke test if requested
+
+Only run the full integration suite when the user explicitly asks for it.
 
 ---
 
