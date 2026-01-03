@@ -4,6 +4,11 @@
 import type { VibeToolValue, ToolContext } from '../tools/types';
 import { validatePathInSandbox } from '../tools/security';
 
+// Helper to escape regex special characters
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // =============================================================================
 // File Tools
 // =============================================================================
@@ -157,6 +162,65 @@ export const edit: VibeToolValue = {
     }
 
     const newContent = content.replace(oldText, newText);
+    await Bun.write(safePath, newContent);
+    return true;
+  },
+};
+
+export const fastEdit: VibeToolValue = {
+  __vibeTool: true,
+  name: 'fastEdit',
+  schema: {
+    name: 'fastEdit',
+    description:
+      'Replace a region identified by prefix and suffix anchors. Use this instead of edit when replacing large blocks where specifying prefix/suffix anchors saves significant tokens vs the full oldText. For small edits, prefer the simpler edit tool. If this tool fails, fall back to using the edit tool.',
+    parameters: [
+      { name: 'path', type: { type: 'string' }, description: 'The file path to edit', required: true },
+      {
+        name: 'prefix',
+        type: { type: 'string' },
+        description: 'Start anchor (beginning of region to replace)',
+        required: true,
+      },
+      {
+        name: 'suffix',
+        type: { type: 'string' },
+        description: 'End anchor (end of region to replace)',
+        required: true,
+      },
+      {
+        name: 'newText',
+        type: { type: 'string' },
+        description: 'Replacement text (replaces entire region including anchors)',
+        required: true,
+      },
+    ],
+    returns: { type: 'boolean' },
+  },
+  executor: async (args: Record<string, unknown>, context?: ToolContext) => {
+    const inputPath = args.path as string;
+    const safePath = context ? validatePathInSandbox(inputPath, context.rootDir) : inputPath;
+    const prefix = args.prefix as string;
+    const suffix = args.suffix as string;
+    const newText = args.newText as string;
+
+    const file = Bun.file(safePath);
+    const content = await file.text();
+
+    // Build regex with escaped anchors, non-greedy match
+    const pattern = escapeRegex(prefix) + '[\\s\\S]*?' + escapeRegex(suffix);
+    const regex = new RegExp(pattern, 'g');
+    const matches = content.match(regex);
+
+    if (!matches || matches.length === 0) {
+      throw new Error(`fastEdit failed: no region found matching prefix...suffix`);
+    }
+
+    if (matches.length > 1) {
+      throw new Error(`fastEdit failed: ${matches.length} regions match, must match exactly once`);
+    }
+
+    const newContent = content.replace(regex, newText);
     await Bun.write(safePath, newContent);
     return true;
   },
@@ -478,6 +542,7 @@ export const standardTools: VibeToolValue[] = [
   fileExists,
   listDir,
   edit,
+  fastEdit,
   // Search tools
   glob,
   grep,

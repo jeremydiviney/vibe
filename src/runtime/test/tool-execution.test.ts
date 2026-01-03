@@ -343,7 +343,7 @@ let toolCount = ts(standardTools) { return standardTools.length }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
     const toolCount = runtime.getValue('toolCount');
-    expect(toolCount).toBe(18); // All 18 standard tools
+    expect(toolCount).toBe(19); // All 19 standard tools
   });
 });
 
@@ -441,9 +441,9 @@ let x = 1
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    // Verify model has all 18 standard tools
+    // Verify model has all 19 standard tools
     const model = runtime.getValue('m') as { tools?: unknown[] };
-    expect(model.tools).toHaveLength(18);
+    expect(model.tools).toHaveLength(19);
   });
 
   test('model without tools parameter has undefined tools', async () => {
