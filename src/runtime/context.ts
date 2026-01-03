@@ -272,12 +272,12 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
             }
           }
         }
-        // Final AI response
-        if (entry.response !== undefined) {
-          const responseStr =
-            typeof entry.response === 'object' ? JSON.stringify(entry.response) : String(entry.response);
-          lines.push(`${indent}  <-- ${responseStr}`);
-        }
+        // Note: We don't show the response here because it will be shown
+        // with the variable assignment that follows (with source: 'ai')
+        // This avoids duplication like:
+        //   --> do: "prompt"
+        //   <-- response      <- would be duplicate
+        //   <-- varName: response
       } else if (entry.kind === 'scope-enter') {
         // Scope enter marker
         const labelStr = entry.label ? ` ${entry.label}` : '';

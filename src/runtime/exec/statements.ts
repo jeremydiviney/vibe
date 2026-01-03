@@ -62,8 +62,33 @@ export function extractNumberValue(expr: AST.Expression | null): number | null {
 
 /**
  * Model declaration - store model config in locals.
+ * If tools are specified, push evaluation instructions.
  */
 export function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclaration): RuntimeState {
+  // If tools expression exists, evaluate it first then create model
+  if (stmt.config.tools) {
+    return {
+      ...state,
+      instructionStack: [
+        { op: 'exec_expression', expr: stmt.config.tools, location: stmt.config.tools.location },
+        { op: 'declare_model', stmt, location: stmt.location },
+        ...state.instructionStack,
+      ],
+    };
+  }
+
+  // No tools, create model synchronously
+  return finalizeModelDeclaration(state, stmt, undefined);
+}
+
+/**
+ * Finalize model declaration with optional tools.
+ */
+export function finalizeModelDeclaration(
+  state: RuntimeState,
+  stmt: AST.ModelDeclaration,
+  tools: unknown[] | undefined
+): RuntimeState {
   const modelValue = {
     __vibeModel: true,
     name: extractStringValue(stmt.config.modelName),
@@ -72,6 +97,7 @@ export function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclara
     provider: extractStringValue(stmt.config.provider),
     maxRetriesOnError: extractNumberValue(stmt.config.maxRetriesOnError),
     thinkingLevel: extractStringValue(stmt.config.thinkingLevel),
+    tools,
   };
 
   const frame = currentFrame(state);

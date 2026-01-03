@@ -2,11 +2,12 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
-import type { RegisteredTool, ToolSchema, ToolParameterSchema } from '../tools/types';
+import type { ToolSchema, ToolParameterSchema, VibeToolValue } from '../tools/types';
 import { vibeTypeToJsonSchema } from '../tools/ts-schema';
+import { currentFrame } from '../state';
 
 /**
- * Execute a tool declaration - registers the tool in the registry.
+ * Execute a tool declaration - stores the tool as a variable in frame locals.
  */
 export function execToolDeclaration(
   state: RuntimeState,
@@ -16,23 +17,29 @@ export function execToolDeclaration(
   const schema = buildToolSchema(state, decl);
 
   // Create executor that wraps the tool body
-  // For now, tools execute their body as inline TS code
   const executor = createToolExecutor(state, decl);
 
-  const tool: RegisteredTool = {
+  // Create the tool value (like a model value)
+  const toolValue: VibeToolValue = {
+    __vibeTool: true,
     name: decl.name,
-    kind: 'user',
     schema,
     executor,
-    declaration: decl,
-    location: decl.location,
   };
 
-  // Register the tool (mutates registry, but registry is part of state)
-  state.toolRegistry.register(tool);
+  // Store as a variable in frame locals (like model declarations)
+  const frame = currentFrame(state);
+  const newLocals = {
+    ...frame.locals,
+    [decl.name]: { value: toolValue, isConst: true, typeAnnotation: 'tool' },
+  };
 
   return {
     ...state,
+    callStack: [
+      ...state.callStack.slice(0, -1),
+      { ...frame, locals: newLocals },
+    ],
     executionLog: [
       ...state.executionLog,
       {
@@ -119,52 +126,3 @@ function findTsBlock(block: AST.BlockStatement): AST.TsBlock | null {
   return null;
 }
 
-/**
- * Execute a tool call - pauses execution and sets up pending tool call.
- */
-export function execCallTool(
-  state: RuntimeState,
-  toolName: string,
-  argCount: number
-): RuntimeState {
-  const args = state.valueStack.slice(-argCount);
-  const newValueStack = state.valueStack.slice(0, -argCount);
-
-  // Look up the tool in the registry
-  const tool = state.toolRegistry.get(toolName);
-  if (!tool) {
-    throw new Error(`Tool '${toolName}' is not defined`);
-  }
-
-  // Build args object from positional arguments
-  const argsObj: Record<string, unknown> = {};
-  tool.schema.parameters.forEach((param, i) => {
-    argsObj[param.name] = args[i];
-  });
-
-  return {
-    ...state,
-    valueStack: newValueStack,
-    status: 'awaiting_tool',
-    pendingToolCall: {
-      toolName,
-      toolCallId: `tool-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      args: argsObj,
-    },
-    executionLog: [
-      ...state.executionLog,
-      {
-        timestamp: Date.now(),
-        instructionType: 'tool_call_request',
-        details: { toolName, args: argsObj },
-      },
-    ],
-  };
-}
-
-/**
- * Check if an identifier is a registered tool.
- */
-export function isRegisteredTool(state: RuntimeState, name: string): boolean {
-  return state.toolRegistry.has(name);
-}

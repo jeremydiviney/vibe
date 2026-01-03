@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState, StackFrame } from '../types';
+import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction } from '../modules';
 import { validateAndCoerce } from '../validation';
@@ -130,14 +131,9 @@ export function execCallFunction(
     return executeVibeFunction(state, func, args, newValueStack);
   }
 
-  // Handle tool call
+  // Handle tool call - callee is the VibeToolValue itself
   if (typeof callee === 'object' && callee !== null && '__vibeTool' in callee) {
-    const toolName = (callee as { __vibeTool: boolean; name: string }).name;
-    const tool = state.toolRegistry.get(toolName);
-
-    if (!tool) {
-      throw new Error(`ReferenceError: Tool '${toolName}' is not defined`);
-    }
+    const tool = callee as VibeToolValue;
 
     // Build args object from positional arguments
     const argsObj: Record<string, unknown> = {};
@@ -150,16 +146,17 @@ export function execCallFunction(
       valueStack: newValueStack,
       status: 'awaiting_tool',
       pendingToolCall: {
-        toolName,
+        toolName: tool.name,
         toolCallId: `tool-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         args: argsObj,
+        executor: tool.executor,  // Include executor for later execution
       },
       executionLog: [
         ...state.executionLog,
         {
           timestamp: Date.now(),
           instructionType: 'tool_call_request',
-          details: { toolName, args: argsObj },
+          details: { toolName: tool.name, args: argsObj },
         },
       ],
     };

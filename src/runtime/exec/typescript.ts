@@ -3,6 +3,7 @@
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
 import { lookupVariable } from './variables';
+import { getImportedValue } from '../modules';
 
 /**
  * String interpolation - {varName} syntax.
@@ -53,13 +54,19 @@ export function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeStat
  * TypeScript eval - pause for async evaluation.
  */
 export function execTsEval(state: RuntimeState, params: string[], body: string): RuntimeState {
-  // Look up parameter values from scope
+  // Look up parameter values from scope or imports
   const paramValues = params.map((name) => {
+    // First try regular variables
     const found = lookupVariable(state, name);
-    if (!found) {
-      throw new Error(`ReferenceError: '${name}' is not defined`);
+    if (found) {
+      return found.variable.value;
     }
-    return found.variable.value;
+    // Then try imported values
+    const imported = getImportedValue(state, name);
+    if (imported !== undefined) {
+      return imported;
+    }
+    throw new Error(`ReferenceError: '${name}' is not defined`);
   });
 
   return {

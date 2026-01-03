@@ -1,6 +1,6 @@
 import * as AST from '../ast';
 import type { SourceLocation } from '../errors';
-import type { ToolRegistry, PendingToolCall } from './tools/types';
+import type { PendingToolCall } from './tools/types';
 
 // Runtime status
 export type RuntimeStatus =
@@ -156,8 +156,26 @@ export interface TokenUsage {
   thinkingTokens?: number;
 }
 
+// Message in the AI conversation (for logging)
+export interface AILogMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+  /** For assistant messages with tool calls */
+  toolCalls?: Array<{
+    id: string;
+    toolName: string;
+    args: Record<string, unknown>;
+  }>;
+  /** For user messages with tool results */
+  toolResults?: Array<{
+    toolCallId: string;
+    result?: unknown;
+    error?: string;
+  }>;
+}
+
 // Detailed AI interaction for debugging/logging
-// Metadata about an AI call - the actual content comes from state's orderedEntries
+// Contains the COMPLETE context that was sent to the model
 export interface AIInteraction {
   type: 'do' | 'vibe' | 'ask';
   prompt: string;
@@ -174,6 +192,12 @@ export interface AIInteraction {
   targetType: string | null;
   usage?: TokenUsage;
   durationMs?: number;
+  // The complete message sequence sent to the model (single source of truth for logging)
+  messages: AILogMessage[];
+  // Structured execution context (variables, prompts, tool calls)
+  executionContext: ContextEntry[];
+  // Tool calls made during this interaction (after the initial request)
+  interactionToolCalls?: PromptToolCall[];
 }
 
 // Execution log entry for tracking what happened
@@ -260,9 +284,6 @@ export interface RuntimeState {
   pendingImportedTsCall: PendingImportedTsCall | null;
   pendingToolCall: PendingToolCall | null;
 
-  // Tool registry (built-in and user-defined tools)
-  toolRegistry: ToolRegistry;
-
   // Root directory for file operation sandboxing
   rootDir: string;
 
@@ -347,7 +368,9 @@ export type Instruction =
 
   // Tool operations
   | { op: 'exec_tool_declaration'; decl: AST.ToolDeclaration; location: SourceLocation }
-  | { op: 'call_tool'; toolName: string; argCount: number; location: SourceLocation }
+
+  // Model declaration with tools (uses lastResult as tools array)
+  | { op: 'declare_model'; stmt: AST.ModelDeclaration; location: SourceLocation }
 
   // AI tool call result (for context building)
   | { op: 'ai_tool_call_result'; toolName: string; args: unknown; result: unknown; error?: string; location: SourceLocation };

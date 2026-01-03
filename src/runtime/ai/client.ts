@@ -1,6 +1,7 @@
 // AI Client - Main orchestration for AI API calls
 
 import type { AIProviderType, AIRequest, AIResponse, TargetType, ModelConfig, ProviderExecutor } from './types';
+import type { VibeToolValue } from '../tools/types';
 import { withRetry } from './retry';
 import { executeOpenAI } from './providers/openai';
 import { executeAnthropic } from './providers/anthropic';
@@ -61,6 +62,7 @@ export interface VibeModelValue {
   url: string | null;
   provider?: AIProviderType | null;
   maxRetriesOnError?: number | null;
+  tools?: VibeToolValue[];  // Tools available to this model for AI calls
 }
 
 /**

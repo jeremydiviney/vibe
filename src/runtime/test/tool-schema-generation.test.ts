@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { Runtime, AIProvider } from '../index';
+import type { VibeToolValue, ToolSchema } from '../tools/types';
 
 // Mock AI provider for testing (never called in these tests)
 function createMockProvider(): AIProvider {
@@ -15,6 +16,12 @@ function createMockProvider(): AIProvider {
       return 'user input';
     },
   };
+}
+
+// Helper to get tool schema from tool variable
+function getToolSchema(runtime: Runtime, toolName: string): ToolSchema | undefined {
+  const tool = runtime.getValue(toolName) as VibeToolValue | undefined;
+  return tool?.schema;
 }
 
 describe('Tool Schema Generation', () => {
@@ -35,8 +42,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const greetSchema = schemas.find(s => s.name === 'greet');
+      const greetSchema = getToolSchema(runtime, 'greet');
 
       expect(greetSchema).toEqual({
         name: 'greet',
@@ -64,8 +70,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const doubleSchema = schemas.find(s => s.name === 'double');
+      const doubleSchema = getToolSchema(runtime, 'double');
 
       expect(doubleSchema).toEqual({
         name: 'double',
@@ -93,8 +98,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const negateSchema = schemas.find(s => s.name === 'negate');
+      const negateSchema = getToolSchema(runtime, 'negate');
 
       expect(negateSchema).toEqual({
         name: 'negate',
@@ -122,8 +126,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const processSchema = schemas.find(s => s.name === 'processData');
+      const processSchema = getToolSchema(runtime, 'processData');
 
       expect(processSchema).toEqual({
         name: 'processData',
@@ -158,8 +161,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const joinSchema = schemas.find(s => s.name === 'joinStrings');
+      const joinSchema = getToolSchema(runtime, 'joinStrings');
 
       expect(joinSchema).toEqual({
         name: 'joinStrings',
@@ -187,8 +189,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const sumSchema = schemas.find(s => s.name === 'sum');
+      const sumSchema = getToolSchema(runtime, 'sum');
 
       expect(sumSchema).toEqual({
         name: 'sum',
@@ -216,8 +217,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const getItemsSchema = schemas.find(s => s.name === 'getItems');
+      const getItemsSchema = getToolSchema(runtime, 'getItems');
 
       expect(getItemsSchema).toEqual({
         name: 'getItems',
@@ -249,8 +249,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const calcSchema = schemas.find(s => s.name === 'calculate');
+      const calcSchema = getToolSchema(runtime, 'calculate');
 
       expect(calcSchema).toEqual({
         name: 'calculate',
@@ -276,8 +275,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const filterSchema = schemas.find(s => s.name === 'filter');
+      const filterSchema = getToolSchema(runtime, 'filter');
 
       expect(filterSchema).toEqual({
         name: 'filter',
@@ -308,8 +306,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const timeSchema = schemas.find(s => s.name === 'getCurrentTime');
+      const timeSchema = getToolSchema(runtime, 'getCurrentTime');
 
       expect(timeSchema?.description).toBe('Get the current ISO timestamp');
       expect(timeSchema?.parameters).toEqual([]);
@@ -330,8 +327,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const emailSchema = schemas.find(s => s.name === 'sendEmail');
+      const emailSchema = getToolSchema(runtime, 'sendEmail');
 
       expect(emailSchema).toEqual({
         name: 'sendEmail',
@@ -358,8 +354,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const searchSchema = schemas.find(s => s.name === 'search');
+      const searchSchema = getToolSchema(runtime, 'search');
 
       expect(searchSchema).toEqual({
         name: 'search',
@@ -379,7 +374,7 @@ let x = "init"
   // ============================================================================
 
   describe('Multiple Tools', () => {
-    test('registry contains schemas for all registered tools', async () => {
+    test('multiple tools can be defined and have correct schemas', async () => {
       const ast = parse(`
 tool add(a: number, b: number): number
   @description "Add two numbers"
@@ -405,17 +400,8 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-
-      // Filter out built-in tools
-      const userToolSchemas = schemas.filter(s =>
-        ['add', 'multiply', 'greet'].includes(s.name)
-      );
-
-      expect(userToolSchemas).toHaveLength(3);
-
-      // Verify each tool's schema
-      expect(userToolSchemas.find(s => s.name === 'add')).toEqual({
+      // Verify each tool's schema by getting it from the tool variable
+      expect(getToolSchema(runtime, 'add')).toEqual({
         name: 'add',
         description: 'Add two numbers',
         parameters: [
@@ -425,7 +411,17 @@ let x = "init"
         returns: { type: 'number' },
       });
 
-      expect(userToolSchemas.find(s => s.name === 'greet')).toEqual({
+      expect(getToolSchema(runtime, 'multiply')).toEqual({
+        name: 'multiply',
+        description: 'Multiply two numbers',
+        parameters: [
+          { name: 'a', type: { type: 'number' }, required: true },
+          { name: 'b', type: { type: 'number' }, required: true },
+        ],
+        returns: { type: 'number' },
+      });
+
+      expect(getToolSchema(runtime, 'greet')).toEqual({
         name: 'greet',
         description: 'Greet someone',
         parameters: [
@@ -435,17 +431,16 @@ let x = "init"
       });
     });
 
-    test('builtin tools are also included in schemas', async () => {
+    test('standard tools are NOT auto-available', async () => {
+      // Standard tools must be imported from system modules
       const ast = parse(`let x = "init"`);
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-
-      // Check some known standard tools are present
+      // Standard tools should not be defined as variables
       const standardToolNames = ['sleep', 'now', 'jsonParse', 'jsonStringify', 'env', 'readFile'];
       for (const name of standardToolNames) {
-        expect(schemas.find(s => s.name === name)).toBeDefined();
+        expect(runtime.getValue(name)).toBeUndefined();
       }
     });
   });
@@ -467,8 +462,7 @@ let x = "init"
       const runtime = new Runtime(ast, createMockProvider());
       await runtime.run();
 
-      const schemas = runtime.getState().toolRegistry.getSchemas();
-      const logSchema = schemas.find(s => s.name === 'logMessage');
+      const logSchema = getToolSchema(runtime, 'logMessage');
 
       expect(logSchema).toEqual({
         name: 'logMessage',
