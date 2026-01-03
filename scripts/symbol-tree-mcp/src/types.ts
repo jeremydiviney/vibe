@@ -28,6 +28,7 @@ export interface ExtractOptions {
   pattern?: string;
   depth?: number;
   exportsOnly?: boolean;
+  srcDir?: string;  // Source directory to include (e.g., 'src'). Default: 'src'. Use '' to include all.
 }
 
 export interface FormatOptions {

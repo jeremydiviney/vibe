@@ -7,6 +7,17 @@ import type { SymbolInfo, FileSymbols, ExtractOptions } from './types.js';
 import { getSignature, getLineRange, isExported } from './utils.js';
 import { extractCallGraph, extractClassMembers, extractInterfaceMembers, extractTypeDependencies } from './scope-analysis.js';
 
+/** Check if a file path is a test file (*.test.* or inside a test/tests/__tests__ folder) */
+function isTestFile(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, '/');
+  // Check for .test. in filename (e.g., foo.test.ts, bar.test.tsx)
+  if (/\.test\./.test(normalized)) return true;
+  // Check for test folders at any depth (test/, tests/, __tests__/)
+  // Use (^|/) to match both start of path and mid-path folders
+  if (/(^|\/)(test|tests|__tests__)\//.test(normalized)) return true;
+  return false;
+}
+
 function extractSymbolsFromNode(
   node: ts.Node,
   sourceFile: ts.SourceFile,
@@ -365,8 +376,18 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
     symbol,
     pattern = '**/*.{ts,tsx,js,jsx}',
     depth = 2,
-    exportsOnly = false
+    exportsOnly = false,
+    srcDir = 'src'  // Default to 'src' folder, use '' to include all
   } = options;
+
+  // Helper to check if file is in the source directory
+  const isInSrcDir = (filePath: string): boolean => {
+    if (srcDir === '') return true;  // Empty string means include all
+    const normalized = filePath.replace(/\\/g, '/');
+    // Match srcDir at start or after a slash (e.g., /src/ or ^src/)
+    const srcDirPattern = new RegExp(`(^|/)${srcDir}/`);
+    return srcDirPattern.test(normalized);
+  };
 
   const results: FileSymbols[] = [];
 
@@ -378,7 +399,7 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
   } else {
     files = await glob(pattern, {
       cwd: basePath,
-      ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/test/**', '**/*.test.ts'],
+      ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/test/**', '**/tests/**', '**/__tests__/**', '**/*.test.*'],
       absolute: true
     });
   }
@@ -395,8 +416,9 @@ export async function extractSymbols(options: ExtractOptions): Promise<FileSymbo
   });
 
   // Get ALL source files from program (includes resolved imports)
+  // Exclude node_modules, declaration files, test files, and files outside srcDir
   const allSourceFiles = program.getSourceFiles()
-    .filter(sf => !sf.fileName.includes('node_modules') && !sf.isDeclarationFile);
+    .filter(sf => !sf.fileName.includes('node_modules') && !sf.isDeclarationFile && !isTestFile(sf.fileName) && isInSrcDir(sf.fileName));
 
   // First pass: collect ALL symbol names across all files, tracking which files they appear in
   const nameToFiles = new Map<string, string[]>();

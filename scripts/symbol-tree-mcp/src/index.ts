@@ -74,6 +74,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               enum: ['adjacency', 'tree'],
               description: 'Output format. "adjacency" is a flat call graph (token-efficient). "tree" shows nested symbol hierarchy. Default: "adjacency"',
             },
+            src_dir: {
+              type: 'string',
+              description: 'Source directory to include (e.g., "src", "lib"). Default: "src". Use empty string "" to include all directories.',
+            },
           },
         },
       },
@@ -98,6 +102,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     show_files?: boolean;
     group_by_file?: boolean;
     format?: 'adjacency' | 'tree';
+    src_dir?: string;
   };
 
   const basePath = args.path ? path.resolve(args.path) : process.cwd();
@@ -113,6 +118,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       pattern: args.pattern,
       depth: 10, // High extraction depth for complete call graph
       exportsOnly: args.exports_only ?? false,
+      srcDir: args.src_dir,  // Default 'src' is applied in extractSymbols
     });
 
     if (fileSymbols.length === 0) {

@@ -188,7 +188,32 @@ export function formatByFile(
   return lines.join('\n');
 }
 
-// Adjacency list format - grouped by symbol
+// Group symbols by their kind
+function groupByKind<T extends { kind: string }>(symbols: T[]): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const symbol of symbols) {
+    const existing = groups.get(symbol.kind) ?? [];
+    existing.push(symbol);
+    groups.set(symbol.kind, existing);
+  }
+  return groups;
+}
+
+// Get plural section header for a kind
+function kindToSectionHeader(kind: string): string {
+  const plurals: Record<string, string> = {
+    'class': 'CLASSES',
+    'interface': 'INTERFACES',
+    'type': 'TYPES',
+    'enum': 'ENUMS',
+    'function': 'FUNCTIONS',
+    'variable': 'VARIABLES',
+    'namespace': 'NAMESPACES',
+  };
+  return plurals[kind] ?? `${kind.toUpperCase()}S`;
+}
+
+// Adjacency list format - grouped by symbol kind
 export function formatAdjacencyList(
   fileSymbols: FileSymbols[],
   options: FormatOptions = {}
@@ -201,62 +226,74 @@ export function formatAdjacencyList(
   const { typeSymbols, filteredFunctionSymbols } = prepared;
   const ctx = createOutputContext(textLimit);
 
-  // Section 1: TYPE SYMBOLS (interfaces, types, enums)
-  if (typeSymbols.length > 0) {
-    if (!addLine(ctx, '=== TYPE SYMBOLS ===')) return finalizeOutput(ctx);
+  // Combine all symbols and dedupe (classes can be in both typeSymbols and functionSymbols)
+  const seen = new Set<string>();
+  const allSymbols = [...typeSymbols, ...filteredFunctionSymbols].filter(s => {
+    const key = `${s.name}:${s.relativePath}:${s.line}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const groupedByKind = groupByKind(allSymbols);
 
-    for (const symbol of typeSymbols) {
-      let line = `${symbol.kind} ${symbol.name}`;
+  // Output order: classes, interfaces, types, enums, functions, then others
+  const kindOrder = ['class', 'interface', 'type', 'enum', 'function', 'variable', 'namespace'];
+  const orderedKinds = [
+    ...kindOrder.filter(k => groupedByKind.has(k)),
+    ...[...groupedByKind.keys()].filter(k => !kindOrder.includes(k))
+  ];
+
+  // Output each kind as a separate section
+  for (const kind of orderedKinds) {
+    const symbols = groupedByKind.get(kind)!;
+    const header = `=== ${kindToSectionHeader(kind)} ===`;
+
+    if (!addLine(ctx, header)) return finalizeOutput(ctx);
+
+    for (const symbol of symbols) {
+      // No kind prefix - it's implied by the section
+      let line = symbol.name;
+      if (symbol.signature) {
+        line += symbol.signature;
+      }
       if (showFiles) {
         line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
       }
       if (!addLine(ctx, line)) return finalizeOutput(ctx);
     }
 
-    // Section 2: TYPE DEPENDENCIES
-    const typesWithDeps = typeSymbols.filter(s =>
-      s.extends || s.implements || s.typeUses
-    );
+    if (!addLine(ctx, '')) return finalizeOutput(ctx);
+  }
 
-    if (typesWithDeps.length > 0) {
-      if (!addLines(ctx, ['', '=== TYPE DEPENDENCIES ==='])) return finalizeOutput(ctx);
+  // TYPE DEPENDENCIES section
+  const typesWithDeps = typeSymbols.filter(s =>
+    s.extends || s.implements || s.typeUses
+  );
 
-      for (const symbol of typesWithDeps) {
-        const depLines: string[] = [`${symbol.name}:`];
+  if (typesWithDeps.length > 0) {
+    if (!addLine(ctx, '=== TYPE DEPENDENCIES ===')) return finalizeOutput(ctx);
 
-        if (symbol.extends && symbol.extends.length > 0) {
-          depLines.push(`  extends: ${symbol.extends.join(', ')}`);
-        }
-        if (symbol.implements && symbol.implements.length > 0) {
-          depLines.push(`  implements: ${symbol.implements.join(', ')}`);
-        }
-        if (symbol.typeUses && symbol.typeUses.length > 0) {
-          depLines.push(`  uses: ${symbol.typeUses.join(', ')}`);
-        }
+    for (const symbol of typesWithDeps) {
+      const depLines: string[] = [`${symbol.name}:`];
 
-        if (!addLines(ctx, depLines)) return finalizeOutput(ctx);
+      if (symbol.extends && symbol.extends.length > 0) {
+        depLines.push(`  extends: ${symbol.extends.join(', ')}`);
       }
+      if (symbol.implements && symbol.implements.length > 0) {
+        depLines.push(`  implements: ${symbol.implements.join(', ')}`);
+      }
+      if (symbol.typeUses && symbol.typeUses.length > 0) {
+        depLines.push(`  uses: ${symbol.typeUses.join(', ')}`);
+      }
+
+      if (!addLines(ctx, depLines)) return finalizeOutput(ctx);
     }
 
     if (!addLine(ctx, '')) return finalizeOutput(ctx);
   }
 
-  // Section 3: SYMBOLS (functions, classes - flat list with signatures)
-  if (!addLine(ctx, '=== SYMBOLS ===')) return finalizeOutput(ctx);
-
-  for (const symbol of filteredFunctionSymbols) {
-    let line = `${symbol.kind} ${symbol.name}`;
-    if (symbol.signature) {
-      line += symbol.signature;
-    }
-    if (showFiles) {
-      line += ` (${symbol.relativePath}:${symbol.line}-${symbol.endLine})`;
-    }
-    if (!addLine(ctx, line)) return finalizeOutput(ctx);
-  }
-
-  // Section 4: DEPENDENCIES (grouped by symbol)
-  if (!addLines(ctx, ['', '=== DEPENDENCIES ==='])) return finalizeOutput(ctx);
+  // FUNCTION DEPENDENCIES section (function call graph)
+  if (!addLine(ctx, '=== FUNCTION DEPENDENCIES ===')) return finalizeOutput(ctx);
 
   for (const symbol of filteredFunctionSymbols) {
     // Format function dependencies
