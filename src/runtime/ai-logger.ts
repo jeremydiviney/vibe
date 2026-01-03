@@ -1,17 +1,39 @@
 // AI Interaction Logging Utilities
-// Formats AI interactions for debugging and analysis
+// Formats AI interactions from runtime state for debugging and analysis
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import type { AIInteraction } from './types';
+import type { RuntimeState, AIInteraction, FrameEntry } from './types';
+import { buildSystemMessage, buildToolSystemMessage } from './ai/formatters';
 
 const LOG_DIR = '.ai-logs';
 const MAX_LOGS = 20;
 
 /**
- * Format a single AI interaction as markdown.
+ * Find prompt entries from all frames in order.
  */
-function formatInteraction(interaction: AIInteraction, index: number): string {
+function getPromptEntries(state: RuntimeState): Array<FrameEntry & { kind: 'prompt' }> {
+  const prompts: Array<FrameEntry & { kind: 'prompt' }> = [];
+  for (const frame of state.callStack) {
+    for (const entry of frame.orderedEntries) {
+      if (entry.kind === 'prompt') {
+        prompts.push(entry);
+      }
+    }
+  }
+  return prompts;
+}
+
+/**
+ * Format a single AI interaction as markdown.
+ * Uses the prompt entry from state for tool calls, and AIInteraction for metadata.
+ */
+function formatInteraction(
+  interaction: AIInteraction,
+  promptEntry: (FrameEntry & { kind: 'prompt' }) | undefined,
+  state: RuntimeState,
+  index: number
+): string {
   const lines: string[] = [];
 
   // Header
@@ -19,38 +41,42 @@ function formatInteraction(interaction: AIInteraction, index: number): string {
   lines.push(`**Type:** ${interaction.type} | **Model:** ${interaction.model} | **Target:** ${interaction.targetType ?? 'text'}`);
   lines.push('');
 
-  // Messages sent to model
+  // System message
   lines.push('### Messages Sent to Model');
   lines.push('');
+  lines.push('**[system]**');
+  lines.push(buildSystemMessage());
+  lines.push('');
 
-  for (const msg of interaction.messages) {
-    lines.push(`**[${msg.role}]**`);
-    lines.push(msg.content);
+  // Tools system message (if tools are registered)
+  const toolSchemas = state.toolRegistry.getSchemas();
+  if (toolSchemas.length > 0) {
+    lines.push('**[system]**');
+    lines.push(buildToolSystemMessage(toolSchemas));
     lines.push('');
   }
 
-  // Tool calls (if any)
-  if (interaction.toolRounds && interaction.toolRounds.length > 0) {
+  // User prompt
+  lines.push('**[user]**');
+  lines.push(interaction.prompt);
+  lines.push('');
+
+  // Tool calls (from prompt entry in state)
+  if (promptEntry?.toolCalls && promptEntry.toolCalls.length > 0) {
     lines.push('### Tool Calls');
     lines.push('');
-    for (let i = 0; i < interaction.toolRounds.length; i++) {
-      const round = interaction.toolRounds[i];
-      lines.push(`**Round ${i + 1}:**`);
-      for (let j = 0; j < round.toolCalls.length; j++) {
-        const call = round.toolCalls[j];
-        const result = round.results[j];
-        lines.push(`- \`${call.toolName}(${JSON.stringify(call.args)})\``);
-        if (result?.error) {
-          lines.push(`  → Error: ${result.error}`);
-        } else if (result?.result !== undefined) {
-          const resultStr = typeof result.result === 'string'
-            ? (result.result.length > 200 ? result.result.slice(0, 200) + '...' : result.result)
-            : JSON.stringify(result.result);
-          lines.push(`  → ${resultStr}`);
-        }
+    for (const call of promptEntry.toolCalls) {
+      lines.push(`- \`${call.toolName}(${JSON.stringify(call.args)})\``);
+      if (call.error) {
+        lines.push(`  → Error: ${call.error}`);
+      } else if (call.result !== undefined) {
+        const resultStr = typeof call.result === 'string'
+          ? call.result
+          : JSON.stringify(call.result, null, 2);
+        lines.push(`  → ${resultStr}`);
       }
-      lines.push('');
     }
+    lines.push('');
   }
 
   // Response
@@ -94,12 +120,16 @@ function formatInteraction(interaction: AIInteraction, index: number): string {
 }
 
 /**
- * Format all AI interactions as markdown for Claude to read.
+ * Format all AI interactions as markdown from runtime state.
  */
-export function formatAIInteractions(interactions: AIInteraction[]): string {
+export function formatAIInteractions(state: RuntimeState): string {
+  const interactions = state.aiInteractions;
   if (interactions.length === 0) {
     return 'No AI interactions recorded.';
   }
+
+  // Get prompt entries from state to match with interactions
+  const promptEntries = getPromptEntries(state);
 
   // Collect unique models used
   const modelsUsed = new Map<string, { name: string; provider: string; url?: string; thinkingLevel?: string }>();
@@ -136,7 +166,13 @@ export function formatAIInteractions(interactions: AIInteraction[]): string {
   headerLines.push('');
 
   const header = headerLines.join('\n');
-  const formatted = interactions.map((interaction, i) => formatInteraction(interaction, i));
+
+  // Format each interaction, matching with prompt entries by prompt text
+  const formatted = interactions.map((interaction, i) => {
+    // Find matching prompt entry by prompt text
+    const matchingPrompt = promptEntries.find(p => p.prompt === interaction.prompt);
+    return formatInteraction(interaction, matchingPrompt, state, i);
+  });
 
   return header + formatted.join('\n\n---\n\n');
 }
@@ -144,11 +180,11 @@ export function formatAIInteractions(interactions: AIInteraction[]): string {
 /**
  * Dump AI interactions to console in a readable format.
  */
-export function dumpAIInteractions(interactions: AIInteraction[]): void {
+export function dumpAIInteractions(state: RuntimeState): void {
   console.log('\n' + '='.repeat(60));
   console.log('AI INTERACTION LOG');
   console.log('='.repeat(60) + '\n');
-  console.log(formatAIInteractions(interactions));
+  console.log(formatAIInteractions(state));
   console.log('\n' + '='.repeat(60) + '\n');
 }
 
@@ -156,8 +192,8 @@ export function dumpAIInteractions(interactions: AIInteraction[]): void {
  * Save AI interactions to a file in the log directory.
  * Automatically rotates logs to keep only the last MAX_LOGS files.
  */
-export function saveAIInteractions(interactions: AIInteraction[], projectRoot?: string): string | null {
-  if (interactions.length === 0) {
+export function saveAIInteractions(state: RuntimeState, projectRoot?: string): string | null {
+  if (state.aiInteractions.length === 0) {
     return null;
   }
 
@@ -174,7 +210,7 @@ export function saveAIInteractions(interactions: AIInteraction[], projectRoot?: 
   const filepath = join(logDir, filename);
 
   // Write the log
-  const content = formatAIInteractions(interactions);
+  const content = formatAIInteractions(state);
   writeFileSync(filepath, content, 'utf-8');
 
   // Rotate logs - keep only the last MAX_LOGS

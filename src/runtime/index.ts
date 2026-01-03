@@ -89,7 +89,6 @@ import { step, runUntilPause } from './step';
 import { evalTsBlock } from './ts-eval';
 import { loadImports, getImportedTsFunction } from './modules';
 import { buildGlobalContext, formatContextForAI } from './context';
-import { buildMessages } from './ai/formatters';
 import { saveAIInteractions } from './ai-logger';
 
 // Token usage from AI providers
@@ -197,32 +196,11 @@ export class Runtime {
         const startTime = Date.now();
         const pendingAI = this.state.pendingAI;
 
-        // Capture messages if logging is enabled
-        let messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+        // Get target type from next instruction
         let targetType: string | null = null;
-
-        if (this.logAiInteractions) {
-          // Build context and messages exactly as the AI provider would
-          const context = buildGlobalContext(this.state);
-          const formattedContext = formatContextForAI(context);
-
-          // Get target type from next instruction
-          const nextInstruction = this.state.instructionStack[0];
-          if (nextInstruction?.op === 'declare_var' && nextInstruction.type) {
-            targetType = nextInstruction.type;
-          }
-
-          // Get tool schemas from registry
-          const tools = this.state.toolRegistry.getSchemas();
-
-          // Build the actual messages sent to the model
-          messages = buildMessages(
-            pendingAI.prompt,
-            formattedContext.text,
-            targetType as 'text' | 'json' | 'boolean' | 'number' | null,
-            true, // supportsStructuredOutput - assume true for logging
-            tools.length > 0 ? tools : undefined
-          );
+        const nextInstruction = this.state.instructionStack[0];
+        if (nextInstruction?.op === 'declare_var' && nextInstruction.type) {
+          targetType = nextInstruction.type;
         }
 
         let result: AIExecutionResult;
@@ -234,10 +212,11 @@ export class Runtime {
           result = await this.aiProvider.execute(pendingAI.prompt);
         }
 
-        // Create interaction record if logging
-        let modelDetails: AIInteraction['modelDetails'];
+        // Create interaction record if logging (just metadata - content comes from state)
+        let interaction: AIInteraction | undefined;
         if (this.logAiInteractions) {
           // Get model details from state
+          let modelDetails: AIInteraction['modelDetails'];
           const modelVar = this.state.callStack[0]?.locals?.[pendingAI.model];
           if (modelVar?.value && typeof modelVar.value === 'object') {
             const mv = modelVar.value as Record<string, unknown>;
@@ -248,21 +227,19 @@ export class Runtime {
               thinkingLevel: mv.thinkingLevel ? String(mv.thinkingLevel) : undefined,
             };
           }
-        }
 
-        const interaction: AIInteraction | undefined = this.logAiInteractions ? {
-          type: pendingAI.type,
-          prompt: pendingAI.prompt,
-          response: result.value,
-          timestamp: startTime,
-          model: pendingAI.model,
-          modelDetails,
-          messages,
-          targetType,
-          usage: result.usage,
-          durationMs: Date.now() - startTime,
-          toolRounds: result.toolRounds,
-        } : undefined;
+          interaction = {
+            type: pendingAI.type,
+            prompt: pendingAI.prompt,
+            response: result.value,
+            timestamp: startTime,
+            model: pendingAI.model,
+            modelDetails,
+            targetType,
+            usage: result.usage,
+            durationMs: Date.now() - startTime,
+          };
+        }
 
         this.state = resumeWithAIResponse(this.state, result.value, interaction, result.toolRounds);
       } else if (this.state.status === 'awaiting_tool') {
@@ -311,7 +288,7 @@ export class Runtime {
   private saveLogsIfEnabled(): void {
     if (this.logAiInteractions && this.state.aiInteractions.length > 0) {
       const projectRoot = dirname(this.basePath);
-      saveAIInteractions(this.state.aiInteractions, projectRoot);
+      saveAIInteractions(this.state, projectRoot);
     }
   }
 

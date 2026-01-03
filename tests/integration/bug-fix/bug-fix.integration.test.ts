@@ -87,13 +87,15 @@ describe.skipIf(!shouldRun)('Bug Fix Integration', () => {
 
     await runtime.run();
 
-    // Log AI interactions
-    console.log('\n' + formatAIInteractions(runtime.getAIInteractions()));
+    // Log AI interactions (uses state to include tool calls from orderedEntries)
+    const state = runtime.getState();
+    console.log('\n' + formatAIInteractions(state));
 
-    // Verify tool calls were made
-    const interactions = runtime.getAIInteractions();
-    const hasToolCalls = interactions.some(
-      (i) => i.toolRounds && i.toolRounds.length > 0
+    // Verify tool calls were made (now in state's orderedEntries, not AIInteraction)
+    const hasToolCalls = state.callStack.some(frame =>
+      frame.orderedEntries.some(entry =>
+        entry.kind === 'prompt' && entry.toolCalls && entry.toolCalls.length > 0
+      )
     );
     console.log(`\nTool calls made: ${hasToolCalls}`);
     expect(hasToolCalls).toBe(true);

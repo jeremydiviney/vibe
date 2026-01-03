@@ -118,8 +118,7 @@ async function runVibe(modelConfig: string, logAi = true): Promise<Runtime> {
   await runtime.run();
 
   if (logAi) {
-    const interactions = runtime.getAIInteractions();
-    console.log('\n' + formatAIInteractions(interactions));
+    console.log('\n' + formatAIInteractions(runtime.getState()));
   }
 
   return runtime;
