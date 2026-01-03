@@ -28,7 +28,7 @@
   - [ ] TS blocks and interop
 
 ### Integration Tests & Examples
-- [ ] Tool-calling integration test with real AI (glob, readFile, writeFile, edit)
+- [x] Tool-calling integration test with real AI (glob, readFile, writeFile, edit)
 - [ ] Real-world example: number guessing game
 - [ ] Real-world example: file organizer script
 
