@@ -1,39 +1,92 @@
 // AI Interaction Logging Utilities
-// Formats AI interactions from runtime state for debugging and analysis
+// Formats AI interactions for debugging and analysis
+//
+// This logger uses the stored context from AIInteraction which is the
+// SINGLE SOURCE OF TRUTH for what was sent to the model.
+// The context is captured in ai-provider.ts using buildAIContext().
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import type { RuntimeState, AIInteraction, FrameEntry } from './types';
-import { buildSystemMessage, buildToolSystemMessage } from './ai/formatters';
+import type { RuntimeState, AIInteraction, AILogMessage } from './types';
 
 const LOG_DIR = '.ai-logs';
 const MAX_LOGS = 20;
 
 /**
- * Find prompt entries from all frames in order.
+ * Format a single message for display.
  */
-function getPromptEntries(state: RuntimeState): Array<FrameEntry & { kind: 'prompt' }> {
-  const prompts: Array<FrameEntry & { kind: 'prompt' }> = [];
-  for (const frame of state.callStack) {
-    for (const entry of frame.orderedEntries) {
-      if (entry.kind === 'prompt') {
-        prompts.push(entry);
+function formatMessage(msg: AILogMessage): string {
+  const lines: string[] = [];
+
+  lines.push(`**[${msg.role}]**`);
+
+  // Content
+  if (msg.content) {
+    lines.push(msg.content);
+  }
+
+  // Tool calls (for assistant messages)
+  if (msg.toolCalls && msg.toolCalls.length > 0) {
+    lines.push('');
+    lines.push('*Tool calls:*');
+    for (const call of msg.toolCalls) {
+      lines.push(`- \`${call.toolName}(${JSON.stringify(call.args)})\``);
+    }
+  }
+
+  // Tool results (for user messages)
+  if (msg.toolResults && msg.toolResults.length > 0) {
+    lines.push('');
+    lines.push('*Tool results:*');
+    for (const result of msg.toolResults) {
+      if (result.error) {
+        lines.push(`- Error: ${result.error}`);
+      } else {
+        const resultStr = typeof result.result === 'string'
+          ? result.result
+          : JSON.stringify(result.result, null, 2);
+        lines.push(`- ${resultStr}`);
       }
     }
   }
-  return prompts;
+
+  lines.push('');
+  return lines.join('\n');
+}
+
+/**
+ * Format tool calls that occurred during the interaction.
+ */
+function formatToolCalls(toolCalls: AIInteraction['interactionToolCalls']): string {
+  if (!toolCalls || toolCalls.length === 0) {
+    return '';
+  }
+
+  const lines: string[] = [];
+  lines.push('### Tool Calls During Interaction');
+  lines.push('');
+
+  for (const call of toolCalls) {
+    lines.push(`- \`${call.toolName}(${JSON.stringify(call.args)})\``);
+    if (call.error) {
+      lines.push(`  → Error: ${call.error}`);
+    } else if (call.result !== undefined) {
+      const resultStr = typeof call.result === 'string'
+        ? call.result
+        : JSON.stringify(call.result, null, 2);
+      lines.push(`  → ${resultStr}`);
+    }
+  }
+
+  lines.push('');
+  return lines.join('\n');
 }
 
 /**
  * Format a single AI interaction as markdown.
- * Uses the prompt entry from state for tool calls, and AIInteraction for metadata.
+ * Uses the stored context which is the single source of truth.
  */
-function formatInteraction(
-  interaction: AIInteraction,
-  promptEntry: (FrameEntry & { kind: 'prompt' }) | undefined,
-  state: RuntimeState,
-  index: number
-): string {
+function formatInteraction(interaction: AIInteraction, index: number): string {
   const lines: string[] = [];
 
   // Header
@@ -41,42 +94,18 @@ function formatInteraction(
   lines.push(`**Type:** ${interaction.type} | **Model:** ${interaction.model} | **Target:** ${interaction.targetType ?? 'text'}`);
   lines.push('');
 
-  // System message
+  // Messages sent to model (from stored context - single source of truth)
+  // Note: The context is included in the user messages, so we don't need a separate section
   lines.push('### Messages Sent to Model');
   lines.push('');
-  lines.push('**[system]**');
-  lines.push(buildSystemMessage());
-  lines.push('');
 
-  // Tools system message (if tools are registered)
-  const toolSchemas = state.toolRegistry.getSchemas();
-  if (toolSchemas.length > 0) {
-    lines.push('**[system]**');
-    lines.push(buildToolSystemMessage(toolSchemas));
-    lines.push('');
+  for (const msg of interaction.messages) {
+    lines.push(formatMessage(msg));
   }
 
-  // User prompt
-  lines.push('**[user]**');
-  lines.push(interaction.prompt);
-  lines.push('');
-
-  // Tool calls (from prompt entry in state)
-  if (promptEntry?.toolCalls && promptEntry.toolCalls.length > 0) {
-    lines.push('### Tool Calls');
-    lines.push('');
-    for (const call of promptEntry.toolCalls) {
-      lines.push(`- \`${call.toolName}(${JSON.stringify(call.args)})\``);
-      if (call.error) {
-        lines.push(`  → Error: ${call.error}`);
-      } else if (call.result !== undefined) {
-        const resultStr = typeof call.result === 'string'
-          ? call.result
-          : JSON.stringify(call.result, null, 2);
-        lines.push(`  → ${resultStr}`);
-      }
-    }
-    lines.push('');
+  // Tool calls that occurred during this interaction
+  if (interaction.interactionToolCalls && interaction.interactionToolCalls.length > 0) {
+    lines.push(formatToolCalls(interaction.interactionToolCalls));
   }
 
   // Response
@@ -128,9 +157,6 @@ export function formatAIInteractions(state: RuntimeState): string {
     return 'No AI interactions recorded.';
   }
 
-  // Get prompt entries from state to match with interactions
-  const promptEntries = getPromptEntries(state);
-
   // Collect unique models used
   const modelsUsed = new Map<string, { name: string; provider: string; url?: string; thinkingLevel?: string }>();
   for (const interaction of interactions) {
@@ -166,13 +192,7 @@ export function formatAIInteractions(state: RuntimeState): string {
   headerLines.push('');
 
   const header = headerLines.join('\n');
-
-  // Format each interaction, matching with prompt entries by prompt text
-  const formatted = interactions.map((interaction, i) => {
-    // Find matching prompt entry by prompt text
-    const matchingPrompt = promptEntries.find(p => p.prompt === interaction.prompt);
-    return formatInteraction(interaction, matchingPrompt, state, i);
-  });
+  const formatted = interactions.map((interaction, i) => formatInteraction(interaction, i));
 
   return header + formatted.join('\n\n---\n\n');
 }

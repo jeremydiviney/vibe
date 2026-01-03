@@ -94,12 +94,17 @@ import { saveAIInteractions } from './ai-logger';
 // Token usage from AI providers
 import type { TokenUsage } from './ai/types';
 import type { ToolRoundResult } from './ai/tool-loop';
+import type { AILogMessage, ContextEntry, PromptToolCall } from './types';
 
 // AI execution result with optional usage and tool rounds
 export interface AIExecutionResult {
   value: unknown;
   usage?: TokenUsage;
   toolRounds?: ToolRoundResult[];  // Tool calling rounds that occurred during execution
+  // Context for logging (single source of truth)
+  messages?: AILogMessage[];  // Complete message sequence sent to model
+  executionContext?: ContextEntry[];  // Structured execution context
+  interactionToolCalls?: PromptToolCall[];  // Tool calls made during interaction
 }
 
 // AI provider interface (for external callers)
@@ -212,7 +217,8 @@ export class Runtime {
           result = await this.aiProvider.execute(pendingAI.prompt);
         }
 
-        // Create interaction record if logging (just metadata - content comes from state)
+        // Create interaction record if logging
+        // Uses context from result (single source of truth from ai-provider)
         let interaction: AIInteraction | undefined;
         if (this.logAiInteractions) {
           // Get model details from state
@@ -238,6 +244,10 @@ export class Runtime {
             targetType,
             usage: result.usage,
             durationMs: Date.now() - startTime,
+            // Context from ai-provider (single source of truth)
+            messages: result.messages ?? [],
+            executionContext: result.executionContext ?? [],
+            interactionToolCalls: result.interactionToolCalls,
           };
         }
 
@@ -248,15 +258,11 @@ export class Runtime {
           throw new Error('State awaiting tool but no pending tool call');
         }
 
-        const { toolName, args } = this.state.pendingToolCall;
-        const tool = this.state.toolRegistry.get(toolName);
-        if (!tool) {
-          throw new Error(`Tool '${toolName}' not found in registry`);
-        }
+        const { args, executor } = this.state.pendingToolCall;
 
         // Execute the tool with context - let errors propagate
         const context = { rootDir: this.state.rootDir };
-        const result = await tool.executor(args, context);
+        const result = await executor(args, context);
         this.state = resumeWithToolResult(this.state, result);
       } else {
         // Handle user input

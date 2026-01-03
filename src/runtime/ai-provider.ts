@@ -2,12 +2,14 @@
 // Uses the AI module to make actual API calls
 
 import type { AIProvider, AIExecutionResult } from './index';
-import type { RuntimeState } from './types';
+import type { RuntimeState, AILogMessage, PromptToolCall } from './types';
 import type { VibeModelValue, TargetType, AIRequest, ModelConfig, AIProviderType } from './ai';
+import type { VibeToolValue, ToolSchema } from './tools/types';
 import { detectProvider, getProviderExecutor, buildAIRequest } from './ai';
 import { withRetry } from './ai/retry';
 import { executeWithTools, type ToolRoundResult } from './ai/tool-loop';
 import { buildGlobalContext, formatContextForAI } from './context';
+import { buildAIContext } from './ai/context';
 
 /**
  * Get model value from runtime state by model name.
@@ -94,24 +96,33 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         throw new Error(`Model '${modelName}' not found in scope`);
       }
 
-      // Build context from global context
-      const context = buildGlobalContext(state);
-      const formattedContext = formatContextForAI(context);
-
       // Determine target type from pending variable declaration
       const targetType = getTargetType(state);
 
-      // Build model config and request
+      // Build model config
       const model = buildModelConfig(modelValue);
-      const operationType = state.pendingAI.type;
 
-      // Get tool schemas from registry
-      const tools = state.toolRegistry.getSchemas();
+      // Get tools from model (empty array if no tools specified)
+      const modelTools: VibeToolValue[] = (modelValue.tools as VibeToolValue[]) ?? [];
+      const toolSchemas: ToolSchema[] = modelTools.map(t => t.schema);
+
+      // Build unified AI context (single source of truth)
+      const aiContext = buildAIContext(
+        state,
+        model,
+        prompt,
+        targetType,
+        toolSchemas.length > 0 ? toolSchemas : undefined
+      );
+
+      // Build context from global context for the request
+      const context = buildGlobalContext(state);
+      const formattedContext = formatContextForAI(context);
 
       // Build the request with tools
       const request: AIRequest = {
-        ...buildAIRequest(model, prompt, formattedContext.text, operationType, targetType),
-        tools: tools.length > 0 ? tools : undefined,
+        ...buildAIRequest(model, prompt, formattedContext.text, state.pendingAI.type, targetType),
+        tools: toolSchemas.length > 0 ? toolSchemas : undefined,
       };
 
       // Get provider executor (provider is always defined after buildModelConfig)
@@ -121,17 +132,34 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const { response, rounds } = await executeWithTools(
         request,
-        state.toolRegistry,
+        modelTools,
         state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
         { maxRounds: 10 }
       );
 
-      // Return the parsed value, usage, and tool rounds
+      // Convert tool rounds to PromptToolCall format for logging
+      const interactionToolCalls: PromptToolCall[] = rounds.flatMap(round =>
+        round.toolCalls.map((call, i) => {
+          const result = round.results[i];
+          return {
+            toolName: call.toolName,
+            args: call.args,
+            result: result?.result,
+            error: result?.error,
+          };
+        })
+      );
+
+      // Return the parsed value, usage, tool rounds, and context for logging
       return {
         value: response.parsedValue ?? response.content,
         usage: response.usage,
         toolRounds: rounds.length > 0 ? rounds : undefined,
+        // Context for logging (single source of truth)
+        messages: aiContext.messages,
+        executionContext: aiContext.executionContext,
+        interactionToolCalls: interactionToolCalls.length > 0 ? interactionToolCalls : undefined,
       };
     },
 
@@ -153,20 +181,30 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         throw new Error(`Model '${modelName}' not found in scope`);
       }
 
-      // Build context
-      const context = buildGlobalContext(state);
-      const formattedContext = formatContextForAI(context);
-
-      // Build model config and request
+      // Build model config
       const model = buildModelConfig(modelValue);
 
-      // Get tool schemas from registry
-      const tools = state.toolRegistry.getSchemas();
+      // Get tools from model (empty array if no tools specified)
+      const modelTools: VibeToolValue[] = (modelValue.tools as VibeToolValue[]) ?? [];
+      const toolSchemas: ToolSchema[] = modelTools.map(t => t.schema);
+
+      // Build unified AI context (single source of truth)
+      const aiContext = buildAIContext(
+        state,
+        model,
+        prompt,
+        'text',
+        toolSchemas.length > 0 ? toolSchemas : undefined
+      );
+
+      // Build context for the request
+      const context = buildGlobalContext(state);
+      const formattedContext = formatContextForAI(context);
 
       // Build the request with tools
       const request: AIRequest = {
         ...buildAIRequest(model, prompt, formattedContext.text, 'vibe', 'text'),
-        tools: tools.length > 0 ? tools : undefined,
+        tools: toolSchemas.length > 0 ? toolSchemas : undefined,
       };
 
       // Get provider executor (provider is always defined after buildModelConfig)
@@ -176,16 +214,33 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const { response, rounds } = await executeWithTools(
         request,
-        state.toolRegistry,
+        modelTools,
         state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
         { maxRounds: 10 }
+      );
+
+      // Convert tool rounds to PromptToolCall format for logging
+      const interactionToolCalls: PromptToolCall[] = rounds.flatMap(round =>
+        round.toolCalls.map((call, i) => {
+          const result = round.results[i];
+          return {
+            toolName: call.toolName,
+            args: call.args,
+            result: result?.result,
+            error: result?.error,
+          };
+        })
       );
 
       return {
         value: String(response.content),
         usage: response.usage,
         toolRounds: rounds.length > 0 ? rounds : undefined,
+        // Context for logging (single source of truth)
+        messages: aiContext.messages,
+        executionContext: aiContext.executionContext,
+        interactionToolCalls: interactionToolCalls.length > 0 ? interactionToolCalls : undefined,
       };
     },
 

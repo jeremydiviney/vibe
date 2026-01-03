@@ -3,8 +3,7 @@ import { parse } from '../../parser/parse';
 import { Runtime, type AIProvider, type AIExecutionResult } from '../index';
 import { executeWithTools, type ToolRoundResult } from '../ai/tool-loop';
 import type { AIRequest, AIResponse } from '../ai/types';
-import { createToolRegistry } from '../tools/registry';
-import type { RegisteredTool } from '../tools/types';
+import type { VibeToolValue, ToolSchema } from '../tools/types';
 import { formatContextForAI, buildLocalContext } from '../context';
 
 /**
@@ -39,25 +38,19 @@ interface ToolExecution {
 function createToolCallingAIProvider(
   mockResponses: AIResponse[],
   toolExecutions: ToolExecution[],
-  registeredTools: RegisteredTool[]
+  testTools: VibeToolValue[]
 ): AIProvider {
   let callIndex = 0;
 
-  // Create a tool registry with our test tools
-  const toolRegistry = createToolRegistry();
-  for (const tool of registeredTools) {
-    // Wrap the tool executor to track executions
-    const originalExecutor = tool.executor;
-    const trackedTool: RegisteredTool = {
-      ...tool,
-      executor: async (args: Record<string, unknown>) => {
-        const result = await originalExecutor(args);
-        toolExecutions.push({ name: tool.name, args, result });
-        return result;
-      },
-    };
-    toolRegistry.register(trackedTool);
-  }
+  // Wrap tool executors to track executions
+  const trackedTools: VibeToolValue[] = testTools.map(tool => ({
+    ...tool,
+    executor: async (args: Record<string, unknown>) => {
+      const result = await tool.executor(args, { rootDir: process.cwd() });
+      toolExecutions.push({ name: tool.name, args, result });
+      return result;
+    },
+  }));
 
   return {
     async execute(prompt: string): Promise<AIExecutionResult> {
@@ -77,7 +70,7 @@ function createToolCallingAIProvider(
           contextText: '',
           targetType: null,
         },
-        toolRegistry,
+        trackedTools,
         process.cwd(),  // Test rootDir for path sandboxing
         mockProviderExecutor,
         { maxRounds: 10 }
@@ -101,11 +94,11 @@ function createToolCallingAIProvider(
 }
 
 // Simple test tools that don't have side effects
-function createTestTools(): RegisteredTool[] {
+function createTestTools(): VibeToolValue[] {
   return [
     {
+      __vibeTool: true,
       name: 'add',
-      kind: 'builtin',
       schema: {
         name: 'add',
         description: 'Add two numbers',
@@ -117,8 +110,8 @@ function createTestTools(): RegisteredTool[] {
       executor: async (args) => (args.a as number) + (args.b as number),
     },
     {
+      __vibeTool: true,
       name: 'multiply',
-      kind: 'builtin',
       schema: {
         name: 'multiply',
         description: 'Multiply two numbers',
@@ -130,8 +123,8 @@ function createTestTools(): RegisteredTool[] {
       executor: async (args) => (args.a as number) * (args.b as number),
     },
     {
+      __vibeTool: true,
       name: 'getWeather',
-      kind: 'builtin',
       schema: {
         name: 'getWeather',
         description: 'Get weather for a city',
@@ -310,7 +303,6 @@ describe('AI Tool Calling Flow', () => {
     [result] 5
     [tool] multiply({"a":5,"b":4})
     [result] 20
-    <-- The result of (2+3) * 4 is 20
     <-- result (text): The result of (2+3) * 4 is 20`
     );
   });
@@ -423,10 +415,10 @@ describe('AI Tool Calling Flow', () => {
     const toolExecutions: ToolExecution[] = [];
 
     // Create a tool that throws an error
-    const testTools: RegisteredTool[] = [
+    const testTools: VibeToolValue[] = [
       {
+        __vibeTool: true,
         name: 'failingTool',
-        kind: 'builtin',
         schema: {
           name: 'failingTool',
           description: 'A tool that always fails',
@@ -500,13 +492,12 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     const context = buildLocalContext(state);
     const formatted = formatContextForAI(context, { includeInstructions: false });
 
-    // Verify formatted output shows: AI call → tool calls → response
+    // Verify formatted output shows: AI call → tool calls → response (via variable)
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> do: "Calculate 5 + 3"
     [tool] add({"a":5,"b":3})
     [result] 8
-    <-- The answer is 8
     <-- result (text): The answer is 8`
     );
   });
@@ -552,7 +543,6 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     [result] {"temp":55,"condition":"rainy"}
     [tool] getWeather({"city":"New York"})
     [result] {"temp":45,"condition":"cloudy"}
-    <-- Seattle: 55F rainy, NYC: 45F cloudy
     <-- weather (text): Seattle: 55F rainy, NYC: 45F cloudy`
     );
   });
@@ -564,10 +554,10 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     `);
 
     const toolExecutions: ToolExecution[] = [];
-    const failingTools: RegisteredTool[] = [
+    const failingTools: VibeToolValue[] = [
       {
+        __vibeTool: true,
         name: 'riskyOperation',
-        kind: 'builtin',
         schema: {
           name: 'riskyOperation',
           description: 'A risky operation',
@@ -608,7 +598,6 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     --> do: "Try the failing tool"
     [tool] riskyOperation({})
     [error] Operation failed: insufficient permissions
-    <-- The operation failed due to permissions
     <-- result (text): The operation failed due to permissions`
     );
   });
@@ -670,7 +659,6 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
       `  <entry> (current scope)
     - sum (number): 0
     --> do: "What is the final sum?"
-    <-- The final sum is 3
     <-- final (text): The final sum is 3`
     );
   });
@@ -725,7 +713,7 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
 
     // With 'verbose', the loop preserves all history including tool calls and scope markers
     // Note: sum = 0 + 1 = 1, then sum = 1 + 3 = 4
-    // Order: AI call → tool calls → response
+    // Order: AI call → tool calls → response (via variable assignment)
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - sum (number): 0
@@ -734,19 +722,16 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
     --> do: "Add 1"
     [tool] add({"a":0,"b":1})
     [result] 1
-    <-- 1
     <-- partial (number): 1
     - sum (number): 1
     - i (number): 2
     --> do: "Add 2"
     [tool] add({"a":1,"b":2})
     [result] 3
-    <-- 3
     <-- partial (number): 3
     - sum (number): 4
     <== for i
     --> do: "What is sum?"
-    <-- Sum is 3
     <-- final (text): Sum is 3`
     );
   });
@@ -806,7 +791,6 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
       `  <entry> (current scope)
     - answer (number): 10
     --> do: "What happened?"
-    <-- A calculation was done
     <-- summary (text): A calculation was done`
     );
 

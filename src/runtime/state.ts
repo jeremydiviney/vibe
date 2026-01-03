@@ -1,6 +1,5 @@
 import * as AST from '../ast';
 import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall } from './types';
-import { createToolRegistryWithBuiltins } from './tools';
 import type { ToolRoundResult } from './ai/tool-loop';
 
 // Options for creating initial state
@@ -49,7 +48,6 @@ export function createInitialState(
     pendingTS: null,
     pendingImportedTsCall: null,
     pendingToolCall: null,
-    toolRegistry: createToolRegistryWithBuiltins(),
     rootDir: options?.rootDir ?? process.cwd(),
     error: null,
     errorObject: null,

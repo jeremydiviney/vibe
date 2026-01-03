@@ -2,7 +2,7 @@
 // Handles multi-turn conversations where AI calls tools
 
 import type { AIRequest, AIResponse, AIToolCall, AIToolResult } from './types';
-import type { ToolRegistry } from '../tools/types';
+import type { VibeToolValue } from '../tools/types';
 
 /** Options for the tool execution loop */
 export interface ToolLoopOptions {
@@ -25,22 +25,25 @@ export interface ToolRoundResult {
  * Takes the tool calls from an AI response and executes them.
  *
  * @param toolCalls - Tool calls from the AI response
- * @param toolRegistry - Registry to look up tools
+ * @param tools - Array of available tools
  * @param rootDir - Root directory for file operation sandboxing
  * @param onToolCall - Optional callback for each tool execution
  * @returns Results of all tool calls
  */
 export async function executeToolCalls(
   toolCalls: AIToolCall[],
-  toolRegistry: ToolRegistry,
+  tools: VibeToolValue[],
   rootDir: string,
   onToolCall?: (call: AIToolCall, result: unknown, error?: string) => void
 ): Promise<AIToolResult[]> {
   const results: AIToolResult[] = [];
   const context = { rootDir };
 
+  // Build a lookup map for quick tool access
+  const toolMap = new Map(tools.map(t => [t.name, t]));
+
   for (const call of toolCalls) {
-    const tool = toolRegistry.get(call.toolName);
+    const tool = toolMap.get(call.toolName);
 
     if (!tool) {
       const error = `Tool '${call.toolName}' not found`;
@@ -68,7 +71,7 @@ export async function executeToolCalls(
  * Continues making follow-up calls until the AI returns a final response.
  *
  * @param initialRequest - The initial AI request
- * @param toolRegistry - Registry of available tools
+ * @param tools - Array of available tools (from model)
  * @param rootDir - Root directory for file operation sandboxing
  * @param executeProvider - Function to execute AI requests
  * @param options - Tool loop options
@@ -76,7 +79,7 @@ export async function executeToolCalls(
  */
 export async function executeWithTools(
   initialRequest: AIRequest,
-  toolRegistry: ToolRegistry,
+  tools: VibeToolValue[],
   rootDir: string,
   executeProvider: (request: AIRequest) => Promise<AIResponse>,
   options: ToolLoopOptions = {}
@@ -93,7 +96,7 @@ export async function executeWithTools(
     roundCount++;
 
     // Execute all tool calls in this round
-    const results = await executeToolCalls(response.toolCalls, toolRegistry, rootDir, onToolCall);
+    const results = await executeToolCalls(response.toolCalls, tools, rootDir, onToolCall);
 
     // Record this round
     rounds.push({

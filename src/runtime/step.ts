@@ -12,6 +12,7 @@ import {
   execIfBranch,
   execEnterBlock,
   execExitBlock,
+  finalizeModelDeclaration,
 } from './exec/statements';
 import { currentFrame } from './state';
 import { RuntimeError } from '../errors';
@@ -31,7 +32,7 @@ import {
 } from './exec/typescript';
 import { execCallFunction } from './exec/functions';
 import { execPushFrame, execPopFrame } from './exec/frames';
-import { execToolDeclaration, execCallTool } from './exec/tools';
+import { execToolDeclaration } from './exec/tools';
 
 /**
  * Apply context mode on scope exit.
@@ -516,8 +517,12 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     case 'exec_tool_declaration':
       return execToolDeclaration(state, instruction.decl);
 
-    case 'call_tool':
-      return execCallTool(state, instruction.toolName, instruction.argCount);
+    // Model declaration with tools
+    case 'declare_model': {
+      // lastResult contains the evaluated tools array
+      const tools = state.lastResult as unknown[] | undefined;
+      return finalizeModelDeclaration(state, instruction.stmt, tools);
+    }
 
     default:
       throw new Error(`Unknown instruction: ${(instruction as Instruction).op}`);

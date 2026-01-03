@@ -120,12 +120,12 @@ describe('AI Context Tests', () => {
     ]);
 
     // Verify formatted text context at second pause - shows execution order with prompt and response
+    // Response is shown via variable assignment (not duplicated with prompt)
     const formatted2 = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted2.text).toBe(
       `  <entry> (current scope)
     - inputData (text): raw data
     --> do: "Analyze this"
-    <-- analysis result
     <-- analyzed (text): analysis result`
     );
 
@@ -153,15 +153,14 @@ describe('AI Context Tests', () => {
     ]);
 
     // Verify formatted text context at completion - shows all entries in execution order
+    // Responses shown via variable assignments (not duplicated with prompts)
     const formatted3 = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted3.text).toBe(
       `  <entry> (current scope)
     - inputData (text): raw data
     --> do: "Analyze this"
-    <-- analysis result
     <-- analyzed (text): analysis result
     --> do: "Summarize this"
-    <-- summary result
     <-- summary (text): summary result`
     );
   });
@@ -620,7 +619,7 @@ Variables from the VIBE language call stack.
     // Verify formatted text with nested call stack (3 frames: entry=0, main=1, helper=2)
     // All entries together, grouped by frame with indentation
     // Entry is leftmost (least indented), deeper calls are more indented
-    // Prompts now include response on next line
+    // Response shown via variable assignment (not duplicated with prompt)
     expect(formatted2.text).toBe(
       `## VIBE Program Context
 Variables from the VIBE language call stack.
@@ -633,7 +632,6 @@ Variables from the VIBE language call stack.
       - MAIN_CONST (text): main const
       - mainVar (text): main value
       --> do: "main work with test"
-      <-- main response
       <-- mainResult (text): main response
 
       helper (current scope)
@@ -849,7 +847,7 @@ describe('Tool Call Context Formatting', () => {
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
-    // Add a tool call followed by a prompt
+    // Add a tool call followed by a prompt and its result variable
     const frame = state.callStack[state.callStack.length - 1];
     frame.orderedEntries.push(
       {
@@ -863,6 +861,14 @@ describe('Tool Call Context Formatting', () => {
         aiType: 'do' as const,
         prompt: 'Summarize the weather',
         response: 'It is 55 degrees in Seattle',
+      },
+      {
+        kind: 'variable',
+        name: 'summary',
+        value: 'It is 55 degrees in Seattle',
+        type: 'text',
+        isConst: false,
+        source: 'ai' as const,
       }
     );
 
@@ -876,7 +882,7 @@ describe('Tool Call Context Formatting', () => {
     [tool] getWeather({"city":"Seattle"})
     [result] {"temp":55}
     --> do: "Summarize the weather"
-    <-- It is 55 degrees in Seattle`
+    <-- summary (text): It is 55 degrees in Seattle`
     );
   });
 
@@ -946,7 +952,7 @@ describe('Tool Call Context Formatting', () => {
     const frame = state.callStack[0];
     expect(frame.locals['weather'].value).toBe('Seattle is 55°F and rainy. San Francisco is 68°F and sunny.');
 
-    // Verify the context shows: AI call → tool calls → response
+    // Verify the context shows: AI call → tool calls → response (via variable assignment)
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (current scope)
@@ -955,7 +961,6 @@ describe('Tool Call Context Formatting', () => {
     [result] {"temp":55,"condition":"rainy"}
     [tool] getWeather({"city":"San Francisco"})
     [result] {"temp":68,"condition":"sunny"}
-    <-- Seattle is 55°F and rainy. San Francisco is 68°F and sunny.
     <-- weather (text): Seattle is 55°F and rainy. San Francisco is 68°F and sunny.`
     );
   });
@@ -1004,7 +1009,7 @@ describe('Tool Call Context Formatting', () => {
     state = runUntilPause(state);
     expect(state.status).toBe('completed');
 
-    // Verify context shows: AI call → tool calls → response
+    // Verify context shows: AI call → tool calls → response (via variable assignment)
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (current scope)
@@ -1013,7 +1018,6 @@ describe('Tool Call Context Formatting', () => {
     [result] {"name":"Alice","email":"alice@example.com"}
     [tool] getOrders({"userId":123})
     [result] [{"orderId":"A1","total":99.99},{"orderId":"A2","total":149.5}]
-    <-- Alice (alice@example.com) has 2 orders totaling $249.49.
     <-- result (text): Alice (alice@example.com) has 2 orders totaling $249.49.`
     );
   });
@@ -1058,7 +1062,7 @@ describe('Tool Call Context Formatting', () => {
     state = runUntilPause(state);
     expect(state.status).toBe('completed');
 
-    // Verify context shows: AI call → error → retry → response
+    // Verify context shows: AI call → error → retry → response (via variable assignment)
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (current scope)
@@ -1067,7 +1071,6 @@ describe('Tool Call Context Formatting', () => {
     [error] Permission denied
     [tool] readFile({"path":"./config.json"})
     [result] {"setting": "value"}
-    <-- Found config with setting=value
     <-- data (text): Found config with setting=value`
     );
   });

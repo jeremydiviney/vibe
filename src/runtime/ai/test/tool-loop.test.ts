@@ -5,63 +5,53 @@ import {
   requiresToolExecution,
 } from '../tool-loop';
 import type { AIToolCall, AIRequest, AIResponse } from '../types';
-import type { ToolRegistry, RegisteredTool, ToolSchema } from '../../tools/types';
-import { createToolRegistry } from '../../tools/registry';
+import type { VibeToolValue } from '../../tools/types';
 
 // Test rootDir for tool context
 const TEST_ROOT_DIR = process.cwd();
 
-// Helper to create a mock tool registry
-function createMockRegistry(tools: RegisteredTool[]): ToolRegistry {
-  const registry = createToolRegistry();
-  for (const tool of tools) {
-    registry.register(tool);
-  }
-  return registry;
-}
-
 // Helper to create a simple tool
-function createTool(name: string, executor: (args: Record<string, unknown>) => Promise<unknown>): RegisteredTool {
+function createTool(name: string, executor: (args: Record<string, unknown>) => Promise<unknown>): VibeToolValue {
   return {
+    __vibeTool: true,
     name,
-    kind: 'builtin',
     schema: {
       name,
       description: `Test tool: ${name}`,
       parameters: [],
     },
-    executor,
+    executor: async (args) => executor(args),
   };
 }
 
 describe('executeToolCalls', () => {
   it('should execute a single tool call successfully', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('add', async (args) => (args.a as number) + (args.b as number)),
-    ]);
+    ];
 
     const toolCalls: AIToolCall[] = [
       { id: 'call_1', toolName: 'add', args: { a: 2, b: 3 } },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
+    const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual({ toolCallId: 'call_1', result: 5 });
   });
 
   it('should execute multiple tool calls', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('add', async (args) => (args.a as number) + (args.b as number)),
       createTool('multiply', async (args) => (args.a as number) * (args.b as number)),
-    ]);
+    ];
 
     const toolCalls: AIToolCall[] = [
       { id: 'call_1', toolName: 'add', args: { a: 2, b: 3 } },
       { id: 'call_2', toolName: 'multiply', args: { a: 4, b: 5 } },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
+    const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(2);
     expect(results[0]).toEqual({ toolCallId: 'call_1', result: 5 });
@@ -69,13 +59,13 @@ describe('executeToolCalls', () => {
   });
 
   it('should return error for unknown tool', async () => {
-    const registry = createMockRegistry([]);
+    const tools: VibeToolValue[] = [];
 
     const toolCalls: AIToolCall[] = [
       { id: 'call_1', toolName: 'unknown', args: {} },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
+    const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual({
@@ -85,17 +75,17 @@ describe('executeToolCalls', () => {
   });
 
   it('should return error when tool throws', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('failing', async () => {
         throw new Error('Tool failed');
       }),
-    ]);
+    ];
 
     const toolCalls: AIToolCall[] = [
       { id: 'call_1', toolName: 'failing', args: {} },
     ];
 
-    const results = await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR);
+    const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
     expect(results[0]).toEqual({
@@ -105,9 +95,9 @@ describe('executeToolCalls', () => {
   });
 
   it('should call onToolCall callback for each tool', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('echo', async (args) => args.message),
-    ]);
+    ];
 
     const toolCalls: AIToolCall[] = [
       { id: 'call_1', toolName: 'echo', args: { message: 'hello' } },
@@ -115,7 +105,7 @@ describe('executeToolCalls', () => {
 
     const callbacks: Array<{ call: AIToolCall; result: unknown; error?: string }> = [];
 
-    await executeToolCalls(toolCalls, registry, TEST_ROOT_DIR, (call, result, error) => {
+    await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR, (call, result, error) => {
       callbacks.push({ call, result, error });
     });
 
@@ -128,7 +118,7 @@ describe('executeToolCalls', () => {
 
 describe('executeWithTools', () => {
   it('should return immediately if no tool calls', async () => {
-    const registry = createMockRegistry([]);
+    const tools: VibeToolValue[] = [];
 
     const request: AIRequest = {
       operationType: 'do',
@@ -147,7 +137,7 @@ describe('executeWithTools', () => {
 
     const { response, rounds } = await executeWithTools(
       request,
-      registry,
+      tools,
       TEST_ROOT_DIR,
       executeProvider
     );
@@ -157,9 +147,9 @@ describe('executeWithTools', () => {
   });
 
   it('should execute tool calls and make follow-up request', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('getWeather', async () => ({ temp: 72, condition: 'sunny' })),
-    ]);
+    ];
 
     const request: AIRequest = {
       operationType: 'do',
@@ -192,7 +182,7 @@ describe('executeWithTools', () => {
 
     const { response, rounds } = await executeWithTools(
       request,
-      registry,
+      tools,
       TEST_ROOT_DIR,
       executeProvider
     );
@@ -207,10 +197,10 @@ describe('executeWithTools', () => {
   });
 
   it('should handle multiple rounds of tool calls', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('step1', async () => 'result1'),
       createTool('step2', async () => 'result2'),
-    ]);
+    ];
 
     const request: AIRequest = {
       operationType: 'do',
@@ -248,7 +238,7 @@ describe('executeWithTools', () => {
 
     const { response, rounds } = await executeWithTools(
       request,
-      registry,
+      tools,
       TEST_ROOT_DIR,
       executeProvider
     );
@@ -261,9 +251,9 @@ describe('executeWithTools', () => {
   });
 
   it('should respect maxRounds limit', async () => {
-    const registry = createMockRegistry([
+    const tools = [
       createTool('infinite', async () => 'loop'),
-    ]);
+    ];
 
     const request: AIRequest = {
       operationType: 'do',
@@ -283,7 +273,7 @@ describe('executeWithTools', () => {
 
     const { rounds } = await executeWithTools(
       request,
-      registry,
+      tools,
       TEST_ROOT_DIR,
       executeProvider,
       { maxRounds: 3 }

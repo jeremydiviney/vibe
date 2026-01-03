@@ -4,7 +4,32 @@
 import * as AST from '../ast';
 import { parse } from '../parser/parse';
 import type { RuntimeState, TsModule, VibeModule, ExportedItem } from './types';
-import { resolve, dirname } from 'path';
+import { resolve, dirname, join } from 'path';
+
+// System module path prefix
+const SYSTEM_MODULE_PREFIX = 'system/';
+
+// Map system module names to their implementation files
+const SYSTEM_MODULES: Record<string, string> = {
+  'system/tools': join(__dirname, 'stdlib', 'tools.ts'),
+};
+
+// Check if an import source is a system module
+function isSystemModule(source: string): boolean {
+  return source.startsWith(SYSTEM_MODULE_PREFIX);
+}
+
+// Resolve a module path, handling system modules specially
+function resolveModulePath(source: string, basePath: string): string {
+  if (isSystemModule(source)) {
+    const systemPath = SYSTEM_MODULES[source];
+    if (!systemPath) {
+      throw new Error(`Unknown system module: '${source}'`);
+    }
+    return systemPath;
+  }
+  return resolve(dirname(basePath), source);
+}
 
 // Track modules currently being loaded (for cycle detection)
 type LoadingSet = Set<string>;
@@ -47,7 +72,7 @@ async function loadTsModule(
   importDecl: AST.ImportDeclaration,
   basePath: string
 ): Promise<RuntimeState> {
-  const modulePath = resolve(dirname(basePath), importDecl.source);
+  const modulePath = resolveModulePath(importDecl.source, basePath);
 
   // Check if already loaded
   if (state.tsModules[modulePath]) {

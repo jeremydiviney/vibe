@@ -1,6 +1,8 @@
 import { describe, expect, test, beforeEach } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { Runtime, AIProvider } from '../index';
+import type { VibeToolValue } from '../tools/types';
+import { isVibeToolValue } from '../tools/types';
 
 // Mock AI provider for testing
 function createMockProvider(): AIProvider {
@@ -22,7 +24,7 @@ describe('Runtime - Tool Declaration', () => {
   // Basic tool registration
   // ============================================================================
 
-  test('tool declaration registers in tool registry', async () => {
+  test('tool declaration creates tool variable', async () => {
     const ast = parse(`
 tool greet(name: text): text
   @description "Greet someone"
@@ -37,16 +39,14 @@ let x = "test"
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    const state = runtime.getState();
-    expect(state.toolRegistry.has('greet')).toBe(true);
-
-    const tool = state.toolRegistry.get('greet');
-    expect(tool?.name).toBe('greet');
-    expect(tool?.kind).toBe('user');
-    expect(tool?.schema.description).toBe('Greet someone');
+    // Tool is now stored as a variable, not in registry
+    const tool = runtime.getValue('greet') as VibeToolValue;
+    expect(isVibeToolValue(tool)).toBe(true);
+    expect(tool.name).toBe('greet');
+    expect(tool.schema.description).toBe('Greet someone');
   });
 
-  test('tool with multiple parameters registers correctly', async () => {
+  test('tool with multiple parameters has correct schema', async () => {
     const ast = parse(`
 tool calculate(x: number, y: number, op: text): number
   @description "Perform a calculation"
@@ -65,12 +65,11 @@ let result = "done"
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    const state = runtime.getState();
-    const tool = state.toolRegistry.get('calculate');
-    expect(tool?.schema.parameters).toHaveLength(3);
-    expect(tool?.schema.parameters[0].description).toBe('First operand');
-    expect(tool?.schema.parameters[1].description).toBe('Second operand');
-    expect(tool?.schema.parameters[2].description).toBe('Operation to perform');
+    const tool = runtime.getValue('calculate') as VibeToolValue;
+    expect(tool.schema.parameters).toHaveLength(3);
+    expect(tool.schema.parameters[0].description).toBe('First operand');
+    expect(tool.schema.parameters[1].description).toBe('Second operand');
+    expect(tool.schema.parameters[2].description).toBe('Operation to perform');
   });
 
   // ============================================================================
@@ -273,45 +272,58 @@ let greeting = greet(person)
   });
 
   // ============================================================================
-  // Built-in tools available
+  // Standard tools must be explicitly registered
   // ============================================================================
 
-  test('built-in tools are available', async () => {
+  test('standard tools are NOT auto-available', async () => {
+    // Standard tools must be explicitly imported via system modules
     const ast = parse(`
 let timestamp = now()
 `);
     const runtime = new Runtime(ast, createMockProvider());
-    await runtime.run();
 
+    // This should fail because 'now' is not defined (no import)
+    await expect(runtime.run()).rejects.toThrow("'now' is not defined");
+  });
+
+  // Standard tools can be imported from system/tools
+  test('standard tools work when imported from system module', async () => {
+    const ast = parse(`
+import { now } from "system/tools"
+let timestamp = now()
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
     const timestamp = runtime.getValue('timestamp');
     expect(typeof timestamp).toBe('number');
     expect(timestamp as number).toBeGreaterThan(0);
   });
 
-  test('built-in jsonParse tool works', async () => {
+  test('jsonParse tool works when imported', async () => {
     const ast = parse(`
+import { jsonParse } from "system/tools"
 let jsonStr = '{"name": "test", "value": 42}'
 let parsed = jsonParse(jsonStr)
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
-
     expect(runtime.getValue('parsed')).toEqual({ name: 'test', value: 42 });
   });
 
-  test('built-in jsonStringify tool works', async () => {
+  test('jsonStringify tool works when imported', async () => {
     const ast = parse(`
+import { jsonStringify } from "system/tools"
 let obj:json = {name: "test", value: 42}
 let str = jsonStringify(obj)
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
-
     expect(runtime.getValue('str')).toBe('{"name":"test","value":42}');
   });
 
-  test('built-in sleep tool works', async () => {
+  test('sleep tool works when imported', async () => {
     const ast = parse(`
+import { now, sleep } from "system/tools"
 let before = now()
 let _ = sleep(50)
 let after = now()
@@ -319,9 +331,19 @@ let elapsed = ts(before, after) { return after - before }
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
-
     const elapsed = runtime.getValue('elapsed') as number;
     expect(elapsed).toBeGreaterThanOrEqual(40);
+  });
+
+  test('standardTools array can be imported', async () => {
+    const ast = parse(`
+import { standardTools } from "system/tools"
+let toolCount = ts(standardTools) { return standardTools.length }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    const toolCount = runtime.getValue('toolCount');
+    expect(toolCount).toBe(18); // All 18 standard tools
   });
 });
 
@@ -350,5 +372,93 @@ let result = willFail()
     const runtime = new Runtime(ast, createMockProvider());
 
     await expect(runtime.run()).rejects.toThrow('intentional error');
+  });
+});
+
+describe('Runtime - Model with Tools', () => {
+  test('model can have tools array with custom tools', async () => {
+    const ast = parse(`
+tool greet(name: text): text
+  @description "Greet someone"
+{
+  ts(name) { return "Hello, " + name }
+}
+
+model m = {
+  name: "gpt-4",
+  apiKey: "test-key",
+  tools: [greet]
+}
+
+let result = greet("World")
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    // Verify tool still works as direct call
+    expect(runtime.getValue('result')).toBe('Hello, World');
+
+    // Verify model has the tool attached
+    const model = runtime.getValue('m') as { tools?: unknown[] };
+    expect(model.tools).toHaveLength(1);
+    expect((model.tools![0] as { name: string }).name).toBe('greet');
+  });
+
+  test('model can have tools array with standard tools', async () => {
+    const ast = parse(`
+import { now, sleep } from "system/tools"
+
+model m = {
+  name: "gpt-4",
+  apiKey: "test-key",
+  tools: [now, sleep]
+}
+
+let timestamp = now()
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    // Verify model has the tools attached
+    const model = runtime.getValue('m') as { tools?: unknown[] };
+    expect(model.tools).toHaveLength(2);
+    expect((model.tools![0] as { name: string }).name).toBe('now');
+    expect((model.tools![1] as { name: string }).name).toBe('sleep');
+  });
+
+  test('model can have tools array with standardTools', async () => {
+    const ast = parse(`
+import { standardTools } from "system/tools"
+
+model m = {
+  name: "gpt-4",
+  apiKey: "test-key",
+  tools: standardTools
+}
+
+let x = 1
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    // Verify model has all 18 standard tools
+    const model = runtime.getValue('m') as { tools?: unknown[] };
+    expect(model.tools).toHaveLength(18);
+  });
+
+  test('model without tools parameter has undefined tools', async () => {
+    const ast = parse(`
+model m = {
+  name: "gpt-4",
+  apiKey: "test-key"
+}
+
+let x = 1
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    const model = runtime.getValue('m') as { tools?: unknown[] };
+    expect(model.tools).toBeUndefined();
   });
 });

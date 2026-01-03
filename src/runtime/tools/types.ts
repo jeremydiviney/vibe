@@ -1,6 +1,3 @@
-import type { SourceLocation } from '../../errors';
-import type * as AST from '../../ast';
-
 // JSON Schema type for tool parameters
 export interface JsonSchema {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -38,31 +35,12 @@ export type ToolExecutor = (
   context?: ToolContext
 ) => Promise<unknown>;
 
-// Registered tool (built-in or user-defined)
-export interface RegisteredTool {
-  name: string;
-  kind: 'builtin' | 'user';
-  schema: ToolSchema;
-  executor: ToolExecutor;
-  declaration?: AST.ToolDeclaration; // For user-defined tools
-  location?: SourceLocation;
-}
-
-// Tool registry interface
-export interface ToolRegistry {
-  register(tool: RegisteredTool): void;
-  registerAll(tools: RegisteredTool[]): void;
-  get(name: string): RegisteredTool | undefined;
-  has(name: string): boolean;
-  list(): RegisteredTool[];
-  getSchemas(): ToolSchema[];
-}
-
 // Pending tool call (when runtime is paused)
 export interface PendingToolCall {
   toolName: string;
   toolCallId: string;
   args: Record<string, unknown>;
+  executor: ToolExecutor;  // The tool's executor function
   // For multi-turn AI tool calling (deferred for now)
   aiConversationState?: unknown;
 }
@@ -71,4 +49,23 @@ export interface PendingToolCall {
 export interface ToolResult {
   value: unknown;
   error?: string;
+}
+
+// Tool as a first-class Vibe value (like VibeModelValue)
+// This is the value stored when a tool declaration is executed
+export interface VibeToolValue {
+  __vibeTool: true;           // Type guard marker
+  name: string;
+  schema: ToolSchema;
+  executor: ToolExecutor;
+}
+
+// Type guard for VibeToolValue
+export function isVibeToolValue(value: unknown): value is VibeToolValue {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    '__vibeTool' in value &&
+    (value as VibeToolValue).__vibeTool === true
+  );
 }
