@@ -1,0 +1,21 @@
+// Bug Fix Script
+// AI diagnoses and fixes bugs - figures out which tools to use on its own
+
+model fixer = {
+  name: "claude-haiku-4-5",
+  apiKey: env("ANTHROPIC_API_KEY"),
+  url: "https://api.anthropic.com",
+  provider: "anthropic"
+}
+
+let code = readFile("buggy-code.ts")
+
+let result: text = do "Here's a TypeScript file 'buggy-code.ts':
+
+{code}
+
+A test is failing: sumArray([1, 2, 3, 4, 5]) returns 14 but should return 15.
+
+Fix the bug. After fixing, respond with 'FIXED'." fixer default
+
+result

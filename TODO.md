@@ -20,8 +20,8 @@
 - [ ] Variable visibility modifiers
 
 ### Builtin Tools
-- [ ] Anchor-based edit tool for efficient large block replacement
-  - [ ] `start_anchor` + `end_anchor` instead of full `old_string`
+- [ ] `fastEdit` tool - anchor-based replacement for large blocks
+  - [ ] `prefix` + `suffix` pattern to identify replacement region
   - [ ] Non-greedy match between anchors
   - [ ] Validate exactly 1 match (same safety as current edit)
   - [ ] ~50% token reduction for large function replacements

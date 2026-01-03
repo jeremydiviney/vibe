@@ -64,7 +64,7 @@ function buildOutputFormat(targetType: TargetType): Record<string, unknown> | nu
  * Uses structured outputs (beta) for Claude 4.5 models.
  */
 export async function executeAnthropic(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model, tools } = request;
+  const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults } = request;
 
   // Create Anthropic client
   const client = new Anthropic({
@@ -86,8 +86,8 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
   // Chunk context for progressive caching
   const { chunks, cacheBreakpointIndex } = chunkContextForCaching(contextText);
 
-  // Build user messages: context chunks + prompt
-  const userMessages = [
+  // Build initial user messages: context chunks + prompt
+  const initialUserMessages: Record<string, unknown>[] = [
     // Context chunks as separate messages (if any)
     ...chunks.map((chunk, i) => ({
       role: 'user' as const,
@@ -98,6 +98,33 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     // Prompt is always last (never cached)
     { role: 'user' as const, content: promptMessage },
   ];
+
+  // Build conversation messages including tool results if this is a follow-up
+  let allMessages = initialUserMessages;
+  if (previousToolCalls?.length && toolResults?.length) {
+    // Add assistant message with tool_use blocks
+    const assistantContent = previousToolCalls.map(call => ({
+      type: 'tool_use' as const,
+      id: call.id,
+      name: call.toolName,
+      input: call.args,
+    }));
+
+    // Add user message with tool_result blocks
+    const toolResultContent = toolResults.map(result => ({
+      type: 'tool_result' as const,
+      tool_use_id: result.toolCallId,
+      content: result.error
+        ? `Error: ${result.error}`
+        : (typeof result.result === 'string' ? result.result : JSON.stringify(result.result)),
+    }));
+
+    allMessages = [
+      ...initialUserMessages,
+      { role: 'assistant' as const, content: assistantContent },
+      { role: 'user' as const, content: toolResultContent },
+    ];
+  }
 
   try {
     // Build system array with optional tool descriptions
@@ -121,7 +148,7 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
       model: model.name,
       max_tokens: 16384, // Increased to support thinking tokens
       system: systemBlocks,
-      messages: userMessages,
+      messages: allMessages,
     };
 
     // Add tools if provided
@@ -145,16 +172,21 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     }
 
     // Build beta headers list
-    const betas = [STRUCTURED_OUTPUTS_BETA];
+    const betas: string[] = [];
+    if (outputFormat) {
+      betas.push(STRUCTURED_OUTPUTS_BETA);
+    }
     if (thinkingBudget > 0) {
       betas.push(EXTENDED_THINKING_BETA);
     }
 
-    // Make API request using beta endpoint
-    const response = await client.beta.messages.create({
-      ...params,
-      betas,
-    } as Parameters<typeof client.beta.messages.create>[0]);
+    // Make API request - use beta endpoint only when needed
+    const response = betas.length > 0
+      ? await client.beta.messages.create({
+          ...params,
+          betas,
+        } as Parameters<typeof client.beta.messages.create>[0])
+      : await client.messages.create(params as Parameters<typeof client.messages.create>[0]);
 
     // Extract text content from response
     const textBlock = response.content.find((block) => block.type === 'text');

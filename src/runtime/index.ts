@@ -114,6 +114,7 @@ export interface AIProvider {
 export interface RuntimeOptions {
   basePath?: string;           // Base path for resolving imports (defaults to cwd)
   logAiInteractions?: boolean; // Capture detailed AI interaction logs for debugging
+  rootDir?: string;            // Root directory for file operation sandboxing (defaults to cwd)
 }
 
 // Legacy Runtime class - convenience wrapper around functional API
@@ -126,7 +127,10 @@ export class Runtime {
 
   constructor(program: AST.Program, aiProvider: AIProvider, options?: RuntimeOptions) {
     this.logAiInteractions = options?.logAiInteractions ?? false;
-    this.state = createInitialState(program, { logAiInteractions: this.logAiInteractions });
+    this.state = createInitialState(program, {
+      logAiInteractions: this.logAiInteractions,
+      rootDir: options?.rootDir,
+    });
     this.aiProvider = aiProvider;
     this.basePath = options?.basePath ?? process.cwd() + '/main.vibe';
   }
@@ -208,12 +212,16 @@ export class Runtime {
             targetType = nextInstruction.type;
           }
 
+          // Get tool schemas from registry
+          const tools = this.state.toolRegistry.getSchemas();
+
           // Build the actual messages sent to the model
           messages = buildMessages(
             pendingAI.prompt,
             formattedContext.text,
             targetType as 'text' | 'json' | 'boolean' | 'number' | null,
-            true // supportsStructuredOutput - assume true for logging
+            true, // supportsStructuredOutput - assume true for logging
+            tools.length > 0 ? tools : undefined
           );
         }
 
@@ -253,6 +261,7 @@ export class Runtime {
           targetType,
           usage: result.usage,
           durationMs: Date.now() - startTime,
+          toolRounds: result.toolRounds,
         } : undefined;
 
         this.state = resumeWithAIResponse(this.state, result.value, interaction, result.toolRounds);

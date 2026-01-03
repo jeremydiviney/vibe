@@ -31,6 +31,8 @@ export interface AIRequest {
   model: ModelConfig;
   /** Available tools for function calling */
   tools?: ToolSchema[];
+  /** Previous tool calls from AI response (for multi-turn) */
+  previousToolCalls?: AIToolCall[];
   /** Tool results from previous call (for multi-turn) */
   toolResults?: AIToolResult[];
 }
