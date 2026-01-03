@@ -19,12 +19,13 @@
 - [ ] Context orchestration functions
 - [ ] Variable visibility modifiers
 
-### Builtin Tools
-- [ ] `fastEdit` tool - anchor-based replacement for large blocks
-  - [ ] `prefix` + `suffix` pattern to identify replacement region
-  - [ ] Non-greedy match between anchors
-  - [ ] Validate exactly 1 match (same safety as current edit)
-  - [ ] ~50% token reduction for large function replacements
+### Documentation
+- [ ] Create comprehensive Vibe language reference document
+  - [ ] Syntax overview (types, variables, expressions)
+  - [ ] Control flow (if/else, for-in, while)
+  - [ ] AI integration (do expressions, models, context modes)
+  - [ ] Tool system (built-in tools, custom tools)
+  - [ ] TS blocks and interop
 
 ### Integration Tests & Examples
 - [ ] Tool-calling integration test with real AI (glob, readFile, writeFile, edit)
