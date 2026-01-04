@@ -310,6 +310,8 @@ export interface ContextSpecifier extends BaseNode {
 export interface VibeExpression extends BaseNode {
   type: 'VibeExpression';
   prompt: Expression;
+  model: Expression;    // Model to use for code generation
+  cached?: boolean;     // If true, reuse generated function; if false (default), regenerate each call
 }
 
 export interface AskExpression extends BaseNode {

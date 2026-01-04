@@ -239,7 +239,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execAIAsk(state, instruction.model, instruction.context);
 
     case 'ai_vibe':
-      return execAIVibe(state, instruction.model, instruction.context);
+      return execAIVibe(state, instruction.vibeExpr, instruction.modelName);
 
     case 'ts_eval':
       return execTsEval(state, instruction.params, instruction.body);

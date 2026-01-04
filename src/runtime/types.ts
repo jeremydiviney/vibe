@@ -1,6 +1,7 @@
 import * as AST from '../ast';
 import type { SourceLocation } from '../errors';
 import type { PendingToolCall } from './tools/types';
+import type { VibeModelValue } from './ai/client';
 
 // Runtime status
 export type RuntimeStatus =
@@ -10,6 +11,7 @@ export type RuntimeStatus =
   | 'awaiting_user'
   | 'awaiting_ts'
   | 'awaiting_tool'
+  | 'awaiting_vibe_code'  // Waiting for vibe-generated code to be processed
   | 'completed'
   | 'error';
 
@@ -208,12 +210,32 @@ export interface ExecutionEntry {
   result?: unknown;
 }
 
+// Scope parameter for vibe code generation
+export interface ScopeParam {
+  name: string;
+  type: string;        // Type annotation for AI prompt context
+  value: unknown;      // Current value to pass to generated function
+}
+
 // Pending AI request info
 export interface PendingAI {
   type: 'do' | 'ask' | 'vibe';
   prompt: string;
   model: string;
   context: unknown[];
+  // Vibe-specific fields
+  vibeModelValue?: VibeModelValue;       // The model used for vibe (passed to generated function)
+  vibeScopeParams?: ScopeParam[];       // Scope parameters to pass to generated function
+  vibeExpr?: AST.VibeExpression;        // Original vibe expression for caching
+}
+
+// Pending vibe code generation (for retry handling)
+export interface PendingVibeGeneration {
+  generatedCode: string;                // AI-generated code to parse/validate
+  retryCount: number;                   // Current retry attempt
+  maxRetries: number;                   // Maximum retry attempts
+  lastError?: string;                   // Error from last attempt (for feedback)
+  pendingAI: PendingAI;                 // Original pending AI request
 }
 
 // Pending TypeScript evaluation (inline ts block)
@@ -283,6 +305,13 @@ export interface RuntimeState {
   pendingTS: PendingTS | null;
   pendingImportedTsCall: PendingImportedTsCall | null;
   pendingToolCall: PendingToolCall | null;
+  pendingVibeGeneration: PendingVibeGeneration | null;  // Pending vibe code generation
+
+  // Vibe code generation cache (for cached vibe expressions)
+  vibeCache: Record<string, {
+    func: AST.FunctionDeclaration;    // Cached generated function
+    timestamp: number;                 // When it was generated
+  }>;
 
   // Root directory for file operation sandboxing
   rootDir: string;
@@ -317,7 +346,12 @@ export type Instruction =
   // AI operations (pause points)
   | { op: 'ai_do'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
   | { op: 'ai_ask'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
-  | { op: 'ai_vibe'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
+  | {
+      op: 'ai_vibe';
+      vibeExpr: AST.VibeExpression;       // Original vibe expression (for caching)
+      modelName: string;                   // Model identifier name (resolved at runtime)
+      location: SourceLocation;
+    }
 
   // TypeScript evaluation (pause point)
   | { op: 'ts_eval'; params: string[]; body: string; location: SourceLocation }

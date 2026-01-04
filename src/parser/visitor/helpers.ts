@@ -281,10 +281,17 @@ export function makeDoExpression(
   };
 }
 
-export function makeVibeExpression(token: IToken, prompt: AST.Expression): AST.VibeExpression {
+export function makeVibeExpression(
+  token: IToken,
+  prompt: AST.Expression,
+  model: AST.Expression,
+  cached: boolean
+): AST.VibeExpression {
   return {
     type: 'VibeExpression',
     prompt,
+    model,
+    cached,
     location: tokenLocation(token),
   };
 }

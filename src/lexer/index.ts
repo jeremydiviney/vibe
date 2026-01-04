@@ -166,6 +166,7 @@ export const In = token({ name: 'In', pattern: /in/, longer_alt: Identifier });
 export const Forget = token({ name: 'Forget', pattern: /forget/, longer_alt: Identifier });
 export const Verbose = token({ name: 'Verbose', pattern: /verbose/, longer_alt: Identifier });
 export const Compress = token({ name: 'Compress', pattern: /compress/, longer_alt: Identifier });
+export const Cache = token({ name: 'Cache', pattern: /cache/, longer_alt: Identifier });
 
 // Tool metadata decorators
 export const AtDescription = token({ name: 'AtDescription', pattern: /@description/ });
@@ -259,6 +260,7 @@ export const allTokens = [
   Forget,
   Verbose,
   Compress,
+  Cache,
   // Tool metadata decorators (must come before For/other identifiers)
   AtDescription,
   AtParam,

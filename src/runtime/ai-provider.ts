@@ -10,6 +10,7 @@ import { withRetry } from './ai/retry';
 import { executeWithTools, type ToolRoundResult } from './ai/tool-loop';
 import { buildGlobalContext, formatContextForAI } from './context';
 import { buildAIContext } from './ai/context';
+import { buildVibeMessages, type VibeScopeParam } from './ai/formatters';
 
 /**
  * Get model value from runtime state by model name.
@@ -164,16 +165,15 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
     },
 
     async generateCode(prompt: string): Promise<AIExecutionResult> {
-      // For vibe expressions, use default model or first available model
+      // For vibe expressions, generate Vibe code using scope parameters
       const state = getState();
       if (!state.pendingAI) {
         throw new Error('No pending AI request');
       }
 
-      // For vibe, we might need a default model - for now just error if not found
       const modelName = state.pendingAI.model;
       if (modelName === 'default') {
-        throw new Error('Vibe expressions require a configured default model');
+        throw new Error('Vibe expressions require a model to be specified');
       }
 
       const modelValue = getModelValue(state, modelName);
@@ -184,63 +184,41 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // Build model config
       const model = buildModelConfig(modelValue);
 
-      // Get tools from model (empty array if no tools specified)
-      const modelTools: VibeToolValue[] = (modelValue.tools as VibeToolValue[]) ?? [];
-      const toolSchemas: ToolSchema[] = modelTools.map(t => t.schema);
+      // Get scope parameters for vibe code generation
+      const scopeParams: VibeScopeParam[] = state.pendingAI.vibeScopeParams ?? [];
 
-      // Build unified AI context (single source of truth)
-      const aiContext = buildAIContext(
-        state,
-        model,
-        prompt,
-        'text',
-        toolSchemas.length > 0 ? toolSchemas : undefined
-      );
+      // Build vibe-specific messages with specialized system prompt
+      const vibeMessages = buildVibeMessages(prompt, scopeParams);
 
-      // Build context for the request
-      const context = buildGlobalContext(state);
-      const formattedContext = formatContextForAI(context);
-
-      // Build the request with tools
+      // Build the request for code generation (no tools, no structured output)
       const request: AIRequest = {
-        ...buildAIRequest(model, prompt, formattedContext.text, 'vibe', 'text'),
-        tools: toolSchemas.length > 0 ? toolSchemas : undefined,
+        operationType: 'vibe',
+        prompt,
+        contextText: '',  // Context is embedded in the vibe system prompt
+        targetType: null, // Raw text response expected
+        model,
+        // Override messages with vibe-specific format
       };
 
-      // Get provider executor (provider is always defined after buildModelConfig)
+      // Get provider executor
       const execute = getProviderExecutor(model.provider!);
 
-      // Execute with tool loop (handles multi-turn tool calling)
+      // Execute directly without tool loop (vibe generates code, not tool calls)
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
-      const { response, rounds } = await executeWithTools(
-        request,
-        modelTools,
-        state.rootDir,
-        (req) => withRetry(() => execute(req), { maxRetries }),
-        { maxRounds: 10 }
-      );
+      const response = await withRetry(() => execute(request), { maxRetries });
 
-      // Convert tool rounds to PromptToolCall format for logging
-      const interactionToolCalls: PromptToolCall[] = rounds.flatMap(round =>
-        round.toolCalls.map((call, i) => {
-          const result = round.results[i];
-          return {
-            toolName: call.toolName,
-            args: call.args,
-            result: result?.result,
-            error: result?.error,
-          };
-        })
-      );
+      // Log messages for debugging
+      const messages: AILogMessage[] = vibeMessages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
 
       return {
         value: String(response.content),
         usage: response.usage,
-        toolRounds: rounds.length > 0 ? rounds : undefined,
-        // Context for logging (single source of truth)
-        messages: aiContext.messages,
-        executionContext: aiContext.executionContext,
-        interactionToolCalls: interactionToolCalls.length > 0 ? interactionToolCalls : undefined,
+        // Include vibe messages for logging
+        messages,
+        executionContext: [],  // Vibe doesn't use execution context
       };
     },
 

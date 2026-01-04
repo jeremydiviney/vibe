@@ -233,3 +233,110 @@ export function extractUsage(
 
   return undefined;
 }
+
+/**
+ * Scope parameter for vibe code generation.
+ */
+export interface VibeScopeParam {
+  name: string;
+  type: string;
+  value: unknown;
+}
+
+/**
+ * Build system message for vibe code generation.
+ * Instructs the AI to generate a valid Vibe function.
+ */
+export function buildVibeSystemMessage(scopeParams: VibeScopeParam[]): string {
+  const paramList = scopeParams
+    .map(p => `  - ${p.name}: ${p.type}`)
+    .join('\n');
+
+  return `You are generating a Vibe programming language function.
+
+REQUIREMENTS:
+1. Generate EXACTLY ONE function declaration
+2. No markdown, no explanations, no code fences - ONLY the function code
+3. The function will receive these parameters from the calling scope:
+${paramList || '  (none)'}
+
+4. Use ONLY these parameters - no other variables are accessible
+5. The function must have a return statement
+
+VIBE SYNTAX REFERENCE:
+- Types: text, number, boolean, json, arrays (text[], number[])
+- Variables: let x = value, const x = value
+- Control flow: if/else, for x in array, while (condition)
+- AI calls: do "prompt" model default (use the model parameter)
+- TS blocks: ts(params) { return jsCode; }
+- Return: return value
+
+IMPORTANT - FUNCTION SIGNATURE:
+- The FIRST parameter must always be 'model' (the AI model to use)
+- Additional parameters are the scope variables listed above
+- Example: function myFunc(model, x, y): text { ... }
+
+RESTRICTIONS:
+- You can ONLY use function parameters and locally-created variables
+- No access to external functions or global variables
+- For AI calls, use the 'model' parameter: do "prompt" model default
+
+EXAMPLE:
+function processData(model, items: text[], count: number): text {
+  let result = ""
+  for item in items {
+    result = result + item
+  }
+  return result
+}
+
+Generate ONLY the function code.`;
+}
+
+/**
+ * Build user prompt for vibe code generation.
+ */
+export function buildVibePromptMessage(userPrompt: string, scopeParams: VibeScopeParam[]): string {
+  const paramContext = scopeParams
+    .map(p => `${p.name} (${p.type}) = ${formatVibeValue(p.value)}`)
+    .join('\n');
+
+  const contextSection = paramContext
+    ? `\nAvailable parameters and their current values:\n${paramContext}\n`
+    : '';
+
+  return `Task: ${userPrompt}${contextSection}
+Generate a function that accomplishes this task using only the available parameters.`;
+}
+
+/**
+ * Format a value for display in vibe context.
+ */
+function formatVibeValue(value: unknown): string {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'string') {
+    if (value.length > 50) return `"${value.substring(0, 50)}..."`;
+    return `"${value}"`;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '[]';
+    if (value.length > 3) return `[${formatVibeValue(value[0])}, ... (${value.length} items)]`;
+    return `[${value.map(formatVibeValue).join(', ')}]`;
+  }
+  return JSON.stringify(value).substring(0, 50);
+}
+
+/**
+ * Build messages array for vibe code generation.
+ * Returns: [system, prompt]
+ */
+export function buildVibeMessages(
+  userPrompt: string,
+  scopeParams: VibeScopeParam[]
+): Message[] {
+  return [
+    { role: 'system', content: buildVibeSystemMessage(scopeParams) },
+    { role: 'user', content: buildVibePromptMessage(userPrompt, scopeParams) },
+  ];
+}

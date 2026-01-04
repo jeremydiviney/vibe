@@ -454,8 +454,8 @@ while keepGoing {
   // Vibe Expression
   // ============================================================================
 
-  test('vibe with string', () => {
-    const ast = parse('let x = vibe "generate a hello function"');
+  test('vibe with string and model', () => {
+    const ast = parse('let x = vibe "generate a hello function" myModel');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
@@ -466,6 +466,32 @@ while keepGoing {
           type: 'StringLiteral',
           value: 'generate a hello function',
         },
+        model: {
+          type: 'Identifier',
+          name: 'myModel',
+        },
+        cached: false,
+      },
+    });
+  });
+
+  test('vibe with cache keyword', () => {
+    const ast = parse('let x = vibe "generate code" coder cache');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'x',
+      initializer: {
+        type: 'VibeExpression',
+        prompt: {
+          type: 'StringLiteral',
+          value: 'generate code',
+        },
+        model: {
+          type: 'Identifier',
+          name: 'coder',
+        },
+        cached: true,
       },
     });
   });

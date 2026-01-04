@@ -36,7 +36,8 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with string literal prompt is valid', () => {
       const errors = getErrors(`
-        let x = vibe "Generate a hello function"
+        ${modelDecl}
+        let x = vibe "Generate a hello function" m
       `);
       expect(errors).toEqual([]);
     });
@@ -67,8 +68,9 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with prompt typed variable is valid', () => {
       const errors = getErrors(`
+        ${modelDecl}
         let instruction: prompt = "Generate a hello function"
-        let x = vibe instruction
+        let x = vibe instruction m
       `);
       expect(errors).toEqual([]);
     });
@@ -99,8 +101,9 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with text typed variable is valid', () => {
       const errors = getErrors(`
+        ${modelDecl}
         let instruction: text = "Generate code"
-        let x = vibe instruction
+        let x = vibe instruction m
       `);
       expect(errors).toEqual([]);
     });
@@ -131,8 +134,9 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with untyped variable is valid', () => {
       const errors = getErrors(`
+        ${modelDecl}
         let instruction = "Generate code"
-        let x = vibe instruction
+        let x = vibe instruction m
       `);
       expect(errors).toEqual([]);
     });
@@ -163,8 +167,9 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with json typed variable errors', () => {
       const errors = getErrors(`
+        ${modelDecl}
         let schema: json = "{}"
-        let x = vibe schema
+        let x = vibe schema m
       `);
       expect(errors).toContain("Cannot use json typed variable 'schema' as prompt");
     });
@@ -221,10 +226,11 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with function as prompt errors', () => {
       const errors = getErrors(`
+        ${modelDecl}
         function generate() {
           return "code"
         }
-        let x = vibe generate
+        let x = vibe generate m
       `);
       expect(errors).toContain("Cannot use function 'generate' as prompt");
     });
@@ -253,7 +259,8 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with undefined variable errors', () => {
       const errors = getErrors(`
-        let x = vibe notDefined
+        ${modelDecl}
+        let x = vibe notDefined m
       `);
       expect(errors).toContain("'notDefined' is not defined");
     });
@@ -286,8 +293,9 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with function parameter is valid', () => {
       const errors = getErrors(`
+        ${modelDecl}
         function generateCode(instruction: text): text {
-          return vibe instruction
+          return vibe instruction m
         }
       `);
       expect(errors).toEqual([]);
@@ -323,10 +331,11 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
 
     test('vibe with function call as prompt is valid', () => {
       const errors = getErrors(`
+        ${modelDecl}
         function getInstruction(): text {
           return "Generate code"
         }
-        let x = vibe getInstruction()
+        let x = vibe getInstruction() m
       `);
       expect(errors).toEqual([]);
     });

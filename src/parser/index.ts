@@ -353,7 +353,11 @@ class VibeParser extends CstParser {
       {
         ALT: () => {
           this.CONSUME(T.Vibe);
-          this.SUBRULE3(this.expression);
+          this.SUBRULE3(this.expression);   // prompt
+          this.SUBRULE6(this.expression);   // model
+          this.OPTION(() => {
+            this.CONSUME(T.Cache);          // optional cache keyword
+          });
         },
       },
       {
