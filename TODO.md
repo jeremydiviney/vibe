@@ -9,10 +9,15 @@
   - [ ] Configurable concurrency limit
 
 ### Language Features
-- [ ] Implement the `vibe` keyword
-  - [ ] Define semantics (code generation? simplified AI call?)
-  - [ ] Parser support (already exists?)
-  - [ ] Runtime execution
+- [ ] Implement the `vibe` keyword (foundation complete, execution pending)
+  - [x] Parser: `vibe "prompt" model [cache]` syntax
+  - [x] AST: VibeExpression with model and cached fields
+  - [x] Runtime types: ScopeParam, PendingVibeGeneration, vibeCache
+  - [x] Scope param collection and vibe-specific AI prompt
+  - [ ] Parse/validate AI-generated code (resumeWithVibeCode)
+  - [ ] Execute generated function with scope params
+  - [ ] Retry logic with error feedback
+  - [ ] Instruction limit for generated code
 
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
