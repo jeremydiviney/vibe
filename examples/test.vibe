@@ -12,12 +12,13 @@ function greet(name) {
 // Call function
 let msg = greet("Vibe")
 
-// AI task with do
-let answer = do "what is the meaning of life?"
+// AI task
+model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
+let answer = vibe "what is the meaning of life?" m default
 
 // Conditional with truthy string
 if msg {
-  let inner = do "explain {msg}"
+  let inner = vibe "explain {msg}" m default
 }
 
 // Return final value

@@ -145,7 +145,7 @@ export class SemanticAnalyzer {
         this.visitAssignmentExpression(node);
         break;
 
-      case 'DoExpression':
+      case 'VibeExpression':
         this.visitExpression(node.prompt);
         this.checkPromptType(node.prompt);
         this.checkModelType(node.model);
@@ -156,18 +156,6 @@ export class SemanticAnalyzer {
         this.visitExpression(node.callee);
         node.arguments.forEach((arg) => this.visitExpression(arg));
         this.checkCallArguments(node);
-        break;
-
-      case 'VibeExpression':
-        this.visitExpression(node.prompt);
-        this.checkPromptType(node.prompt);
-        break;
-
-      case 'AskExpression':
-        this.visitExpression(node.prompt);
-        this.checkPromptType(node.prompt);
-        this.checkModelType(node.model);
-        this.checkContextVariable(node.context);
         break;
 
       case 'TsBlock':
@@ -220,6 +208,10 @@ export class SemanticAnalyzer {
     node: AST.LetDeclaration | AST.ConstDeclaration,
     kind: 'variable' | 'constant'
   ): void {
+    // Model type variables must be const (immutable)
+    if (node.typeAnnotation === 'model' && kind === 'variable') {
+      this.error(`Variables with type 'model' must be declared with 'const', not 'let'`, node.location);
+    }
     this.declare(node.name, kind, node.location, { typeAnnotation: node.typeAnnotation });
     if (node.typeAnnotation) {
       this.validateTypeAnnotation(node.typeAnnotation, node.location);
@@ -441,7 +433,11 @@ export class SemanticAnalyzer {
       if (!sym) {
         this.error(`'${node.name}' is not defined`, node.location);
       } else if (sym.kind !== 'model') {
-        this.error(`Expected model, got ${sym.kind} '${node.name}'`, node.location);
+        // Also accept parameters with 'model' type annotation (for vibe-generated functions)
+        const isModelParam = sym.kind === 'parameter' && sym.typeAnnotation === 'model';
+        if (!isModelParam) {
+          this.error(`Expected model, got ${sym.kind} '${node.name}'`, node.location);
+        }
       }
     } else {
       // For non-identifier expressions, just visit them

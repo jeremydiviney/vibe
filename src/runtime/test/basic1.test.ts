@@ -18,10 +18,10 @@ function createMockProvider(doResponse: string): AIProvider {
 }
 
 describe('Runtime - Basic 1', () => {
-  test('do expression returns AI response into variable', async () => {
+  test('vibe expression returns AI response into variable', async () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let answer = do "what is 2 + 2?" myModel default
+let answer = vibe "what is 2 + 2?" myModel default
 answer
 `);
     const provider = createMockProvider('4');
@@ -34,7 +34,7 @@ answer
   test('getValue returns variable value after run', async () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let answer = do "what is 2 + 2?" myModel default
+let answer = vibe "what is 2 + 2?" myModel default
 `);
     const provider = createMockProvider('42');
     const runtime = new Runtime(ast, provider);
@@ -47,7 +47,7 @@ let answer = do "what is 2 + 2?" myModel default
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let userData: json = {name: "alice", role: "admin"}
-let result = do "Process this user" myModel default
+let result = vibe "Process this user" myModel default
 result
 `);
     const provider = createMockProvider('User processed successfully');
@@ -62,7 +62,7 @@ result
   test('AI returns JSON string parsed into json variable', async () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let response: json = do "Return user data as JSON" myModel default
+let response: json = vibe "Return user data as JSON" myModel default
 `);
     // AI returns a JSON string
     const provider = createMockProvider('{"id": 123, "name": "bob", "active": true}');
@@ -85,7 +85,7 @@ let config: json = {
   filter: "active"
 }
 
-let users: json = do "fetch users with config" gpt default
+let users: json = vibe "fetch users with config" gpt default
 `);
     // AI returns an array of users
     const provider = createMockProvider('[{"name": "alice"}, {"name": "bob"}]');

@@ -66,7 +66,7 @@ async function main(): Promise<void> {
     console.log('');
     console.log('Example program:');
     console.log('  let x = "hello"');
-    console.log('  let y = do "what is 2 + 2?"');
+    console.log('  let y = vibe "what is 2 + 2?"');
     console.log('  function greet(name) {');
     console.log('    return "Hello, {name}!"');
     console.log('  }');

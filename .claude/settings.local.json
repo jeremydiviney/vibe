@@ -52,7 +52,8 @@
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:www.anthropic.com)",
       "WebFetch(domain:claude.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(findstr:*)"
     ],
     "deny": [
       "Bash(rm:*)",

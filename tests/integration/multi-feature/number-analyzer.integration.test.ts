@@ -77,7 +77,7 @@ function categorize(n: number): text {
 }
 
 // Get a list of numbers from AI
-let numbers: number[] = do "Return a JSON array of exactly 5 integers between -50 and 150. Mix of negative, zero, and positive." analyzer default
+let numbers: number[] = vibe "Return a JSON array of exactly 5 integers between -50 and 150. Mix of negative, zero, and positive." analyzer default
 
 // Initialize counters and result arrays
 let evenCount: number = 0
@@ -102,10 +102,10 @@ for num in numbers {
 let total: number = evenCount + oddCount
 
 // Get AI summary - reference variables by name, AI sees them in context
-let summary: text = do "Using the variables total, evenCount, oddCount, and categories from context, write a one-sentence summary of the number analysis." analyzer default
+let summary: text = vibe "Using the variables total, evenCount, oddCount, and categories from context, write a one-sentence summary of the number analysis." analyzer default
 
 // Final result - AI should read variable values from context
-let result: json = do "Return a JSON object with fields: analyzed, evenCount, oddCount, summary. Use the values from context variables: total for analyzed, evenCount, oddCount, and summary." analyzer default
+let result: json = vibe "Return a JSON object with fields: analyzed, evenCount, oddCount, summary. Use the values from context variables: total for analyzed, evenCount, oddCount, and summary." analyzer default
 `;
 
 async function runVibe(modelConfig: string, logAi = true): Promise<Runtime> {
@@ -118,7 +118,7 @@ async function runVibe(modelConfig: string, logAi = true): Promise<Runtime> {
   await runtime.run();
 
   if (logAi) {
-    console.log('\n' + formatAIInteractions(runtime.getState()));
+    console.log('\n' + formatAIInteractions(runtime.getState().aiInteractions));
   }
 
   return runtime;

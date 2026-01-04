@@ -208,14 +208,8 @@ export class Runtime {
           targetType = nextInstruction.type;
         }
 
-        let result: AIExecutionResult;
-        if (pendingAI.type === 'do') {
-          result = await this.aiProvider.execute(pendingAI.prompt);
-        } else if (pendingAI.type === 'vibe') {
-          result = await this.aiProvider.generateCode(pendingAI.prompt);
-        } else {
-          result = await this.aiProvider.execute(pendingAI.prompt);
-        }
+        // vibe is the only AI expression type now
+        const result: AIExecutionResult = await this.aiProvider.execute(pendingAI.prompt);
 
         // Create interaction record if logging
         // Uses context from result (single source of truth from ai-provider)

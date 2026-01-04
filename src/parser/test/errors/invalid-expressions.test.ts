@@ -84,9 +84,9 @@ let x = ()
   // Invalid do/vibe expressions
   // ============================================================================
 
-  test('do with equals instead of expression', () => {
+  test('vibe with equals instead of expression', () => {
     expect(() => parse(`
-let x = do =
+let x = vibe =
 `)).toThrow();
   });
 
@@ -96,9 +96,9 @@ let x = vibe ,
 `)).toThrow();
   });
 
-  test('do with closing paren', () => {
+  test('vibe with closing paren', () => {
     expect(() => parse(`
-let x = do )
+let x = vibe )
 `)).toThrow();
   });
 

@@ -94,6 +94,17 @@ export function validateAndCoerce(
     return { value, inferredType: 'number' };
   }
 
+  // Validate model type - must be a VibeModelValue (has __vibeModel: true)
+  if (type === 'model') {
+    if (typeof value !== 'object' || value === null) {
+      throw new RuntimeError(`Variable '${varName}': expected model, got ${typeof value}`, location);
+    }
+    if (!('__vibeModel' in value) || (value as { __vibeModel: unknown }).__vibeModel !== true) {
+      throw new RuntimeError(`Variable '${varName}': expected model value with __vibeModel marker`, location);
+    }
+    return { value, inferredType: 'model' };
+  }
+
   // For other types (prompt, etc.), accept as-is
   return { value, inferredType: type };
 }

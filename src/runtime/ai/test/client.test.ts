@@ -62,10 +62,10 @@ describe('buildAIRequest', () => {
   });
 
   test('builds request with null target type', () => {
-    const request = buildAIRequest(model, 'Hello', '', 'ask', null);
+    const request = buildAIRequest(model, 'Hello', '', 'do', null);
 
     expect(request.targetType).toBeNull();
-    expect(request.operationType).toBe('ask');
+    expect(request.operationType).toBe('do');
   });
 
   test('preserves model config', () => {

@@ -162,7 +162,7 @@ function test(x: text, flag: boolean): text {
   test('model accessible in same scope', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = do "prompt" myModel default
+let x = vibe "prompt" myModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(0);
@@ -172,7 +172,7 @@ let x = do "prompt" myModel default
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 function test() {
-  let x = do "prompt" myModel default
+  let x = vibe "prompt" myModel default
   return x
 }
 `);
@@ -184,7 +184,7 @@ function test() {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 if true {
-  let x = do "prompt" myModel default
+  let x = vibe "prompt" myModel default
 }
 `);
     const errors = analyze(ast);

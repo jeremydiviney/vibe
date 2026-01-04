@@ -9,15 +9,17 @@
   - [ ] Configurable concurrency limit
 
 ### Language Features
-- [ ] Implement the `vibe` keyword (foundation complete, execution pending)
+- [ ] Implement the `vibe` keyword (core complete, enhancements pending)
   - [x] Parser: `vibe "prompt" model [cache]` syntax
   - [x] AST: VibeExpression with model and cached fields
   - [x] Runtime types: ScopeParam, PendingVibeGeneration, vibeCache
   - [x] Scope param collection and vibe-specific AI prompt
-  - [ ] Parse/validate AI-generated code (resumeWithVibeCode)
-  - [ ] Execute generated function with scope params
-  - [ ] Retry logic with error feedback
+  - [x] Parse/validate AI-generated code (resumeWithVibeCode)
+  - [x] Execute generated function with scope params (by name matching)
+  - [x] Retry logic with error feedback (3 retries default)
+  - [x] Cache support (reuse generated function in loops)
   - [ ] Instruction limit for generated code
+  - [x] Add `model` as a valid type annotation (so generated functions can use `m: model` instead of `m: json`)
 
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
@@ -25,12 +27,13 @@
 - [ ] Variable visibility modifiers
 
 ### Documentation
-- [ ] Create comprehensive Vibe language reference document
-  - [ ] Syntax overview (types, variables, expressions)
-  - [ ] Control flow (if/else, for-in, while)
-  - [ ] AI integration (do expressions, models, context modes)
-  - [ ] Tool system (built-in tools, custom tools)
-  - [ ] TS blocks and interop
+- [x] Create comprehensive Vibe language reference document
+  - [x] Syntax overview (types, variables, expressions)
+  - [x] Control flow (if/else, for-in, while)
+  - [x] AI integration (do expressions, models, context modes)
+  - [x] Tool system (built-in tools, custom tools)
+  - [x] TS blocks and interop
+  - [x] Integrate into AI system context (always loaded)
 
 ### Integration Tests & Examples
 - [x] Tool-calling integration test with real AI (glob, readFile, writeFile, edit)

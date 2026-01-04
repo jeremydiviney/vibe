@@ -5,6 +5,6 @@ const firstName = "John"
 const lastName = "Doe"
 
 let fullName = `${firstName} ${lastName}`
-let message = do "Generate a welcome message for {fullName}" m default
+let message = vibe "Generate a welcome message for {fullName}" m default
 
 message

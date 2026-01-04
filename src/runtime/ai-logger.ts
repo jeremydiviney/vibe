@@ -149,10 +149,9 @@ function formatInteraction(interaction: AIInteraction, index: number): string {
 }
 
 /**
- * Format all AI interactions as markdown from runtime state.
+ * Format all AI interactions as markdown.
  */
-export function formatAIInteractions(state: RuntimeState): string {
-  const interactions = state.aiInteractions;
+export function formatAIInteractions(interactions: AIInteraction[]): string {
   if (interactions.length === 0) {
     return 'No AI interactions recorded.';
   }
@@ -204,7 +203,7 @@ export function dumpAIInteractions(state: RuntimeState): void {
   console.log('\n' + '='.repeat(60));
   console.log('AI INTERACTION LOG');
   console.log('='.repeat(60) + '\n');
-  console.log(formatAIInteractions(state));
+  console.log(formatAIInteractions(state.aiInteractions));
   console.log('\n' + '='.repeat(60) + '\n');
 }
 
@@ -230,7 +229,7 @@ export function saveAIInteractions(state: RuntimeState, projectRoot?: string): s
   const filepath = join(logDir, filename);
 
   // Write the log
-  const content = formatAIInteractions(state);
+  const content = formatAIInteractions(state.aiInteractions);
   writeFileSync(filepath, content, 'utf-8');
 
   // Rotate logs - keep only the last MAX_LOGS

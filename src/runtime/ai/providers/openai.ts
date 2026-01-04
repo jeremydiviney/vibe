@@ -26,7 +26,7 @@ const REASONING_EFFORT_MAP: Record<ThinkingLevel, string> = {
  * Execute an AI request using the OpenAI SDK.
  */
 export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model, tools } = request;
+  const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults } = request;
 
   // Create OpenAI client
   const client = new OpenAI({
@@ -34,8 +34,8 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     baseURL: model.url ?? OPENAI_CONFIG.defaultUrl,
   });
 
-  // Build messages
-  const messages = buildMessages(
+  // Build base messages
+  const baseMessages = buildMessages(
     prompt,
     contextText,
     targetType,
@@ -43,14 +43,52 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     tools
   );
 
+  // Build conversation messages - either simple or multi-turn with tool results
+  type ChatMessage = OpenAI.ChatCompletionMessageParam;
+  let messages: ChatMessage[] = baseMessages.map((m) => ({
+    role: m.role as 'system' | 'user' | 'assistant',
+    content: m.content,
+  }));
+
+  // Add tool call history if present (multi-turn conversation)
+  if (previousToolCalls?.length && toolResults?.length) {
+    // Add assistant message with tool calls
+    const assistantMessage: ChatMessage = {
+      role: 'assistant',
+      content: null,
+      tool_calls: previousToolCalls.map(call => ({
+        id: call.id,
+        type: 'function' as const,
+        function: {
+          name: call.toolName,
+          arguments: JSON.stringify(call.args),
+        },
+      })),
+    };
+    messages.push(assistantMessage);
+
+    // Add tool result messages
+    for (let i = 0; i < toolResults.length; i++) {
+      const result = toolResults[i];
+      const call = previousToolCalls[i];
+      const toolMessage: ChatMessage = {
+        role: 'tool',
+        tool_call_id: call.id,
+        content: result.error
+          ? `Error: ${result.error}`
+          : typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result),
+      };
+      messages.push(toolMessage);
+    }
+  }
+
   try {
     // Build request parameters
     const params: OpenAI.ChatCompletionCreateParamsNonStreaming = {
       model: model.name,
-      messages: messages.map((m) => ({
-        role: m.role as 'system' | 'user' | 'assistant',
-        content: m.content,
-      })),
+      messages,
     };
 
     // Add tools if provided

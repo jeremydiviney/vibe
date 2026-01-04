@@ -8,7 +8,7 @@ import {
   isImportedVibeFunction,
 } from '../modules';
 import { lookupVariable } from './variables';
-import { execDoExpression, execAskExpression, execVibeExpression } from './ai';
+import { execVibeExpression } from './ai';
 import { execTsBlock } from './typescript';
 
 /**
@@ -365,14 +365,8 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
     case 'CallExpression':
       return execCallExpression(state, expr);
 
-    case 'DoExpression':
-      return execDoExpression(state, expr);
-
     case 'VibeExpression':
       return execVibeExpression(state, expr);
-
-    case 'AskExpression':
-      return execAskExpression(state, expr);
 
     case 'TsBlock':
       return execTsBlock(state, expr);

@@ -21,7 +21,7 @@ describe('AI Context Tests', () => {
       let userQuestion: prompt = "What is 2+2?"
       let userData = "some user data"
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result = do userQuestion m default
+      let result = vibe userQuestion m default
     `);
 
     let state = createInitialState(ast);
@@ -48,7 +48,7 @@ describe('AI Context Tests', () => {
       function processQuery(input: text): text {
         const LOCAL_PROMPT: prompt = "Process this: {input}"
         let localData = "local data"
-        return do LOCAL_PROMPT m default
+        return vibe LOCAL_PROMPT m default
       }
 
       let result = processQuery("user query")
@@ -82,9 +82,9 @@ describe('AI Context Tests', () => {
       let inputData = "raw data"
       model m = { name: "test", apiKey: "key", url: "http://test" }
       const ANALYZE_PROMPT: prompt = "Analyze this"
-      let analyzed = do ANALYZE_PROMPT m default
+      let analyzed = vibe ANALYZE_PROMPT m default
       const SUMMARIZE_PROMPT: prompt = "Summarize this"
-      let summary = do SUMMARIZE_PROMPT m default
+      let summary = vibe SUMMARIZE_PROMPT m default
     `);
 
     let state = createInitialState(ast);
@@ -115,7 +115,7 @@ describe('AI Context Tests', () => {
     // Context at second AI call: inputData, do prompt with response, analyzed (in execution order)
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', response: 'analysis result', frameName: '<entry>', frameDepth: 0 },
+      { kind: 'prompt', aiType: 'vibe', prompt: 'Analyze this', response: 'analysis result', frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'analyzed', value: 'analysis result', type: 'text', isConst: false, source: 'ai', frameName: '<entry>', frameDepth: 0 },
     ]);
 
@@ -125,7 +125,7 @@ describe('AI Context Tests', () => {
     expect(formatted2.text).toBe(
       `  <entry> (current scope)
     - inputData (text): raw data
-    --> do: "Analyze this"
+    --> vibe: "Analyze this"
     <-- analyzed (text): analysis result`
     );
 
@@ -146,9 +146,9 @@ describe('AI Context Tests', () => {
     // Context at completion - includes all variables and prompts (with responses) in execution order
     expect(state.localContext).toEqual([
       { kind: 'variable', name: 'inputData', value: 'raw data', type: 'text', isConst: false, frameName: '<entry>', frameDepth: 0 },
-      { kind: 'prompt', aiType: 'do', prompt: 'Analyze this', response: 'analysis result', frameName: '<entry>', frameDepth: 0 },
+      { kind: 'prompt', aiType: 'vibe', prompt: 'Analyze this', response: 'analysis result', frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'analyzed', value: 'analysis result', type: 'text', isConst: false, source: 'ai', frameName: '<entry>', frameDepth: 0 },
-      { kind: 'prompt', aiType: 'do', prompt: 'Summarize this', response: 'summary result', frameName: '<entry>', frameDepth: 0 },
+      { kind: 'prompt', aiType: 'vibe', prompt: 'Summarize this', response: 'summary result', frameName: '<entry>', frameDepth: 0 },
       { kind: 'variable', name: 'summary', value: 'summary result', type: 'text', isConst: false, source: 'ai', frameName: '<entry>', frameDepth: 0 },
     ]);
 
@@ -158,9 +158,9 @@ describe('AI Context Tests', () => {
     expect(formatted3.text).toBe(
       `  <entry> (current scope)
     - inputData (text): raw data
-    --> do: "Analyze this"
+    --> vibe: "Analyze this"
     <-- analyzed (text): analysis result
-    --> do: "Summarize this"
+    --> vibe: "Summarize this"
     <-- summary (text): summary result`
     );
   });
@@ -180,7 +180,7 @@ describe('AI Context Tests', () => {
       function level2(input: text): text {
         const L2_PROMPT: prompt = "Level 2 prompt"
         let l2Data = "level 2 data"
-        return do "Process {input}" m default
+        return vibe "Process {input}" m default
       }
 
       let result = level1("deep input")
@@ -233,7 +233,7 @@ describe('AI Context Tests', () => {
       const API_KEY = "secret"
       let counter = "0"
       model m = { name: "test", apiKey: "key123", url: "http://test" }
-      let result = do "process data" m default
+      let result = vibe "process data" m default
     `);
 
     let state = createInitialState(ast);
@@ -256,7 +256,7 @@ describe('AI Context Tests', () => {
       model m = { name: "test", apiKey: "key", url: "http://test" }
       function process(input: text): text {
         let localVar = "local value"
-        return do "process {input}" m default
+        return vibe "process {input}" m default
       }
       let result = process("my input")
     `);
@@ -385,7 +385,7 @@ Variables from the VIBE language call stack.
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
       let input = "hello"
-      let result = do "transform {input}" m default
+      let result = vibe "transform {input}" m default
     `);
 
     let state = createInitialState(ast);
@@ -398,8 +398,8 @@ Variables from the VIBE language call stack.
   test('multiple do calls with different mock responses', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let first = do "first prompt" m default
-      let second = do "second prompt" m default
+      let first = vibe "first prompt" m default
+      let second = vibe "second prompt" m default
     `);
 
     let state = createInitialState(ast);
@@ -417,7 +417,7 @@ Variables from the VIBE language call stack.
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
       const SYSTEM = "system prompt"
-      let result = do "query" m default
+      let result = vibe "query" m default
     `);
 
     let state = createInitialState(ast);
@@ -447,7 +447,7 @@ Variables from the VIBE language call stack.
       let userInput: text = "hello world"
       let counter = "0"
       let metadata: json = { version: "1.0" }
-      let result = do "process {userInput}" gpt default
+      let result = vibe "process {userInput}" gpt default
     `);
 
     let state = createInitialState(ast);
@@ -492,7 +492,7 @@ Variables from the VIBE language call stack.
 
         if true {
           let blockVar = "inside block"
-          let response = do "analyze {inputText}" m default
+          let response = vibe "analyze {inputText}" m default
         }
       }
 
@@ -542,13 +542,13 @@ Variables from the VIBE language call stack.
       function helper(value: text): text {
         const HELPER_CONST = "helper const"
         let helperVar = "helper value"
-        return do "helper work with {value}" m default
+        return vibe "helper work with {value}" m default
       }
 
       function main(input: text): text {
         const MAIN_CONST = "main const"
         let mainVar = "main value"
-        let mainResult = do "main work with {input}" m default
+        let mainResult = vibe "main work with {input}" m default
         return helper(input)
       }
 
@@ -605,7 +605,7 @@ Variables from the VIBE language call stack.
       { kind: 'variable', name: 'input', value: 'test', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, frameName: 'main', frameDepth: 1 },
-      { kind: 'prompt', aiType: 'do', prompt: 'main work with test', response: 'main response', frameName: 'main', frameDepth: 1 },
+      { kind: 'prompt', aiType: 'vibe', prompt: 'main work with test', response: 'main response', frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'mainResult', value: 'main response', type: 'text', isConst: false, source: 'ai', frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'value', value: 'test', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2 },
       { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, frameName: 'helper', frameDepth: 2 },
@@ -631,7 +631,7 @@ Variables from the VIBE language call stack.
       - input (text): test
       - MAIN_CONST (text): main const
       - mainVar (text): main value
-      --> do: "main work with test"
+      --> vibe: "main work with test"
       <-- mainResult (text): main response
 
       helper (current scope)
@@ -654,7 +654,7 @@ Variables from the VIBE language call stack.
       let userMessage: text = "user says hello"
       let data: json = { items: ["a", "b", "c"], count: "3" }
       let untypedVar = "plain string"
-      let result = do "process" ai default
+      let result = vibe "process" ai default
     `);
 
     let state = createInitialState(ast);
@@ -686,7 +686,7 @@ Variables from the VIBE language call stack.
   test('variable source changes from ai to undefined when reassigned', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "get initial value" m default
+      let result: text = vibe "get initial value" m default
       result = "overwritten by code"
     `);
 
@@ -724,7 +724,7 @@ Variables from the VIBE language call stack.
   test('variable source is ai immediately after AI response assignment', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "get value" m default
+      let result: text = vibe "get value" m default
     `);
 
     let state = createInitialState(ast);
@@ -858,7 +858,7 @@ describe('Tool Call Context Formatting', () => {
       },
       {
         kind: 'prompt',
-        aiType: 'do' as const,
+        aiType: 'vibe' as const,
         prompt: 'Summarize the weather',
         response: 'It is 55 degrees in Seattle',
       },
@@ -881,7 +881,7 @@ describe('Tool Call Context Formatting', () => {
     - x (text): test
     [tool] getWeather({"city":"Seattle"})
     [result] {"temp":55}
-    --> do: "Summarize the weather"
+    --> vibe: "Summarize the weather"
     <-- summary (text): It is 55 degrees in Seattle`
     );
   });
@@ -912,11 +912,11 @@ describe('Tool Call Context Formatting', () => {
   });
 
   test('full AI call flow with tool calls shows complete context', () => {
-    // Simulates: do "What's the weather in Seattle and SF?" -> AI calls tools -> final response
+    // Simulates: vibe "What's the weather in Seattle and SF?" -> AI calls tools -> final response
     // Note: model variables are filtered from context (they are config, not data)
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let weather: text = do "What's the weather in Seattle and San Francisco?" m default
+      let weather: text = vibe "What's the weather in Seattle and San Francisco?" m default
     `);
 
     let state = createInitialState(ast);
@@ -956,7 +956,7 @@ describe('Tool Call Context Formatting', () => {
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "What's the weather in Seattle and San Francisco?"
+    --> vibe: "What's the weather in Seattle and San Francisco?"
     [tool] getWeather({"city":"Seattle"})
     [result] {"temp":55,"condition":"rainy"}
     [tool] getWeather({"city":"San Francisco"})
@@ -970,7 +970,7 @@ describe('Tool Call Context Formatting', () => {
     // Note: model variables are filtered from context
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "Find user 123 and get their orders" m default
+      let result: text = vibe "Find user 123 and get their orders" m default
     `);
 
     let state = createInitialState(ast);
@@ -1013,7 +1013,7 @@ describe('Tool Call Context Formatting', () => {
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "Find user 123 and get their orders"
+    --> vibe: "Find user 123 and get their orders"
     [tool] getUser({"id":123})
     [result] {"name":"Alice","email":"alice@example.com"}
     [tool] getOrders({"userId":123})
@@ -1026,7 +1026,7 @@ describe('Tool Call Context Formatting', () => {
     // Note: model variables are filtered from context
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let data: text = do "Read the config file" m default
+      let data: text = vibe "Read the config file" m default
     `);
 
     let state = createInitialState(ast);
@@ -1066,7 +1066,7 @@ describe('Tool Call Context Formatting', () => {
     const formatted = formatContextForAI(state.localContext, { includeInstructions: false });
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "Read the config file"
+    --> vibe: "Read the config file"
     [tool] readFile({"path":"/etc/config.json"})
     [error] Permission denied
     [tool] readFile({"path":"./config.json"})

@@ -89,7 +89,7 @@ describe('Semantic Analysis - Export Declarations', () => {
     const errors = analyze(`
       model gpt = { name: "gpt-4", apiKey: "key", url: "url" }
       export function greet(name: text): text {
-        return do "Hello {name}" gpt default
+        return vibe "Hello {name}" gpt default
       }
     `);
     expect(errors).toHaveLength(0);

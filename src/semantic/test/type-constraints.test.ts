@@ -7,43 +7,43 @@ describe('Semantic Errors - Type Constraints', () => {
   // Do expression model argument must be a model type
   // ============================================================================
 
-  test('do expression with variable as model argument', () => {
+  test('vibe expression with variable as model argument', () => {
     const ast = parse(`
 let notAModel = "test"
-let x = do "prompt" notAModel default
+let x = vibe "prompt" notAModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got variable 'notAModel'");
   });
 
-  test('do expression with constant as model argument', () => {
+  test('vibe expression with constant as model argument', () => {
     const ast = parse(`
 const notAModel = "test"
-let x = do "prompt" notAModel default
+let x = vibe "prompt" notAModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got constant 'notAModel'");
   });
 
-  test('do expression with function as model argument', () => {
+  test('vibe expression with function as model argument', () => {
     const ast = parse(`
 function notAModel() {
   return "test"
 }
-let x = do "prompt" notAModel default
+let x = vibe "prompt" notAModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got function 'notAModel'");
   });
 
-  test('do expression with parameter as model argument', () => {
+  test('vibe expression with parameter as model argument', () => {
     const ast = parse(`
 model realModel = { name: "test", apiKey: "key", url: "http://test" }
 function test(notAModel: text): text {
-  let x = do "prompt" notAModel default
+  let x = vibe "prompt" notAModel default
   return x
 }
 `);
@@ -56,20 +56,20 @@ function test(notAModel: text): text {
   // Valid model usage
   // ============================================================================
 
-  test('do expression with valid model', () => {
+  test('vibe expression with valid model', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = do "prompt" myModel default
+let x = vibe "prompt" myModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(0);
   });
 
-  test('do expression with model from outer scope', () => {
+  test('vibe expression with model from outer scope', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 function test() {
-  let x = do "prompt" myModel default
+  let x = vibe "prompt" myModel default
   return x
 }
 `);
@@ -81,11 +81,11 @@ function test() {
   // Multiple type errors
   // ============================================================================
 
-  test('multiple do expressions with wrong model types', () => {
+  test('multiple vibe expressions with wrong model types', () => {
     const ast = parse(`
 let notAModel = "test"
-let x = do "prompt1" notAModel default
-let y = do "prompt2" notAModel default
+let x = vibe "prompt1" notAModel default
+let y = vibe "prompt2" notAModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(2);
@@ -100,8 +100,8 @@ let y = do "prompt2" notAModel default
   test('undefined model and wrong type model', () => {
     const ast = parse(`
 let notAModel = "test"
-let x = do "prompt1" undefinedModel default
-let y = do "prompt2" notAModel default
+let x = vibe "prompt1" undefinedModel default
+let y = vibe "prompt2" notAModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(2);

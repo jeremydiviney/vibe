@@ -266,44 +266,14 @@ export function makeMemberExpression(
   };
 }
 
-export function makeDoExpression(
-  token: IToken,
-  prompt: AST.Expression,
-  model: AST.Expression,
-  context: AST.ContextSpecifier
-): AST.DoExpression {
-  return {
-    type: 'DoExpression',
-    prompt,
-    model,
-    context,
-    location: tokenLocation(token),
-  };
-}
-
 export function makeVibeExpression(
   token: IToken,
   prompt: AST.Expression,
   model: AST.Expression,
-  cached: boolean
+  context: AST.ContextSpecifier
 ): AST.VibeExpression {
   return {
     type: 'VibeExpression',
-    prompt,
-    model,
-    cached,
-    location: tokenLocation(token),
-  };
-}
-
-export function makeAskExpression(
-  token: IToken,
-  prompt: AST.Expression,
-  model: AST.Expression,
-  context: AST.ContextSpecifier
-): AST.AskExpression {
-  return {
-    type: 'AskExpression',
     prompt,
     model,
     context,

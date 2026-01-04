@@ -38,32 +38,32 @@ let x = greet(unknownArg)
   });
 
   // ============================================================================
-  // Undefined in do expressions
+  // Undefined in vibe expressions
   // ============================================================================
 
-  test('using undefined variable as do prompt', () => {
+  test('using undefined variable as vibe prompt', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = do undefinedPrompt myModel default
+let x = vibe undefinedPrompt myModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedPrompt' is not defined");
   });
 
-  test('using undefined model in do expression', () => {
+  test('using undefined model in vibe expression', () => {
     const ast = parse(`
-let x = do "prompt" undefinedModel default
+let x = vibe "prompt" undefinedModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedModel' is not defined");
   });
 
-  test('using undefined context variable in do expression', () => {
+  test('using undefined context variable in vibe expression', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = do "prompt" myModel undefinedContext
+let x = vibe "prompt" myModel undefinedContext
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
@@ -152,10 +152,10 @@ function greet(name: text): text {
     expect(errors.length).toBe(0);
   });
 
-  test('using model in do expression', () => {
+  test('using model in vibe expression', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = do "prompt" myModel default
+let x = vibe "prompt" myModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(0);

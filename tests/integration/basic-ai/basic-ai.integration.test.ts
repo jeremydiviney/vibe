@@ -54,7 +54,7 @@ model testModel = {
 const testCases = [
   {
     name: 'returns text response',
-    vibeCode: `let result = do "Reply with exactly: PONG" testModel default`,
+    vibeCode: `let result = vibe "Reply with exactly: PONG" testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result') as string;
       expect(typeof result).toBe('string');
@@ -63,7 +63,7 @@ const testCases = [
   },
   {
     name: 'returns number response',
-    vibeCode: `let result: number = do "What is 2 + 2? Reply with just the number." testModel default`,
+    vibeCode: `let result: number = vibe "What is 2 + 2? Reply with just the number." testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result');
       expect(typeof result).toBe('number');
@@ -72,7 +72,7 @@ const testCases = [
   },
   {
     name: 'returns boolean response',
-    vibeCode: `let result: boolean = do "Is 5 greater than 3? Reply with true or false only." testModel default`,
+    vibeCode: `let result: boolean = vibe "Is 5 greater than 3? Reply with true or false only." testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result');
       expect(typeof result).toBe('boolean');
@@ -81,7 +81,7 @@ const testCases = [
   },
   {
     name: 'returns json response',
-    vibeCode: `let result: json = do "Return a JSON object with name set to Alice and age set to 30" testModel default`,
+    vibeCode: `let result: json = vibe "Return a JSON object with name set to Alice and age set to 30" testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result') as Record<string, unknown>;
       expect(typeof result).toBe('object');
@@ -92,7 +92,7 @@ const testCases = [
   },
   {
     name: 'returns text[] response',
-    vibeCode: `let result: text[] = do "Return a JSON array of 3 colors: red, green, blue" testModel default`,
+    vibeCode: `let result: text[] = vibe "Return a JSON array of 3 colors: red, green, blue" testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result') as string[];
       expect(Array.isArray(result)).toBe(true);
@@ -104,7 +104,7 @@ const testCases = [
   },
   {
     name: 'returns number[] response',
-    vibeCode: `let result: number[] = do "Return a JSON array of the first 5 prime numbers" testModel default`,
+    vibeCode: `let result: number[] = vibe "Return a JSON array of the first 5 prime numbers" testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result') as number[];
       expect(Array.isArray(result)).toBe(true);
@@ -114,7 +114,7 @@ const testCases = [
   },
   {
     name: 'returns boolean[] response',
-    vibeCode: `let result: boolean[] = do "Return a JSON array: [true, false, true]" testModel default`,
+    vibeCode: `let result: boolean[] = vibe "Return a JSON array: [true, false, true]" testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result') as boolean[];
       expect(Array.isArray(result)).toBe(true);

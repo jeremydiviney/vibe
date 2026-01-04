@@ -89,10 +89,10 @@ function test() {
   });
 
   // ============================================================================
-  // do expression
+  // vibe expression
   // ============================================================================
 
-  test('do missing prompt', () => {
+  test('vibe missing prompt', () => {
     expect(() => parse(`
 let x = do
 `)).toThrow();

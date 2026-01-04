@@ -5,7 +5,7 @@ let isPremium: boolean = true
 let response = ""
 
 if isPremium {
-  let greeting = do "Generate a premium greeting" m default
+  let greeting = vibe "Generate a premium greeting" m default
   response = greeting
 } else {
   response = "Standard greeting"

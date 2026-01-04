@@ -191,9 +191,7 @@ export type Expression =
   | MemberExpression
   | AssignmentExpression
   | CallExpression
-  | DoExpression
   | VibeExpression
-  | AskExpression
   | TsBlock;
 
 export interface Identifier extends BaseNode {
@@ -294,13 +292,6 @@ export interface CallExpression extends BaseNode {
   arguments: Expression[];
 }
 
-export interface DoExpression extends BaseNode {
-  type: 'DoExpression';
-  prompt: Expression;
-  model: Expression;
-  context: ContextSpecifier;
-}
-
 export interface ContextSpecifier extends BaseNode {
   type: 'ContextSpecifier';
   kind: 'default' | 'local' | 'variable';
@@ -309,13 +300,6 @@ export interface ContextSpecifier extends BaseNode {
 
 export interface VibeExpression extends BaseNode {
   type: 'VibeExpression';
-  prompt: Expression;
-  model: Expression;    // Model to use for code generation
-  cached?: boolean;     // If true, reuse generated function; if false (default), regenerate each call
-}
-
-export interface AskExpression extends BaseNode {
-  type: 'AskExpression';
   prompt: Expression;
   model: Expression;
   context: ContextSpecifier;

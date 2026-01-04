@@ -19,9 +19,7 @@ import {
   makeIndexExpression,
   makeSliceExpression,
   makeMemberExpression,
-  makeDoExpression,
   makeVibeExpression,
-  makeAskExpression,
   makeContextSpecifier,
 } from './visitor/helpers';
 
@@ -106,9 +104,9 @@ class VibeAstVisitor extends BaseVibeVisitor {
     };
   }
 
-  typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; LBracket?: IToken[] }): string {
+  typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Model?: IToken[]; LBracket?: IToken[] }): string {
     // Get base type
-    const baseType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : 'number';
+    const baseType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : ctx.NumberType ? 'number' : 'model';
     // Count array brackets
     const bracketCount = ctx.LBracket?.length ?? 0;
     return baseType + '[]'.repeat(bracketCount);
@@ -306,20 +304,9 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // Expressions
   // ============================================================================
 
-  expression(ctx: { Do?: IToken[]; Vibe?: IToken[]; Cache?: IToken[]; Ask?: IToken[]; assignmentExpression?: CstNode[]; orExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
-    if (ctx.Do) {
-      return makeDoExpression(ctx.Do[0], this.visit(ctx.expression![0]), this.visit(ctx.expression![1]), this.visit(ctx.contextSpecifier!));
-    }
+  expression(ctx: { Vibe?: IToken[]; assignmentExpression?: CstNode[]; orExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
     if (ctx.Vibe) {
-      return makeVibeExpression(
-        ctx.Vibe[0],
-        this.visit(ctx.expression![0]),  // prompt
-        this.visit(ctx.expression![1]),  // model
-        ctx.Cache !== undefined          // cached
-      );
-    }
-    if (ctx.Ask) {
-      return makeAskExpression(ctx.Ask[0], this.visit(ctx.expression![0]), this.visit(ctx.expression![1]), this.visit(ctx.contextSpecifier!));
+      return makeVibeExpression(ctx.Vibe[0], this.visit(ctx.expression![0]), this.visit(ctx.expression![1]), this.visit(ctx.contextSpecifier!));
     }
     if (ctx.assignmentExpression) return this.visit(ctx.assignmentExpression);
     return this.visit(ctx.orExpression!);

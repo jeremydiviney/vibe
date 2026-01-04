@@ -26,12 +26,12 @@ let numbers: number[] = [${numbers.join(', ')}]
 let sum: number = 0
 
 for n in numbers {
-  let result: number = do "Add n to sum. Return only the number." calc default
+  let result: number = vibe "Add n to sum. Return only the number." calc default
   sum = result
 }
 
 let bonus: number = ${bonusNumber}
-let final: number = do "Add bonus to sum. Return only the number." calc default
+let final: number = vibe "Add bonus to sum. Return only the number." calc default
 `;
 
 async function runTest(logAi = true): Promise<Runtime> {

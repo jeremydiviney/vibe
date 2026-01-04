@@ -35,6 +35,8 @@ export interface AIRequest {
   previousToolCalls?: AIToolCall[];
   /** Tool results from previous call (for multi-turn) */
   toolResults?: AIToolResult[];
+  /** Override messages (used by vibe for custom system prompt) */
+  messages?: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
 }
 
 /** Detailed token usage from AI providers */
@@ -57,6 +59,8 @@ export interface AIToolCall {
   toolName: string;
   /** Arguments parsed from the tool call */
   args: Record<string, unknown>;
+  /** Thought signature for Gemini 3 models (must be echoed back in follow-up) */
+  thoughtSignature?: string;
 }
 
 /** Tool result to send back in follow-up request */

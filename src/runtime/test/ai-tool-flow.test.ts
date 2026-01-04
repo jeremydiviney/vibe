@@ -150,7 +150,7 @@ describe('AI Tool Calling Flow', () => {
   test('single tool call is executed and result returned to AI', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "Calculate 5 + 3" m default
+      let result: text = vibe "Calculate 5 + 3" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -192,7 +192,7 @@ describe('AI Tool Calling Flow', () => {
   test('multiple tool calls in single response are all executed', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let weather: text = do "What's the weather in Seattle and SF?" m default
+      let weather: text = vibe "What's the weather in Seattle and SF?" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -240,7 +240,7 @@ describe('AI Tool Calling Flow', () => {
   test('multiple rounds of tool calls are executed sequentially', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "Calculate (2+3) * 4" m default
+      let result: text = vibe "Calculate (2+3) * 4" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -298,7 +298,7 @@ describe('AI Tool Calling Flow', () => {
 
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "Calculate (2+3) * 4"
+    --> vibe: "Calculate (2+3) * 4"
     [tool] add({"a":2,"b":3})
     [result] 5
     [tool] multiply({"a":5,"b":4})
@@ -310,8 +310,8 @@ describe('AI Tool Calling Flow', () => {
   test('tool calls appear in context for subsequent AI calls', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let first: text = do "What's 2 + 2?" m default
-      let second: text = do "What was the previous result?" m default
+      let first: text = vibe "What's 2 + 2?" m default
+      let second: text = vibe "What was the previous result?" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -380,7 +380,7 @@ describe('AI Tool Calling Flow', () => {
   test('AI call with no tool calls works normally', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let greeting: text = do "Say hello" m default
+      let greeting: text = vibe "Say hello" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -409,7 +409,7 @@ describe('AI Tool Calling Flow', () => {
   test('tool call errors are captured and passed to AI', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "Try to do something that fails" m default
+      let result: text = vibe "Try to do something that fails" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -461,7 +461,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
   test('formatted context shows tool calls and results', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "Calculate 5 + 3" m default
+      let result: text = vibe "Calculate 5 + 3" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -495,7 +495,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     // Verify formatted output shows: AI call → tool calls → response (via variable)
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "Calculate 5 + 3"
+    --> vibe: "Calculate 5 + 3"
     [tool] add({"a":5,"b":3})
     [result] 8
     <-- result (text): The answer is 8`
@@ -505,7 +505,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
   test('formatted context shows multiple tool calls in sequence', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let weather: text = do "Weather in Seattle and NYC?" m default
+      let weather: text = vibe "Weather in Seattle and NYC?" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -538,7 +538,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
 
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "Weather in Seattle and NYC?"
+    --> vibe: "Weather in Seattle and NYC?"
     [tool] getWeather({"city":"Seattle"})
     [result] {"temp":55,"condition":"rainy"}
     [tool] getWeather({"city":"New York"})
@@ -550,7 +550,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
   test('formatted context shows tool call error', async () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let result: text = do "Try the failing tool" m default
+      let result: text = vibe "Try the failing tool" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -595,7 +595,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
 
     expect(formatted.text).toBe(
       `  <entry> (current scope)
-    --> do: "Try the failing tool"
+    --> vibe: "Try the failing tool"
     [tool] riskyOperation({})
     [error] Operation failed: insufficient permissions
     <-- result (text): The operation failed due to permissions`
@@ -610,10 +610,10 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
       model m = { name: "test", apiKey: "key", url: "http://test" }
       let sum = 0
       for i in [1, 2] {
-        let partial: number = do "Add {i} to running total" m default
+        let partial: number = vibe "Add {i} to running total" m default
         sum = sum + partial
       } forget
-      let final: text = do "What is the final sum?" m default
+      let final: text = vibe "What is the final sum?" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -658,7 +658,7 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - sum (number): 0
-    --> do: "What is the final sum?"
+    --> vibe: "What is the final sum?"
     <-- final (text): The final sum is 3`
     );
   });
@@ -669,10 +669,10 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
       model m = { name: "test", apiKey: "key", url: "http://test" }
       let sum = 0
       for i in [1, 2] {
-        let partial: number = do "Add {i}" m default
+        let partial: number = vibe "Add {i}" m default
         sum = sum + partial
       } verbose
-      let final: text = do "What is sum?" m default
+      let final: text = vibe "What is sum?" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -719,19 +719,19 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
     - sum (number): 0
     ==> for i
     - i (number): 1
-    --> do: "Add 1"
+    --> vibe: "Add 1"
     [tool] add({"a":0,"b":1})
     [result] 1
     <-- partial (number): 1
     - sum (number): 1
     - i (number): 2
-    --> do: "Add 2"
+    --> vibe: "Add 2"
     [tool] add({"a":1,"b":2})
     [result] 3
     <-- partial (number): 3
     - sum (number): 4
     <== for i
-    --> do: "What is sum?"
+    --> vibe: "What is sum?"
     <-- final (text): Sum is 3`
     );
   });
@@ -748,12 +748,12 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
       model m = { name: "test", apiKey: "key", url: "http://test" }
 
       function calculate(x: number): number {
-        let result: number = do "Double {x}" m default
+        let result: number = vibe "Double {x}" m default
         return result
       }
 
       let answer = calculate(5)
-      let summary: text = do "What happened?" m default
+      let summary: text = vibe "What happened?" m default
     `);
 
     const toolExecutions: ToolExecution[] = [];
@@ -769,7 +769,7 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
       },
       { content: '10', parsedValue: 10, stopReason: 'end' },
       // After function returns - final do
-      { content: 'A calculation was done', parsedValue: 'A calculation was done', stopReason: 'end' },
+      { content: 'A calculation was vibene', parsedValue: 'A calculation was vibene', stopReason: 'end' },
     ];
 
     const aiProvider = createToolCallingAIProvider(mockResponses, toolExecutions, testTools);
@@ -790,8 +790,8 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - answer (number): 10
-    --> do: "What happened?"
-    <-- summary (text): A calculation was done`
+    --> vibe: "What happened?"
+    <-- summary (text): A calculation was vibene`
     );
 
     // The answer variable has the value from the function call

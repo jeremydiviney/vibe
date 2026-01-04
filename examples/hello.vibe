@@ -1,13 +1,15 @@
 // Simple Vibe example
 
+model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
+
 let greeting = "Hello World"
 
 // AI task
-let result = do "what is 1 + 1?"
+let result = vibe "what is 1 + 1?" m default
 
 // Function
 function sayHello(name) {
-  return do "say hello to {name}"
+  return vibe "say hello to {name}" m default
 }
 
 let message = sayHello("Claude")

@@ -68,37 +68,37 @@ describe('Functional Runtime - Step Execution', () => {
   test('runUntilPause pauses at AI call', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let response = do "prompt" m default
+      let response = vibe "prompt" m default
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
     expect(state.status).toBe('awaiting_ai');
     expect(state.pendingAI).not.toBeNull();
-    expect(state.pendingAI?.type).toBe('do');
+    expect(state.pendingAI?.type).toBe('vibe');
     expect(state.pendingAI?.prompt).toBe('prompt');
   });
 
-  test('runUntilPause pauses at ask call', () => {
+  test('runUntilPause pauses at second vibe call', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let input = ask "question?" m default
+      let input = vibe "question?" m default
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
-    expect(state.status).toBe('awaiting_user');
+    expect(state.status).toBe('awaiting_ai');
     expect(state.pendingAI).not.toBeNull();
-    expect(state.pendingAI?.type).toBe('ask');
+    expect(state.pendingAI?.type).toBe('vibe');
     expect(state.pendingAI?.prompt).toBe('question?');
   });
 });
 
 describe('Functional Runtime - Resume Execution', () => {
-  test('resumeWithAIResponse continues after do expression', () => {
+  test('resumeWithAIResponse continues after vibe expression', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let response = do "prompt" m default
+      let response = vibe "prompt" m default
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
@@ -112,17 +112,17 @@ describe('Functional Runtime - Resume Execution', () => {
     expect(state.callStack[0].locals['response'].value).toBe('AI response');
   });
 
-  test('resumeWithUserInput continues after ask expression', () => {
+  test('resumeWithAIResponse continues after second vibe expression', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let input = ask "What is your name?" m default
+      let input = vibe "What is your name?" m default
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
-    expect(state.status).toBe('awaiting_user');
+    expect(state.status).toBe('awaiting_ai');
 
-    state = resumeWithUserInput(state, 'Alice');
+    state = resumeWithAIResponse(state, 'Alice');
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
@@ -132,8 +132,8 @@ describe('Functional Runtime - Resume Execution', () => {
   test('multiple AI calls can be resumed sequentially', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let a = do "first" m default
-      let b = do "second" m default
+      let a = vibe "first" m default
+      let b = vibe "second" m default
     `);
     let state = createInitialState(ast);
 
@@ -182,7 +182,7 @@ describe('Functional Runtime - Serialization', () => {
   test('state can be serialized mid-execution and resumed', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let response = do "prompt" m default
+      let response = vibe "prompt" m default
       response
     `);
     let state = createInitialState(ast);
@@ -252,13 +252,13 @@ describe('Functional Runtime - Execution Log', () => {
   test('execution log tracks AI requests', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let response = do "test prompt" m default
+      let response = vibe "test prompt" m default
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
     const aiRequests = state.executionLog.filter(
-      (e) => e.instructionType === 'ai_do_request'
+      (e) => e.instructionType === 'ai_vibe_request'
     );
     expect(aiRequests).toHaveLength(1);
     expect(aiRequests[0].details?.prompt).toBe('test prompt');
@@ -267,7 +267,7 @@ describe('Functional Runtime - Execution Log', () => {
   test('execution log tracks AI responses', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
-      let response = do "test prompt" m default
+      let response = vibe "test prompt" m default
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
@@ -275,7 +275,7 @@ describe('Functional Runtime - Execution Log', () => {
     state = runUntilPause(state);
 
     const aiResponses = state.executionLog.filter(
-      (e) => e.instructionType === 'ai_do_response'
+      (e) => e.instructionType === 'ai_vibe_response'
     );
     expect(aiResponses).toHaveLength(1);
     expect(aiResponses[0].result).toBe('AI response');
@@ -466,16 +466,16 @@ describe('Functional Runtime - Pause at Any Instruction', () => {
     const ast = parse(`
       model m = { name: "test", apiKey: "key", url: "http://test" }
       let setup = "done"
-      let response = do "my prompt" m default
+      let response = vibe "my prompt" m default
     `);
     let state = createInitialState(ast);
 
     // Step until we're about to do the AI call
-    state = stepUntilOp(state, 'ai_do');
+    state = stepUntilOp(state, 'ai_vibe');
 
     // We're paused just before the AI call
     const next = getNextInstruction(state);
-    expect(next?.op).toBe('ai_do');
+    expect(next?.op).toBe('ai_vibe');
 
     // setup should be done
     expect(state.callStack[0].locals['setup']?.value).toBe('done');

@@ -399,17 +399,17 @@ while keepGoing {
   });
 
   // ============================================================================
-  // Do Expression
+  // Vibe Expression
   // ============================================================================
 
-  test('do with string', () => {
-    const ast = parse('let x = do "what is 2+2?" myModel default');
+  test('vibe with string', () => {
+    const ast = parse('let x = vibe "what is 2+2?" myModel default');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
       initializer: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         prompt: {
           type: 'StringLiteral',
           value: 'what is 2+2?',
@@ -426,14 +426,14 @@ while keepGoing {
     });
   });
 
-  test('do with identifier', () => {
-    const ast = parse('let x = do message myModel local');
+  test('vibe with identifier', () => {
+    const ast = parse('let x = vibe message myModel local');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
       initializer: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         prompt: {
           type: 'Identifier',
           name: 'message',
@@ -451,11 +451,11 @@ while keepGoing {
   });
 
   // ============================================================================
-  // Vibe Expression
+  // Vibe Expression (synonym for do)
   // ============================================================================
 
-  test('vibe with string and model', () => {
-    const ast = parse('let x = vibe "generate a hello function" myModel');
+  test('vibe with string, model, and default context', () => {
+    const ast = parse('let x = vibe "generate a hello function" myModel default');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
@@ -470,13 +470,16 @@ while keepGoing {
           type: 'Identifier',
           name: 'myModel',
         },
-        cached: false,
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'default',
+        },
       },
     });
   });
 
-  test('vibe with cache keyword', () => {
-    const ast = parse('let x = vibe "generate code" coder cache');
+  test('vibe with local context', () => {
+    const ast = parse('let x = vibe "generate code" coder local');
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
@@ -491,7 +494,10 @@ while keepGoing {
           type: 'Identifier',
           name: 'coder',
         },
-        cached: true,
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'local',
+        },
       },
     });
   });

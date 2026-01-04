@@ -4,7 +4,7 @@ import type { RuntimeState, Instruction, StackFrame, FrameEntry } from './types'
 import type { ContextMode } from '../ast';
 import { buildLocalContext, buildGlobalContext } from './context';
 import { execDeclareVar, execAssignVar } from './exec/variables';
-import { execAIDo, execAIAsk, execAIVibe } from './exec/ai';
+import { execAIVibe } from './exec/ai';
 import {
   execStatement,
   execStatements,
@@ -232,14 +232,8 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     case 'exit_block':
       return execExitBlock(state, instruction.savedKeys);
 
-    case 'ai_do':
-      return execAIDo(state, instruction.model, instruction.context);
-
-    case 'ai_ask':
-      return execAIAsk(state, instruction.model, instruction.context);
-
     case 'ai_vibe':
-      return execAIVibe(state, instruction.vibeExpr, instruction.modelName);
+      return execAIVibe(state, instruction.model, instruction.context);
 
     case 'ts_eval':
       return execTsEval(state, instruction.params, instruction.body);

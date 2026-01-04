@@ -48,8 +48,6 @@ export function createInitialState(
     pendingTS: null,
     pendingImportedTsCall: null,
     pendingToolCall: null,
-    pendingVibeGeneration: null,
-    vibeCache: {},
     rootDir: options?.rootDir ?? process.cwd(),
     error: null,
     errorObject: null,

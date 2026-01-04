@@ -253,14 +253,14 @@ describe('Semantic Analyzer - Type Validation', () => {
     expect(errors).toEqual([]);
   });
 
-  test('json type with do expression has no compile-time error', () => {
+  test('json type with vibe expression has no compile-time error', () => {
     const code = `
       model myModel = {
         name: "test",
         apiKey: "key",
         url: "http://example.com"
       }
-      let x: json = do "return JSON" myModel default
+      let x: json = vibe "return JSON" myModel default
     `;
     const errors = getErrors(code);
     expect(errors).toEqual([]);

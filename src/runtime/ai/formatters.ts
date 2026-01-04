@@ -267,7 +267,7 @@ VIBE SYNTAX REFERENCE:
 - Types: text, number, boolean, json, arrays (text[], number[])
 - Variables: let x = value, const x = value
 - Control flow: if/else, for x in array, while (condition)
-- AI calls: do "prompt" model default (use the model parameter)
+- AI calls: vibe "prompt" model default (use the model parameter)
 - TS blocks: ts(params) { return jsCode; }
 - Return: return value
 
@@ -279,7 +279,7 @@ IMPORTANT - FUNCTION SIGNATURE:
 RESTRICTIONS:
 - You can ONLY use function parameters and locally-created variables
 - No access to external functions or global variables
-- For AI calls, use the 'model' parameter: do "prompt" model default
+- For AI calls, use the 'model' parameter: vibe "prompt" model default
 
 EXAMPLE:
 function processData(model, items: text[], count: number): text {

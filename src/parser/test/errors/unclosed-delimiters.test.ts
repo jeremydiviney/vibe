@@ -95,9 +95,9 @@ greet("hello)
 `)).toThrow();
   });
 
-  test('unclosed string in do expression', () => {
+  test('unclosed string in vibe expression', () => {
     expect(() => parse(`
-let x = do "what is 2+2?
+let x = vibe "what is 2+2?
 `)).toThrow();
   });
 

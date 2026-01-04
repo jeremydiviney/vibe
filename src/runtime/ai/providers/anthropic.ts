@@ -64,13 +64,18 @@ function buildOutputFormat(targetType: TargetType): Record<string, unknown> | nu
  * Uses structured outputs (beta) for Claude 4.5 models.
  */
 export async function executeAnthropic(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults } = request;
+  const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults, messages: overrideMessages } = request;
 
   // Create Anthropic client
   const client = new Anthropic({
     apiKey: model.apiKey,
     baseURL: model.url ?? ANTHROPIC_CONFIG.defaultUrl,
   });
+
+  // If messages are provided (e.g., for vibe), use simplified path
+  if (overrideMessages) {
+    return executeWithOverrideMessages(client, model, overrideMessages);
+  }
 
   // Check if we can use structured output for this type
   const outputFormat = buildOutputFormat(targetType);
@@ -236,6 +241,62 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     }
 
     return { content, parsedValue, usage, toolCalls, stopReason };
+  } catch (error) {
+    if (error instanceof Anthropic.APIError) {
+      const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;
+      throw new AIError(
+        `Anthropic API error (${error.status}): ${error.message}`,
+        error.status,
+        isRetryable
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Execute with override messages (used by vibe for custom system prompt).
+ * Simpler path without context chunking, caching, or structured output.
+ */
+async function executeWithOverrideMessages(
+  client: Anthropic,
+  model: AIRequest['model'],
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>
+): Promise<AIResponse> {
+  // Separate system messages from user/assistant messages
+  const systemMessages = messages.filter(m => m.role === 'system');
+  const conversationMessages = messages.filter(m => m.role !== 'system');
+
+  // Build system content
+  const systemContent = systemMessages.map(m => m.content).join('\n\n');
+
+  try {
+    const response = await client.messages.create({
+      model: model.name,
+      max_tokens: 4096,
+      system: systemContent,
+      messages: conversationMessages.map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
+    });
+
+    // Extract text content
+    const textBlock = response.content.find(
+      (block): block is Anthropic.TextBlock => block.type === 'text'
+    );
+    const content = textBlock?.text ?? '';
+
+    // Extract usage
+    const rawUsage = response.usage as Record<string, unknown> | undefined;
+    const usage = rawUsage
+      ? {
+          inputTokens: Number(rawUsage.input_tokens ?? 0),
+          outputTokens: Number(rawUsage.output_tokens ?? 0),
+        }
+      : undefined;
+
+    return { content, parsedValue: content, usage, toolCalls: [], stopReason: 'end' };
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;

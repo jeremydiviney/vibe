@@ -9,4 +9,4 @@ model testModel = {
 }
 
 // Test: Basic text response - model should reply with exactly "PONG"
-let greeting = do "Reply with exactly: PONG" testModel default
+let greeting = vibe "Reply with exactly: PONG" testModel default

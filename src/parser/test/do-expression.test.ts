@@ -1,20 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from '../parse';
 
-describe('Parser - Do Expression', () => {
+describe('Parser - Vibe Expression', () => {
   // ============================================================================
-  // Basic do expressions with all 3 arguments
+  // Basic vibe expressions with all 3 arguments
   // ============================================================================
 
-  test('do with string prompt and default context', () => {
+  test('vibe with string prompt and default context', () => {
     const ast = parse(`
-do "what is 2+2" myModel default
+vibe "what is 2+2" myModel default
 `);
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'ExpressionStatement',
       expression: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         prompt: {
           type: 'StringLiteral',
           value: 'what is 2+2',
@@ -31,15 +31,15 @@ do "what is 2+2" myModel default
     });
   });
 
-  test('do with string prompt and local context', () => {
+  test('vibe with string prompt and local context', () => {
     const ast = parse(`
-do "explain this" myModel local
+vibe "explain this" myModel local
 `);
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'ExpressionStatement',
       expression: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         prompt: {
           type: 'StringLiteral',
           value: 'explain this',
@@ -56,15 +56,15 @@ do "explain this" myModel local
     });
   });
 
-  test('do with variable context', () => {
+  test('vibe with variable context', () => {
     const ast = parse(`
-do "prompt" myModel myContext
+vibe "prompt" myModel myContext
 `);
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'ExpressionStatement',
       expression: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         context: {
           type: 'ContextSpecifier',
           kind: 'variable',
@@ -74,15 +74,15 @@ do "prompt" myModel myContext
     });
   });
 
-  test('do with variable prompt', () => {
+  test('vibe with variable prompt', () => {
     const ast = parse(`
-do promptVar myModel default
+vibe promptVar myModel default
 `);
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'ExpressionStatement',
       expression: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         prompt: {
           type: 'Identifier',
           name: 'promptVar',
@@ -99,16 +99,16 @@ do promptVar myModel default
   // Do in variable assignment
   // ============================================================================
 
-  test('do result assigned to let', () => {
+  test('vibe result assigned to let', () => {
     const ast = parse(`
-let result = do "what is AI" gptModel default
+let result = vibe "what is AI" gptModel default
 `);
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'result',
       initializer: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         prompt: {
           type: 'StringLiteral',
           value: 'what is AI',
@@ -117,16 +117,16 @@ let result = do "what is AI" gptModel default
     });
   });
 
-  test('do result assigned to const', () => {
+  test('vibe result assigned to const', () => {
     const ast = parse(`
-const answer = do "calculate sum" mathModel local
+const answer = vibe "calculate sum" mathModel local
 `);
     expect(ast.body).toHaveLength(1);
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'answer',
       initializer: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
       },
     });
   });
@@ -142,7 +142,7 @@ model gpt4 = {
   apiUrl: "https://api.openai.com"
 }
 
-let response = do "hello world" gpt4 default
+let response = vibe "hello world" gpt4 default
 `);
     expect(ast.body).toHaveLength(2);
     expect(ast.body[0]).toMatchObject({
@@ -152,7 +152,7 @@ let response = do "hello world" gpt4 default
     expect(ast.body[1]).toMatchObject({
       type: 'LetDeclaration',
       initializer: {
-        type: 'DoExpression',
+        type: 'VibeExpression',
         model: {
           type: 'Identifier',
           name: 'gpt4',
@@ -165,10 +165,10 @@ let response = do "hello world" gpt4 default
   // Do in function body
   // ============================================================================
 
-  test('do inside function', () => {
+  test('vibe inside function', () => {
     const ast = parse(`
 function askAI(question: text): text {
-  return do question aiModel default
+  return vibe question aiModel default
 }
 `);
     expect(ast.body).toHaveLength(1);
@@ -181,7 +181,7 @@ function askAI(question: text): text {
           {
             type: 'ReturnStatement',
             value: {
-              type: 'DoExpression',
+              type: 'VibeExpression',
               prompt: {
                 type: 'Identifier',
                 name: 'question',
@@ -194,28 +194,28 @@ function askAI(question: text): text {
   });
 });
 
-describe('Syntax Errors - Do Expression', () => {
-  test('do missing model argument', () => {
+describe('Syntax Errors - Vibe Expression', () => {
+  test('vibe missing model argument', () => {
     expect(() => parse(`
-do "prompt" default
+vibe "prompt" default
 `)).toThrow();
   });
 
-  test('do missing context argument', () => {
+  test('vibe missing context argument', () => {
     expect(() => parse(`
-do "prompt" myModel
+vibe "prompt" myModel
 `)).toThrow();
   });
 
-  test('do with no arguments', () => {
+  test('vibe with no arguments', () => {
     expect(() => parse(`
 do
 `)).toThrow();
   });
 
-  test('do with only prompt', () => {
+  test('vibe with only prompt', () => {
     expect(() => parse(`
-let x = do "just a prompt"
+let x = vibe "just a prompt"
 `)).toThrow();
   });
 });

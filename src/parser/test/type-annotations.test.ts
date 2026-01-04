@@ -230,4 +230,25 @@ describe('Parser - Type Annotations', () => {
       returnType: 'boolean[][]',
     });
   });
+
+  test('function with model parameter type', () => {
+    const ast = parse('function process(m: model): text { return "done" }');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'FunctionDeclaration',
+      name: 'process',
+      params: [{ name: 'm', typeAnnotation: 'model' }],
+      returnType: 'text',
+    });
+  });
+
+  test('const declaration with model type', () => {
+    const ast = parse('const myModel: model = undefined');
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ConstDeclaration',
+      name: 'myModel',
+      typeAnnotation: 'model',
+    });
+  });
 });

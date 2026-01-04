@@ -89,7 +89,7 @@ class VibeParser extends CstParser {
     });
   });
 
-  // Type annotation: text, json, prompt, boolean, number, or any of these followed by []
+  // Type annotation: text, json, prompt, boolean, number, model, or any of these followed by []
   private typeAnnotation = this.RULE('typeAnnotation', () => {
     this.OR([
       { ALT: () => this.CONSUME(T.TextType) },
@@ -97,6 +97,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.CONSUME(T.PromptType) },
       { ALT: () => this.CONSUME(T.BooleanType) },
       { ALT: () => this.CONSUME(T.NumberType) },
+      { ALT: () => this.CONSUME(T.Model) },  // model type for AI model parameters
     ]);
     // Optional array brackets: text[] or text[][]
     this.MANY(() => {
@@ -341,31 +342,13 @@ class VibeParser extends CstParser {
 
   private expression = this.RULE('expression', () => {
     this.OR([
-      // AI operations
-      {
-        ALT: () => {
-          this.CONSUME(T.Do);
-          this.SUBRULE(this.expression);        // prompt
-          this.SUBRULE2(this.expression);       // model
-          this.SUBRULE(this.contextSpecifier);  // context
-        },
-      },
+      // AI operation - vibe is the only AI expression
       {
         ALT: () => {
           this.CONSUME(T.Vibe);
-          this.SUBRULE3(this.expression);   // prompt
-          this.SUBRULE6(this.expression);   // model
-          this.OPTION(() => {
-            this.CONSUME(T.Cache);          // optional cache keyword
-          });
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME(T.Ask);
-          this.SUBRULE4(this.expression);       // prompt
-          this.SUBRULE5(this.expression);       // model
-          this.SUBRULE2(this.contextSpecifier); // context
+          this.SUBRULE(this.expression);        // prompt
+          this.SUBRULE2(this.expression);       // model
+          this.SUBRULE(this.contextSpecifier);  // context
         },
       },
       // Assignment expression (identifier = expression)

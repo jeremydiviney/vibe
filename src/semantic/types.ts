@@ -3,7 +3,7 @@
 /**
  * Valid base types in the Vibe language.
  */
-export const VALID_BASE_TYPES = ['text', 'json', 'prompt', 'boolean', 'number'] as const;
+export const VALID_BASE_TYPES = ['text', 'json', 'prompt', 'boolean', 'number', 'model'] as const;
 
 /**
  * Get the base type from a type annotation (strips array brackets).

@@ -358,7 +358,7 @@ describe('Runtime - TypeScript Blocks', () => {
 
     const ast = parse(`
       model gpt = { name: "gpt-4", apiKey: "key", url: "http://test" }
-      let response = do "get user" gpt default
+      let response = vibe "get user" gpt default
       let parsed:json = ts(response) { return JSON.parse(response) }
       let score = ts(parsed) { return parsed.score }
     `);

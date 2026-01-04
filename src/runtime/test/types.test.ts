@@ -193,7 +193,7 @@ describe('Runtime - Type Validation', () => {
         apiKey: "key",
         url: "http://example.com"
       }
-      let x: json = do "return json" myModel default
+      let x: json = vibe "return json" myModel default
     `;
     const ast = parse(code);
     const runtime = new Runtime(ast, jsonProvider);
@@ -214,7 +214,7 @@ describe('Runtime - Type Validation', () => {
         apiKey: "key",
         url: "http://example.com"
       }
-      let x: json = do "return json" myModel default
+      let x: json = vibe "return json" myModel default
     `;
     const ast = parse(code);
     const runtime = new Runtime(ast, invalidProvider);

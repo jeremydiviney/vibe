@@ -48,12 +48,12 @@ model analyzer = {
 }
 
 // Find all .txt files
-let files: text[] = do "Find all .txt files in the current directory. Return just the filenames as an array." analyzer default
+let files: text[] = vibe "Find all .txt files in the current directory. Return just the filenames as an array." analyzer default
 
 // Process each file
 for file in files {
   // Read the file
-  let content: text = do "Use the readFile tool to read '{file}'. Return the exact file contents with no formatting, no markdown, no code blocks - just the raw text." analyzer default
+  let content: text = vibe "Use the readFile tool to read '{file}'. Return the exact file contents with no formatting, no markdown, no code blocks - just the raw text." analyzer default
 
   // Split content into lines using inline TS
   let lines: text[] = ts(content) { return content.split('\\n'); }
@@ -66,7 +66,7 @@ for file in files {
   }${modeKeyword}
 
   // Write annotated file
-  do "update the file '{file}' with the annotated lines, so each line ends with its length in brackets like [5]" analyzer default
+  vibe "update the file '{file}' with the annotated lines, so each line ends with its length in brackets like [5]" analyzer default
 }
 
 "done"
@@ -103,7 +103,7 @@ describe.skipIf(!shouldRun)('Context Modes Integration', () => {
 
       const state = runtime.getState();
       console.log('\n=== FORGET MODE ===');
-      console.log(formatAIInteractions(state));
+      console.log(formatAIInteractions(state.aiInteractions));
 
       // Get the final context
       const context = buildLocalContext(state);
@@ -169,7 +169,7 @@ describe.skipIf(!shouldRun)('Context Modes Integration', () => {
 
       const state = runtime.getState();
       console.log('\n=== VERBOSE MODE ===');
-      console.log(formatAIInteractions(state));
+      console.log(formatAIInteractions(state.aiInteractions));
 
       // Get the final context
       const context = buildLocalContext(state);

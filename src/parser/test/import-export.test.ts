@@ -65,7 +65,7 @@ describe('Parser - Export Declarations', () => {
   test('export function', () => {
     const source = `
       export function greet(name: text): text {
-        return do "Hello {name}" gpt default
+        return vibe "Hello {name}" gpt default
       }
     `;
     const ast = parse(source);
@@ -131,7 +131,7 @@ describe('Parser - Import and Export Combined', () => {
 
       export function greet(name: text): text {
         let greeting = helper(name)
-        return do "{greeting}" gpt default
+        return vibe "{greeting}" gpt default
       }
     `;
     const ast = parse(source);

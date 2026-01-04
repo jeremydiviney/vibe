@@ -10,7 +10,7 @@ model fixer = {
 
 let code = readFile("buggy-code.ts")
 
-let result: text = do "Here's a TypeScript file 'buggy-code.ts':
+let result: text = vibe "Here's a TypeScript file 'buggy-code.ts':
 
 {code}
 

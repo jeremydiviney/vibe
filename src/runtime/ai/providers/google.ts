@@ -30,7 +30,7 @@ function generateToolCallId(): string {
  * Execute an AI request using the Google Gen AI SDK.
  */
 export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model, tools } = request;
+  const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults } = request;
 
   // Create Google Gen AI client
   const client = new GoogleGenAI({ apiKey: model.apiKey });
@@ -54,6 +54,59 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
   if (contextMessage) parts.push(contextMessage);
   parts.push(promptMessage);
   const combinedPrompt = parts.join('\n\n');
+
+  // Build conversation contents - either simple prompt or multi-turn with tool results
+  type ContentPart = { text: string } | { functionCall: { name: string; args: Record<string, unknown> } } | { functionResponse: { name: string; response: unknown } };
+  type Content = { role: 'user' | 'model'; parts: ContentPart[] };
+
+  let contents: string | Content[];
+
+  if (previousToolCalls?.length && toolResults?.length) {
+    // Multi-turn conversation with tool results
+    // 1. Original user message
+    const userMessage: Content = {
+      role: 'user',
+      parts: [{ text: combinedPrompt }],
+    };
+
+    // 2. Model message with function calls (including thoughtSignature for Gemini 3)
+    const modelParts: ContentPart[] = previousToolCalls.map(call => {
+      const part: ContentPart = {
+        functionCall: {
+          name: call.toolName,
+          args: call.args,
+        },
+      };
+      // Include thoughtSignature if present (required for Gemini 3)
+      if (call.thoughtSignature) {
+        (part as Record<string, unknown>).thoughtSignature = call.thoughtSignature;
+      }
+      return part;
+    });
+    const modelMessage: Content = {
+      role: 'model',
+      parts: modelParts,
+    };
+
+    // 3. User message with function responses
+    const responseParts: ContentPart[] = toolResults.map((result, i) => ({
+      functionResponse: {
+        name: previousToolCalls[i].toolName,
+        response: result.error
+          ? { error: result.error }
+          : { result: result.result },
+      },
+    }));
+    const responseMessage: Content = {
+      role: 'user',
+      parts: responseParts,
+    };
+
+    contents = [userMessage, modelMessage, responseMessage];
+  } else {
+    // Simple single prompt
+    contents = combinedPrompt;
+  }
 
   try {
     // Build generation config
@@ -100,17 +153,18 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
     // Make API request
     const response = await client.models.generateContent({
       model: model.name,
-      contents: combinedPrompt,
+      contents,
       config,
     });
 
     // Extract text content
     const content = response.text ?? '';
 
-    // Extract function calls from response parts
+    // Extract function calls from response parts (including thoughtSignature for Gemini 3)
     const responseParts = (response.candidates?.[0]?.content?.parts ?? []) as Array<{
       text?: string;
       functionCall?: { name: string; args: Record<string, unknown> };
+      thoughtSignature?: string;
     }>;
     const functionCallParts = responseParts.filter((p) => p.functionCall);
     let toolCalls: AIToolCall[] | undefined;
@@ -119,6 +173,7 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
         id: generateToolCallId(),
         toolName: p.functionCall!.name,
         args: p.functionCall!.args,
+        thoughtSignature: p.thoughtSignature,
       }));
     }
 
