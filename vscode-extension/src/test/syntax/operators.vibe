@@ -1,0 +1,28 @@
+// SYNTAX TEST "source.vibe"
+
+let a = 1 + 2
+//        ^ keyword.operator.arithmetic.vibe
+
+let b = 3 - 4
+//        ^ keyword.operator.arithmetic.vibe
+
+let c = 5 * 6
+//        ^ keyword.operator.arithmetic.vibe
+
+let d = 7 / 8
+//        ^ keyword.operator.arithmetic.vibe
+
+let e = x == y
+//        ^^ keyword.operator.comparison.vibe
+
+let f = x != y
+//        ^^ keyword.operator.comparison.vibe
+
+let g = x and y
+//        ^^^ keyword.operator.logical.vibe
+
+let h = x or y
+//        ^^ keyword.operator.logical.vibe
+
+let i = not x
+//      ^^^ keyword.operator.logical.vibe

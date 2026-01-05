@@ -1,0 +1,35 @@
+// SYNTAX TEST "source.vibe"
+
+vibe "hello" myModel default
+// <- keyword.ai.vibe
+//   ^^^^^^^ string.quoted.double.vibe
+//                   ^^^^^^^ keyword.context.vibe
+
+model gpt = {
+// <- keyword.declaration.vibe
+//    ^^^ variable.other.vibe
+  provider: "openai"
+//^^^^^^^^ variable.other.vibe
+//          ^^^^^^^^ string.quoted.double.vibe
+}
+
+tool search(query: text): json
+// <- keyword.declaration.vibe
+//   ^^^^^^ entity.name.function.vibe
+//                 ^^^^ support.type.vibe
+//                        ^^^^ support.type.vibe
+@description "Search the web"
+// <- entity.name.function.decorator.vibe
+//           ^^^^^^^^^^^^^^^^ string.quoted.double.vibe
+{
+  return {}
+}
+
+forget
+// <- keyword.context.vibe
+
+verbose
+// <- keyword.context.vibe
+
+compress
+// <- keyword.context.vibe

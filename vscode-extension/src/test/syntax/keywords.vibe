@@ -1,0 +1,34 @@
+// SYNTAX TEST "source.vibe"
+
+let x = 1
+// <- keyword.declaration.vibe
+//  ^ variable.other.vibe
+
+const y = 2
+// <- keyword.declaration.vibe
+
+function greet(name: text) {
+// <- keyword.declaration.vibe
+//       ^^^^^ entity.name.function.vibe
+//                   ^^^^ support.type.vibe
+
+  return "hello"
+//^^^^^^ keyword.control.vibe
+//       ^^^^^^^ string.quoted.double.vibe
+}
+
+if true {
+// <- keyword.control.vibe
+// ^^^^ constant.language.boolean.vibe
+}
+
+for i in 1..10 {
+// <- keyword.control.vibe
+//    ^^ keyword.control.vibe
+//        ^^ keyword.operator.range.vibe
+}
+
+while false {
+// <- keyword.control.vibe
+//    ^^^^^ constant.language.boolean.vibe
+}

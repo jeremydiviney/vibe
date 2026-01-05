@@ -42,7 +42,8 @@
     "watch": "node esbuild.js --watch",
     "compile": "tsc -p ./",
     "lint": "eslint src --ext ts",
-    "test": "bun test src/test/"
+    "test": "bun test src/test/",
+    "test:syntax": "npx vscode-tmgrammar-test -g syntaxes/vibe.tmLanguage.json src/test/syntax/*.vibe"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1",
@@ -53,6 +54,7 @@
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.20.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vscode-tmgrammar-test": "^0.1.3"
   }
 }
