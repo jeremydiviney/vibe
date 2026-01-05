@@ -3,6 +3,7 @@ import { fileTools } from './file-tools';
 import { searchTools } from './search-tools';
 import { directoryTools } from './directory-tools';
 import { utilityTools } from './utility-tools';
+import { systemTools } from './system-tools';
 
 /**
  * Standard tools available in the Vibe runtime.
@@ -13,14 +14,16 @@ import { utilityTools } from './utility-tools';
  * - File search: glob, grep
  * - Directory operations: mkdir, dirExists
  * - Utilities: env, sleep, now, jsonParse, jsonStringify, print, random, uuid
+ * - System: bash, runCode
  *
- * Total: 18 tools
+ * Total: 20 tools
  */
 export const standardTools: RegisteredTool[] = [
   ...fileTools,
   ...searchTools,
   ...directoryTools,
   ...utilityTools,
+  ...systemTools,
 ];
 
 /** @deprecated Use standardTools instead */
