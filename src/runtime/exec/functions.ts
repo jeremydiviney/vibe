@@ -9,7 +9,7 @@ import { validateAndCoerce } from '../validation';
 
 /**
  * Get the effective context mode for a function call.
- * Priority: call-site override > function declaration > default (verbose)
+ * Priority: call-site override > function declaration (which defaults to verbose at parse time)
  */
 function getEffectiveContextMode(
   func: AST.FunctionDeclaration,
@@ -19,8 +19,8 @@ function getEffectiveContextMode(
   if (callSiteMode !== undefined) {
     return callSiteMode;
   }
-  // Use function's declared mode, or default to verbose
-  return func.contextMode ?? 'verbose';
+  // Use function's declared mode (defaults to 'verbose' at parse time)
+  return func.contextMode!;
 }
 
 /**

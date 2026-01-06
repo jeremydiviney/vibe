@@ -299,7 +299,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       if (index >= items.length) {
         // Loop complete - add scope-exit marker and apply context mode
         const frame = currentFrame(state);
-        const exitState = applyContextMode(state, frame, contextMode ?? 'verbose', entryIndex, 'for', label);
+        const exitState = applyContextMode(state, frame, contextMode!, entryIndex, 'for', label);
 
         // Cleanup scope variables
         return execExitBlock(exitState, savedKeys);
@@ -395,7 +395,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       if (!condition) {
         // Loop complete - add scope-exit marker and apply context mode
         const frame = currentFrame(state);
-        const exitState = applyContextMode(state, frame, contextMode ?? 'verbose', entryIndex, 'while', label);
+        const exitState = applyContextMode(state, frame, contextMode!, entryIndex, 'while', label);
 
         // Cleanup scope variables
         return execExitBlock(exitState, savedKeys);

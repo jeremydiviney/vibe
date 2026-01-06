@@ -125,14 +125,14 @@ describe('Context Modes - Parsing', () => {
     expect(funcDecl.contextMode).toEqual({ compress: null });
   });
 
-  test('loop without context mode has undefined contextMode', () => {
+  test('loop without context mode defaults to verbose', () => {
     const ast = parse(`
       for i in [1, 2, 3] {
         let x = i
       }
     `);
     const forStmt = ast.body[0] as { type: 'ForInStatement'; contextMode?: unknown };
-    expect(forStmt.contextMode).toBeUndefined();
+    expect(forStmt.contextMode).toBe('verbose');
   });
 });
 

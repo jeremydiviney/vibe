@@ -164,7 +164,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
       params: ctx.parameterList ? this.visit(ctx.parameterList) : [],
       returnType: ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null,
       body: this.visit(ctx.blockStatement), location: tokenLocation(ctx.Function[0]),
-      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
+      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : 'verbose',  // Default to verbose
     };
   }
 
@@ -265,7 +265,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
       iterable: this.visit(ctx.expression),
       body: this.visit(ctx.blockStatement),
       location: tokenLocation(ctx.For[0]),
-      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
+      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : 'verbose',  // Default to verbose
     };
   }
 
@@ -275,7 +275,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
       condition: this.visit(ctx.expression),
       body: this.visit(ctx.blockStatement),
       location: tokenLocation(ctx.While[0]),
-      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : undefined,
+      contextMode: ctx.contextMode ? this.visit(ctx.contextMode) : 'verbose',  // Default to verbose
     };
   }
 
