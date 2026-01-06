@@ -48,7 +48,7 @@ export interface AIMessage {
  */
 export interface AIContext {
   /** Operation type */
-  operationType: 'do' | 'ask' | 'vibe';
+  operationType: 'do' | 'vibe';
 
   /** Model being used */
   model: ModelConfig;

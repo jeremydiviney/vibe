@@ -233,7 +233,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execExitBlock(state, instruction.savedKeys);
 
     case 'ai_vibe':
-      return execAIVibe(state, instruction.model, instruction.context);
+      return execAIVibe(state, instruction.model, instruction.context, instruction.operationType);
 
     case 'ts_eval':
       return execTsEval(state, instruction.params, instruction.body);

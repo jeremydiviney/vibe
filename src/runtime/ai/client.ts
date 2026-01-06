@@ -42,7 +42,7 @@ export function buildAIRequest(
   model: ModelConfig,
   prompt: string,
   contextText: string,
-  operationType: 'do' | 'ask' | 'vibe',
+  operationType: 'do' | 'vibe',
   targetType: TargetType
 ): AIRequest {
   return {
@@ -73,7 +73,7 @@ export async function executeAI(
   modelValue: VibeModelValue,
   prompt: string,
   contextText: string,
-  operationType: 'do' | 'ask' | 'vibe',
+  operationType: 'do' | 'vibe',
   targetType: TargetType
 ): Promise<AIResponse> {
   // Validate model config

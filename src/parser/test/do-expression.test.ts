@@ -15,6 +15,7 @@ vibe "what is 2+2" myModel default
       type: 'ExpressionStatement',
       expression: {
         type: 'VibeExpression',
+        operationType: 'vibe',
         prompt: {
           type: 'StringLiteral',
           value: 'what is 2+2',
@@ -209,13 +210,166 @@ vibe "prompt" myModel
 
   test('vibe with no arguments', () => {
     expect(() => parse(`
-do
+vibe
 `)).toThrow();
   });
 
   test('vibe with only prompt', () => {
     expect(() => parse(`
 let x = vibe "just a prompt"
+`)).toThrow();
+  });
+});
+
+// ============================================================================
+// Do Expression (single-round, no tool loop)
+// ============================================================================
+
+describe('Parser - Do Expression', () => {
+  test('do with string prompt and default context', () => {
+    const ast = parse(`
+do "summarize this" myModel default
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ExpressionStatement',
+      expression: {
+        type: 'VibeExpression',
+        operationType: 'do',
+        prompt: {
+          type: 'StringLiteral',
+          value: 'summarize this',
+        },
+        model: {
+          type: 'Identifier',
+          name: 'myModel',
+        },
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'default',
+        },
+      },
+    });
+  });
+
+  test('do with local context', () => {
+    const ast = parse(`
+do "analyze" myModel local
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ExpressionStatement',
+      expression: {
+        type: 'VibeExpression',
+        operationType: 'do',
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'local',
+        },
+      },
+    });
+  });
+
+  test('do with variable context', () => {
+    const ast = parse(`
+do "prompt" myModel myContext
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ExpressionStatement',
+      expression: {
+        type: 'VibeExpression',
+        operationType: 'do',
+        context: {
+          type: 'ContextSpecifier',
+          kind: 'variable',
+          variable: 'myContext',
+        },
+      },
+    });
+  });
+
+  test('do result assigned to let', () => {
+    const ast = parse(`
+let summary = do "summarize the code" gpt4 default
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      name: 'summary',
+      initializer: {
+        type: 'VibeExpression',
+        operationType: 'do',
+        prompt: {
+          type: 'StringLiteral',
+          value: 'summarize the code',
+        },
+      },
+    });
+  });
+
+  test('do result assigned to typed const', () => {
+    const ast = parse(`
+const count: number = do "how many items?" myModel default
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ConstDeclaration',
+      name: 'count',
+      typeAnnotation: 'number',
+      initializer: {
+        type: 'VibeExpression',
+        operationType: 'do',
+      },
+    });
+  });
+
+  test('do inside function', () => {
+    const ast = parse(`
+function summarize(input: text): text {
+  return do input summaryModel default
+}
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'FunctionDeclaration',
+      name: 'summarize',
+      body: {
+        type: 'BlockStatement',
+        body: [
+          {
+            type: 'ReturnStatement',
+            value: {
+              type: 'VibeExpression',
+              operationType: 'do',
+              prompt: {
+                type: 'Identifier',
+                name: 'input',
+              },
+            },
+          },
+        ],
+      },
+    });
+  });
+});
+
+describe('Syntax Errors - Do Expression', () => {
+  test('do missing model argument', () => {
+    expect(() => parse(`
+do "prompt" default
+`)).toThrow();
+  });
+
+  test('do missing context argument', () => {
+    expect(() => parse(`
+do "prompt" myModel
+`)).toThrow();
+  });
+
+  test('do with no arguments', () => {
+    expect(() => parse(`
+do
 `)).toThrow();
   });
 });

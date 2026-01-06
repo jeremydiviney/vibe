@@ -42,7 +42,6 @@ export const Let = token({ name: 'Let', pattern: /let/, longer_alt: Identifier }
 export const Const = token({ name: 'Const', pattern: /const/, longer_alt: Identifier });
 export const Vibe = token({ name: 'Vibe', pattern: /vibe/, longer_alt: Identifier });
 export const Do = token({ name: 'Do', pattern: /do/, longer_alt: Identifier });
-export const Ask = token({ name: 'Ask', pattern: /ask/, longer_alt: Identifier });
 export const Function = token({ name: 'Function', pattern: /function/, longer_alt: Identifier });
 export const Tool = token({ name: 'Tool', pattern: /tool/, longer_alt: Identifier });
 export const Return = token({ name: 'Return', pattern: /return/, longer_alt: Identifier });
@@ -248,7 +247,6 @@ export const allTokens = [
   Const,
   Vibe,
   Do,
-  Ask,
   Function,
   Tool,
   Return,

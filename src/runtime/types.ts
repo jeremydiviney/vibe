@@ -52,7 +52,7 @@ export interface PromptToolCall {
 // Prompt in context (when AI function is called)
 export interface ContextPrompt {
   kind: 'prompt';
-  aiType: 'do' | 'ask' | 'vibe';
+  aiType: 'do' | 'vibe' | 'ask';
   prompt: string;
   toolCalls?: PromptToolCall[];  // Tool calls made during this prompt (before response)
   response?: unknown;  // Included when AI returns
@@ -104,7 +104,7 @@ export type FrameEntry =
     }
   | {
       kind: 'prompt';
-      aiType: 'do' | 'ask' | 'vibe';
+      aiType: 'do' | 'vibe' | 'ask';
       prompt: string;
       toolCalls?: PromptToolCall[];  // Tool calls made during this prompt
       response?: unknown;            // Added when AI returns
@@ -213,7 +213,7 @@ export interface ExecutionEntry {
 
 // Pending AI request info
 export interface PendingAI {
-  type: 'vibe';
+  type: 'do' | 'vibe';  // 'do' = single round, 'vibe' = multi-turn tool loop
   prompt: string;
   model: string;
   context: unknown[];
@@ -320,7 +320,7 @@ export type Instruction =
   | { op: 'exit_block'; savedKeys: string[]; location: SourceLocation }
 
   // AI operations (pause points)
-  | { op: 'ai_vibe'; model: string; context: AST.ContextSpecifier; location: SourceLocation }
+  | { op: 'ai_vibe'; model: string; context: AST.ContextSpecifier; operationType: 'do' | 'vibe'; location: SourceLocation }
 
   // TypeScript evaluation (pause point)
   | { op: 'ts_eval'; params: string[]; body: string; location: SourceLocation }

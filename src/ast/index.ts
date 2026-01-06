@@ -298,8 +298,12 @@ export interface ContextSpecifier extends BaseNode {
   variable?: string;
 }
 
+/** AI operation type - controls tool calling behavior */
+export type AIOperationType = 'do' | 'vibe';
+
 export interface VibeExpression extends BaseNode {
   type: 'VibeExpression';
+  operationType: AIOperationType;  // 'do' = single call, 'vibe' = tool loop
   prompt: Expression;
   model: Expression;
   context: ContextSpecifier;

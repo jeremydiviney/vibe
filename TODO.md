@@ -15,11 +15,15 @@
 - [ ] Implement `compress` keyword for context compression
   - [ ] `compress("prompt")` - compress context with custom prompt
   - [ ] Consider `aicompress` vs `compress` naming
+- [ ] Call-site context mode override for functions
+  - [ ] Allow `forget` or `verbose` after function call to override declaration
+  - [ ] Example: `let result = myFunc() forget` overrides function's default mode
+  - [ ] Useful when caller wants different context behavior than function author intended
 
 ### Cleanup
 - [x] Remove all `do` keyword references from docs (replaced by `vibe`)
 - [x] Remove `cache` keyword from lexer and docs (no longer needed)
-- [ ] Fix all TypeScript errors (`bun tsc --noEmit`)
+- [x] Fix all TypeScript errors (`bun tsc --noEmit`)
 
 ### Permission System
 - [ ] Command permission scheme (like Claude Code settings)
@@ -57,6 +61,12 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Single-round AI command (`do` keyword)
+  - [x] `do` keyword for single-round AI call (executes tools once, no loop back)
+  - [x] `vibe` continues to support multi-turn tool calling (up to 10 rounds)
+  - [x] Parser, visitor, runtime types, AI provider updated
+  - [x] Removed `Ask` token from lexer (internal `'ask'` type preserved for user input)
 
 - [x] Runtime safety for const objects in ts blocks
   - [x] Deep freeze const JSON objects before passing to ts blocks

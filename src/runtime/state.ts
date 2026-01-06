@@ -113,7 +113,7 @@ export function resumeWithAIResponse(
   // Create prompt entry with embedded tool calls (order: prompt → tools → response)
   const promptEntry: FrameEntry = {
     kind: 'prompt' as const,
-    aiType: pendingAI.type as 'do' | 'ask' | 'vibe',
+    aiType: pendingAI.type,
     prompt: pendingAI.prompt,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     response,  // Include response for context history

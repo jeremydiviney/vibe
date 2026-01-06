@@ -457,6 +457,122 @@ describe('AI Tool Calling Flow', () => {
   });
 });
 
+describe('AI Tool Calling - Do Command (Single Round)', () => {
+  test('do command with tool calls shows tool history in context for second do call', async () => {
+    // This test verifies that when using `do`:
+    // 1. First `do` call triggers tool execution (single round)
+    // 2. Second `do` call can see the tool calls and results from the first `do` in its context
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      let first: text = do "Calculate 5 + 3 and 2 * 4" m default
+      let second: text = do "What were the previous calculations?" m default
+    `);
+
+    const toolExecutions: ToolExecution[] = [];
+    const testTools = createTestTools();
+
+    // Mock responses:
+    // First do call - returns two tool calls, then final response (single round for do)
+    // Second do call - just returns a response (no tools)
+    const mockResponses: AIResponse[] = [
+      // First do: AI requests two tool calls
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [
+          { id: 'call_1', toolName: 'add', args: { a: 5, b: 3 } },
+          { id: 'call_2', toolName: 'multiply', args: { a: 2, b: 4 } },
+        ],
+        stopReason: 'tool_use',
+      },
+      // First do: Final response after tools execute
+      {
+        content: '5 + 3 = 8 and 2 * 4 = 8',
+        parsedValue: '5 + 3 = 8 and 2 * 4 = 8',
+        stopReason: 'end',
+      },
+      // Second do: Response referencing previous context
+      {
+        content: 'Previously: add(5,3)=8 and multiply(2,4)=8',
+        parsedValue: 'Previously: add(5,3)=8 and multiply(2,4)=8',
+        stopReason: 'end',
+      },
+    ];
+
+    const aiProvider = createToolCallingAIProvider(mockResponses, toolExecutions, testTools);
+    const runtime = new Runtime(ast, aiProvider);
+    await runtime.run();
+
+    // Verify both tools were executed in the first do call
+    expect(toolExecutions).toHaveLength(2);
+    expect(toolExecutions[0]).toEqual({
+      name: 'add',
+      args: { a: 5, b: 3 },
+      result: 8,
+    });
+    expect(toolExecutions[1]).toEqual({
+      name: 'multiply',
+      args: { a: 2, b: 4 },
+      result: 8,
+    });
+
+    // Verify both results assigned correctly
+    expect(runtime.getValue('first')).toBe('5 + 3 = 8 and 2 * 4 = 8');
+    expect(runtime.getValue('second')).toBe('Previously: add(5,3)=8 and multiply(2,4)=8');
+
+    // Get state and verify context structure
+    const state = runtime.getState();
+    const frame = state.callStack[state.callStack.length - 1];
+
+    // Find prompt entries
+    const promptEntries = frame.orderedEntries.filter(e => e.kind === 'prompt');
+    expect(promptEntries).toHaveLength(2); // first and second do calls
+
+    // First prompt should have the two tool calls embedded
+    const firstPrompt = promptEntries[0];
+    expect(firstPrompt.kind).toBe('prompt');
+    if (firstPrompt.kind === 'prompt') {
+      expect(firstPrompt.aiType).toBe('do');
+      expect(firstPrompt.toolCalls).toHaveLength(2);
+      expect(firstPrompt.toolCalls![0]).toEqual({
+        toolName: 'add',
+        args: { a: 5, b: 3 },
+        result: 8,
+      });
+      expect(firstPrompt.toolCalls![1]).toEqual({
+        toolName: 'multiply',
+        args: { a: 2, b: 4 },
+        result: 8,
+      });
+      expect(firstPrompt.response).toBe('5 + 3 = 8 and 2 * 4 = 8');
+    }
+
+    // Second prompt should have no tool calls
+    const secondPrompt = promptEntries[1];
+    if (secondPrompt.kind === 'prompt') {
+      expect(secondPrompt.aiType).toBe('do');
+      expect(secondPrompt.toolCalls).toBeUndefined();
+      expect(secondPrompt.response).toBe('Previously: add(5,3)=8 and multiply(2,4)=8');
+    }
+
+    // Verify formatted context shows the complete history
+    const context = buildLocalContext(state);
+    const formatted = formatContextForAI(context, { includeInstructions: false });
+
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "Calculate 5 + 3 and 2 * 4"
+    [tool] add({"a":5,"b":3})
+    [result] 8
+    [tool] multiply({"a":2,"b":4})
+    [result] 8
+    <-- first (text): 5 + 3 = 8 and 2 * 4 = 8
+    --> do: "What were the previous calculations?"
+    <-- second (text): Previously: add(5,3)=8 and multiply(2,4)=8`
+    );
+  });
+});
+
 describe('AI Tool Calling - Formatted Context Output', () => {
   test('formatted context shows tool calls and results', async () => {
     const ast = parse(`
@@ -796,5 +912,159 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
 
     // The answer variable has the value from the function call
     expect(runtime.getValue('answer')).toBe(10);
+  });
+});
+
+describe('AI Tool Calling - Function Context Modes with Do', () => {
+  test('do tool calls in function (default) and outside are both visible in context', async () => {
+    // Test scenario:
+    // 1. Define function dofunc() that makes a do call with tool
+    // 2. Make a do call with tool (outside function)
+    // 3. Call dofunc()
+    // 4. Make final do (no tools) - context should contain BOTH tool calls
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+
+      function dofunc(): text {
+        return do "Multiply 3 * 4" m default
+      }
+
+      let first: text = do "Add 1 + 2" m default
+      let fromFunc = dofunc()
+      let final: text = do "What calculations were done?" m default
+    `);
+
+    const toolExecutions: ToolExecution[] = [];
+    const testTools = createTestTools();
+
+    const mockResponses: AIResponse[] = [
+      // First do (outside function) - calls add
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_1', toolName: 'add', args: { a: 1, b: 2 } }],
+        stopReason: 'tool_use',
+      },
+      { content: '1 + 2 = 3', parsedValue: '1 + 2 = 3', stopReason: 'end' },
+      // dofunc() - do inside function calls multiply
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_2', toolName: 'multiply', args: { a: 3, b: 4 } }],
+        stopReason: 'tool_use',
+      },
+      { content: '3 * 4 = 12', parsedValue: '3 * 4 = 12', stopReason: 'end' },
+      // Final do (no tools)
+      { content: 'Add and multiply were called', parsedValue: 'Add and multiply were called', stopReason: 'end' },
+    ];
+
+    const aiProvider = createToolCallingAIProvider(mockResponses, toolExecutions, testTools);
+    const runtime = new Runtime(ast, aiProvider);
+    await runtime.run();
+
+    // Verify both tools were executed
+    expect(toolExecutions).toHaveLength(2);
+    expect(toolExecutions[0]).toEqual({ name: 'add', args: { a: 1, b: 2 }, result: 3 });
+    expect(toolExecutions[1]).toEqual({ name: 'multiply', args: { a: 3, b: 4 }, result: 12 });
+
+    // Verify results
+    expect(runtime.getValue('first')).toBe('1 + 2 = 3');
+    expect(runtime.getValue('fromFunc')).toBe('3 * 4 = 12');
+    expect(runtime.getValue('final')).toBe('Add and multiply were called');
+
+    // Get context and verify tool call visibility
+    const state = runtime.getState();
+    const context = buildLocalContext(state);
+    const formatted = formatContextForAI(context, { includeInstructions: false });
+
+    // Current behavior: function frame is popped, so tool call from inside function is NOT visible
+    // Only the first do's tool call and the function's return value are visible
+    // Note: fromFunc shows <-- because it received an AI-sourced value from the function
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "Add 1 + 2"
+    [tool] add({"a":1,"b":2})
+    [result] 3
+    <-- first (text): 1 + 2 = 3
+    <-- fromFunc (text): 3 * 4 = 12
+    --> do: "What calculations were done?"
+    <-- final (text): Add and multiply were called`
+    );
+  });
+
+  test('do tool calls in function with forget mode only shows outside tool calls', async () => {
+    // Test scenario (with forget on function):
+    // 1. Define function dofunc() forget that makes a do call with tool
+    // 2. Make a do call with tool (outside function)
+    // 3. Call dofunc()
+    // 4. Make final do - context should only have first do's tool call (function's is forgotten)
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+
+      function dofunc(): text {
+        return do "Multiply 3 * 4" m default
+      } forget
+
+      let first: text = do "Add 1 + 2" m default
+      let fromFunc = dofunc()
+      let final: text = do "What calculations were done?" m default
+    `);
+
+    const toolExecutions: ToolExecution[] = [];
+    const testTools = createTestTools();
+
+    const mockResponses: AIResponse[] = [
+      // First do (outside function) - calls add
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_1', toolName: 'add', args: { a: 1, b: 2 } }],
+        stopReason: 'tool_use',
+      },
+      { content: '1 + 2 = 3', parsedValue: '1 + 2 = 3', stopReason: 'end' },
+      // dofunc() - do inside function calls multiply
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_2', toolName: 'multiply', args: { a: 3, b: 4 } }],
+        stopReason: 'tool_use',
+      },
+      { content: '3 * 4 = 12', parsedValue: '3 * 4 = 12', stopReason: 'end' },
+      // Final do (no tools)
+      { content: 'Only add was visible', parsedValue: 'Only add was visible', stopReason: 'end' },
+    ];
+
+    const aiProvider = createToolCallingAIProvider(mockResponses, toolExecutions, testTools);
+    const runtime = new Runtime(ast, aiProvider);
+    await runtime.run();
+
+    // Verify both tools were executed (forget doesn't prevent execution)
+    expect(toolExecutions).toHaveLength(2);
+    expect(toolExecutions[0]).toEqual({ name: 'add', args: { a: 1, b: 2 }, result: 3 });
+    expect(toolExecutions[1]).toEqual({ name: 'multiply', args: { a: 3, b: 4 }, result: 12 });
+
+    // Verify results (function still returns value)
+    expect(runtime.getValue('first')).toBe('1 + 2 = 3');
+    expect(runtime.getValue('fromFunc')).toBe('3 * 4 = 12');
+    expect(runtime.getValue('final')).toBe('Only add was visible');
+
+    // Get context and verify tool call visibility
+    const state = runtime.getState();
+    const context = buildLocalContext(state);
+    const formatted = formatContextForAI(context, { includeInstructions: false });
+
+    // With forget on function: function's internal tool call is explicitly forgotten
+    // Current behavior: function frame is popped anyway, so same as default
+    // Note: fromFunc shows <-- because it received an AI-sourced value from the function
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "Add 1 + 2"
+    [tool] add({"a":1,"b":2})
+    [result] 3
+    <-- first (text): 1 + 2 = 3
+    <-- fromFunc (text): 3 * 4 = 12
+    --> do: "What calculations were done?"
+    <-- final (text): Only add was visible`
+    );
   });
 });

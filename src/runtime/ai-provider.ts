@@ -130,13 +130,15 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const execute = getProviderExecutor(model.provider!);
 
       // Execute with tool loop (handles multi-turn tool calling)
+      // 'do' = single round (maxRounds: 1), 'vibe' = multi-turn (maxRounds: 10)
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
+      const isDo = state.pendingAI.type === 'do';
       const { response, rounds } = await executeWithTools(
         request,
         modelTools,
         state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
-        { maxRounds: 10 }
+        { maxRounds: isDo ? 1 : 10 }
       );
 
       // Convert tool rounds to PromptToolCall format for logging

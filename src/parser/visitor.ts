@@ -304,9 +304,12 @@ class VibeAstVisitor extends BaseVibeVisitor {
   // Expressions
   // ============================================================================
 
-  expression(ctx: { Vibe?: IToken[]; assignmentExpression?: CstNode[]; orExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
+  expression(ctx: { Vibe?: IToken[]; Do?: IToken[]; assignmentExpression?: CstNode[]; orExpression?: CstNode[]; expression?: CstNode[]; contextSpecifier?: CstNode[] }): AST.Expression {
     if (ctx.Vibe) {
-      return makeVibeExpression(ctx.Vibe[0], this.visit(ctx.expression![0]), this.visit(ctx.expression![1]), this.visit(ctx.contextSpecifier!));
+      return makeVibeExpression(ctx.Vibe[0], this.visit(ctx.expression![0]), this.visit(ctx.expression![1]), this.visit(ctx.contextSpecifier![0]), 'vibe');
+    }
+    if (ctx.Do) {
+      return makeVibeExpression(ctx.Do[0], this.visit(ctx.expression![0]), this.visit(ctx.expression![1]), this.visit(ctx.contextSpecifier![0]), 'do');
     }
     if (ctx.assignmentExpression) return this.visit(ctx.assignmentExpression);
     return this.visit(ctx.orExpression!);

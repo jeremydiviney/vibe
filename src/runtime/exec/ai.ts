@@ -13,14 +13,15 @@ export function extractModelName(expr: AST.Expression): string {
 }
 
 /**
- * Vibe expression - push instructions for AI call.
+ * Vibe/Do expression - push instructions for AI call.
+ * operationType determines tool loop behavior: 'vibe' = multi-turn, 'do' = single round.
  */
 export function execVibeExpression(state: RuntimeState, expr: AST.VibeExpression): RuntimeState {
   return {
     ...state,
     instructionStack: [
       { op: 'exec_expression', expr: expr.prompt, location: expr.prompt.location },
-      { op: 'ai_vibe', model: extractModelName(expr.model), context: expr.context, location: expr.location },
+      { op: 'ai_vibe', model: extractModelName(expr.model), context: expr.context, operationType: expr.operationType, location: expr.location },
       ...state.instructionStack,
     ],
   };
@@ -59,11 +60,11 @@ export function getContextForAI(state: RuntimeState, context: AST.ContextSpecifi
 }
 
 /**
- * AI Vibe - pause for AI response.
+ * AI Vibe/Do - pause for AI response.
  * Note: The prompt is added to orderedEntries in resumeWithAIResponse (after completion),
  * not here, so it doesn't appear in context before the AI call completes.
  */
-export function execAIVibe(state: RuntimeState, model: string, context: AST.ContextSpecifier): RuntimeState {
+export function execAIVibe(state: RuntimeState, model: string, context: AST.ContextSpecifier, operationType: 'do' | 'vibe'): RuntimeState {
   const prompt = String(state.lastResult);
   const contextData = getContextForAI(state, context);
 
@@ -71,7 +72,7 @@ export function execAIVibe(state: RuntimeState, model: string, context: AST.Cont
     ...state,
     status: 'awaiting_ai',
     pendingAI: {
-      type: 'vibe',
+      type: operationType,  // 'do' = single round, 'vibe' = multi-turn
       prompt,
       model,
       context: contextData,
@@ -80,7 +81,7 @@ export function execAIVibe(state: RuntimeState, model: string, context: AST.Cont
       ...state.executionLog,
       {
         timestamp: Date.now(),
-        instructionType: 'ai_vibe_request',
+        instructionType: operationType === 'do' ? 'ai_do_request' : 'ai_vibe_request',
         details: { prompt, model, contextKind: context.kind },
       },
     ],

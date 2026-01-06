@@ -342,13 +342,22 @@ class VibeParser extends CstParser {
 
   private expression = this.RULE('expression', () => {
     this.OR([
-      // AI operation - vibe is the only AI expression
+      // AI operation - vibe (multi-turn tool loop)
       {
         ALT: () => {
           this.CONSUME(T.Vibe);
           this.SUBRULE(this.expression);        // prompt
           this.SUBRULE2(this.expression);       // model
           this.SUBRULE(this.contextSpecifier);  // context
+        },
+      },
+      // AI operation - do (single-round, no tool loop)
+      {
+        ALT: () => {
+          this.CONSUME(T.Do);
+          this.SUBRULE3(this.expression);       // prompt
+          this.SUBRULE4(this.expression);       // model
+          this.SUBRULE2(this.contextSpecifier); // context
         },
       },
       // Assignment expression (identifier = expression)

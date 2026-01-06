@@ -270,10 +270,12 @@ export function makeVibeExpression(
   token: IToken,
   prompt: AST.Expression,
   model: AST.Expression,
-  context: AST.ContextSpecifier
+  context: AST.ContextSpecifier,
+  operationType: AST.AIOperationType = 'vibe'
 ): AST.VibeExpression {
   return {
     type: 'VibeExpression',
+    operationType,
     prompt,
     model,
     context,

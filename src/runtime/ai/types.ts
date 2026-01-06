@@ -24,7 +24,7 @@ export interface ModelConfig {
 
 /** AI request for all providers */
 export interface AIRequest {
-  operationType: 'do' | 'ask' | 'vibe';
+  operationType: 'do' | 'vibe';
   prompt: string;
   contextText: string;
   targetType: TargetType;
