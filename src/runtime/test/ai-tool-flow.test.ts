@@ -1155,4 +1155,80 @@ describe('AI Tool Calling - Function Context Modes with Do', () => {
     <-- final (text): Both add and multiply were visible`
     );
   });
+
+  test('call-site forget override on verbose function discards context', async () => {
+    // Test scenario: function declared with verbose (default), but called with forget override
+    // 1. Define function dofunc() (defaults to verbose) that makes a do call with tool
+    // 2. Make a do call with tool (outside function)
+    // 3. Call dofunc() forget  <-- call-site override to forget
+    // 4. Make final do - context should only have first do's tool call (function's is forgotten)
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+
+      function dofunc(): text {
+        return do "Multiply 3 * 4" m default
+      }
+
+      let first: text = do "Add 1 + 2" m default
+      let fromFunc = dofunc() forget
+      let final: text = do "What calculations were done?" m default
+    `);
+
+    const toolExecutions: ToolExecution[] = [];
+    const testTools = createTestTools();
+
+    const mockResponses: AIResponse[] = [
+      // First do (outside function) - calls add
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_1', toolName: 'add', args: { a: 1, b: 2 } }],
+        stopReason: 'tool_use',
+      },
+      { content: '1 + 2 = 3', parsedValue: '1 + 2 = 3', stopReason: 'end' },
+      // dofunc() forget - do inside function calls multiply
+      {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_2', toolName: 'multiply', args: { a: 3, b: 4 } }],
+        stopReason: 'tool_use',
+      },
+      { content: '3 * 4 = 12', parsedValue: '3 * 4 = 12', stopReason: 'end' },
+      // Final do (no tools)
+      { content: 'Only add was visible', parsedValue: 'Only add was visible', stopReason: 'end' },
+    ];
+
+    const aiProvider = createToolCallingAIProvider(mockResponses, toolExecutions, testTools);
+    const runtime = new Runtime(ast, aiProvider);
+    await runtime.run();
+
+    // Verify both tools were executed (forget doesn't prevent execution)
+    expect(toolExecutions).toHaveLength(2);
+    expect(toolExecutions[0]).toEqual({ name: 'add', args: { a: 1, b: 2 }, result: 3 });
+    expect(toolExecutions[1]).toEqual({ name: 'multiply', args: { a: 3, b: 4 }, result: 12 });
+
+    // Verify results (function still returns value)
+    expect(runtime.getValue('first')).toBe('1 + 2 = 3');
+    expect(runtime.getValue('fromFunc')).toBe('3 * 4 = 12');
+    expect(runtime.getValue('final')).toBe('Only add was visible');
+
+    // Get context and verify tool call visibility
+    const state = runtime.getState();
+    const context = buildLocalContext(state);
+    const formatted = formatContextForAI(context, { includeInstructions: false });
+
+    // With forget override at call-site: function's internal tool call is explicitly forgotten
+    // Even though function is declared with verbose (default), call-site forget wins
+    // Current behavior happens to match expected (frame popped, no merge)
+    expect(formatted.text).toBe(
+      `  <entry> (current scope)
+    --> do: "Add 1 + 2"
+    [tool] add({"a":1,"b":2})
+    [result] 3
+    <-- first (text): 1 + 2 = 3
+    <-- fromFunc (text): 3 * 4 = 12
+    --> do: "What calculations were done?"
+    <-- final (text): Only add was visible`
+    );
+  });
 });
