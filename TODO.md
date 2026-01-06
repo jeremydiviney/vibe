@@ -18,7 +18,7 @@
 
 ### Cleanup
 - [x] Remove all `do` keyword references from docs (replaced by `vibe`)
-- [ ] Remove `cache` parameter from `vibe` keyword (no longer needed)
+- [x] Remove `cache` keyword from lexer and docs (no longer needed)
 - [ ] Fix all TypeScript errors (`bun tsc --noEmit`)
 
 ### Permission System

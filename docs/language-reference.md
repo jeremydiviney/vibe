@@ -401,7 +401,7 @@ let, const, function, return, if, else, for, in, while,
 do, ask, vibe, model, tool, import, export, from,
 true, false, and, or, not, default, local,
 text, json, prompt, boolean, number, model,
-forget, verbose, compress, cache
+forget, verbose, compress
 ```
 
 ## Complete Example
