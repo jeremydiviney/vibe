@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
+import { resolveValue } from '../types';
 import { lookupVariable } from './variables';
 import { getImportedValue } from '../modules';
 
@@ -30,13 +31,16 @@ function deepFreeze<T>(obj: T): T {
 
 /**
  * String interpolation - {varName} syntax.
+ * Resolves AIResultObject to its value for string conversion.
  */
 export function execInterpolateString(state: RuntimeState, template: string): RuntimeState {
   const result = template.replace(/\{(\w+)\}/g, (_, name) => {
     // Walk scope chain to find variable
     const found = lookupVariable(state, name);
     if (found) {
-      return String(found.variable.value);
+      // Resolve AIResultObject to primitive value
+      const value = resolveValue(found.variable.value);
+      return String(value);
     }
     return `{${name}}`;
   });
@@ -46,13 +50,16 @@ export function execInterpolateString(state: RuntimeState, template: string): Ru
 
 /**
  * Template literal interpolation - ${varName} syntax.
+ * Resolves AIResultObject to its value for string conversion.
  */
 export function execInterpolateTemplate(state: RuntimeState, template: string): RuntimeState {
   const result = template.replace(/\$\{(\w+)\}/g, (_, name) => {
     // Walk scope chain to find variable
     const found = lookupVariable(state, name);
     if (found) {
-      return String(found.variable.value);
+      // Resolve AIResultObject to primitive value
+      const value = resolveValue(found.variable.value);
+      return String(value);
     }
     return `\${${name}}`;
   });
@@ -82,7 +89,8 @@ export function execTsEval(state: RuntimeState, params: string[], body: string):
     // First try regular variables
     const found = lookupVariable(state, name);
     if (found) {
-      const value = found.variable.value;
+      // Resolve AIResultObject to primitive value for ts blocks
+      const value = resolveValue(found.variable.value);
       // Freeze const objects to prevent mutation in ts blocks
       if (found.variable.isConst && value !== null && typeof value === 'object') {
         return deepFreeze(value);

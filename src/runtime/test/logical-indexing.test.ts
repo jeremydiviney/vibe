@@ -238,37 +238,37 @@ let result = matrix[1][0]
   });
 });
 
-describe('Array Slicing - Basic', () => {
-  test('slice with both bounds: arr[1,3]', async () => {
+describe('Array Slicing - Basic (Python-style, exclusive end)', () => {
+  test('slice with both bounds: arr[1:4]', async () => {
     const ast = parse(`
 let arr = [10, 20, 30, 40, 50]
-let result = arr[1,3]
+let result = arr[1:4]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
-    // Inclusive: indices 1, 2, 3
+    // Python-style: indices 1, 2, 3 (end is exclusive)
     expect(runtime.getValue('result')).toEqual([20, 30, 40]);
   });
 
-  test('slice from start: arr[,2]', async () => {
+  test('slice from start: arr[:3]', async () => {
     const ast = parse(`
 let arr = [10, 20, 30, 40, 50]
-let result = arr[,2]
+let result = arr[:3]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
-    // Inclusive: indices 0, 1, 2
+    // Python-style: indices 0, 1, 2
     expect(runtime.getValue('result')).toEqual([10, 20, 30]);
   });
 
-  test('slice to end: arr[2,]', async () => {
+  test('slice to end: arr[2:]', async () => {
     const ast = parse(`
 let arr = [10, 20, 30, 40, 50]
-let result = arr[2,]
+let result = arr[2:]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
-    // Inclusive: indices 2, 3, 4
+    // indices 2, 3, 4
     expect(runtime.getValue('result')).toEqual([30, 40, 50]);
   });
 
@@ -276,32 +276,100 @@ let result = arr[2,]
     const ast = parse(`
 let arr = [1, 2, 3, 4, 5]
 let start = 1
-let end = 3
-let result = arr[start, end]
+let end = 4
+let result = arr[start:end]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
+    // indices 1, 2, 3
     expect(runtime.getValue('result')).toEqual([2, 3, 4]);
   });
 
-  test('slice single element: arr[2,2]', async () => {
+  test('slice single element: arr[2:3]', async () => {
     const ast = parse(`
 let arr = [10, 20, 30, 40, 50]
-let result = arr[2,2]
+let result = arr[2:3]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
+    // index 2 only
     expect(runtime.getValue('result')).toEqual([30]);
   });
 
-  test('slice first element: arr[0,0]', async () => {
+  test('slice first element: arr[0:1]', async () => {
     const ast = parse(`
 let arr = [10, 20, 30]
-let result = arr[0,0]
+let result = arr[0:1]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
+    // index 0 only
     expect(runtime.getValue('result')).toEqual([10]);
+  });
+
+  test('empty slice: arr[2:2]', async () => {
+    const ast = parse(`
+let arr = [10, 20, 30]
+let result = arr[2:2]
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    // Python-style: empty when start == end
+    expect(runtime.getValue('result')).toEqual([]);
+  });
+
+  test('full slice: arr[:]', async () => {
+    const ast = parse(`
+let arr = [10, 20, 30]
+let result = arr[:]
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    expect(runtime.getValue('result')).toEqual([10, 20, 30]);
+  });
+
+  test('negative index: arr[-1]', async () => {
+    const ast = parse(`
+let arr = [10, 20, 30, 40, 50]
+let last = arr[-1]
+let secondLast = arr[-2]
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    expect(runtime.getValue('last')).toBe(50);
+    expect(runtime.getValue('secondLast')).toBe(40);
+  });
+
+  test('negative slice: arr[-2:]', async () => {
+    const ast = parse(`
+let arr = [10, 20, 30, 40, 50]
+let lastTwo = arr[-2:]
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    expect(runtime.getValue('lastTwo')).toEqual([40, 50]);
+  });
+
+  test('negative end slice: arr[:-1]', async () => {
+    const ast = parse(`
+let arr = [10, 20, 30, 40, 50]
+let allButLast = arr[:-1]
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    // Python-style: all but last element
+    expect(runtime.getValue('allButLast')).toEqual([10, 20, 30, 40]);
+  });
+
+  test('negative end slice: arr[:-2]', async () => {
+    const ast = parse(`
+let arr = [10, 20, 30, 40, 50]
+let allButLastTwo = arr[:-2]
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+    // Python-style: all but last two elements
+    expect(runtime.getValue('allButLastTwo')).toEqual([10, 20, 30]);
   });
 });
 
@@ -323,12 +391,14 @@ for i in 3 {
   test('build new array from slices', async () => {
     const ast = parse(`
 let arr = [1, 2, 3, 4, 5]
-let first = arr[,1]
-let last = arr[3,]
+let first = arr[:2]
+let last = arr[3:]
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
+    // Python-style: [:2] = indices 0, 1
     expect(runtime.getValue('first')).toEqual([1, 2]);
+    // [3:] = indices 3, 4
     expect(runtime.getValue('last')).toEqual([4, 5]);
   });
 });

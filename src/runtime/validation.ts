@@ -1,6 +1,7 @@
 // Type validation and coercion utilities
 
 import { RuntimeError, type SourceLocation } from '../errors';
+import { resolveValue } from './types';
 
 /**
  * Validates a value against a type annotation and coerces if necessary.
@@ -10,20 +11,32 @@ export function validateAndCoerce(
   value: unknown,
   type: string | null,
   varName: string,
-  location?: SourceLocation
+  location?: SourceLocation,
+  source?: 'ai' | 'user'
 ): { value: unknown; inferredType: string | null } {
+  // Resolve AIResultObject unless this is a direct AI result to an UNTYPED variable
+  // (source === 'ai' means the value came directly from an AI call)
+  // For typed variables, always resolve so type validation can work on the primitive value
+  const keepAIResultWrapper = source === 'ai' && type === null;
+  if (!keepAIResultWrapper) {
+    value = resolveValue(value);
+  }
+
   // If no type annotation, infer from JavaScript type
   if (!type) {
-    if (typeof value === 'string') {
+    // For AIResultObject, infer type from the underlying value, not the wrapper
+    const valueToInfer = resolveValue(value);
+
+    if (typeof valueToInfer === 'string') {
       return { value, inferredType: 'text' };
     }
-    if (typeof value === 'boolean') {
+    if (typeof valueToInfer === 'boolean') {
       return { value, inferredType: 'boolean' };
     }
-    if (typeof value === 'number') {
+    if (typeof valueToInfer === 'number') {
       return { value, inferredType: 'number' };
     }
-    if (typeof value === 'object' && value !== null) {
+    if (typeof valueToInfer === 'object' && valueToInfer !== null) {
       return { value, inferredType: 'json' };
     }
     // For other types (null, undefined), no type inference

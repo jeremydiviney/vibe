@@ -3,6 +3,7 @@
 
 import type { VibeToolValue, ToolContext } from '../tools/types';
 import { validatePathInSandbox } from '../tools/security';
+import { resolveValue } from '../types';
 
 // Helper to escape regex special characters
 function escapeRegex(s: string): string {
@@ -486,7 +487,8 @@ export const print: VibeToolValue = {
     returns: { type: 'boolean' },
   },
   executor: async (args: Record<string, unknown>) => {
-    const message = args.message as string;
+    // Resolve AIResultObject to its value before printing
+    const message = resolveValue(args.message);
     console.log(message);
     return true;
   },

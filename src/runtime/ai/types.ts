@@ -71,6 +71,8 @@ export interface AIToolResult {
   result?: unknown;
   /** Error message if the tool call failed */
   error?: string;
+  /** Execution duration in milliseconds */
+  duration?: number;
 }
 
 /** Why the model stopped generating */

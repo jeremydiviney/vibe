@@ -39,13 +39,12 @@ export function execDeclareVar(
   }
 
   const value = initialValue !== undefined ? initialValue : state.lastResult;
-  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name, location);
+  // Copy source from lastResultSource if using lastResult (not explicit initialValue)
+  const source = initialValue !== undefined ? undefined : state.lastResultSource;
+  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name, location, source);
 
   // Use explicit type if provided, otherwise use inferred type
   const finalType = type ?? inferredType;
-
-  // Copy source from lastResultSource if using lastResult (not explicit initialValue)
-  const source = initialValue !== undefined ? undefined : state.lastResultSource;
 
   const newLocals = {
     ...frame.locals,
@@ -103,7 +102,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     throw new Error(`TypeError: Cannot assign to constant '${name}'`);
   }
 
-  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name, location);
+  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name, location, state.lastResultSource);
 
   const frame = state.callStack[frameIndex];
   const newLocals = {

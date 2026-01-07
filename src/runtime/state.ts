@@ -1,5 +1,5 @@
 import * as AST from '../ast';
-import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall } from './types';
+import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall, ToolCallRecord, AIResultObject } from './types';
 import type { ToolRoundResult } from './ai/tool-loop';
 
 // Options for creating initial state
@@ -95,8 +95,8 @@ export function resumeWithAIResponse(
   // Build ordered entries with prompt containing embedded tool calls
   const frame = state.callStack[state.callStack.length - 1];
 
-  // Convert tool rounds to PromptToolCall format (embedded in prompt entry)
-  const toolCalls: PromptToolCall[] = (toolRounds ?? []).flatMap((round) =>
+  // Convert tool rounds to PromptToolCall format (embedded in prompt entry for context)
+  const promptToolCalls: PromptToolCall[] = (toolRounds ?? []).flatMap((round) =>
     round.toolCalls.map((call, index) => {
       const result = round.results[index];
       const toolCall: PromptToolCall = {
@@ -112,12 +112,34 @@ export function resumeWithAIResponse(
     })
   );
 
+  // Build ToolCallRecord array for AIResultObject (all rounds accumulated)
+  const toolCallRecords: ToolCallRecord[] = (toolRounds ?? []).flatMap((round) =>
+    round.toolCalls.map((call, index) => {
+      const result = round.results[index];
+      return {
+        toolName: call.toolName,
+        args: call.args,
+        result: result?.error ? null : String(result?.result ?? ''),
+        error: result?.error ?? null,
+        duration: result?.duration ?? 0,
+      };
+    })
+  );
+
+  // Create AIResultObject with final response value and all tool calls
+  const aiResultObject: AIResultObject = {
+    __type: 'AIResult',
+    value: response,
+    toolCalls: toolCallRecords,
+  };
+
   // Create prompt entry with embedded tool calls (order: prompt → tools → response)
+  // Note: promptEntry.response stores raw value for context display
   const promptEntry: FrameEntry = {
     kind: 'prompt' as const,
     aiType: pendingAI.type,
     prompt: pendingAI.prompt,
-    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    toolCalls: promptToolCalls.length > 0 ? promptToolCalls : undefined,
     response,  // Include response for context history
   };
 
@@ -133,7 +155,7 @@ export function resumeWithAIResponse(
   return {
     ...state,
     status: 'running',
-    lastResult: response,
+    lastResult: aiResultObject,  // Store AIResultObject, not raw response
     lastResultSource: 'ai',
     callStack: updatedCallStack,
     aiHistory: [...state.aiHistory, aiOp],

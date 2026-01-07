@@ -88,6 +88,7 @@ export { formatAIInteractions, dumpAIInteractions, saveAIInteractions } from './
 import * as AST from '../ast';
 import { dirname } from 'path';
 import type { RuntimeState, AIInteraction } from './types';
+import { resolveValue } from './types';
 import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult, resumeWithCompressResult } from './state';
 import { step, runUntilPause } from './step';
 import { evalTsBlock } from './ts-eval';
@@ -148,6 +149,16 @@ export class Runtime {
   }
 
   getValue(name: string): unknown {
+    const frame = this.state.callStack[this.state.callStack.length - 1];
+    if (!frame) return undefined;
+
+    const variable = frame.locals[name];
+    // Resolve AIResultObject to its value for easier testing
+    return resolveValue(variable?.value);
+  }
+
+  // Get raw value including AIResultObject wrapper if present
+  getRawValue(name: string): unknown {
     const frame = this.state.callStack[this.state.callStack.length - 1];
     if (!frame) return undefined;
 
@@ -307,7 +318,8 @@ export class Runtime {
     // Save logs on successful completion
     this.saveLogsIfEnabled();
 
-    return this.state.lastResult;
+    // Resolve AIResultObject to its value for the final return
+    return resolveValue(this.state.lastResult);
   }
 
   // Save AI interaction logs if logging is enabled

@@ -139,9 +139,10 @@ describe('AI Context Tests', () => {
     expect(locals['inputData'].value).toBe('raw data');
     // model filtered from context
     expect(locals['ANALYZE_PROMPT'].value).toBe('Analyze this');
-    expect(locals['analyzed'].value).toBe('analysis result');
+    // Untyped AI results keep AIResultObject wrapper - access .value.value for primitive
+    expect(locals['analyzed'].value.value).toBe('analysis result');
     expect(locals['SUMMARIZE_PROMPT'].value).toBe('Summarize this');
-    expect(locals['summary'].value).toBe('summary result');
+    expect(locals['summary'].value.value).toBe('summary result');
 
     // Context at completion - includes all variables and prompts (with responses) in execution order
     expect(state.localContext).toEqual([
@@ -392,7 +393,8 @@ Variables from the VIBE language call stack.
     state = runWithMockAI(state, 'TRANSFORMED');
 
     expect(state.status).toBe('completed');
-    expect(state.callStack[0].locals['result'].value).toBe('TRANSFORMED');
+    // AI results are now AIResultObject - access .value.value for the primitive
+    expect(state.callStack[0].locals['result'].value.value).toBe('TRANSFORMED');
   });
 
   test('multiple do calls with different mock responses', () => {
@@ -409,8 +411,9 @@ Variables from the VIBE language call stack.
     });
 
     expect(state.status).toBe('completed');
-    expect(state.callStack[0].locals['first'].value).toBe('FIRST_RESPONSE');
-    expect(state.callStack[0].locals['second'].value).toBe('SECOND_RESPONSE');
+    // AI results are now AIResultObject - access .value.value for the primitive
+    expect(state.callStack[0].locals['first'].value.value).toBe('FIRST_RESPONSE');
+    expect(state.callStack[0].locals['second'].value.value).toBe('SECOND_RESPONSE');
   });
 
   test('context state correct after mock AI response', () => {
@@ -430,7 +433,8 @@ Variables from the VIBE language call stack.
     expect(locals['m'].isConst).toBe(true);
     expect(locals['SYSTEM'].isConst).toBe(true);
     expect(locals['result'].isConst).toBe(false);
-    expect(locals['result'].value).toBe('AI_RESPONSE');
+    // AI results are now AIResultObject - access .value.value for the primitive
+    expect(locals['result'].value.value).toBe('AI_RESPONSE');
   });
 
   // ============================================================================

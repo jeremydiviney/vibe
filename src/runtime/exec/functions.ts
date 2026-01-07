@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState, StackFrame } from '../types';
+import { resolveValue } from '../types';
 import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction } from '../modules';
@@ -104,12 +105,14 @@ export function execCallFunction(
   // Handle imported TS function
   if (typeof callee === 'object' && callee !== null && '__vibeImportedTsFunction' in callee) {
     const funcName = (callee as { __vibeImportedTsFunction: boolean; name: string }).name;
+    // Resolve AIResultObject values to primitives for TS functions
+    const resolvedArgs = args.map(arg => resolveValue(arg));
 
     return {
       ...state,
       valueStack: newValueStack,
       status: 'awaiting_ts',
-      pendingImportedTsCall: { funcName, args },
+      pendingImportedTsCall: { funcName, args: resolvedArgs },
       executionLog: [
         ...state.executionLog,
         {
@@ -164,19 +167,14 @@ export function execCallFunction(
     };
   }
 
-  // Handle method call on object (built-in methods)
-  if (typeof callee === 'object' && callee !== null && '__methodRef' in callee) {
-    const { method } = callee as { __methodRef: boolean; method: string };
-    // The object is the item before the method reference on the value stack
-    // Since we've already sliced off argCount+1 items, the object is now at the end of newValueStack
-    const object = newValueStack[newValueStack.length - 1];
-    const finalValueStack = newValueStack.slice(0, -1);
-
+  // Handle bound method call on object (built-in methods)
+  if (typeof callee === 'object' && callee !== null && '__boundMethod' in callee) {
+    const { object, method } = callee as { __boundMethod: boolean; object: unknown; method: string };
     const result = executeBuiltinMethod(object, method, args);
 
     return {
       ...state,
-      valueStack: finalValueStack,
+      valueStack: newValueStack,
       lastResult: result,
     };
   }

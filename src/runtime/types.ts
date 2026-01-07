@@ -50,6 +50,37 @@ export interface PromptToolCall {
   error?: string;
 }
 
+// Tool call record for AIResultObject (includes timing)
+export interface ToolCallRecord {
+  toolName: string;
+  args: Record<string, unknown>;
+  result: string | null;   // null if error
+  error: string | null;    // null if success
+  duration: number;        // milliseconds
+}
+
+// AI result object returned when assigning AI call to variable
+// Supports: ret (value), ret.toolCalls (array), ret.value (explicit)
+export interface AIResultObject {
+  __type: 'AIResult';      // Type discriminator
+  value: unknown;          // The AI's final response (parsed if JSON)
+  toolCalls: ToolCallRecord[];  // Ordered list of tool calls made
+}
+
+// Type guard for AIResultObject
+export function isAIResultObject(val: unknown): val is AIResultObject {
+  return typeof val === 'object' && val !== null && (val as AIResultObject).__type === 'AIResult';
+}
+
+// Resolve AIResultObject to its primitive value for coercion
+// Used in string interpolation, binary ops, print, etc.
+export function resolveValue(val: unknown): unknown {
+  if (isAIResultObject(val)) {
+    return val.value;
+  }
+  return val;
+}
+
 // Prompt in context (when AI function is called)
 export interface ContextPrompt {
   kind: 'prompt';
@@ -383,6 +414,9 @@ export type Instruction =
 
   // Method call on object (built-in methods)
   | { op: 'method_call'; method: string; argCount: number; location: SourceLocation }
+
+  // Member/property access (handles AIResultObject.toolCalls, regular properties, and bound methods)
+  | { op: 'member_access'; property: string; location: SourceLocation }
 
   // Tool operations
   | { op: 'exec_tool_declaration'; decl: AST.ToolDeclaration; location: SourceLocation }

@@ -497,51 +497,48 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return expr;
   }
 
-  // Index or slice inside brackets
-  indexOrSlice(ctx: { Comma?: IToken[]; expression?: CstNode[] }):
+  // Index or slice inside brackets (Python-style colon syntax)
+  indexOrSlice(ctx: { Colon?: IToken[]; expression?: CstNode[] }):
     | { kind: 'index'; index: AST.Expression }
     | { kind: 'slice'; start: AST.Expression | null; end: AST.Expression | null } {
-    const hasComma = (ctx.Comma?.length ?? 0) > 0;
+    const hasColon = (ctx.Colon?.length ?? 0) > 0;
     const expressions = ctx.expression ?? [];
 
-    if (!hasComma) {
+    if (!hasColon) {
       // Single index: [expr]
       return { kind: 'index', index: this.visit(expressions[0]) };
     }
 
-    // Slice: check if comma comes first
-    // If expressions.length === 1 and comma exists, it's either [,expr] or [expr,]
-    // If expressions.length === 2 and comma exists, it's [expr,expr]
-    // If expressions.length === 0 and comma exists, it's invalid (shouldn't happen)
+    // Slice: check if colon comes first
+    // If expressions.length === 1 and colon exists, it's either [:expr] or [expr:]
+    // If expressions.length === 2 and colon exists, it's [expr:expr]
+    // If expressions.length === 0 and colon exists, it's [:] (full slice)
 
     if (expressions.length === 0) {
-      // [,] - both omitted (shouldn't happen with current parser)
+      // [:] - full slice (copy entire array)
       return { kind: 'slice', start: null, end: null };
     }
 
     if (expressions.length === 1) {
-      // Either [,expr] or [expr,]
-      // We need to check if comma comes before or after the expression
-      const commaOffset = ctx.Comma![0].startOffset;
+      // Either [:expr] or [expr:]
+      // We need to check if colon comes before or after the expression
+      const colonOffset = ctx.Colon![0].startOffset;
       // Get the expression's approximate offset from its location
       const exprResult = this.visit(expressions[0]);
-      // If the comma is before the expression, it's [,expr]
-      // Use the LBracket position is not available here, so we check expression's start
-      // Actually, we need to compare comma position with expression position
-      // For [,expr]: comma offset < expression offset
-      // For [expr,]: expression offset < comma offset
-      // The expression CstNode doesn't have offset directly, but we can check the first token
+      // If the colon is before the expression, it's [:expr]
+      // For [:expr]: colon offset < expression offset
+      // For [expr:]: expression offset < colon offset
       const firstExprToken = getFirstToken(expressions[0]);
-      if (firstExprToken && commaOffset < firstExprToken.startOffset) {
-        // [,expr]
+      if (firstExprToken && colonOffset < firstExprToken.startOffset) {
+        // [:expr]
         return { kind: 'slice', start: null, end: exprResult };
       } else {
-        // [expr,]
+        // [expr:]
         return { kind: 'slice', start: exprResult, end: null };
       }
     }
 
-    // [expr,expr]
+    // [expr:expr]
     return {
       kind: 'slice',
       start: this.visit(expressions[0]),

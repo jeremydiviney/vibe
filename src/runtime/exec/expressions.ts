@@ -208,16 +208,16 @@ export function execIndexExpression(state: RuntimeState, expr: AST.IndexExpressi
 }
 
 /**
- * Member expression - evaluate object, return method reference marker.
- * The method_call instruction will actually execute the method.
+ * Member expression - evaluate object and access property.
+ * For method calls, returns a bound method wrapper.
+ * For property access (including AIResultObject.toolCalls), returns the property value.
  */
 export function execMemberExpression(state: RuntimeState, expr: AST.MemberExpression): RuntimeState {
   return {
     ...state,
     instructionStack: [
       { op: 'exec_expression', expr: expr.object, location: expr.object.location },
-      { op: 'push_value', location: expr.object.location },
-      { op: 'literal', value: { __methodRef: true, method: expr.property }, location: expr.location },
+      { op: 'member_access', property: expr.property, location: expr.location },
       ...state.instructionStack,
     ],
   };

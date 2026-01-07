@@ -1,4 +1,5 @@
 import type { RegisteredTool } from './types';
+import { resolveValue } from '../types';
 
 /**
  * Utility tools: env, sleep, now, jsonParse, jsonStringify, print, random, uuid
@@ -138,7 +139,8 @@ export const utilityTools = [
       returns: { type: 'boolean' },
     },
     executor: async (args: Record<string, unknown>) => {
-      const message = args.message as string;
+      // Resolve AIResultObject to its value before printing
+      const message = resolveValue(args.message);
       console.log(message);
       return true;
     },

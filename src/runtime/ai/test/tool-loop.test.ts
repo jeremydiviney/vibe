@@ -37,7 +37,8 @@ describe('executeToolCalls', () => {
     const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
-    expect(results[0]).toEqual({ toolCallId: 'call_1', result: 5 });
+    expect(results[0]).toMatchObject({ toolCallId: 'call_1', result: 5 });
+    expect(typeof results[0].duration).toBe('number');
   });
 
   it('should execute multiple tool calls', async () => {
@@ -54,8 +55,8 @@ describe('executeToolCalls', () => {
     const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(2);
-    expect(results[0]).toEqual({ toolCallId: 'call_1', result: 5 });
-    expect(results[1]).toEqual({ toolCallId: 'call_2', result: 20 });
+    expect(results[0]).toMatchObject({ toolCallId: 'call_1', result: 5 });
+    expect(results[1]).toMatchObject({ toolCallId: 'call_2', result: 20 });
   });
 
   it('should return error for unknown tool', async () => {
@@ -68,10 +69,11 @@ describe('executeToolCalls', () => {
     const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
-    expect(results[0]).toEqual({
+    expect(results[0]).toMatchObject({
       toolCallId: 'call_1',
       error: "Tool 'unknown' not found",
     });
+    expect(results[0].duration).toBe(0);  // No execution time for unknown tool
   });
 
   it('should return error when tool throws', async () => {
@@ -88,10 +90,11 @@ describe('executeToolCalls', () => {
     const results = await executeToolCalls(toolCalls, tools, TEST_ROOT_DIR);
 
     expect(results).toHaveLength(1);
-    expect(results[0]).toEqual({
+    expect(results[0]).toMatchObject({
       toolCallId: 'call_1',
       error: 'Tool failed',
     });
+    expect(typeof results[0].duration).toBe('number');
   });
 
   it('should call onToolCall callback for each tool', async () => {

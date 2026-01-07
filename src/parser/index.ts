@@ -492,30 +492,34 @@ class VibeParser extends CstParser {
     });
   });
 
-  // Index or slice inside brackets
+  // Index or slice inside brackets (Python-style colon syntax)
   // [expr] = single index
-  // [expr,expr] = slice
-  // [,expr] = slice from start
-  // [expr,] = slice to end
+  // [expr:expr] = slice (inclusive)
+  // [:expr] = slice from start
+  // [expr:] = slice to end
+  // [:] = full slice (copy)
   private indexOrSlice = this.RULE('indexOrSlice', () => {
     this.OR([
-      // Starts with comma: [,expr] (slice from start)
+      // Starts with colon: [:expr] or [:] (slice from start)
       {
-        GATE: () => this.LA(1).tokenType === T.Comma,
+        GATE: () => this.LA(1).tokenType === T.Colon,
         ALT: () => {
-          this.CONSUME(T.Comma);
-          this.SUBRULE(this.expression);
+          this.CONSUME(T.Colon);
+          // Optional end expression: [:] vs [:expr]
+          this.OPTION(() => {
+            this.SUBRULE(this.expression);
+          });
         },
       },
       // Starts with expression
       {
         ALT: () => {
           this.SUBRULE2(this.expression);
-          // Check if followed by comma (slice)
-          this.OPTION(() => {
-            this.CONSUME2(T.Comma);
-            // Optional end expression: [expr,] vs [expr,expr]
-            this.OPTION2(() => {
+          // Check if followed by colon (slice)
+          this.OPTION2(() => {
+            this.CONSUME2(T.Colon);
+            // Optional end expression: [expr:] vs [expr:expr]
+            this.OPTION3(() => {
               this.SUBRULE3(this.expression);
             });
           });

@@ -313,11 +313,12 @@ let y = arr.pop()
   test('array method after slice', async () => {
     const ast = parse(`
 let arr = [1, 2, 3, 4, 5]
-let sliced = arr[1,3]
+let sliced = arr[1:4]
 let result = sliced.len()
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
+    // Python-style: [1:4] = indices 1, 2, 3 = 3 elements
     expect(runtime.getValue('result')).toBe(3);
   });
 });

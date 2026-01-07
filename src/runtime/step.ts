@@ -1,6 +1,7 @@
 // Core stepping and instruction execution
 
 import type { RuntimeState, Instruction, StackFrame, FrameEntry } from './types';
+import { isAIResultObject, resolveValue } from './types';
 import type { ContextMode } from '../ast';
 import { buildLocalContext, buildGlobalContext } from './context';
 import { execDeclareVar, execAssignVar } from './exec/variables';
@@ -333,6 +334,21 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const { stmt } = instruction;
       let items = state.lastResult;
 
+      // Handle AIResultObject - iterate over value if it's an array, otherwise error
+      if (isAIResultObject(items)) {
+        if (Array.isArray(items.value)) {
+          // Value is an array (e.g., text[], number[]) - iterate over it
+          items = items.value;
+        } else {
+          const valueType = items.value === null ? 'null' : typeof items.value;
+          throw new RuntimeError(
+            `Cannot iterate over AIResult: value is ${valueType}, not an array. Use .toolCalls to iterate tool calls.`,
+            instruction.location,
+            ''
+          );
+        }
+      }
+
       // Handle range: single number N → [1, 2, ..., N] (inclusive)
       if (typeof items === 'number') {
         if (!Number.isInteger(items)) {
@@ -521,8 +537,9 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execInterpolateTemplate(state, instruction.template);
 
     case 'binary_op': {
-      const right = state.lastResult;
-      const left = state.valueStack[state.valueStack.length - 1];
+      // Resolve AIResultObject to primitive value for operations
+      const right = resolveValue(state.lastResult);
+      const left = resolveValue(state.valueStack[state.valueStack.length - 1]);
       const newStack = state.valueStack.slice(0, -1);
       const result = evaluateBinaryOp(instruction.operator, left, right);
       return { ...state, valueStack: newStack, lastResult: result };
@@ -545,11 +562,14 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       if (typeof index !== 'number' || !Number.isInteger(index)) {
         throw new Error(`Array index must be an integer, got ${typeof index}`);
       }
-      if (index < 0 || index >= arr.length) {
+
+      // Support negative indices (Python-style: -1 = last, -2 = second to last, etc.)
+      const normalizedIndex = index < 0 ? arr.length + index : index;
+      if (normalizedIndex < 0 || normalizedIndex >= arr.length) {
         throw new Error(`Array index out of bounds: ${index} (length: ${arr.length})`);
       }
 
-      return { ...state, valueStack: newStack, lastResult: arr[index] };
+      return { ...state, valueStack: newStack, lastResult: arr[normalizedIndex] };
     }
 
     case 'slice_access': {
@@ -576,9 +596,9 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         throw new Error(`Cannot slice non-array: ${typeof arr}`);
       }
 
-      // Default values: start=0, end=arr.length-1
-      const startIdx = start ?? 0;
-      const endIdx = end ?? arr.length - 1;
+      // Default values: start=0, end=arr.length (Python-style)
+      let startIdx = start ?? 0;
+      let endIdx = end ?? arr.length;
 
       if (typeof startIdx !== 'number' || !Number.isInteger(startIdx)) {
         throw new Error(`Slice start must be an integer, got ${typeof startIdx}`);
@@ -587,8 +607,12 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         throw new Error(`Slice end must be an integer, got ${typeof endIdx}`);
       }
 
-      // Inclusive slice (Vibe range-style)
-      const sliced = arr.slice(startIdx, endIdx + 1);
+      // Support negative indices (Python-style: -1 = last, -2 = second to last, etc.)
+      if (startIdx < 0) startIdx = arr.length + startIdx;
+      if (endIdx < 0) endIdx = arr.length + endIdx;
+
+      // Exclusive end slice (Python-style)
+      const sliced = arr.slice(startIdx, endIdx);
       return { ...state, valueStack: newStack, lastResult: sliced };
     }
 
@@ -601,6 +625,55 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       // lastResult contains the evaluated tools array
       const tools = state.lastResult as unknown[] | undefined;
       return finalizeModelDeclaration(state, instruction.stmt, tools);
+    }
+
+    // Member/property access
+    case 'member_access': {
+      const object = state.lastResult;
+      const property = instruction.property;
+
+      // Handle AIResultObject specially
+      if (isAIResultObject(object)) {
+        if (property === 'toolCalls') {
+          return { ...state, lastResult: object.toolCalls };
+        }
+        // For other properties, access the value's properties
+        if (typeof object.value === 'object' && object.value !== null) {
+          const val = (object.value as Record<string, unknown>)[property];
+          return { ...state, lastResult: val };
+        }
+        throw new Error(`Cannot access property '${property}' on AIResult`);
+      }
+
+      // Handle built-in methods on arrays
+      if (Array.isArray(object)) {
+        if (property === 'len' || property === 'push' || property === 'pop') {
+          // Return bound method for calling
+          return { ...state, lastResult: { __boundMethod: true, object, method: property } };
+        }
+        // For numeric properties, do index access
+        const index = Number(property);
+        if (!isNaN(index)) {
+          return { ...state, lastResult: object[index] };
+        }
+        throw new Error(`Unknown array property: ${property}`);
+      }
+
+      // Handle built-in methods on strings
+      if (typeof object === 'string') {
+        if (property === 'len') {
+          return { ...state, lastResult: { __boundMethod: true, object, method: property } };
+        }
+        throw new Error(`Unknown string property: ${property}`);
+      }
+
+      // Handle regular object property access
+      if (typeof object === 'object' && object !== null) {
+        const val = (object as Record<string, unknown>)[property];
+        return { ...state, lastResult: val };
+      }
+
+      throw new Error(`Cannot access property '${property}' on ${typeof object}`);
     }
 
     default:

@@ -109,7 +109,8 @@ describe('Functional Runtime - Resume Execution', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
-    expect(state.callStack[0].locals['response'].value).toBe('AI response');
+    // AI results are AIResultObject - access .value.value for primitive
+    expect(state.callStack[0].locals['response'].value.value).toBe('AI response');
   });
 
   test('resumeWithAIResponse continues after second vibe expression', () => {
@@ -126,7 +127,8 @@ describe('Functional Runtime - Resume Execution', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
-    expect(state.callStack[0].locals['input'].value).toBe('Alice');
+    // AI results are AIResultObject - access .value.value for primitive
+    expect(state.callStack[0].locals['input'].value.value).toBe('Alice');
   });
 
   test('multiple AI calls can be resumed sequentially', () => {
@@ -153,8 +155,9 @@ describe('Functional Runtime - Resume Execution', () => {
     state = runUntilPause(state);
     expect(state.status).toBe('completed');
 
-    expect(state.callStack[0].locals['a'].value).toBe('response1');
-    expect(state.callStack[0].locals['b'].value).toBe('response2');
+    // AI results are AIResultObject - access .value.value for primitive
+    expect(state.callStack[0].locals['a'].value.value).toBe('response1');
+    expect(state.callStack[0].locals['b'].value.value).toBe('response2');
   });
 });
 
@@ -199,7 +202,8 @@ describe('Functional Runtime - Serialization', () => {
     restored = runUntilPause(restored);
 
     expect(restored.status).toBe('completed');
-    expect(restored.lastResult).toBe('AI response');
+    // AI results are AIResultObject - access .value for primitive
+    expect(restored.lastResult.value).toBe('AI response');
   });
 
   test('cloneState creates independent copy', () => {

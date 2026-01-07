@@ -24,7 +24,8 @@ describe('End-to-End Vibe Scripts', () => {
     });
 
     expect(finalState.status).toBe('completed');
-    expect(finalState.lastResult).toBe('Hello Alice! Welcome!');
+    // AI results are AIResultObject - access .value for primitive
+    expect(finalState.lastResult.value).toBe('Hello Alice! Welcome!');
   });
 
   test('function-call.vibe - functions with multiple AI calls', () => {
@@ -36,7 +37,8 @@ describe('End-to-End Vibe Scripts', () => {
     });
 
     expect(finalState.status).toBe('completed');
-    expect(finalState.lastResult).toBe('Knight saves kingdom.');
+    // AI results are AIResultObject - access .value for primitive
+    expect(finalState.lastResult.value).toBe('Knight saves kingdom.');
   });
 
   test('conditional-logic.vibe - if statement with AI call', () => {
@@ -45,6 +47,7 @@ describe('End-to-End Vibe Scripts', () => {
     });
 
     expect(finalState.status).toBe('completed');
+    // response was typed as text (from initial ""), so AIResultObject was resolved
     expect(finalState.lastResult).toBe('Welcome, valued premium member!');
   });
 
@@ -55,7 +58,8 @@ describe('End-to-End Vibe Scripts', () => {
     });
 
     expect(finalState.status).toBe('completed');
-    expect(finalState.lastResult).toBe('Welcome to our platform, John Doe!');
+    // AI results are AIResultObject - access .value for primitive
+    expect(finalState.lastResult.value).toBe('Welcome to our platform, John Doe!');
   });
 
   test('multiple-ai-calls.vibe - sequential AI calls with data flow', () => {
@@ -69,6 +73,7 @@ describe('End-to-End Vibe Scripts', () => {
     });
 
     expect(finalState.status).toBe('completed');
-    expect(finalState.lastResult).toBe('AI learns from data automatically');
+    // AI results are AIResultObject - access .value for primitive
+    expect(finalState.lastResult.value).toBe('AI learns from data automatically');
   });
 });

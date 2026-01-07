@@ -1,4 +1,5 @@
 import type { RuntimeState, ContextEntry, ContextVariable, ContextPrompt, ContextToolCall, FrameEntry } from './types';
+import { resolveValue } from './types';
 
 // Types that are filtered from context (config/instructions, not data for AI)
 const FILTERED_TYPES = ['model', 'prompt'];
@@ -19,11 +20,11 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
         if (FILTERED_TYPES.includes(entry.type ?? '')) {
           return [];
         }
-        // Use snapshotted value from entry
+        // Use snapshotted value from entry, resolving AIResultObject to its value
         const contextVar: ContextEntry = {
           kind: 'variable',
           name: entry.name,
-          value: entry.value,  // Snapshotted value
+          value: resolveValue(entry.value),  // Resolve AIResultObject to primitive
           type: entry.type as 'text' | 'json' | 'boolean' | 'number' | null,
           isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,
@@ -101,11 +102,11 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
         if (FILTERED_TYPES.includes(entry.type ?? '')) {
           return [];
         }
-        // Use snapshotted value from entry
+        // Use snapshotted value from entry, resolving AIResultObject to its value
         const contextVar: ContextEntry = {
           kind: 'variable',
           name: entry.name,
-          value: entry.value,  // Snapshotted value
+          value: resolveValue(entry.value),  // Resolve AIResultObject to primitive
           type: entry.type as 'text' | 'json' | 'boolean' | 'number' | null,
           isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,

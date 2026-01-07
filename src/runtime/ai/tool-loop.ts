@@ -47,18 +47,21 @@ export async function executeToolCalls(
 
     if (!tool) {
       const error = `Tool '${call.toolName}' not found`;
-      results.push({ toolCallId: call.id, error });
+      results.push({ toolCallId: call.id, error, duration: 0 });
       onToolCall?.(call, undefined, error);
       continue;
     }
 
+    const startTime = Date.now();
     try {
       const result = await tool.executor(call.args, context);
-      results.push({ toolCallId: call.id, result });
+      const duration = Date.now() - startTime;
+      results.push({ toolCallId: call.id, result, duration });
       onToolCall?.(call, result);
     } catch (err) {
+      const duration = Date.now() - startTime;
       const error = err instanceof Error ? err.message : String(err);
-      results.push({ toolCallId: call.id, error });
+      results.push({ toolCallId: call.id, error, duration });
       onToolCall?.(call, undefined, error);
     }
   }
