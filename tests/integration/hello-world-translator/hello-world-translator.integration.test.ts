@@ -6,7 +6,7 @@ import { Runtime, formatAIInteractions } from '../../../src/runtime';
 import { createRealAIProvider } from '../../../src/runtime/ai-provider';
 import { parse } from '../../../src/parser/parse';
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 async function runVibe(code: string, logAi = true): Promise<Runtime> {
   const program = parse(code);
@@ -25,20 +25,20 @@ async function runVibe(code: string, logAi = true): Promise<Runtime> {
   return runtime;
 }
 
-describe.skipIf(!ANTHROPIC_API_KEY)('Hello World Translator', () => {
+describe.skipIf(!GOOGLE_API_KEY)('Hello World Translator', () => {
 
   test('translate Hello World to multiple languages', async () => {
     const code = `
 import { print, env } from "system"
 
 model translator = {
-  name: "claude-haiku-4-5",
-  provider: "anthropic",
-  apiKey: env("ANTHROPIC_API_KEY")
+  name: "gemini-3-flash-preview",
+  provider: "google",
+  apiKey: env("GOOGLE_API_KEY")
 }
 
 // First call establishes lastUsedModel
-let languages: text[] = do "List the major human languages as a JSON array of strings."
+let languages: text[] = do "List the major human languages(max 10) as a JSON array of strings."
 
 // Loop uses lastUsedModel (translator) since no model specified
 for language in languages {
