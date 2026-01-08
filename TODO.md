@@ -12,10 +12,6 @@
   - [ ] Destructuring syntax: `const {x, y, z} = do "get x, y, z"`
   - [ ] AI prompted to return JSON with requested fields
   - [ ] Automatic parsing and validation
-- [ ] Optional model and context modifiers for `do`/`vibe`
-  - [ ] Valid syntaxes: `do ""`, `do "" model`, `do "" context`, `do "" model context`
-  - [ ] Default context: `default` (global) when omitted
-  - [ ] Default model: last used model when omitted (uses `lastUsedModel` tracking)
 
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
@@ -70,6 +66,13 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Optional model and context modifiers for `do`/`vibe`
+  - [x] Valid syntaxes: `do ""`, `do "" model`, `do "" context`, `do "" model context`
+  - [x] Default context: `default` (global) when omitted
+  - [x] Default model: last used model when omitted (uses `lastUsedModel` tracking)
+  - [x] GATE lookahead to disambiguate model identifiers from function calls
+  - [x] Integration test: hello-world-translator
 
 - [x] Codebase cleanup
   - [x] Remove all `do` keyword references from docs (replaced by `vibe`)
