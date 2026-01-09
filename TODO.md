@@ -12,17 +12,6 @@
   - [ ] Use tool-based assignment: AI calls `assign({name: "...", age: ...})` tool
   - [ ] Type checking happens in tool execution, validates each field against declared type
   - [ ] More reliable than structured outputs, especially for open-source models
-- [ ] Use structured outputs for array types (`text[]`, `number[]`, etc.)
-  - [ ] Wrap in object schema: `text[]` → `{value: string[]}` for provider compatibility
-  - [ ] Unwrap response automatically before returning to runtime
-  - [ ] More reliable than prompt-based "respond with JSON array"
-- [ ] Refactor typed returns to use tool-based type coercion instead of structured outputs
-  - [ ] Define special tools for each type: `assignNumber(value)`, `assignBoolean(value)`, `assignText(value)`, etc.
-  - [ ] AI calls the appropriate assign tool to return typed values
-  - [ ] Type checking happens in tool execution, not in structured output parsing
-  - [ ] More reliable across open-source models (tool calling is better supported than structured outputs)
-  - [ ] Fallback chain: tool calling → structured output → prompt-based parsing
-  - [ ] Consider: single `assign(type, value)` tool vs separate tools per type
 - [ ] Model/provider registry and capability mapping
   - [ ] Map of known models with their capabilities (structured output, thinking, tools)
   - [ ] Allow/deny lists for models (e.g., only allow certain models in production)
@@ -84,6 +73,13 @@
 
 ## Completed (Last 10)
 
+- [x] Tool-based type returns (replacing structured outputs)
+  - [x] Return tools for all typed returns: number, boolean, json, text[], number[], boolean[], json[]
+  - [x] Internal-only tools automatically added to AI requests at runtime
+  - [x] Removed structured output code from all providers (OpenAI, Anthropic, Google)
+  - [x] Type validation happens in tool executors with retry on error
+  - [x] Better cross-provider compatibility than structured outputs
+
 - [x] Optional model and context modifiers for `do`/`vibe`
   - [x] Valid syntaxes: `do ""`, `do "" model`, `do "" context`, `do "" model context`
   - [x] Default context: `default` (global) when omitted
@@ -144,31 +140,3 @@
   - [x] Context shows: AI call → tool calls → results → final response
   - [x] Flow tests with mock AI provider executing real tools
   - [x] Loop context modes (forget/verbose) properly handle tool calls
-
-- [x] Tool calling system (foundation)
-  - [x] Tool registry with built-in tools (sleep, now, jsonParse, jsonStringify, env, etc.)
-  - [x] `tool` keyword for user-defined tools with `@description` and `@param` decorators
-  - [x] TypeScript type extraction for complex parameter types (JSON Schema)
-  - [x] Tool execution via `awaiting_tool` status and `resumeWithToolResult`
-  - [x] Tools callable like functions in Vibe code
-
-- [x] Context modes for loops and functions
-  - [x] Trailing keywords: `forget`, `verbose`, `compress("prompt")`
-  - [x] Snapshot values in orderedEntries (not references)
-  - [x] Scope-enter/scope-exit markers for context output
-  - [x] Store AI response in prompt entry when AI returns
-  - [x] Default behavior: verbose (keep full history)
-
-- [x] Anthropic prompt caching optimization
-  - [x] Progressive chunked caching for growing context
-  - [x] `cache_control: { type: "ephemeral" }` on system prompt
-  - [x] Cache breakpoint on 2nd-to-last chunk (latest can change freely)
-
-- [x] Add TypeScript types, interfaces, and enums to symbol tree output
-  - [x] Include in symbol summary section with start/end line numbers
-  - [x] Show type dependencies (extends, uses relationships)
-
-- [x] Context improvements for AI conversation history
-  - [x] Track value source on variables (`ai`, `user`, or `undefined`)
-  - [x] Show AI responses with `<--` prefix vs `-` for regular variables
-  - [x] Format: `--> vibe: "prompt"` followed by `<-- varName: response`

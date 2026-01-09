@@ -54,10 +54,10 @@
       "WebFetch(domain:claude.com)",
       "WebFetch(domain:github.com)",
       "Bash(findstr:*)",
-      "WebFetch(domain:*)"
+      "WebFetch(domain:*)",
+      "WebFetch(domain:bun.com)"
     ],
     "deny": [
-
       "Bash(git push --force:*)",
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)"
