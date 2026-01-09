@@ -8,10 +8,27 @@
   - [ ] Auto-parallelize independent AI calls (no data dependencies)
   - [ ] Configurable concurrency limit
 - [ ] Structured multi-value AI returns
-  - [ ] `const ret = do "get x, y, z"` → `ret.x`, `ret.y`, `ret.z`
-  - [ ] Destructuring syntax: `const {x, y, z} = do "get x, y, z"`
-  - [ ] AI prompted to return JSON with requested fields
-  - [ ] Automatic parsing and validation
+  - [ ] Destructuring with inline types: `const {name: text, age: number} = do "..."`
+  - [ ] Use tool-based assignment: AI calls `assign({name: "...", age: ...})` tool
+  - [ ] Type checking happens in tool execution, validates each field against declared type
+  - [ ] More reliable than structured outputs, especially for open-source models
+- [ ] Use structured outputs for array types (`text[]`, `number[]`, etc.)
+  - [ ] Wrap in object schema: `text[]` → `{value: string[]}` for provider compatibility
+  - [ ] Unwrap response automatically before returning to runtime
+  - [ ] More reliable than prompt-based "respond with JSON array"
+- [ ] Refactor typed returns to use tool-based type coercion instead of structured outputs
+  - [ ] Define special tools for each type: `assignNumber(value)`, `assignBoolean(value)`, `assignText(value)`, etc.
+  - [ ] AI calls the appropriate assign tool to return typed values
+  - [ ] Type checking happens in tool execution, not in structured output parsing
+  - [ ] More reliable across open-source models (tool calling is better supported than structured outputs)
+  - [ ] Fallback chain: tool calling → structured output → prompt-based parsing
+  - [ ] Consider: single `assign(type, value)` tool vs separate tools per type
+- [ ] Model/provider registry and capability mapping
+  - [ ] Map of known models with their capabilities (structured output, thinking, tools)
+  - [ ] Allow/deny lists for models (e.g., only allow certain models in production)
+  - [ ] Different handlers per model/provider (e.g., Anthropic pre-4.5 lacks structured output)
+  - [ ] Graceful fallback when capability not supported (use prompt instructions instead)
+  - [ ] Model aliases (e.g., `fast` → `gemini-3-flash`, `smart` → `claude-sonnet-4-5`)
 
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
