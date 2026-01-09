@@ -4,13 +4,11 @@ import OpenAI from 'openai';
 import type { AIRequest, AIResponse, AIToolCall, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildMessages } from '../formatters';
-import { typeToSchema, parseResponse } from '../schema';
 import { toOpenAITools } from '../tool-schema';
 
 /** OpenAI provider configuration */
 export const OPENAI_CONFIG = {
   defaultUrl: 'https://api.openai.com/v1',
-  supportsStructuredOutput: true,
 };
 
 /** Map thinking level to OpenAI reasoning_effort */
@@ -35,13 +33,7 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
   });
 
   // Build base messages
-  const baseMessages = buildMessages(
-    prompt,
-    contextText,
-    targetType,
-    OPENAI_CONFIG.supportsStructuredOutput,
-    tools
-  );
+  const baseMessages = buildMessages(prompt, contextText, tools);
 
   // Build conversation messages - either simple or multi-turn with tool results
   type ChatMessage = OpenAI.ChatCompletionMessageParam;
@@ -102,32 +94,6 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       (params as unknown as Record<string, unknown>).reasoning_effort = REASONING_EFFORT_MAP[thinkingLevel];
     }
 
-    // Add structured output format if target type specified
-    // Skip for text - just return raw text without structured output
-    if (targetType === 'json') {
-      // Use JSON mode for json - ensures valid JSON without requiring schema
-      params.response_format = { type: 'json_object' };
-    } else if (targetType && targetType !== 'text') {
-      const schema = typeToSchema(targetType);
-      if (schema) {
-        params.response_format = {
-          type: 'json_schema',
-          json_schema: {
-            name: 'response',
-            strict: true,
-            schema: {
-              type: 'object',
-              properties: {
-                value: schema,
-              },
-              required: ['value'],
-              additionalProperties: false,
-            },
-          },
-        };
-      }
-    }
-
     // Make API request
     const completion = await client.chat.completions.create(params);
 
@@ -173,21 +139,9 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
             ? 'content_filter'
             : 'end';
 
-    // Parse value from structured output or raw content
-    let parsedValue: unknown;
-    if (targetType && params.response_format) {
-      // Structured output wraps in { value: ... }, JSON mode returns raw JSON
-      try {
-        const parsed = JSON.parse(content);
-        parsedValue = parsed.value ?? parsed;
-      } catch {
-        parsedValue = parseResponse(content, targetType);
-      }
-    } else {
-      parsedValue = parseResponse(content, targetType);
-    }
-
-    return { content, parsedValue, usage, toolCalls, stopReason };
+    // For text responses, parsedValue is just the content
+    // For typed responses, the value comes from return tool calls (handled by tool-loop)
+    return { content, parsedValue: content, usage, toolCalls, stopReason };
   } catch (error) {
     if (error instanceof OpenAI.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;

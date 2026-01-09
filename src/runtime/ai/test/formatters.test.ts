@@ -35,22 +35,10 @@ describe('buildContextMessage', () => {
 });
 
 describe('buildPromptMessage', () => {
-  test('returns prompt as-is when no type instruction needed', () => {
-    // Text type doesn't need instruction
-    expect(buildPromptMessage('Hello', 'text', false)).toBe('Hello');
-    // Structured output handles type
-    expect(buildPromptMessage('Hello', 'number', true)).toBe('Hello');
-  });
-
-  test('appends type instruction for non-structured output', () => {
-    const message = buildPromptMessage('Hello', 'number', false);
-    expect(message).toContain('Hello');
-    expect(message).toContain('number');
-  });
-
-  test('returns prompt as-is when null target type', () => {
-    expect(buildPromptMessage('Hello', null, false)).toBe('Hello');
-    expect(buildPromptMessage('Hello', null, true)).toBe('Hello');
+  test('returns prompt as-is', () => {
+    // Type instructions are now handled by return tools, not prompt modification
+    expect(buildPromptMessage('Hello')).toBe('Hello');
+    expect(buildPromptMessage('Calculate 2+2')).toBe('Calculate 2+2');
   });
 });
 
@@ -161,8 +149,6 @@ Call tools when needed to complete the task.`
     const messages = buildMessages(
       'Calculate x + y and store it',
       contextText,
-      'number',
-      true,
       tools
     );
 
@@ -354,7 +340,7 @@ Call tools when needed to complete the task.`
 
 describe('buildMessages', () => {
   test('builds messages with system and prompt', () => {
-    const messages = buildMessages('Hello', '', null, true);
+    const messages = buildMessages('Hello', '');
 
     expect(messages).toHaveLength(2);
     expect(messages[0].role).toBe('system');
@@ -363,7 +349,7 @@ describe('buildMessages', () => {
   });
 
   test('includes context message when provided', () => {
-    const messages = buildMessages('Hello', 'x = 5', null, true);
+    const messages = buildMessages('Hello', 'x = 5');
 
     expect(messages).toHaveLength(3);
     expect(messages[0].role).toBe('system');
@@ -385,7 +371,7 @@ describe('buildMessages', () => {
       },
     ];
 
-    const messages = buildMessages('Calculate 2+3', '', null, true, tools);
+    const messages = buildMessages('Calculate 2+3', '', tools);
 
     // Should have: system, tool system, prompt
     expect(messages).toHaveLength(3);
@@ -410,8 +396,6 @@ describe('buildMessages', () => {
     const messages = buildMessages(
       'What is the weather?',
       'location = Seattle',
-      null,
-      true,
       tools
     );
 

@@ -1,21 +1,18 @@
 // Anthropic Provider Implementation using official SDK
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { AIRequest, AIResponse, AIToolCall, TargetType, ThinkingLevel } from '../types';
+import type { AIRequest, AIResponse, AIToolCall, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildSystemMessage, buildPromptMessage, buildToolSystemMessage } from '../formatters';
-import { parseResponse, typeToSchema } from '../schema';
 import { chunkContextForCaching } from '../cache-chunking';
 import { toAnthropicTools } from '../tool-schema';
 
 /** Anthropic provider configuration */
 export const ANTHROPIC_CONFIG = {
   defaultUrl: 'https://api.anthropic.com',
-  supportsStructuredOutput: true, // Claude 4.5 models support structured outputs
 };
 
 /** Beta headers */
-const STRUCTURED_OUTPUTS_BETA = 'structured-outputs-2025-11-13';
 const EXTENDED_THINKING_BETA = 'interleaved-thinking-2025-05-14';
 
 /** Map thinking level to Anthropic budget_tokens */
@@ -28,42 +25,10 @@ const THINKING_BUDGET_MAP: Record<ThinkingLevel, number> = {
 };
 
 /**
- * Build output_format parameter for structured output.
- * Returns null for types that can't use structured output (json/json[]).
- */
-function buildOutputFormat(targetType: TargetType): Record<string, unknown> | null {
-  if (!targetType || targetType === 'text') {
-    return null;
-  }
-
-  // json type can't use structured output - unknown schema
-  if (targetType === 'json') {
-    return null;
-  }
-
-  const schema = typeToSchema(targetType);
-  if (!schema) {
-    return null;
-  }
-
-  // Anthropic requires additionalProperties: false for objects
-  const anthropicSchema = { ...schema };
-  if (anthropicSchema.type === 'object') {
-    anthropicSchema.additionalProperties = false;
-  }
-
-  return {
-    type: 'json_schema',
-    schema: anthropicSchema,
-  };
-}
-
-/**
  * Execute an AI request using the Anthropic SDK.
- * Uses structured outputs (beta) for Claude 4.5 models.
  */
 export async function executeAnthropic(request: AIRequest): Promise<AIResponse> {
-  const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults, messages: overrideMessages } = request;
+  const { prompt, contextText, model, tools, previousToolCalls, toolResults, messages: overrideMessages } = request;
 
   // Create Anthropic client
   const client = new Anthropic({
@@ -76,16 +41,12 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     return executeWithOverrideMessages(client, model, overrideMessages);
   }
 
-  // Check if we can use structured output for this type
-  const outputFormat = buildOutputFormat(targetType);
-  const useStructuredOutput = outputFormat !== null;
-
   // Build system messages
   const systemMessage = buildSystemMessage();
   const toolSystemMessage = tools?.length ? buildToolSystemMessage(tools) : null;
 
-  // Build prompt message (with type instruction if needed)
-  const promptMessage = buildPromptMessage(prompt, targetType, useStructuredOutput);
+  // Build prompt message
+  const promptMessage = buildPromptMessage(prompt);
 
   // Chunk context for progressive caching
   const { chunks, cacheBreakpointIndex } = chunkContextForCaching(contextText);
@@ -170,26 +131,12 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
       };
     }
 
-    // Add structured output format if supported for this type
-    if (outputFormat) {
-      params.output_format = outputFormat;
-    }
-
-    // Build beta headers list
-    const betas: string[] = [];
-    if (outputFormat) {
-      betas.push(STRUCTURED_OUTPUTS_BETA);
-    }
-    if (thinkingBudget > 0) {
-      betas.push(EXTENDED_THINKING_BETA);
-    }
-
-    // Make API request - use beta endpoint only when needed
+    // Make API request - use beta endpoint for extended thinking
     // Response type is Message (non-streaming since we don't pass stream: true)
-    const response = betas.length > 0
+    const response = thinkingBudget > 0
       ? await client.beta.messages.create({
           ...params,
-          betas,
+          betas: [EXTENDED_THINKING_BETA],
         } as Parameters<typeof client.beta.messages.create>[0])
       : await client.messages.create(params as unknown as Parameters<typeof client.messages.create>[0]);
 
@@ -233,16 +180,9 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
         }
       : undefined;
 
-    // Parse response according to target type
-    let parsedValue: unknown;
-    try {
-      parsedValue = parseResponse(content, targetType);
-    } catch (parseError) {
-      // If parse fails (shouldn't happen with structured output), return raw content
-      parsedValue = content;
-    }
-
-    return { content, parsedValue, usage, toolCalls, stopReason };
+    // For text responses, parsedValue is just the content
+    // For typed responses, the value comes from return tool calls (handled by tool-loop)
+    return { content, parsedValue: content, usage, toolCalls, stopReason };
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;

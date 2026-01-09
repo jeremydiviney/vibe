@@ -11,6 +11,12 @@ import { executeWithTools, type ToolRoundResult } from './ai/tool-loop';
 import { buildGlobalContext, formatContextForAI } from './context';
 import { buildAIContext } from './ai/context';
 import { buildVibeMessages, type VibeScopeParam } from './ai/formatters';
+import {
+  getReturnTools,
+  shouldUseReturnTool,
+  getReturnToolName,
+  isReturnToolCall,
+} from './ai/return-tools';
 
 /**
  * Get model value from runtime state by model name.
@@ -113,14 +119,29 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
 
       // Get tools from model (empty array if no tools specified)
       const modelTools: VibeToolValue[] = (modelValue.tools as VibeToolValue[]) ?? [];
-      const toolSchemas: ToolSchema[] = modelTools.map(t => t.schema);
+
+      // Always include return tools (root-level, always available)
+      const returnTools = getReturnTools();
+      const allTools = [...returnTools, ...modelTools];
+      const toolSchemas: ToolSchema[] = allTools.map((t) => t.schema);
+
+      // Determine if this request should use tool-based return
+      const useToolReturn = shouldUseReturnTool(targetType);
+      const returnToolName = useToolReturn ? getReturnToolName(targetType) : null;
+
+      // Append return tool instruction to prompt if needed
+      const finalPrompt = returnToolName
+        ? `${prompt}\n\nIMPORTANT: You MUST call the ${returnToolName} tool with your answer. Do not respond with plain text.`
+        : prompt;
 
       // Build unified AI context (single source of truth)
+      // Use finalPrompt so the log shows what was actually sent
       const aiContext = buildAIContext(
         state,
         model,
-        prompt,
-        targetType,
+        finalPrompt,
+        // For tool-based returns, pass null to disable structured output
+        useToolReturn ? null : targetType,
         toolSchemas.length > 0 ? toolSchemas : undefined
       );
 
@@ -131,8 +152,16 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // Build the request with tools
       // For compress, treat as single-round 'do' type
       const requestType = aiType === 'compress' ? 'do' : aiType;
+
       const request: AIRequest = {
-        ...buildAIRequest(model, prompt, formattedContext.text, requestType, targetType),
+        ...buildAIRequest(
+          model,
+          finalPrompt,
+          formattedContext.text,
+          requestType,
+          // For tool-based returns, pass null to disable structured output
+          useToolReturn ? null : targetType
+        ),
         tools: toolSchemas.length > 0 ? toolSchemas : undefined,
       };
 
@@ -143,30 +172,49 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // 'do'/'compress' = single round (maxRounds: 1), 'vibe' = multi-turn (maxRounds: 10)
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const isDo = aiType === 'do' || aiType === 'compress';
-      const { response, rounds } = await executeWithTools(
+      const { response, rounds, returnValue, completedViaReturnTool } = await executeWithTools(
         request,
-        modelTools,
+        allTools,
         state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
-        { maxRounds: isDo ? 1 : 10 }
+        {
+          maxRounds: isDo ? 1 : 10,
+          expectedReturnTool: returnToolName ?? undefined,
+        }
       );
 
       // Convert tool rounds to PromptToolCall format for logging
-      const interactionToolCalls: PromptToolCall[] = rounds.flatMap(round =>
-        round.toolCalls.map((call, i) => {
-          const result = round.results[i];
-          return {
-            toolName: call.toolName,
-            args: call.args,
-            result: result?.result,
-            error: result?.error,
-          };
-        })
+      // Filter out return tools - they're internal and shouldn't appear in context
+      const interactionToolCalls: PromptToolCall[] = rounds.flatMap((round) =>
+        round.toolCalls
+          .filter((call) => !isReturnToolCall(call.toolName))
+          .map((call) => {
+            const result = round.results.find((r) => r.toolCallId === call.id);
+            return {
+              toolName: call.toolName,
+              args: call.args,
+              result: result?.result,
+              error: result?.error,
+            };
+          })
       );
+
+      // Determine final value
+      let finalValue: unknown;
+      if (useToolReturn) {
+        if (completedViaReturnTool) {
+          finalValue = returnValue;
+        } else {
+          // After max retries, AI still didn't call return tool
+          throw new Error(`AI failed to call ${returnToolName} after multiple attempts`);
+        }
+      } else {
+        finalValue = response.parsedValue ?? response.content;
+      }
 
       // Return the parsed value, usage, tool rounds, and context for logging
       return {
-        value: response.parsedValue ?? response.content,
+        value: finalValue,
         usage: response.usage,
         toolRounds: rounds.length > 0 ? rounds : undefined,
         // Context for logging (single source of truth)

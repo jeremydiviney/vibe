@@ -121,6 +121,19 @@ const testCases = [
       expect(result).toEqual([true, false, true]);
     },
   },
+  {
+    name: 'returns json[] response',
+    vibeCode: `let result: json[] = do "Return a JSON array with 2 objects: first with name Alice and age 30, second with name Bob and age 25" testModel default`,
+    assert: (runtime: Runtime) => {
+      const result = runtime.getValue('result') as Array<Record<string, unknown>>;
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('Alice');
+      expect(result[0].age).toBe(30);
+      expect(result[1].name).toBe('Bob');
+      expect(result[1].age).toBe(25);
+    },
+  },
 ];
 
 async function runVibe(modelConfig: string, vibeCode: string, logAi = true): Promise<Runtime> {

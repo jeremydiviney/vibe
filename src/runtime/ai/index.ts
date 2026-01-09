@@ -24,11 +24,10 @@ export {
 // Providers
 export { executeOpenAI, OPENAI_CONFIG } from './providers/openai';
 export { executeAnthropic, ANTHROPIC_CONFIG } from './providers/anthropic';
-export { executeGoogle, GOOGLE_CONFIG } from './providers/google';
+export { executeGoogle } from './providers/google';
 
 // Utilities
 export { withRetry, isRetryableError, calculateDelay, createAIErrorFromResponse } from './retry';
-export { typeToSchema, getTypeInstruction, parseResponse, validateResponseType } from './schema';
 export {
   buildSystemMessage,
   buildContextMessage,

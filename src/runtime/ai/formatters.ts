@@ -1,8 +1,6 @@
 // Message formatting utilities for AI providers
 
-import type { TargetType } from './types';
 import type { ToolSchema } from '../tools/types';
-import { getTypeInstruction } from './schema';
 
 /** Message structure for AI providers */
 export interface Message {
@@ -89,34 +87,11 @@ export function buildToolSystemMessage(tools: ToolSchema[]): string | null {
 }
 
 /**
- * Build the prompt message with optional type instruction.
- * For providers without structured output support, appends type instruction.
- * For json/json[] types, always adds instruction since structured output can't enforce unknown schemas.
+ * Build the prompt message.
+ * Type instructions are no longer needed since we use tool-based returns.
  */
-export function buildPromptMessage(
-  prompt: string,
-  targetType: TargetType,
-  supportsStructuredOutput: boolean
-): string {
-  if (!targetType) {
-    return prompt;
-  }
-
-  // json type always needs instruction - structured output can't handle unknown schemas
-  const isJsonType = targetType === 'json';
-
-  // Skip type instruction if provider uses structured output (except for json types)
-  if (supportsStructuredOutput && !isJsonType) {
-    return prompt;
-  }
-
-  // Append type instruction
-  const typeInstruction = getTypeInstruction(targetType);
-  if (!typeInstruction) {
-    return prompt;
-  }
-
-  return `${prompt}\n\n${typeInstruction}`;
+export function buildPromptMessage(prompt: string): string {
+  return prompt;
 }
 
 /**
@@ -126,8 +101,6 @@ export function buildPromptMessage(
 export function buildMessages(
   prompt: string,
   contextText: string,
-  targetType: TargetType,
-  supportsStructuredOutput: boolean,
   tools?: ToolSchema[]
 ): Message[] {
   const messages: Message[] = [
@@ -147,8 +120,7 @@ export function buildMessages(
     messages.push({ role: 'user', content: contextMessage });
   }
 
-  const promptMessage = buildPromptMessage(prompt, targetType, supportsStructuredOutput);
-  messages.push({ role: 'user', content: promptMessage });
+  messages.push({ role: 'user', content: prompt });
 
   return messages;
 }

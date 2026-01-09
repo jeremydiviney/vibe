@@ -4,13 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import type { AIRequest, AIResponse, AIToolCall, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildSystemMessage, buildContextMessage, buildPromptMessage, buildToolSystemMessage } from '../formatters';
-import { typeToSchema, parseResponse } from '../schema';
 import { toGoogleFunctionDeclarations } from '../tool-schema';
-
-/** Google provider configuration */
-export const GOOGLE_CONFIG = {
-  supportsStructuredOutput: true,
-};
 
 /** Map thinking level to Google Gemini 3 thinkingLevel */
 const THINKING_LEVEL_MAP: Record<ThinkingLevel, string | null> = {
@@ -43,11 +37,7 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
     : baseSystemInstruction;
 
   const contextMessage = buildContextMessage(contextText);
-  const promptMessage = buildPromptMessage(
-    prompt,
-    targetType,
-    GOOGLE_CONFIG.supportsStructuredOutput
-  );
+  const promptMessage = buildPromptMessage(prompt);
 
   // Combine into single prompt for Google
   const parts: string[] = [];
@@ -121,23 +111,6 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       };
     }
 
-    // Add structured output schema if target type specified
-    // Skip for text - just return raw text without structured output
-    // Skip for json - Google requires non-empty properties for objects
-    if (targetType && targetType !== 'text' && targetType !== 'json') {
-      const schema = typeToSchema(targetType);
-      if (schema) {
-        generationConfig.responseMimeType = 'application/json';
-        generationConfig.responseSchema = {
-          type: 'object',
-          properties: {
-            value: schema,
-          },
-          required: ['value'],
-        };
-      }
-    }
-
     // Build config with optional tools
     const config: Record<string, unknown> = {
       systemInstruction,
@@ -199,21 +172,9 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
         }
       : undefined;
 
-    // Parse value from structured output or raw content
-    let parsedValue: unknown;
-    if (targetType && generationConfig.responseSchema) {
-      // Structured output wraps in { value: ... }
-      try {
-        const parsed = JSON.parse(content);
-        parsedValue = parsed.value ?? parsed;
-      } catch {
-        parsedValue = parseResponse(content, targetType);
-      }
-    } else {
-      parsedValue = parseResponse(content, targetType);
-    }
-
-    return { content, parsedValue, usage, toolCalls, stopReason };
+    // For text responses, parsedValue is just the content
+    // For typed responses, the value comes from return tool calls (handled by tool-loop)
+    return { content, parsedValue: content, usage, toolCalls, stopReason };
   } catch (error) {
     // Handle Google API errors
     if (error instanceof Error) {

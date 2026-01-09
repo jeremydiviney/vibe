@@ -3,6 +3,7 @@
 
 import type { AIRequest, AIResponse, AIToolCall, AIToolResult } from './types';
 import type { VibeToolValue } from '../tools/types';
+import { isReturnToolCall } from './return-tools';
 
 /** Options for the tool execution loop */
 export interface ToolLoopOptions {
@@ -10,6 +11,20 @@ export interface ToolLoopOptions {
   maxRounds?: number;
   /** Callback when a tool call is executed */
   onToolCall?: (call: AIToolCall, result: unknown, error?: string) => void;
+  /** Expected return tool name (if set, AI must call this tool to return a value) */
+  expectedReturnTool?: string;
+}
+
+/** Result of the tool execution loop */
+export interface ToolLoopResult {
+  /** Final AI response */
+  response: AIResponse;
+  /** Tool execution rounds */
+  rounds: ToolRoundResult[];
+  /** Value from return tool (if called successfully) */
+  returnValue?: unknown;
+  /** Whether execution completed via return tool */
+  completedViaReturnTool?: boolean;
 }
 
 /** Result of a tool execution round */
@@ -86,42 +101,93 @@ export async function executeWithTools(
   rootDir: string,
   executeProvider: (request: AIRequest) => Promise<AIResponse>,
   options: ToolLoopOptions = {}
-): Promise<{ response: AIResponse; rounds: ToolRoundResult[] }> {
-  const { maxRounds = 10, onToolCall } = options;
+): Promise<ToolLoopResult> {
+  const { maxRounds = 10, onToolCall, expectedReturnTool } = options;
   const rounds: ToolRoundResult[] = [];
 
   let request = initialRequest;
   let response = await executeProvider(request);
   let roundCount = 0;
+  let returnValue: unknown;
+  let completedViaReturnTool = false;
 
-  // Continue while there are tool calls to execute
-  while (response.toolCalls?.length && roundCount < maxRounds) {
-    roundCount++;
+  // Continue while there are tool calls to execute (or we need to retry for missing return tool)
+  while (roundCount < maxRounds) {
+    // Case 1: AI called tools
+    if (response.toolCalls?.length) {
+      roundCount++;
 
-    // Execute all tool calls in this round
-    const results = await executeToolCalls(response.toolCalls, tools, rootDir, onToolCall);
+      // Execute all tool calls in this round
+      const results = await executeToolCalls(response.toolCalls, tools, rootDir, onToolCall);
 
-    // Record this round
-    rounds.push({
-      toolCalls: response.toolCalls,
-      results,
-    });
+      // Record this round
+      rounds.push({
+        toolCalls: response.toolCalls,
+        results,
+      });
 
-    // Make follow-up request with tool results
-    request = {
-      ...request,
-      previousToolCalls: response.toolCalls,
-      toolResults: results,
-    };
-    response = await executeProvider(request);
+      // Check if a return tool was called successfully
+      for (const call of response.toolCalls) {
+        if (isReturnToolCall(call.toolName)) {
+          const result = results.find((r) => r.toolCallId === call.id);
+          if (result && result.error === undefined) {
+            // Return tool succeeded - extract value
+            returnValue = result.result;
+            completedViaReturnTool = true;
+          }
+          // If return tool errored, error flows back to AI for retry
+        }
+      }
+
+      // If we got a successful return value, we're done
+      if (completedViaReturnTool) {
+        break;
+      }
+
+      // Make follow-up request with tool results
+      request = {
+        ...request,
+        previousToolCalls: response.toolCalls,
+        toolResults: results,
+      };
+      response = await executeProvider(request);
+    }
+    // Case 2: AI didn't call any tools but we expected a return tool
+    else if (expectedReturnTool && !completedViaReturnTool) {
+      roundCount++;
+
+      // Synthesize error to send back to AI
+      const errorResult: AIToolResult = {
+        toolCallId: 'missing-return-tool',
+        error: `You must call the ${expectedReturnTool} tool to return your answer. Do not respond with plain text.`,
+        duration: 0,
+      };
+      rounds.push({ toolCalls: [], results: [errorResult] });
+
+      // Make follow-up request with error
+      request = {
+        ...request,
+        previousToolCalls: [],
+        toolResults: [errorResult],
+      };
+      response = await executeProvider(request);
+    }
+    // Case 3: No tool calls and no expected return tool - we're done
+    else {
+      break;
+    }
   }
 
   // Warn if we hit max rounds
-  if (roundCount >= maxRounds && response.toolCalls?.length) {
+  if (roundCount >= maxRounds && !completedViaReturnTool && expectedReturnTool) {
+    console.warn(
+      `Tool loop hit max rounds (${maxRounds}) without receiving expected return tool call`
+    );
+  } else if (roundCount >= maxRounds && response.toolCalls?.length) {
     console.warn(`Tool loop hit max rounds (${maxRounds}), stopping with pending tool calls`);
   }
 
-  return { response, rounds };
+  return { response, rounds, returnValue, completedViaReturnTool };
 }
 
 /**
