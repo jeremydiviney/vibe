@@ -77,49 +77,30 @@ if (existsSync('README.md')) {
   console.log('  ✓ README.md -> npm/vibe/README.md');
 }
 
-// 6. Publish packages (platform packages in parallel, then main package)
-console.log('\nStep 6: Publishing packages (parallel)...');
+// 6. Publish packages
+console.log('\nStep 6: Publishing packages...');
 
 const platforms = ['linux-x64', 'linux-arm64', 'darwin-arm64', 'darwin-x64', 'windows-x64'];
 
-// Publish platform packages in parallel
-const publishStart = Date.now();
-const publishResults = await Promise.all(
-  platforms.map(async (platform) => {
-    const pkgDir = `npm/vibe-${platform}`;
-    try {
-      if (dryRun) {
-        await $`cd ${pkgDir} && npm publish --access public --dry-run`.quiet();
-      } else {
-        await $`cd ${pkgDir} && npm publish --access public`.quiet();
-      }
-      return { platform, success: true };
-    } catch (error) {
-      return { platform, success: false, error };
-    }
-  })
-);
-
-// Report platform results
-for (const result of publishResults) {
-  if (result.success) {
-    console.log(`  ✓ @vibe-lang/vibe-${result.platform}@${version}`);
+for (const platform of platforms) {
+  const pkgDir = `npm/vibe-${platform}`;
+  process.stdout.write(`  Publishing @vibe-lang/vibe-${platform}...`);
+  if (dryRun) {
+    await $`cd ${pkgDir} && npm publish --access public --dry-run`.quiet();
   } else {
-    console.error(`  ✗ @vibe-lang/vibe-${result.platform} failed`);
+    await $`cd ${pkgDir} && npm publish --access public`.quiet();
   }
+  console.log(` ✓`);
 }
 
-// Publish main package (must wait for platform packages)
-console.log(`  Publishing @vibe-lang/vibe...`);
+// Publish main package
+process.stdout.write(`  Publishing @vibe-lang/vibe...`);
 if (dryRun) {
   await $`cd npm/vibe && npm publish --access public --dry-run`.quiet();
 } else {
   await $`cd npm/vibe && npm publish --access public`.quiet();
 }
-console.log(`  ✓ @vibe-lang/vibe@${version}`);
-
-const publishTime = ((Date.now() - publishStart) / 1000).toFixed(1);
-console.log(`  Published 6 packages in ${publishTime}s`);
+console.log(` ✓`);
 
 console.log(`\n✓ All packages published${dryRun ? ' (dry run)' : ''}!`);
 console.log('\nTo install:');

@@ -1,5 +1,5 @@
 // Version (updated by publish script)
-export const VERSION = '0.1.10';
+export const VERSION = '0.1.11';
 
 // Re-export public API
 export { VibeLexer, tokenize, allTokens } from './lexer';
@@ -58,20 +58,23 @@ async function main(): Promise<void> {
 
   // Handle upgrade/update command
   if (args[0] === 'upgrade' || args[0] === 'update') {
-    console.log('Upgrading vibe to latest version...');
+    const targetVersion = args[1] || 'latest';
+    const packageSpec = `@vibe-lang/vibe@${targetVersion}`;
+    console.log(`Upgrading vibe to ${targetVersion}...`);
+    console.log(`Running: npm install -g ${packageSpec}\n`);
+
     const isWindows = process.platform === 'win32';
     if (isWindows) {
       // On Windows, use 'start /b' to run npm in background without new window
       // This allows vibe.exe to exit before npm tries to clean up
-      console.log('Running: npm install -g @vibe-lang/vibe@latest\n');
-      Bun.spawn(['cmd', '/c', 'start', '/b', 'npm', 'install', '-g', '@vibe-lang/vibe@latest'], {
+      Bun.spawn(['cmd', '/c', 'start', '/b', 'npm', 'install', '-g', packageSpec], {
         stdout: 'inherit',
         stderr: 'inherit',
       });
       process.exit(0);
     } else {
       // On Unix, just run npm directly and wait
-      const proc = Bun.spawn(['npm', 'install', '-g', '@vibe-lang/vibe@latest'], {
+      const proc = Bun.spawn(['npm', 'install', '-g', packageSpec], {
         stdout: 'inherit',
         stderr: 'inherit',
       });
@@ -95,7 +98,7 @@ async function main(): Promise<void> {
     console.log('Usage: vibe [command] [options] <file.vibe>');
     console.log('');
     console.log('Commands:');
-    console.log('  upgrade, update   Update vibe to the latest version');
+    console.log('  upgrade [version]   Update vibe (default: latest)');
     console.log('');
     console.log('Options:');
     console.log('  --log-ai       Show detailed AI interaction logs');
