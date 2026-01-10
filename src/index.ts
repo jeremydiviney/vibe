@@ -53,16 +53,37 @@ export async function runVibe(source: string, options?: RunVibeOptions): Promise
 async function main(): Promise<void> {
   const args = Bun.argv.slice(2);
 
+  // Handle upgrade command
+  if (args[0] === 'upgrade') {
+    console.log('Upgrading vibe to latest version...');
+    const proc = Bun.spawn(['npm', 'install', '-g', '@vibe-lang/vibe@latest'], {
+      stdout: 'inherit',
+      stderr: 'inherit',
+    });
+    const exitCode = await proc.exited;
+    process.exit(exitCode);
+  }
+
+  // Handle version flag
+  if (args.includes('--version') || args.includes('-v')) {
+    console.log('vibe 0.1.0');
+    return;
+  }
+
   // Parse flags
   const logAi = args.includes('--log-ai');
   const fileArgs = args.filter(arg => !arg.startsWith('--'));
 
   if (fileArgs.length === 0) {
     console.log('Vibe - AI Agent Orchestration Language');
-    console.log('Usage: bun run src/index.ts [options] <file.vibe>');
+    console.log('Usage: vibe [command] [options] <file.vibe>');
+    console.log('');
+    console.log('Commands:');
+    console.log('  upgrade     Update vibe to the latest version');
     console.log('');
     console.log('Options:');
     console.log('  --log-ai    Show detailed AI interaction logs');
+    console.log('  -v, --version  Show version number');
     console.log('');
     console.log('Example program:');
     console.log('  let x = "hello"');
