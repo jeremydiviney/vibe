@@ -1,5 +1,5 @@
 // Version (updated by publish script)
-export const VERSION = '1.0.11';
+export const VERSION = '0.0.2';
 
 // Re-export public API
 export { VibeLexer, tokenize, allTokens } from './lexer';
@@ -14,6 +14,44 @@ export * from './errors';
 import { parse } from './parser/parse';
 import { analyze } from './semantic';
 import { Runtime, AIProvider, createRealAIProvider, dumpAIInteractions } from './runtime';
+import { readdirSync, rmSync, statSync } from 'fs';
+import { join, dirname } from 'path';
+
+// Clean up orphaned temp directories from previous failed updates (Windows)
+function cleanupOrphanedDirs(): void {
+  if (process.platform !== 'win32') return;
+
+  try {
+    // Find @vibe-lang in the executable path (works with nvm, volta, standard installs)
+    const execPath = process.execPath;
+    const marker = '@vibe-lang';
+    const markerIndex = execPath.indexOf(marker);
+    if (markerIndex === -1) return;
+
+    // Construct path to node_modules/@vibe-lang
+    const vibeLangDir = execPath.substring(0, markerIndex + marker.length);
+
+    const entries = readdirSync(vibeLangDir);
+
+    // Look for orphaned .vibe-* temp directories
+    for (const entry of entries) {
+      if (entry.startsWith('.vibe-')) {
+        const fullPath = join(vibeLangDir, entry);
+        try {
+          const stat = statSync(fullPath);
+          // Only delete if it's a directory and older than 1 minute
+          if (stat.isDirectory() && Date.now() - stat.mtimeMs > 60000) {
+            rmSync(fullPath, { recursive: true, force: true });
+          }
+        } catch {
+          // Ignore errors - directory may still be locked
+        }
+      }
+    }
+  } catch {
+    // Silently ignore cleanup errors
+  }
+}
 
 // Simple mock AI provider for testing
 class MockAIProvider implements AIProvider {
@@ -54,6 +92,9 @@ export async function runVibe(source: string, options?: RunVibeOptions): Promise
 
 // CLI entry point
 async function main(): Promise<void> {
+  // Clean up orphaned temp directories from previous updates
+  cleanupOrphanedDirs();
+
   const args = Bun.argv.slice(2);
 
   // Handle upgrade/update command
@@ -63,10 +104,55 @@ async function main(): Promise<void> {
     console.log(`Upgrading vibe to ${targetVersion}...`);
 
     const proc = Bun.spawn(['npm', 'install', '-g', packageSpec], {
-      stdout: 'inherit',
-      stderr: 'inherit',
+      stdout: 'pipe',
+      stderr: 'pipe',
     });
+
+    // Stream stdout directly
+    (async () => {
+      const reader = proc.stdout.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        process.stdout.write(value);
+      }
+    })();
+
+    // Filter stderr to suppress cleanup warnings on Windows
+    (async () => {
+      const reader = proc.stderr.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          // Skip npm cleanup warnings (Windows file locking issue)
+          if (line.includes('npm warn cleanup')) continue;
+          if (line.trim()) {
+            process.stderr.write(line + '\n');
+          }
+        }
+      }
+
+      // Handle remaining buffer
+      if (buffer.trim() && !buffer.includes('npm warn cleanup')) {
+        process.stderr.write(buffer + '\n');
+      }
+    })();
+
     const exitCode = await proc.exited;
+
+    if (exitCode === 0) {
+      console.log('vibe upgraded successfully!');
+    }
+
     process.exit(exitCode);
   }
 
@@ -81,7 +167,7 @@ async function main(): Promise<void> {
   const fileArgs = args.filter(arg => !arg.startsWith('--'));
 
   if (fileArgs.length === 0) {
-    console.log('Vibe - AI Agent Orchestration Language');
+    console.log('Vibe - AI Agent Language');
     console.log('Usage: vibe [command] [options] <file.vibe>');
     console.log('');
     console.log('Commands:');

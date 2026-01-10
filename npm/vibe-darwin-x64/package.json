@@ -1,6 +1,6 @@
 {
   "name": "@vibe-lang/vibe-darwin-x64",
-  "version": "0.1.10",
+  "version": "0.0.2",
   "description": "Vibe CLI binary for macOS Intel",
   "os": [
     "darwin"
