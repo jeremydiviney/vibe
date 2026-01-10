@@ -53,8 +53,8 @@ export async function runVibe(source: string, options?: RunVibeOptions): Promise
 async function main(): Promise<void> {
   const args = Bun.argv.slice(2);
 
-  // Handle upgrade command
-  if (args[0] === 'upgrade') {
+  // Handle upgrade/update command
+  if (args[0] === 'upgrade' || args[0] === 'update') {
     console.log('Upgrading vibe to latest version...');
     const proc = Bun.spawn(['npm', 'install', '-g', '@vibe-lang/vibe@latest'], {
       stdout: 'inherit',
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
     console.log('Usage: vibe [command] [options] <file.vibe>');
     console.log('');
     console.log('Commands:');
-    console.log('  upgrade     Update vibe to the latest version');
+    console.log('  upgrade, update   Update vibe to the latest version');
     console.log('');
     console.log('Options:');
     console.log('  --log-ai    Show detailed AI interaction logs');
