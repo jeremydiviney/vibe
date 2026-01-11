@@ -1,0 +1,8 @@
+// main-b.vibe - tests moduleB's isolation
+
+const x = "MAIN"
+
+import { getX } from "./moduleB.vibe"
+
+// getX() should return "B" (from moduleB), not "MAIN"
+let result = getX()

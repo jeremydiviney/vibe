@@ -5,18 +5,25 @@ import type { RuntimeState, StackFrame } from '../types';
 import { resolveValue } from '../types';
 import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
-import { getImportedVibeFunction } from '../modules';
+import { getImportedVibeFunction, getImportedVibeFunctionModulePath } from '../modules';
 import { validateAndCoerce } from '../validation';
 
 /**
  * Create a new frame with validated parameters for a Vibe function call.
+ * @param modulePath - If set, this frame belongs to an imported module (for scope isolation)
  */
 function createFunctionFrame(
   funcName: string,
   params: AST.FunctionParameter[],
-  args: unknown[]
+  args: unknown[],
+  modulePath?: string
 ): StackFrame {
   const newFrame = createFrame(funcName, 0);
+
+  // Set module path for imported functions (enables module scope isolation)
+  if (modulePath) {
+    newFrame.modulePath = modulePath;
+  }
 
   for (let i = 0; i < params.length; i++) {
     const param = params[i];
@@ -49,14 +56,16 @@ function createFunctionFrame(
 /**
  * Execute a Vibe function (local or imported) by pushing its body onto the instruction stack.
  * Note: Functions always forget context on exit (like traditional callstack).
+ * @param modulePath - If set, this function belongs to an imported module (for scope isolation)
  */
 function executeVibeFunction(
   state: RuntimeState,
   func: AST.FunctionDeclaration,
   args: unknown[],
-  newValueStack: unknown[]
+  newValueStack: unknown[],
+  modulePath?: string
 ): RuntimeState {
-  const newFrame = createFunctionFrame(func.name, func.params, args);
+  const newFrame = createFunctionFrame(func.name, func.params, args, modulePath);
 
   const bodyInstructions = func.body.body.map((s) => ({
     op: 'exec_statement' as const,
@@ -133,7 +142,10 @@ export function execCallFunction(
       throw new Error(`ReferenceError: '${funcName}' is not defined`);
     }
 
-    return executeVibeFunction(state, func, args, newValueStack);
+    // Get the module path for scope isolation
+    const modulePath = getImportedVibeFunctionModulePath(state, funcName);
+
+    return executeVibeFunction(state, func, args, newValueStack, modulePath);
   }
 
   // Handle tool call - tools cannot be called directly from vibe scripts

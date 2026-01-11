@@ -213,6 +213,46 @@ describe('Runtime - TypeScript Boolean Imports', () => {
   });
 });
 
+describe('Runtime - Module Scope Isolation', () => {
+  test('imported function sees its own module globals, not caller globals', async () => {
+    // main.vibe has const x = "MAIN"
+    // moduleA.vibe has const x = "A" and exports getX() which returns x
+    // When main calls getX(), it should return "A", not "MAIN"
+    const { state, result } = await loadAndRun('module-isolation/main.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('A');  // From moduleA's global, not main's
+  });
+
+  test('different modules with same variable name are isolated', async () => {
+    // main-b.vibe has const x = "MAIN"
+    // moduleB.vibe has const x = "B" and exports getX() which returns x
+    // When main calls getX(), it should return "B"
+    const { state, result } = await loadAndRun('module-isolation/main-b.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('B');  // From moduleB's global
+  });
+
+  test('module globals are stored in vibeModules', async () => {
+    const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'module-isolation', 'main.vibe');
+    const source = readFileSync(scriptPath, 'utf-8');
+    const ast = parse(source);
+    let state = createInitialState(ast);
+
+    state = await loadImports(state, scriptPath);
+
+    // Check that moduleA has its globals
+    const moduleAPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'module-isolation', 'moduleA.vibe');
+    const moduleA = state.vibeModules[moduleAPath];
+    expect(moduleA).toBeDefined();
+    expect(moduleA.globals).toBeDefined();
+    expect(moduleA.globals['x']).toBeDefined();
+    expect(moduleA.globals['x'].value).toBe('A');
+    expect(moduleA.globals['x'].isConst).toBe(true);
+  });
+});
+
 describe('Runtime - TypeScript Variable Imports', () => {
   test('can import TS variable and assign to text type', async () => {
     const { state, result } = await loadAndRun('ts-variables/import-variable.vibe');

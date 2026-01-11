@@ -169,6 +169,7 @@ export interface StackFrame {
   locals: Record<string, Variable>;
   parentFrameIndex: number | null;  // Lexical parent frame for scope chain
   orderedEntries: FrameEntry[];     // Track order of variable assignments and AI prompts
+  modulePath?: string;              // Module this frame belongs to (for imported functions)
 }
 
 // AI operation history entry
@@ -291,6 +292,7 @@ export interface TsModule {
 export interface VibeModule {
   exports: Record<string, ExportedItem>;
   program: AST.Program;
+  globals: Record<string, Variable>;  // Module-level variables (isolated per module)
 }
 
 // Exported item from a Vibe module

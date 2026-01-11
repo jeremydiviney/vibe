@@ -3,7 +3,7 @@
 
 import * as AST from '../ast';
 import { parse } from '../parser/parse';
-import type { RuntimeState, TsModule, VibeModule, ExportedItem } from './types';
+import type { RuntimeState, TsModule, VibeModule, ExportedItem, Variable } from './types';
 import { resolve, dirname, join } from 'path';
 
 // Map system module names to their implementation files
@@ -150,7 +150,10 @@ async function loadVibeModuleRecursive(
     }
   }
 
-  const vibeModule: VibeModule = { exports, program };
+  // Extract all module-level variables (for module scope isolation)
+  const globals = extractModuleGlobals(program);
+
+  const vibeModule: VibeModule = { exports, program, globals };
 
   let newState: RuntimeState = {
     ...state,
@@ -217,6 +220,77 @@ function extractVibeExports(program: AST.Program): Record<string, ExportedItem> 
   }
 
   return exports;
+}
+
+// Extract all module-level variables (both exported and non-exported)
+// These form the module's isolated global scope
+function extractModuleGlobals(program: AST.Program): Record<string, Variable> {
+  const globals: Record<string, Variable> = {};
+
+  for (const stmt of program.body) {
+    // Handle direct declarations
+    if (stmt.type === 'LetDeclaration') {
+      globals[stmt.name] = {
+        value: evaluateSimpleLiteral(stmt.initializer),
+        isConst: false,
+        typeAnnotation: stmt.typeAnnotation,
+      };
+    } else if (stmt.type === 'ConstDeclaration') {
+      globals[stmt.name] = {
+        value: evaluateSimpleLiteral(stmt.initializer),
+        isConst: true,
+        typeAnnotation: stmt.typeAnnotation,
+      };
+    }
+    // Handle exported declarations
+    else if (stmt.type === 'ExportDeclaration') {
+      const decl = stmt.declaration;
+      if (decl.type === 'LetDeclaration') {
+        globals[decl.name] = {
+          value: evaluateSimpleLiteral(decl.initializer),
+          isConst: false,
+          typeAnnotation: decl.typeAnnotation,
+        };
+      } else if (decl.type === 'ConstDeclaration') {
+        globals[decl.name] = {
+          value: evaluateSimpleLiteral(decl.initializer),
+          isConst: true,
+          typeAnnotation: decl.typeAnnotation,
+        };
+      }
+    }
+    // Note: Functions and models are accessed via exports, not globals
+  }
+
+  return globals;
+}
+
+// Evaluate simple literal expressions for module initialization
+// Complex expressions will be null (would need full runtime evaluation)
+function evaluateSimpleLiteral(expr: AST.Expression | null): unknown {
+  if (!expr) return null;
+
+  switch (expr.type) {
+    case 'StringLiteral':
+      return expr.value;
+    case 'NumberLiteral':
+      return expr.value;
+    case 'BooleanLiteral':
+      return expr.value;
+    case 'NullLiteral':
+      return null;
+    case 'ArrayLiteral':
+      return expr.elements.map(e => evaluateSimpleLiteral(e));
+    case 'ObjectLiteral':
+      const obj: Record<string, unknown> = {};
+      for (const prop of expr.properties) {
+        obj[prop.key] = evaluateSimpleLiteral(prop.value);
+      }
+      return obj;
+    default:
+      // Complex expression - can't evaluate statically
+      return null;
+  }
 }
 
 // Register imported names in the state for lookup
@@ -333,4 +407,28 @@ export function getImportedTsFunction(
   if (typeof value !== 'function') return undefined;
 
   return value as (...args: unknown[]) => unknown;
+}
+
+// Get the module path for an imported Vibe function
+// Returns undefined if not an imported Vibe function
+export function getImportedVibeFunctionModulePath(
+  state: RuntimeState,
+  name: string
+): string | undefined {
+  const importInfo = state.importedNames[name];
+  if (!importInfo || importInfo.sourceType !== 'vibe') return undefined;
+
+  const module = state.vibeModules[importInfo.source];
+  const exported = module?.exports[name];
+  if (exported?.kind !== 'function') return undefined;
+
+  return importInfo.source;
+}
+
+// Get module globals by module path
+export function getModuleGlobals(
+  state: RuntimeState,
+  modulePath: string
+): Record<string, Variable> | undefined {
+  return state.vibeModules[modulePath]?.globals;
 }

@@ -1,0 +1,6 @@
+// moduleB.vibe - has its own global x = "B"
+const x = "B"
+
+export function getX() {
+  return x
+}

@@ -4,20 +4,48 @@ import type { SourceLocation } from '../../errors';
 import type { RuntimeState, Variable, StackFrame } from '../types';
 import { currentFrame } from '../state';
 import { validateAndCoerce } from '../validation';
+import { getModuleGlobals } from '../modules';
 
 /**
  * Look up a variable by walking the scope chain.
  * Returns the variable and its frame index, or null if not found.
+ *
+ * Module isolation: If we're in an imported function (frame has modulePath),
+ * we check that module's globals instead of walking up to the main program.
  */
 export function lookupVariable(state: RuntimeState, name: string): { variable: Variable; frameIndex: number } | null {
   let frameIndex: number | null = state.callStack.length - 1;
+  let modulePath: string | undefined;
+
   while (frameIndex !== null && frameIndex >= 0) {
     const frame: StackFrame = state.callStack[frameIndex];
+
+    // Check frame locals
     if (frame.locals[name]) {
       return { variable: frame.locals[name], frameIndex };
     }
+
+    // Track the module path from any frame in the chain
+    if (frame.modulePath && !modulePath) {
+      modulePath = frame.modulePath;
+    }
+
+    // If we're in a module context and this is the module's root frame,
+    // don't walk up to the caller's frames - check module globals instead
+    if (modulePath && frame.modulePath === modulePath) {
+      // Check module globals before walking to parent (caller's context)
+      const moduleGlobals = getModuleGlobals(state, modulePath);
+      if (moduleGlobals?.[name]) {
+        return { variable: moduleGlobals[name], frameIndex: -1 };
+      }
+      // Don't continue to caller's frames - module isolation
+      return null;
+    }
+
     frameIndex = frame.parentFrameIndex;
   }
+
+  // Not in module context - variable not found in main program
   return null;
 }
 
@@ -104,6 +132,44 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
   const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name, location, state.lastResultSource);
 
+  // Handle module global assignment (frameIndex -1)
+  if (frameIndex === -1) {
+    // Find which module this belongs to by checking current frame's modulePath
+    const currentModulePath = getCurrentModulePath(state);
+    if (!currentModulePath) {
+      throw new Error(`Internal error: module global assignment without module context`);
+    }
+
+    const module = state.vibeModules[currentModulePath];
+    if (!module) {
+      throw new Error(`Internal error: module not found: ${currentModulePath}`);
+    }
+
+    const newGlobals = {
+      ...module.globals,
+      [name]: { ...variable, value: validatedValue, source: state.lastResultSource },
+    };
+
+    return {
+      ...state,
+      lastResultSource: undefined,
+      vibeModules: {
+        ...state.vibeModules,
+        [currentModulePath]: { ...module, globals: newGlobals },
+      },
+      executionLog: [
+        ...state.executionLog,
+        {
+          timestamp: Date.now(),
+          instructionType: 'assignment',
+          details: { name, moduleGlobal: true },
+          result: validatedValue,
+        },
+      ],
+    };
+  }
+
+  // Regular frame local assignment
   const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
@@ -143,4 +209,20 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
       },
     ],
   };
+}
+
+/**
+ * Get the module path from the current execution context.
+ * Walks up the call stack to find a frame with modulePath.
+ */
+function getCurrentModulePath(state: RuntimeState): string | undefined {
+  let frameIndex: number | null = state.callStack.length - 1;
+  while (frameIndex !== null && frameIndex >= 0) {
+    const frame = state.callStack[frameIndex];
+    if (frame.modulePath) {
+      return frame.modulePath;
+    }
+    frameIndex = frame.parentFrameIndex;
+  }
+  return undefined;
 }

@@ -1,0 +1,9 @@
+// main.vibe - tests that imported function sees its own module's global
+// NOT the caller's global
+
+const x = "MAIN"
+
+import { getX } from "./moduleA.vibe"
+
+// getX() should return "A" (from moduleA), not "MAIN"
+let result = getX()
