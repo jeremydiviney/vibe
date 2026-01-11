@@ -18,6 +18,7 @@ import { provideDefinition } from './providers/definition';
 import { provideReferences } from './providers/references';
 import { provideRename, prepareRename } from './providers/rename';
 import { provideSignatureHelp } from './providers/signature';
+import { provideFoldingRanges } from './providers/folding';
 
 // Create connection using all proposed features
 const connection = createConnection(ProposedFeatures.all);
@@ -56,6 +57,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       signatureHelpProvider: {
         triggerCharacters: ['(', ','],
       },
+      foldingRangeProvider: true,
     },
   };
 
@@ -146,6 +148,13 @@ connection.onSignatureHelp((params) => {
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   return provideSignatureHelp(document, params.position);
+});
+
+// Provide folding ranges
+connection.onFoldingRanges((params) => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) return [];
+  return provideFoldingRanges(document);
 });
 
 // Start listening
