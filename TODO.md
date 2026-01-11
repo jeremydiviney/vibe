@@ -59,12 +59,45 @@
   - [x] Go to definition
   - [x] Hover information
   - [x] Autocomplete
-- [ ] Build debug support for VSCode
-  - [ ] Debug Adapter Protocol (DAP) implementation
-  - [ ] Breakpoints
-  - [ ] Step through execution
-  - [ ] Variable inspection
-  - [ ] Call stack visualization
+  - [x] Find all references
+  - [x] Rename symbol
+  - [x] Signature help
+  - [x] Folding ranges
+  - [x] Document formatting
+  - [x] TypeScript import support (hover, go-to-definition)
+- [ ] Build debug support for VSCode (see `docs/debugger-plan.md`)
+  - [ ] Phase 1: Basic Vibe Debugging
+    - [ ] Add `--inspect` flag to Vibe CLI
+    - [ ] Implement runtime debug hooks (beforeStatement, breakpoints)
+    - [ ] Create WebSocket server in runtime for debug communication
+    - [ ] Build Debug Adapter (DAP server) in VSCode extension
+    - [ ] Add debugger contribution to VSCode extension package.json
+    - [ ] Implement breakpoints support
+    - [ ] Implement stepping (continue, stepIn, stepOver, stepOut)
+    - [ ] Implement call stack inspection
+    - [ ] Implement variable inspection
+  - [ ] Phase 2: TS Block Debugging
+    - [ ] Connect Debug Adapter to Bun inspector WebSocket
+    - [ ] Source map TS blocks to locations within .vibe files
+    - [ ] Implement handoff logic when entering TS block
+    - [ ] Merge stack frames from Vibe runtime and Bun inspector
+    - [ ] Handle breakpoints set inside TS blocks
+  - [ ] Phase 3: Imported TS Function Debugging
+    - [ ] Detect when step-in targets a TS import
+    - [ ] Set temporary breakpoint at TS function entry
+    - [ ] Hand control to Bun inspector
+    - [ ] Resume Vibe runtime control on return
+  - [ ] Phase 4: Polish & Advanced Features
+    - [ ] Conditional breakpoints
+    - [ ] Logpoints
+    - [ ] Watch expressions
+    - [ ] Exception breakpoints
+  - [ ] Vibe-Specific Debug Features
+    - [ ] Show `.toolCalls` for VibeValue variables in debug inspector
+    - [ ] Show `.err` field inline for variables with errors
+    - [ ] Context visualization panel (local vs default context)
+    - [ ] Show context entries with their values
+    - [ ] Highlight which context is active for current scope
 - [ ] Publish VSCode extension to marketplace
   - [ ] Create publisher account on VS Marketplace
   - [ ] Package extension with `vsce package`

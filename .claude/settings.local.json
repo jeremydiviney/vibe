@@ -55,7 +55,14 @@
       "WebFetch(domain:github.com)",
       "Bash(findstr:*)",
       "WebFetch(domain:*)",
-      "WebFetch(domain:bun.com)"
+      "WebFetch(domain:bun.com)",
+      "Bash(vibe --version:*)",
+      "Bash(vibe update:*)",
+      "Bash(powershell -Command:*)",
+      "WebFetch(domain:docs.rs)",
+      "Bash(git reset:*)",
+      "Bash(timeout 2 node:*)",
+      "Bash(echo:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

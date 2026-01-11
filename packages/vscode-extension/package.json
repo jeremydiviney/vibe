@@ -1,0 +1,130 @@
+{
+  "name": "vibe-language",
+  "displayName": "Vibe Language",
+  "description": "Language support for Vibe - AI agent orchestration language",
+  "version": "0.0.1",
+  "publisher": "vibe",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onLanguage:vibe",
+    "onDebug"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "vibe",
+        "aliases": [
+          "Vibe",
+          "vibe"
+        ],
+        "extensions": [
+          ".vibe"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "vibe",
+        "scopeName": "source.vibe",
+        "path": "./syntaxes/vibe.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.typescript": "typescript"
+        }
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "vibe"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "vibe",
+        "label": "Vibe Debug",
+        "program": "./out/debugAdapter.js",
+        "runtime": "node",
+        "languages": ["vibe"],
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Absolute path to the .vibe file to debug",
+                "default": "${file}"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch",
+                "default": false
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working directory for the program",
+                "default": "${workspaceFolder}"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "vibe",
+            "request": "launch",
+            "name": "Debug Vibe Program",
+            "program": "${file}",
+            "stopOnEntry": false
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Vibe: Launch",
+            "description": "Launch and debug a Vibe program",
+            "body": {
+              "type": "vibe",
+              "request": "launch",
+              "name": "Debug Vibe Program",
+              "program": "^\"\\${file}\"",
+              "stopOnEntry": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "bun run build",
+    "build": "bun build src/extension.ts --outfile=out/extension.js --target=node --format=cjs --external=vscode && bun build src/server.ts --outfile=out/server.js --target=node --format=cjs && bun build src/debug/adapter.ts --outfile=out/debugAdapter.js --target=node --format=cjs --external=vscode",
+    "watch": "bun build src/extension.ts --outfile=out/extension.js --target=node --format=cjs --external=vscode --watch & bun build src/server.ts --outfile=out/server.js --target=node --format=cjs --watch",
+    "compile": "tsc -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "bun test src/test/",
+    "test:syntax": "bunx vscode-tmgrammar-test -g syntaxes/vibe.tmLanguage.json src/test/syntax/*.vibe",
+    "test:all": "bun run test && bun run test:syntax"
+  },
+  "dependencies": {
+    "@vibe-lang/debug-core": "workspace:*",
+    "@vibe-lang/runtime": "workspace:*",
+    "@vscode/debugadapter": "^1.65.0",
+    "@vscode/debugprotocol": "^1.65.0",
+    "typescript": "^5.3.0",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11",
+    "vscode-uri": "^3.0.8",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.5.13",
+    "vscode-tmgrammar-test": "^0.1.3"
+  }
+}
