@@ -122,28 +122,25 @@ describe('Runtime - Nested Imports', () => {
 });
 
 describe('Runtime - Import Error Detection', () => {
-  test('detects name collision when same function imported indirectly', async () => {
-    // When a.vibe imports from b.vibe and b.vibe imports from a.vibe,
-    // and main.vibe also imports from a.vibe, we hit a name collision
-    // because funcA is imported by both main.vibe and (indirectly) b.vibe
+  test('detects circular dependency when modules import each other', async () => {
+    // a.vibe imports from b.vibe and b.vibe imports from a.vibe
+    // This creates a circular dependency
     const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'cycle-detection', 'main.vibe');
     const source = readFileSync(scriptPath, 'utf-8');
     const ast = parse(source);
     let state = createInitialState(ast);
 
-    await expect(loadImports(state, scriptPath)).rejects.toThrow(/Import error.*already imported/);
+    await expect(loadImports(state, scriptPath)).rejects.toThrow(/Circular dependency/);
   });
 
-  test('detects name collision in import chain', async () => {
-    // main.vibe imports funcB -> loads b.vibe
-    // b.vibe imports funcA -> loads a.vibe
-    // a.vibe imports funcB -> but funcB was already imported by main.vibe!
+  test('detects circular dependency in import chain', async () => {
+    // main.vibe -> b.vibe -> a.vibe -> b.vibe (cycle!)
     const scriptPath = join(process.cwd(), 'tests', 'fixtures', 'imports', 'pure-cycle', 'main.vibe');
     const source = readFileSync(scriptPath, 'utf-8');
     const ast = parse(source);
     let state = createInitialState(ast);
 
-    await expect(loadImports(state, scriptPath)).rejects.toThrow(/Import error.*already imported/);
+    await expect(loadImports(state, scriptPath)).rejects.toThrow(/Circular dependency/);
   });
 });
 
@@ -232,6 +229,31 @@ describe('Runtime - Module Scope Isolation', () => {
 
     expect(state.status).toBe('completed');
     expect(result).toBe('B');  // From moduleB's global
+  });
+
+  test('nested imports maintain correct scope isolation', async () => {
+    // main.vibe imports from file2 and file3
+    // file2.vibe imports from file3
+    // Each has its own x variable
+    //
+    // Expected results:
+    // - getB() returns "B" (file2's x)
+    // - getC() returns "C" (file3's x)
+    // - getCTwice() returns "CC" (file3's x + x)
+    // - getBAndC() returns "BC" (file2's x + getC() which returns file3's x)
+    // - Final result: "B" + "C" + "CC" + "BC" = "BCCCBC"
+    const { state, result } = await loadAndRun('nested-isolation/main.vibe');
+
+    expect(state.status).toBe('completed');
+
+    // Verify individual results
+    expect(state.callStack[0].locals['resultB'].value).toBe('B');
+    expect(state.callStack[0].locals['resultC'].value).toBe('C');
+    expect(state.callStack[0].locals['resultCC'].value).toBe('CC');
+    expect(state.callStack[0].locals['resultBC'].value).toBe('BC');
+
+    // Verify final combined result from locals
+    expect(state.callStack[0].locals['result'].value).toBe('BCCCBC');
   });
 
   test('module globals are stored in vibeModules', async () => {

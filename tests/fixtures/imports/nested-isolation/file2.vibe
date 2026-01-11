@@ -1,0 +1,15 @@
+// file2.vibe - imports from file3
+import { getC } from "./file3.vibe"
+
+const x = "B"
+
+export function getB() {
+  return x
+}
+
+// This function calls into file3 - should still see file3's x
+export function getBAndC() {
+  let b = x
+  let c = getC()
+  return b + c
+}

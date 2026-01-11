@@ -74,7 +74,7 @@ async function loadTsModule(
 
   // Check if already loaded
   if (state.tsModules[modulePath]) {
-    // Just register the imported names
+    // Register the imported names (allows shared imports across modules)
     return registerImportedNames(state, importDecl, modulePath, 'ts');
   }
 
@@ -102,6 +102,7 @@ async function loadTsModule(
     },
   };
 
+  // Register the imported names
   return registerImportedNames(newState, importDecl, modulePath, 'ts');
 }
 
@@ -114,19 +115,20 @@ async function loadVibeModuleRecursive(
 ): Promise<RuntimeState> {
   const modulePath = resolve(dirname(basePath), importDecl.source);
 
-  // Check if already loaded
-  if (state.vibeModules[modulePath]) {
-    // Just register the imported names
-    return registerImportedNames(state, importDecl, modulePath, 'vibe');
-  }
-
-  // Check for import cycle
+  // Check for import cycle FIRST (before checking if loaded)
+  // This catches cycles even if the module was partially loaded
   if (loading.has(modulePath)) {
     // Build cycle path for error message
     const cyclePath = [...loading, modulePath].join(' -> ');
     throw new Error(
       `Import error: Circular dependency detected: ${cyclePath}`
     );
+  }
+
+  // Check if already loaded
+  if (state.vibeModules[modulePath]) {
+    // Register the imported names (allows shared imports across modules)
+    return registerImportedNames(state, importDecl, modulePath, 'vibe');
   }
 
   // Mark this module as being loaded
@@ -163,7 +165,7 @@ async function loadVibeModuleRecursive(
     },
   };
 
-  // Recursively load this module's imports
+  // Recursively load this module's imports (these are NOT the main program's imports)
   const moduleImports = program.body.filter(
     (stmt): stmt is AST.ImportDeclaration => stmt.type === 'ImportDeclaration'
   );
@@ -176,6 +178,7 @@ async function loadVibeModuleRecursive(
     }
   }
 
+  // Register the imported names
   return registerImportedNames(newState, importDecl, modulePath, 'vibe');
 }
 
@@ -306,6 +309,10 @@ function registerImportedNames(
     // Check for name collision
     if (newImportedNames[spec.local]) {
       const existing = newImportedNames[spec.local];
+      // Allow same import from same source (nested modules can share imports)
+      if (existing.source === modulePath && existing.sourceType === sourceType) {
+        continue;  // Already registered, skip
+      }
       throw new Error(
         `Import error: '${spec.local}' is already imported from '${existing.source}'`
       );

@@ -1,0 +1,10 @@
+// file3.vibe - base module
+const x = "C"
+
+export function getC() {
+  return x
+}
+
+export function getCTwice() {
+  return x + x
+}

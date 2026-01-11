@@ -1,0 +1,21 @@
+// main.vibe - imports from file2 and file3
+// Tests nested import scope isolation
+
+import { getB, getBAndC } from "./file2.vibe"
+import { getC, getCTwice } from "./file3.vibe"
+
+const x = "A"
+
+// Each function should see its own module's x:
+// - getB() should return "B" (from file2)
+// - getC() should return "C" (from file3)
+// - getCTwice() should return "CC" (from file3)
+// - getBAndC() should return "BC" (B from file2, C via file3's getC)
+
+let resultB = getB()
+let resultC = getC()
+let resultCC = getCTwice()
+let resultBC = getBAndC()
+
+// Final result combines all to verify isolation
+let result = resultB + resultC + resultCC + resultBC
