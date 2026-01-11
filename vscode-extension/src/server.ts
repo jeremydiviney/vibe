@@ -17,6 +17,7 @@ import { provideDocumentSymbols } from './providers/symbols';
 import { provideDefinition } from './providers/definition';
 import { provideReferences } from './providers/references';
 import { provideRename, prepareRename } from './providers/rename';
+import { provideSignatureHelp } from './providers/signature';
 
 // Create connection using all proposed features
 const connection = createConnection(ProposedFeatures.all);
@@ -51,6 +52,9 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       referencesProvider: true,
       renameProvider: {
         prepareProvider: true,
+      },
+      signatureHelpProvider: {
+        triggerCharacters: ['(', ','],
       },
     },
   };
@@ -135,6 +139,13 @@ connection.onRenameRequest((params) => {
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   return provideRename(document, params.position, params.newName);
+});
+
+// Provide signature help
+connection.onSignatureHelp((params) => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) return null;
+  return provideSignatureHelp(document, params.position);
 });
 
 // Start listening
