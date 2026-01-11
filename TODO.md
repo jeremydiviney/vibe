@@ -79,22 +79,22 @@
     - [x] Implement stepping (continue, stepIn, stepOver, stepOut)
     - [x] Implement call stack inspection
     - [x] Implement variable inspection
-  - [ ] Phase 2: TS Block Debugging
-    - [ ] Connect Debug Adapter to Bun inspector WebSocket
-    - [ ] Source map TS blocks to locations within .vibe files
-    - [ ] Implement handoff logic when entering TS block
-    - [ ] Merge stack frames from Vibe runtime and Bun inspector
-    - [ ] Handle breakpoints set inside TS blocks
-  - [ ] Phase 3: Imported TS Function Debugging
-    - [ ] Detect when step-in targets a TS import
-    - [ ] Set temporary breakpoint at TS function entry
-    - [ ] Hand control to Bun inspector
-    - [ ] Resume Vibe runtime control on return
-  - [ ] Phase 4: Polish & Advanced Features
-    - [ ] Conditional breakpoints
-    - [ ] Logpoints
-    - [ ] Watch expressions
-    - [ ] Exception breakpoints
+  - [x] Phase 2: TS Block Debugging
+    - [x] Connect Debug Adapter to Bun inspector WebSocket
+    - [x] Source map TS blocks to locations within .vibe files
+    - [x] Implement handoff logic when entering TS block
+    - [x] Merge stack frames from Vibe runtime and Bun inspector
+    - [x] Handle breakpoints set inside TS blocks
+  - [x] Phase 3: Imported TS Function Debugging
+    - [x] Detect when step-in targets a TS import
+    - [x] Set temporary breakpoint at TS function entry
+    - [x] Hand control to Bun inspector
+    - [x] Resume Vibe runtime control on return
+  - [x] Phase 4: Polish & Advanced Features
+    - [x] Conditional breakpoints
+    - [x] Logpoints
+    - [x] Watch expressions
+    - [x] Exception breakpoints
   - [ ] Vibe-Specific Debug Features
     - [ ] Show `.toolCalls` for VibeValue variables in debug inspector
     - [ ] Show `.err` field inline for variables with errors
@@ -127,15 +127,17 @@
 
 ## Completed (Last 10)
 
-- [x] Monorepo restructure and Phase 1 debugger
+- [x] Complete debugger implementation (Phase 1-4)
+  - [x] Phase 1: Basic Vibe debugging with breakpoints, stepping, variables
+  - [x] Phase 2: TS block debugging with source maps and Bun inspector
+  - [x] Phase 3: Imported TS function debugging with handoff management
+  - [x] Phase 4: Conditional breakpoints, logpoints, watch expressions, exception breakpoints
+  - [x] 117 debug tests covering all features
+  - [x] Functional architecture with pure functions throughout
+
+- [x] Monorepo restructure
   - [x] Restructure to `packages/` monorepo (runtime, vscode-extension, debug-core)
   - [x] Bun workspaces with `workspace:*` protocol
-  - [x] Functional debug state management (pure functions, immutable state)
-  - [x] Debug runner with stepping, breakpoints, call stack, variables
-  - [x] WebSocket debug server for DAP communication
-  - [x] VSCode Debug Adapter implementing full DAP protocol
-  - [x] 42 debug tests (state, runner, e2e)
-  - [x] 1663 total tests passing
 
 - [x] Null as first-class value type
   - [x] Add `null` keyword to lexer/parser with NullLiteral AST node
