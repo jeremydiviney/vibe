@@ -32,7 +32,10 @@
       {
         "language": "vibe",
         "scopeName": "source.vibe",
-        "path": "./syntaxes/vibe.tmLanguage.json"
+        "path": "./syntaxes/vibe.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.typescript": "typescript"
+        }
       }
     ]
   },
