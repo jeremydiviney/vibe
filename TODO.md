@@ -3,7 +3,6 @@
 ## Pending
 
 ### AI Integration
-- [ ] Handle streaming responses
 - [ ] Parallel AI calls
   - [ ] Auto-parallelize independent AI calls (no data dependencies)
   - [ ] Configurable concurrency limit
