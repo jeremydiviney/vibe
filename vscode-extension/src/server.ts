@@ -15,6 +15,7 @@ import { provideHover } from './providers/hover';
 import { provideCompletions } from './providers/completion';
 import { provideDocumentSymbols } from './providers/symbols';
 import { provideDefinition } from './providers/definition';
+import { provideReferences } from './providers/references';
 
 // Create connection using all proposed features
 const connection = createConnection(ProposedFeatures.all);
@@ -46,6 +47,7 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       hoverProvider: true,
       documentSymbolProvider: true,
       definitionProvider: true,
+      referencesProvider: true,
     },
   };
 
@@ -109,6 +111,13 @@ connection.onDefinition((params) => {
   const document = documents.get(params.textDocument.uri);
   if (!document) return null;
   return provideDefinition(document, params.position);
+});
+
+// Provide find references
+connection.onReferences((params) => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) return [];
+  return provideReferences(document, params.position, params.context.includeDeclaration);
 });
 
 // Start listening
