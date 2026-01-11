@@ -18,12 +18,6 @@
 - [ ] Context orchestration functions
 - [ ] Variable visibility modifiers
 
-### Module System
-- [ ] Research multiple global scopes when importing files
-  - [ ] How to handle identical variable/function names across imported vibe files
-  - [ ] Should functions in one file have access to variables in another file's global scope?
-  - [ ] Module isolation vs shared global state
-
 ### Permission System
 - [ ] Command permission scheme (like Claude Code settings)
   - [ ] Config file format (`.vibe/settings.json` or `vibe.config.json`)
@@ -81,6 +75,13 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Module scope isolation for imported Vibe functions
+  - [x] Each module has isolated global scope (variables don't leak between modules)
+  - [x] Imported functions see their own module's globals, not caller's
+  - [x] Add `globals` to VibeModule, `modulePath` to StackFrame
+  - [x] Module-aware variable lookup stops at module boundary
+  - [x] Unit tests for isolation behavior
 
 - [x] Destructuring declarations for multi-value AI returns
   - [x] Syntax: `const {name: text, age: number} = do "prompt" model default`
