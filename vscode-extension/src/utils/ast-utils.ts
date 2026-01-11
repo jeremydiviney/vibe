@@ -1,4 +1,46 @@
 import type * as AST from '../../../src/ast';
+import { KEYWORD_OFFSETS } from './position';
+
+// TypeScript import info - maps local name to import details
+export interface TSImportInfo {
+  localName: string;      // Name used in this file
+  importedName: string;   // Name exported from TS file
+  sourcePath: string;     // Import path (e.g., "./utils.ts")
+}
+
+/**
+ * Find all TypeScript imports in the AST
+ * Returns a map from local name to import info
+ */
+export function findTSImports(ast: AST.Program): Map<string, TSImportInfo> {
+  const imports = new Map<string, TSImportInfo>();
+
+  for (const statement of ast.body) {
+    if (statement.type === 'ImportDeclaration' && statement.sourceType === 'ts') {
+      for (const specifier of statement.specifiers) {
+        imports.set(specifier.local, {
+          localName: specifier.local,
+          importedName: specifier.imported,
+          sourcePath: statement.source,
+        });
+      }
+    }
+  }
+
+  return imports;
+}
+
+/**
+ * Check if an identifier is from a TypeScript import
+ * Returns the import info if found, null otherwise
+ */
+export function getTSImportForIdentifier(
+  ast: AST.Program,
+  identifierName: string
+): TSImportInfo | null {
+  const imports = findTSImports(ast);
+  return imports.get(identifierName) ?? null;
+}
 
 // Declaration info returned by findDeclaration
 export interface DeclarationInfo {
@@ -446,17 +488,12 @@ function isPositionInRange(
   return column >= startCol && column <= endCol;
 }
 
-// Calculate where the declaration name actually starts (after keyword)
-function getDeclarationNameColumn(kind: string, baseColumn: number): number {
-  const keywordLengths: Record<string, number> = {
-    function: 9,  // "function "
-    tool: 5,      // "tool "
-    model: 6,     // "model "
-    let: 4,       // "let "
-    const: 6,     // "const "
-    for: 4,       // "for "
-  };
-  return baseColumn + (keywordLengths[kind] ?? 0);
+/**
+ * Calculate where the declaration name actually starts (after keyword)
+ * Uses centralized KEYWORD_OFFSETS from position.ts
+ */
+export function getDeclarationNameColumn(kind: string, baseColumn: number): number {
+  return baseColumn + (KEYWORD_OFFSETS[kind] ?? 0);
 }
 
 function isPositionAtDeclarationName(

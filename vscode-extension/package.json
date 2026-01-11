@@ -50,14 +50,15 @@
     "test:all": "bun run test && bun run test:syntax"
   },
   "dependencies": {
+    "typescript": "^5.3.0",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.11"
+    "vscode-languageserver-textdocument": "^1.0.11",
+    "vscode-uri": "^3.0.8"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.3.0",
     "vscode-tmgrammar-test": "^0.1.3"
   }
 }

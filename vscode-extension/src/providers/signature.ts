@@ -2,21 +2,7 @@ import { SignatureHelp, SignatureInformation, ParameterInformation, Position } f
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { parse } from '../../../src/parser/parse';
 import type * as AST from '../../../src/ast';
-
-// Built-in function signatures
-const builtinSignatures: Record<string, { label: string; params: string[]; doc?: string }> = {
-  print: { label: 'print(message: text)', params: ['message: text - The message to print'], doc: 'Print a message to the console' },
-  sleep: { label: 'sleep(ms: number)', params: ['ms: number - Milliseconds to sleep'], doc: 'Pause execution' },
-  now: { label: 'now()', params: [], doc: 'Get current timestamp in milliseconds' },
-  env: { label: 'env(name: text)', params: ['name: text - Environment variable name'], doc: 'Get environment variable' },
-  read: { label: 'read(path: text)', params: ['path: text - File path to read'], doc: 'Read file contents' },
-  write: { label: 'write(path: text, content: text)', params: ['path: text - File path', 'content: text - Content to write'], doc: 'Write content to file' },
-  exec: { label: 'exec(command: text)', params: ['command: text - Shell command to execute'], doc: 'Execute shell command' },
-  fetch: { label: 'fetch(url: text)', params: ['url: text - URL to fetch'], doc: 'HTTP GET request' },
-  length: { label: 'length(value: text | json[])', params: ['value: text | json[] - String or array'], doc: 'Get length of string or array' },
-  jsonParse: { label: 'jsonParse(text: text)', params: ['text: text - JSON string'], doc: 'Parse JSON string to object' },
-  jsonStringify: { label: 'jsonStringify(value: json)', params: ['value: json - Object to stringify'], doc: 'Convert object to JSON string' },
-};
+import { builtinSignatures } from '../utils/builtins';
 
 /**
  * Provide signature help for function calls
