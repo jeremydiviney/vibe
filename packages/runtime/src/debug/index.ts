@@ -36,6 +36,47 @@ export {
   createOutputEvent,
 } from './runner';
 
+// TS block source mapping
+export {
+  type TsBlockMapping,
+  registerTsBlock,
+  getTsBlockMapping,
+  findMappingByScriptId,
+  setScriptId,
+  mapTsLocationToVibe,
+  mapVibeLocationToTs,
+  isLocationInTsBlock,
+  getMappingsForFile,
+  clearTsBlockMappings,
+  getAllMappings,
+} from './ts-source-map';
+
+// Bun inspector client
+export {
+  BunInspectorClient,
+  getBunInspector,
+  closeBunInspector,
+} from './bun-inspector';
+
+// Stack frame merger
+export {
+  type MergedStackFrame,
+  type FrameOrigin,
+  type DebugMode,
+  type DebugExecutionContext,
+  createDebugExecutionContext,
+  enterTsBlock,
+  enterTsImport,
+  exitTsMode,
+  incrementTsCallDepth,
+  decrementTsCallDepth,
+  mergeStackFrames,
+  getUnifiedStackTrace,
+  shouldHandoffToTs,
+  shouldReturnToVibe,
+  getFrameIdForOrigin,
+} from './stack-merger';
+
 // Re-export debug-core types for convenience
 export type {
   Breakpoint,
