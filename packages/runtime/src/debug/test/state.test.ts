@@ -266,3 +266,129 @@ describe('Scopes and Variables', () => {
     }
   });
 });
+
+describe('VibeValue Debug Display', () => {
+  const { createVibeValue, createVibeError } = require('../../runtime/types');
+
+  test('displays VibeValue with error indicator', () => {
+    const code = 'let x = 1';
+    const ast = parse(code);
+    let runtimeState = createInitialState(ast);
+
+    // Manually inject a VibeValue with error into the runtime state
+    const vibeValueWithError = createVibeError('Division by zero', { line: 1, column: 1, file: 'test.vibe' });
+    runtimeState.callStack[0].locals['errorVar'] = vibeValueWithError;
+
+    let debugState = createDebugState();
+    const { debugState: ds, scopes } = getScopes(debugState, runtimeState, 0);
+    debugState = ds;
+
+    const localScope = scopes.find(s => s.type === 'local');
+    expect(localScope).toBeDefined();
+
+    const { variables } = getVariables(debugState, runtimeState, localScope!.variablesReference);
+
+    const errorVar = variables.find(v => v.name === 'errorVar');
+    expect(errorVar).toBeDefined();
+    expect(errorVar!.hasError).toBe(true);
+    expect(errorVar!.errorMessage).toContain('Division by zero');
+    expect(errorVar!.value).toContain('error');
+  });
+
+  test('displays VibeValue with toolCalls indicator', () => {
+    const code = 'let x = 1';
+    const ast = parse(code);
+    let runtimeState = createInitialState(ast);
+
+    // Manually inject a VibeValue with toolCalls into the runtime state
+    const vibeValueWithToolCalls = createVibeValue('result', {
+      toolCalls: [
+        { toolName: 'readFile', args: { path: '/test.txt' }, result: 'content', error: null, duration: 100 },
+        { toolName: 'writeFile', args: { path: '/out.txt' }, result: 'ok', error: null, duration: 50 },
+      ],
+    });
+    runtimeState.callStack[0].locals['aiResult'] = vibeValueWithToolCalls;
+
+    let debugState = createDebugState();
+    const { debugState: ds, scopes } = getScopes(debugState, runtimeState, 0);
+    debugState = ds;
+
+    const localScope = scopes.find(s => s.type === 'local');
+    expect(localScope).toBeDefined();
+
+    const { variables } = getVariables(debugState, runtimeState, localScope!.variablesReference);
+
+    const aiResultVar = variables.find(v => v.name === 'aiResult');
+    expect(aiResultVar).toBeDefined();
+    expect(aiResultVar!.hasToolCalls).toBe(true);
+    expect(aiResultVar!.toolCallCount).toBe(2);
+  });
+
+  test('expands VibeValue to show value, err, and toolCalls', () => {
+    const code = 'let x = 1';
+    const ast = parse(code);
+    let runtimeState = createInitialState(ast);
+
+    // Create a VibeValue with both error and toolCalls (edge case)
+    const complexVibeValue = {
+      value: 'partial result',
+      err: { message: 'Partial failure', type: 'Error', location: null },
+      toolCalls: [
+        { toolName: 'fetch', args: { url: 'http://example.com' }, result: null, error: 'timeout', duration: 5000 },
+      ],
+      isConst: false,
+      typeAnnotation: null,
+      source: 'ai' as const,
+    };
+    runtimeState.callStack[0].locals['complexVar'] = complexVibeValue;
+
+    let debugState = createDebugState();
+    const { debugState: ds, scopes } = getScopes(debugState, runtimeState, 0);
+    debugState = ds;
+
+    const localScope = scopes.find(s => s.type === 'local');
+    const { debugState: ds2, variables } = getVariables(debugState, runtimeState, localScope!.variablesReference);
+
+    const complexVar = variables.find(v => v.name === 'complexVar');
+    expect(complexVar).toBeDefined();
+    expect(complexVar!.variablesReference).toBeGreaterThan(0); // Should be expandable
+
+    // Expand the VibeValue
+    const { variables: expandedVars } = getVariables(ds2, runtimeState, complexVar!.variablesReference);
+
+    expect(expandedVars.some(v => v.name === 'value')).toBe(true);
+    expect(expandedVars.some(v => v.name === 'err')).toBe(true);
+    expect(expandedVars.some(v => v.name === 'toolCalls')).toBe(true);
+
+    const errVar = expandedVars.find(v => v.name === 'err');
+    expect(errVar!.hasError).toBe(true);
+    expect(errVar!.value).toContain('Partial failure');
+
+    const toolCallsVar = expandedVars.find(v => v.name === 'toolCalls');
+    expect(toolCallsVar!.hasToolCalls).toBe(true);
+    expect(toolCallsVar!.value).toContain('Array(1)');
+  });
+
+  test('displays regular value without error/toolCalls indicators', () => {
+    const code = 'let x = 1';
+    const ast = parse(code);
+    let runtimeState = createInitialState(ast);
+
+    // Manually inject a regular VibeValue
+    const regularValue = createVibeValue(42);
+    runtimeState.callStack[0].locals['num'] = regularValue;
+
+    let debugState = createDebugState();
+    const { debugState: ds, scopes } = getScopes(debugState, runtimeState, 0);
+    debugState = ds;
+
+    const localScope = scopes.find(s => s.type === 'local');
+    const { variables } = getVariables(debugState, runtimeState, localScope!.variablesReference);
+
+    const numVar = variables.find(v => v.name === 'num');
+    expect(numVar).toBeDefined();
+    expect(numVar!.hasError).toBe(false);
+    expect(numVar!.hasToolCalls).toBe(false);
+    expect(numVar!.value).toContain('42');
+  });
+});

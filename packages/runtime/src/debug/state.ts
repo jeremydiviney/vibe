@@ -319,8 +319,9 @@ export function getVariables(
 
     if (ref.scopeType === 'local' || ref.scopeType === 'global') {
       // Get local/global variables
+      // Pass the entire VibeValue so createVariable can detect .err and .toolCalls
       for (const [name, variable] of Object.entries(frame.locals)) {
-        const { debugState: ds, variable: v } = createVariable(newDebugState, name, variable.value, variable.typeAnnotation);
+        const { debugState: ds, variable: v } = createVariable(newDebugState, name, variable, variable.typeAnnotation);
         newDebugState = ds;
         variables.push(v);
       }
@@ -363,13 +364,14 @@ export function getVariables(
         variablesReference: 0,
       });
       if (vibeValue.err) {
+        const errMsg = vibeValue.err.message ?? String(vibeValue.err);
         variables.push({
           name: 'err',
-          value: String(vibeValue.err),
+          value: errMsg,
           type: 'error',
           variablesReference: 0,
           hasError: true,
-          errorMessage: String(vibeValue.err),
+          errorMessage: errMsg,
         });
       }
       if (vibeValue.toolCalls && vibeValue.toolCalls.length > 0) {
@@ -426,7 +428,8 @@ function createVariable(
     };
     displayType = 'VibeValue';
     hasError = !!vibeValue.err;
-    errorMessage = vibeValue.err ? String(vibeValue.err) : undefined;
+    // Extract error message from VibeError object
+    errorMessage = vibeValue.err?.message ? String(vibeValue.err.message) : undefined;
     hasToolCalls = vibeValue.toolCalls && vibeValue.toolCalls.length > 0;
     toolCallCount = vibeValue.toolCalls?.length;
   } else if (Array.isArray(value)) {
@@ -477,7 +480,7 @@ function formatValue(value: unknown): string {
   if (Array.isArray(value)) return `Array(${value.length})`;
   if (isVibeValue(value)) {
     const v = value as any;
-    if (v.err) return `VibeValue(error: ${v.err})`;
+    if (v.err) return `VibeValue(error: ${v.err.message ?? v.err})`;
     return `VibeValue(${formatValue(v.value)})`;
   }
   if (typeof value === 'object') return `{...}`;

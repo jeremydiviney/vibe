@@ -271,12 +271,9 @@ export class VibeDebugSession extends LoggingDebugSession {
 
       if (result.command === 'getVariables' && result.success) {
         response.body = {
-          variables: result.body.variables.map((v: Variable) => ({
-            name: v.name,
-            value: v.value,
-            type: v.type,
-            variablesReference: v.variablesReference,
-          })),
+          variables: result.body.variables.map((v: Variable) =>
+            this.formatVariable(v)
+          ),
         };
       } else {
         response.body = { variables: [] };
@@ -286,6 +283,41 @@ export class VibeDebugSession extends LoggingDebugSession {
     } catch (err) {
       this.sendErrorResponse(response, 1, `Failed to get variables: ${err}`);
     }
+  }
+
+  /**
+   * Format a variable for display in VSCode
+   * Adds visual indicators for .err and .toolCalls
+   */
+  private formatVariable(v: Variable): DAPVariable {
+    let displayValue = v.value;
+    const decorations: string[] = [];
+
+    // Add error indicator
+    if (v.hasError && v.errorMessage) {
+      decorations.push(`[err: ${v.errorMessage}]`);
+    }
+
+    // Add tool calls indicator
+    if (v.hasToolCalls && v.toolCallCount && v.toolCallCount > 0) {
+      decorations.push(`[${v.toolCallCount} tool call${v.toolCallCount > 1 ? 's' : ''}]`);
+    }
+
+    // Append decorations to value
+    if (decorations.length > 0) {
+      displayValue = `${v.value} ${decorations.join(' ')}`;
+    }
+
+    return {
+      name: v.name,
+      value: displayValue,
+      type: v.type,
+      variablesReference: v.variablesReference,
+      // Use presentation hint to indicate special states
+      presentationHint: v.hasError
+        ? { kind: 'data', attributes: ['hasError'] }
+        : undefined,
+    };
   }
 
   /**
