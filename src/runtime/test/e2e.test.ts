@@ -47,8 +47,8 @@ describe('End-to-End Vibe Scripts', () => {
     });
 
     expect(finalState.status).toBe('completed');
-    // response was typed as text (from initial ""), so AIResultObject was resolved
-    expect(finalState.lastResult).toBe('Welcome, valued premium member!');
+    // VibeValue: access .value for the primitive
+    expect(finalState.lastResult.value).toBe('Welcome, valued premium member!');
   });
 
   test('template-literals.vibe - template literal interpolation with AI', () => {

@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
+import { resolveValue } from '../types';
 import { currentFrame } from '../state';
 
 /**
@@ -75,7 +76,8 @@ export function getContextForAI(state: RuntimeState, context: AST.ContextSpecifi
  * If context is null, defaults to 'default' (full execution history).
  */
 export function execAIVibe(state: RuntimeState, model: string | null, context: AST.ContextSpecifier | null, operationType: 'do' | 'vibe'): RuntimeState {
-  const prompt = String(state.lastResult);
+  // Unwrap VibeValue if needed before converting to string
+  const prompt = String(resolveValue(state.lastResult));
 
   // Resolve model: use provided model or fall back to lastUsedModel
   const resolvedModel = model ?? state.lastUsedModel;

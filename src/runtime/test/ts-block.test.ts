@@ -442,6 +442,41 @@ describe('Runtime - TypeScript Blocks', () => {
     }
   });
 
+  test('TsBlockError includes source location', async () => {
+    const ast = parse(`
+      let x = "5"
+      let result = ts(x) { throw new Error("test") }
+    `);
+    const runtime = new Runtime(ast, createMockProvider());
+
+    try {
+      await runtime.run();
+      expect.unreachable('should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(TsBlockError);
+      const tsError = error as TsBlockError;
+      expect(tsError.location).toBeDefined();
+      expect(tsError.location?.line).toBeGreaterThan(0);
+      expect(tsError.location?.column).toBeGreaterThan(0);
+    }
+  });
+
+  test('TsBlockError.format() includes source location', async () => {
+    const ast = parse(`let result = ts() { throw new Error("test") }`, { file: 'test.vibe' });
+    const runtime = new Runtime(ast, createMockProvider());
+
+    try {
+      await runtime.run();
+      expect.unreachable('should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(TsBlockError);
+      const tsError = error as TsBlockError;
+      const formatted = tsError.format();
+      expect(formatted).toContain('[test.vibe:');
+      expect(formatted).toContain('ts block runtime error');
+    }
+  });
+
   // ============================================================================
   // Const object mutation prevention
   // ============================================================================

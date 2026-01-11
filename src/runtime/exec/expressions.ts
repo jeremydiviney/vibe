@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
+import { isVibeValue, resolveValue } from '../types';
 import {
   getImportedValue,
   isImportedTsFunction,
@@ -12,13 +13,15 @@ import { execVibeExpression } from './ai';
 import { execTsBlock } from './typescript';
 
 /**
- * Identifier - get variable value.
+ * Identifier - get variable VibeValue.
+ * Returns the VibeValue so member access can see .err and .toolCalls.
+ * Expressions use resolveValue() to auto-unwrap when needed.
  */
 export function execIdentifier(state: RuntimeState, expr: AST.Identifier): RuntimeState {
   // Walk the scope chain to find the variable
   const found = lookupVariable(state, expr.name);
   if (found) {
-    return { ...state, lastResult: found.variable.value };
+    return { ...state, lastResult: found.variable };  // Return VibeValue, not just value
   }
 
   // Check if it's a local function
@@ -119,13 +122,15 @@ export function execPushValue(state: RuntimeState): RuntimeState {
 
 /**
  * Build object from value stack.
+ * Unwraps VibeValues to get raw values for object properties.
  */
 export function execBuildObject(state: RuntimeState, keys: string[]): RuntimeState {
-  const values = state.valueStack.slice(-keys.length);
+  const rawValues = state.valueStack.slice(-keys.length);
   const obj: Record<string, unknown> = {};
 
   for (let i = 0; i < keys.length; i++) {
-    obj[keys[i]] = values[i];
+    // Unwrap VibeValue to get raw value for object property
+    obj[keys[i]] = resolveValue(rawValues[i]);
   }
 
   return {
@@ -137,9 +142,12 @@ export function execBuildObject(state: RuntimeState, keys: string[]): RuntimeSta
 
 /**
  * Build array from value stack.
+ * Unwraps VibeValues to get raw values for array elements.
  */
 export function execBuildArray(state: RuntimeState, count: number): RuntimeState {
-  const elements = state.valueStack.slice(-count);
+  const rawElements = state.valueStack.slice(-count);
+  // Unwrap VibeValues to get raw values for array elements
+  const elements = rawElements.map(el => resolveValue(el));
 
   return {
     ...state,
@@ -278,8 +286,21 @@ export function execRangeExpression(state: RuntimeState, expr: AST.RangeExpressi
  * Build inclusive range array from value stack [start, end].
  */
 export function execBuildRange(state: RuntimeState): RuntimeState {
-  const end = state.valueStack[state.valueStack.length - 1];
-  const start = state.valueStack[state.valueStack.length - 2];
+  const rawEnd = state.valueStack[state.valueStack.length - 1];
+  const rawStart = state.valueStack[state.valueStack.length - 2];
+  const newStack = state.valueStack.slice(0, -2);
+
+  // Error propagation: if start or end is a VibeValue with error, propagate it
+  if (isVibeValue(rawStart) && rawStart.err) {
+    return { ...state, valueStack: newStack, lastResult: rawStart.err };
+  }
+  if (isVibeValue(rawEnd) && rawEnd.err) {
+    return { ...state, valueStack: newStack, lastResult: rawEnd.err };
+  }
+
+  // Auto-unwrap VibeValue and AIResultObject
+  const start = resolveValue(rawStart);
+  const end = resolveValue(rawEnd);
 
   if (typeof start !== 'number' || typeof end !== 'number') {
     throw new Error(`Range bounds must be numbers, got ${typeof start} and ${typeof end}`);
@@ -294,7 +315,7 @@ export function execBuildRange(state: RuntimeState): RuntimeState {
 
   return {
     ...state,
-    valueStack: state.valueStack.slice(0, -2),
+    valueStack: newStack,
     lastResult: range,
   };
 }

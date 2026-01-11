@@ -59,6 +59,19 @@ const builtinTools: Array<{ label: string; detail: string; documentation: string
   { label: 'length', detail: 'length(value: text | json[])', documentation: 'Get length of string or array' },
 ];
 
+// VibeValue properties (available on all values)
+const vibeValueProperties: Array<{ label: string; detail: string; documentation: string }> = [
+  { label: 'err', detail: 'VibeError | null', documentation: 'Error if operation failed, null if success. Check with `if x.err { ... }`' },
+  { label: 'toolCalls', detail: 'ToolCallRecord[]', documentation: 'Array of AI tool calls made during this operation. Empty for non-AI values.' },
+];
+
+// Array/string methods
+const arrayMethods: Array<{ label: string; detail: string; documentation: string }> = [
+  { label: 'len', detail: 'len(): number', documentation: 'Get the length of an array or string' },
+  { label: 'push', detail: 'push(item)', documentation: 'Add an item to the end of an array' },
+  { label: 'pop', detail: 'pop(): item', documentation: 'Remove and return the last item from an array' },
+];
+
 /**
  * Provide completion items for a position in the document
  */
@@ -87,6 +100,30 @@ export function provideCompletions(
       detail: 'Parameter description decorator',
       insertText: 'param ',
     });
+    return items;
+  }
+
+  // After dot - suggest VibeValue properties and methods
+  if (/\.\s*$/.test(textBeforeCursor)) {
+    // VibeValue properties (available on all values)
+    for (const prop of vibeValueProperties) {
+      items.push({
+        label: prop.label,
+        kind: CompletionItemKind.Property,
+        detail: prop.detail,
+        documentation: prop.documentation,
+      });
+    }
+
+    // Array/string methods
+    for (const method of arrayMethods) {
+      items.push({
+        label: method.label,
+        kind: CompletionItemKind.Method,
+        detail: method.detail,
+        documentation: method.documentation,
+      });
+    }
     return items;
   }
 

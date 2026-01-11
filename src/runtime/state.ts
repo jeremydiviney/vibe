@@ -1,5 +1,6 @@
 import * as AST from '../ast';
-import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall, ToolCallRecord, AIResultObject } from './types';
+import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall, ToolCallRecord, VibeValue } from './types';
+import { createVibeValue } from './types';
 import type { ToolRoundResult } from './ai/tool-loop';
 
 // Options for creating initial state
@@ -114,7 +115,7 @@ export function resumeWithAIResponse(
     })
   );
 
-  // Build ToolCallRecord array for AIResultObject (all rounds accumulated)
+  // Build ToolCallRecord array for VibeValue (all rounds accumulated)
   const toolCallRecords: ToolCallRecord[] = (toolRounds ?? []).flatMap((round) =>
     round.toolCalls.map((call, index) => {
       const result = round.results[index];
@@ -128,12 +129,11 @@ export function resumeWithAIResponse(
     })
   );
 
-  // Create AIResultObject with final response value and all tool calls
-  const aiResultObject: AIResultObject = {
-    __type: 'AIResult',
-    value: response,
+  // Create VibeValue with final response value and all tool calls
+  const aiResultValue: VibeValue = createVibeValue(response, {
+    source: 'ai',
     toolCalls: toolCallRecords,
-  };
+  });
 
   // Create prompt entry with embedded tool calls (order: prompt → tools → response)
   // Note: promptEntry.response stores raw value for context display
@@ -157,7 +157,7 @@ export function resumeWithAIResponse(
   return {
     ...state,
     status: 'running',
-    lastResult: aiResultObject,  // Store AIResultObject, not raw response
+    lastResult: aiResultValue,  // Store VibeValue with response and toolCalls
     lastResultSource: 'ai',
     callStack: updatedCallStack,
     aiHistory: [...state.aiHistory, aiOp],

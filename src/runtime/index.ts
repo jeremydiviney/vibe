@@ -91,7 +91,7 @@ import type { RuntimeState, AIInteraction } from './types';
 import { resolveValue } from './types';
 import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult, resumeWithCompressResult } from './state';
 import { step, runUntilPause } from './step';
-import { evalTsBlock } from './ts-eval';
+import { evalTsBlock, TsBlockError } from './ts-eval';
 import { loadImports, getImportedTsFunction } from './modules';
 import { buildLocalContext, buildGlobalContext, formatContextForAI, formatEntriesForSummarization } from './context';
 import { saveAIInteractions } from './ai-logger';
@@ -153,11 +153,11 @@ export class Runtime {
     if (!frame) return undefined;
 
     const variable = frame.locals[name];
-    // Resolve AIResultObject to its value for easier testing
+    // Resolve VibeValue to its value for easier testing
     return resolveValue(variable?.value);
   }
 
-  // Get raw value including AIResultObject wrapper if present
+  // Get raw value including VibeValue wrapper if present
   getRawValue(name: string): unknown {
     const frame = this.state.callStack[this.state.callStack.length - 1];
     if (!frame) return undefined;
@@ -193,18 +193,30 @@ export class Runtime {
       if (this.state.status === 'awaiting_ts') {
         if (this.state.pendingTS) {
           // Handle inline ts block evaluation
-          const { params, body, paramValues } = this.state.pendingTS;
-          const result = await evalTsBlock(params, body, paramValues);
+          const { params, body, paramValues, location } = this.state.pendingTS;
+          const result = await evalTsBlock(params, body, paramValues, location);
           this.state = resumeWithTsResult(this.state, result);
         } else if (this.state.pendingImportedTsCall) {
           // Handle imported TS function call
-          const { funcName, args } = this.state.pendingImportedTsCall;
+          const { funcName, args, location } = this.state.pendingImportedTsCall;
           const fn = getImportedTsFunction(this.state, funcName);
           if (!fn) {
             throw new Error(`Import error: Function '${funcName}' not found`);
           }
-          const result = await fn(...args);
-          this.state = resumeWithImportedTsResult(this.state, result);
+          try {
+            const result = await fn(...args);
+            this.state = resumeWithImportedTsResult(this.state, result);
+          } catch (error) {
+            // Wrap imported TS function error with Vibe location info
+            const originalError = error instanceof Error ? error : new Error(String(error));
+            throw new TsBlockError(
+              `Error in imported function '${funcName}': ${originalError.message}`,
+              [], // no params for imported functions
+              `/* imported function: ${funcName} */`,
+              originalError,
+              location
+            );
+          }
         } else {
           throw new Error('State awaiting TS but no pending TS request');
         }
@@ -318,7 +330,7 @@ export class Runtime {
     // Save logs on successful completion
     this.saveLogsIfEnabled();
 
-    // Resolve AIResultObject to its value for the final return
+    // Resolve VibeValue to its value for the final return
     return resolveValue(this.state.lastResult);
   }
 

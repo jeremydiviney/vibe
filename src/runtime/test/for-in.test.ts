@@ -306,6 +306,7 @@ describe('Runtime For-In Error Cases', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('error');
-    expect(state.error).toContain('array or range');
+    expect(state.error).toContain('Cannot iterate');
+    expect(state.error).toContain('string');
   });
 });

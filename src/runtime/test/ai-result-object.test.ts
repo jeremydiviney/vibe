@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { createInitialState, resumeWithAIResponse } from '../state';
 import { runUntilPause } from '../step';
-import { isAIResultObject } from '../types';
+import { isVibeValue } from '../types';
 import type { ToolRoundResult } from '../ai/tool-loop';
 
 // Helper to run with mock AI response
@@ -19,9 +19,9 @@ function runWithMockAI(
   return state;
 }
 
-describe('AIResultObject', () => {
+describe('VibeValue AI Results', () => {
   describe('basic structure', () => {
-    it('AI response returns AIResultObject with value and empty toolCalls', () => {
+    it('AI response returns VibeValue with value and empty toolCalls', () => {
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let result = do "test prompt" m default
@@ -29,13 +29,12 @@ describe('AIResultObject', () => {
       let state = createInitialState(ast);
       state = runWithMockAI(state, 'test response');
 
-      const rawValue = state.callStack[0].locals['result'].value;
-      expect(isAIResultObject(rawValue)).toBe(true);
-      expect(rawValue).toMatchObject({
-        __type: 'AIResult',
-        value: 'test response',
-        toolCalls: [],
-      });
+      const vibeValue = state.callStack[0].locals['result'];
+      expect(isVibeValue(vibeValue)).toBe(true);
+      expect(vibeValue.value).toBe('test response');
+      expect(vibeValue.toolCalls).toEqual([]);
+      expect(vibeValue.err).toBe(null);
+      expect(vibeValue.source).toBe('ai');
     });
 
     it('toolCalls array contains tool execution records with duration', () => {
@@ -61,10 +60,10 @@ describe('AIResultObject', () => {
       state = resumeWithAIResponse(state, 'final response', undefined, toolRounds);
       state = runUntilPause(state);
 
-      const rawValue = state.callStack[0].locals['result'].value;
-      expect(isAIResultObject(rawValue)).toBe(true);
-      expect(rawValue.toolCalls).toHaveLength(1);
-      expect(rawValue.toolCalls[0]).toEqual({
+      const vibeValue = state.callStack[0].locals['result'];
+      expect(isVibeValue(vibeValue)).toBe(true);
+      expect(vibeValue.toolCalls).toHaveLength(1);
+      expect(vibeValue.toolCalls[0]).toEqual({
         toolName: 'fetchData',
         args: { url: 'http://api.com' },
         result: 'data from api',
@@ -95,8 +94,8 @@ describe('AIResultObject', () => {
       state = resumeWithAIResponse(state, 'error handled', undefined, toolRounds);
       state = runUntilPause(state);
 
-      const rawValue = state.callStack[0].locals['result'].value;
-      expect(rawValue.toolCalls[0]).toEqual({
+      const vibeValue = state.callStack[0].locals['result'];
+      expect(vibeValue.toolCalls[0]).toEqual({
         toolName: 'failingTool',
         args: {},
         result: null,
@@ -131,10 +130,10 @@ describe('AIResultObject', () => {
       state = resumeWithAIResponse(state, 'all steps complete', undefined, toolRounds);
       state = runUntilPause(state);
 
-      const rawValue = state.callStack[0].locals['result'].value;
-      expect(rawValue.toolCalls).toHaveLength(3);
-      expect(rawValue.toolCalls.map((tc: { toolName: string }) => tc.toolName)).toEqual(['step1', 'step2', 'step3']);
-      expect(rawValue.value).toBe('all steps complete');
+      const vibeValue = state.callStack[0].locals['result'];
+      expect(vibeValue.toolCalls).toHaveLength(3);
+      expect(vibeValue.toolCalls.map((tc: { toolName: string }) => tc.toolName)).toEqual(['step1', 'step2', 'step3']);
+      expect(vibeValue.value).toBe('all steps complete');
     });
   });
 
@@ -336,7 +335,7 @@ describe('AIResultObject', () => {
   });
 
   describe('iteration', () => {
-    it('iterating over AIResult with array value works', () => {
+    it('iterating over VibeValue with array value works', () => {
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let items = do "get list" m default
@@ -351,7 +350,7 @@ describe('AIResultObject', () => {
       expect(state.callStack[0].locals['sum'].value).toBe(15);
     });
 
-    it('iterating over AIResult with non-array value throws', () => {
+    it('iterating over VibeValue with non-array value throws', () => {
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let result = do "get string" m default
@@ -363,7 +362,7 @@ describe('AIResultObject', () => {
       state = runWithMockAI(state, 'hello');
 
       expect(state.status).toBe('error');
-      expect(state.error).toContain('Cannot iterate over AIResult');
+      expect(state.error).toContain('Cannot iterate over VibeValue');
       expect(state.error).toContain('string');
     });
 
@@ -397,7 +396,7 @@ describe('AIResultObject', () => {
   });
 
   describe('context display', () => {
-    it('context shows only the value, not the full AIResultObject', () => {
+    it('context shows only the value, not the full VibeValue', () => {
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let result = do "get data" m default
@@ -410,7 +409,7 @@ describe('AIResultObject', () => {
         (e) => e.kind === 'variable' && e.name === 'result'
       );
       expect(resultEntry).toBeDefined();
-      // The value in context should be resolved, not AIResultObject
+      // The value in context should be resolved, not VibeValue
       expect((resultEntry as { value: unknown }).value).toBe('the response');
     });
   });

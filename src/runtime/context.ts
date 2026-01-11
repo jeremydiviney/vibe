@@ -20,11 +20,11 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
         if (FILTERED_TYPES.includes(entry.type ?? '')) {
           return [];
         }
-        // Use snapshotted value from entry, resolving AIResultObject to its value
+        // Use snapshotted value from entry, resolving VibeValue to its value
         const contextVar: ContextEntry = {
           kind: 'variable',
           name: entry.name,
-          value: resolveValue(entry.value),  // Resolve AIResultObject to primitive
+          value: resolveValue(entry.value),  // Resolve VibeValue to primitive
           type: entry.type as 'text' | 'json' | 'boolean' | 'number' | null,
           isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,
@@ -102,11 +102,11 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
         if (FILTERED_TYPES.includes(entry.type ?? '')) {
           return [];
         }
-        // Use snapshotted value from entry, resolving AIResultObject to its value
+        // Use snapshotted value from entry, resolving VibeValue to its value
         const contextVar: ContextEntry = {
           kind: 'variable',
           name: entry.name,
-          value: resolveValue(entry.value),  // Resolve AIResultObject to primitive
+          value: resolveValue(entry.value),  // Resolve VibeValue to primitive
           type: entry.type as 'text' | 'json' | 'boolean' | 'number' | null,
           isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,

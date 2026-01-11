@@ -1,7 +1,7 @@
 // Core stepping and instruction execution
 
 import type { RuntimeState, Instruction, StackFrame, FrameEntry } from './types';
-import { isAIResultObject, resolveValue } from './types';
+import { isVibeValue, resolveValue } from './types';
 import type { ContextMode } from '../ast';
 import { buildLocalContext, buildGlobalContext } from './context';
 import { execDeclareVar, execAssignVar } from './exec/variables';
@@ -301,7 +301,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execAssignVar(state, instruction.name, instruction.location);
 
     case 'call_function':
-      return execCallFunction(state, instruction.funcName, instruction.argCount);
+      return execCallFunction(state, instruction.funcName, instruction.argCount, instruction.location);
 
     case 'push_frame':
       return execPushFrame(state, instruction.name);
@@ -322,7 +322,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execAIVibe(state, instruction.model, instruction.context, instruction.operationType);
 
     case 'ts_eval':
-      return execTsEval(state, instruction.params, instruction.body);
+      return execTsEval(state, instruction.params, instruction.body, instruction.location);
 
     case 'call_imported_ts':
       throw new Error('call_imported_ts should be handled in execCallFunction');
@@ -334,19 +334,27 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const { stmt } = instruction;
       let items = state.lastResult;
 
-      // Handle AIResultObject - iterate over value if it's an array, otherwise error
-      if (isAIResultObject(items)) {
-        if (Array.isArray(items.value)) {
-          // Value is an array (e.g., text[], number[]) - iterate over it
-          items = items.value;
-        } else {
-          const valueType = items.value === null ? 'null' : typeof items.value;
+      // Handle VibeValue with error - throw the error
+      if (isVibeValue(items) && items.err) {
+        throw new RuntimeError(
+          `${items.err.type}: ${items.err.message}`,
+          instruction.location,
+          ''
+        );
+      }
+
+      // Auto-unwrap VibeValue - check if value is iterable
+      if (isVibeValue(items)) {
+        const innerValue = items.value;
+        if (!Array.isArray(innerValue) && typeof innerValue !== 'number') {
+          const valueType = innerValue === null ? 'null' : typeof innerValue;
           throw new RuntimeError(
-            `Cannot iterate over AIResult: value is ${valueType}, not an array. Use .toolCalls to iterate tool calls.`,
+            `Cannot iterate over VibeValue: value is ${valueType}, not an array. Use .toolCalls to iterate tool calls.`,
             instruction.location,
             ''
           );
         }
+        items = innerValue;
       }
 
       // Handle range: single number N → [1, 2, ..., N] (inclusive)
@@ -537,24 +545,55 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execInterpolateTemplate(state, instruction.template);
 
     case 'binary_op': {
-      // Resolve AIResultObject to primitive value for operations
-      const right = resolveValue(state.lastResult);
-      const left = resolveValue(state.valueStack[state.valueStack.length - 1]);
+      const rawRight = state.lastResult;
+      const rawLeft = state.valueStack[state.valueStack.length - 1];
       const newStack = state.valueStack.slice(0, -1);
+
+      // Error propagation: if either operand is a VibeValue with error, propagate it
+      if (isVibeValue(rawLeft) && rawLeft.err) {
+        return { ...state, valueStack: newStack, lastResult: rawLeft.err };
+      }
+      if (isVibeValue(rawRight) && rawRight.err) {
+        return { ...state, valueStack: newStack, lastResult: rawRight.err };
+      }
+
+      // Auto-unwrap VibeValue for operations
+      const left = resolveValue(rawLeft);
+      const right = resolveValue(rawRight);
       const result = evaluateBinaryOp(instruction.operator, left, right);
       return { ...state, valueStack: newStack, lastResult: result };
     }
 
     case 'unary_op': {
-      const operand = state.lastResult;
+      const rawOperand = state.lastResult;
+
+      // Error propagation: if operand is VibeValue with error, propagate it
+      if (isVibeValue(rawOperand) && rawOperand.err) {
+        return { ...state, lastResult: rawOperand.err };
+      }
+
+      // Auto-unwrap VibeValue for operations
+      const operand = resolveValue(rawOperand);
       const result = evaluateUnaryOp(instruction.operator, operand);
       return { ...state, lastResult: result };
     }
 
     case 'index_access': {
-      const index = state.lastResult as number;
-      const arr = state.valueStack[state.valueStack.length - 1] as unknown[];
+      const rawIndex = state.lastResult;
+      const rawArr = state.valueStack[state.valueStack.length - 1];
       const newStack = state.valueStack.slice(0, -1);
+
+      // Error propagation: if array or index is a VibeValue with error, propagate it
+      if (isVibeValue(rawArr) && rawArr.err) {
+        return { ...state, valueStack: newStack, lastResult: rawArr.err };
+      }
+      if (isVibeValue(rawIndex) && rawIndex.err) {
+        return { ...state, valueStack: newStack, lastResult: rawIndex.err };
+      }
+
+      // Auto-unwrap VibeValue
+      const arr = resolveValue(rawArr) as unknown[];
+      const index = resolveValue(rawIndex) as number;
 
       if (!Array.isArray(arr)) {
         throw new Error(`Cannot index non-array: ${typeof arr}`);
@@ -576,21 +615,37 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const { hasStart, hasEnd } = instruction;
 
       // Pop values in reverse order they were pushed
-      let end: number | undefined;
-      let start: number | undefined;
+      let rawEnd: unknown;
+      let rawStart: unknown;
       let newStack = state.valueStack;
 
       if (hasEnd) {
-        end = state.valueStack[newStack.length - 1] as number;
+        rawEnd = newStack[newStack.length - 1];
         newStack = newStack.slice(0, -1);
       }
       if (hasStart) {
-        start = newStack[newStack.length - 1] as number;
+        rawStart = newStack[newStack.length - 1];
         newStack = newStack.slice(0, -1);
       }
 
-      const arr = newStack[newStack.length - 1] as unknown[];
+      const rawArr = newStack[newStack.length - 1];
       newStack = newStack.slice(0, -1);
+
+      // Error propagation: if array or indices are VibeValues with errors, propagate
+      if (isVibeValue(rawArr) && rawArr.err) {
+        return { ...state, valueStack: newStack, lastResult: rawArr.err };
+      }
+      if (hasStart && isVibeValue(rawStart) && rawStart.err) {
+        return { ...state, valueStack: newStack, lastResult: rawStart.err };
+      }
+      if (hasEnd && isVibeValue(rawEnd) && rawEnd.err) {
+        return { ...state, valueStack: newStack, lastResult: rawEnd.err };
+      }
+
+      // Auto-unwrap VibeValue
+      const arr = resolveValue(rawArr) as unknown[];
+      const start = hasStart ? resolveValue(rawStart) as number : undefined;
+      const end = hasEnd ? resolveValue(rawEnd) as number : undefined;
 
       if (!Array.isArray(arr)) {
         throw new Error(`Cannot slice non-array: ${typeof arr}`);
@@ -631,20 +686,25 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
       // Get the result value (should be Record<string, unknown> from AI return)
       let fieldValues: Record<string, unknown>;
-      if (isAIResultObject(state.lastResult)) {
-        fieldValues = state.lastResult.value as Record<string, unknown>;
-      } else if (typeof state.lastResult === 'object' && state.lastResult !== null) {
-        fieldValues = state.lastResult as Record<string, unknown>;
+      let rawResult = state.lastResult;
+
+      // Unwrap VibeValue if present
+      if (isVibeValue(rawResult)) {
+        rawResult = rawResult.value;
+      }
+
+      if (typeof rawResult === 'object' && rawResult !== null) {
+        fieldValues = rawResult as Record<string, unknown>;
       } else {
         throw new RuntimeError(
-          `Destructuring requires an object, got ${typeof state.lastResult}`,
+          `Destructuring requires an object, got ${typeof rawResult}`,
           instruction.location,
           ''
         );
       }
 
       // Declare each field as a variable
-      let newState = { ...state, pendingDestructuring: null };
+      let newState: RuntimeState = { ...state, pendingDestructuring: null };
       for (const field of fields) {
         const value = fieldValues[field.name];
         if (value === undefined) {
@@ -662,21 +722,24 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
     // Member/property access
     case 'member_access': {
-      const object = state.lastResult;
+      const rawObject = state.lastResult;
       const property = instruction.property;
 
-      // Handle AIResultObject specially
-      if (isAIResultObject(object)) {
+      // Handle VibeValue reserved properties first
+      if (isVibeValue(rawObject)) {
+        // Reserved property: .err - return the error info
+        if (property === 'err') {
+          return { ...state, lastResult: rawObject.err };
+        }
+        // Reserved property: .toolCalls - return tool calls array
         if (property === 'toolCalls') {
-          return { ...state, lastResult: object.toolCalls };
+          return { ...state, lastResult: rawObject.toolCalls };
         }
-        // For other properties, access the value's properties
-        if (typeof object.value === 'object' && object.value !== null) {
-          const val = (object.value as Record<string, unknown>)[property];
-          return { ...state, lastResult: val };
-        }
-        throw new Error(`Cannot access property '${property}' on AIResult`);
+        // For all other properties, unwrap and continue with normal handling below
       }
+
+      // Unwrap VibeValue and AIResultObject for normal property access
+      const object = resolveValue(rawObject);
 
       // Handle built-in methods on arrays
       if (Array.isArray(object)) {

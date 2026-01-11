@@ -16,6 +16,16 @@ interface BaseNode {
 export type AIProviderType = 'anthropic' | 'openai' | 'google';
 
 // ============================================================================
+// Vibe Type Annotations
+// ============================================================================
+
+/** Non-nullable type annotations - when type is always required */
+export type VibeTypeRequired = 'text' | 'json' | 'boolean' | 'number' | 'prompt' | 'model' | 'text[]' | 'json[]' | 'boolean[]' | 'number[]' | 'prompt[]';
+
+/** Valid type annotations in Vibe - nullable when type is optional/inferred */
+export type VibeType = VibeTypeRequired | null;
+
+// ============================================================================
 // Context Modes
 // ============================================================================
 
@@ -79,21 +89,21 @@ export interface ExportDeclaration extends BaseNode {
 export interface LetDeclaration extends BaseNode {
   type: 'LetDeclaration';
   name: string;
-  typeAnnotation: string | null;
+  typeAnnotation: VibeType;
   initializer: Expression | null;
 }
 
 export interface ConstDeclaration extends BaseNode {
   type: 'ConstDeclaration';
   name: string;
-  typeAnnotation: string | null;
+  typeAnnotation: VibeType;
   initializer: Expression;
 }
 
 /** A single field in a destructuring pattern: name: type */
 export interface DestructuringField {
   name: string;
-  type: string;  // 'text' | 'number' | 'boolean' | 'json' | array types
+  type: VibeTypeRequired;
 }
 
 /** Destructuring declaration: const {a: text, b: number} = expr */
@@ -124,14 +134,14 @@ export interface ModelConfig extends BaseNode {
 
 export interface FunctionParameter {
   name: string;
-  typeAnnotation: string;  // Required: 'text' | 'json' | 'prompt'
+  typeAnnotation: VibeTypeRequired;
 }
 
 export interface FunctionDeclaration extends BaseNode {
   type: 'FunctionDeclaration';
   name: string;
   params: FunctionParameter[];
-  returnType: string | null;  // Optional return type
+  returnType: VibeType;
   body: BlockStatement;
   // Note: Functions always "forget" context on exit (like traditional callstack)
 }
@@ -148,7 +158,7 @@ export interface ToolDeclaration extends BaseNode {
   type: 'ToolDeclaration';
   name: string;
   params: ToolParameter[];
-  returnType: string | null;  // Optional return type
+  returnType: VibeType;
   description?: string;       // From @description decorator, for AI schema
   paramDecorators?: string[]; // Names from @param decorators (for validation)
   body: BlockStatement;

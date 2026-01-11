@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
+import { createVibeValue } from '../types';
 import type { ToolSchema, ToolParameterSchema, VibeToolValue } from '../tools/types';
 import { vibeTypeToJsonSchema } from '../tools/ts-schema';
 import { currentFrame } from '../state';
@@ -31,7 +32,7 @@ export function execToolDeclaration(
   const frame = currentFrame(state);
   const newLocals = {
     ...frame.locals,
-    [decl.name]: { value: toolValue, isConst: true, typeAnnotation: 'tool' },
+    [decl.name]: createVibeValue(toolValue, { isConst: true, typeAnnotation: null }),
   };
 
   return {

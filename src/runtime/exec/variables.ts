@@ -1,7 +1,9 @@
 // Variable handling: lookup, declare, assign
 
+import type { VibeType } from '../../ast';
 import type { SourceLocation } from '../../errors';
-import type { RuntimeState, Variable, StackFrame } from '../types';
+import type { RuntimeState, VibeValue, StackFrame, ToolCallRecord } from '../types';
+import { createVibeValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
 import { validateAndCoerce } from '../validation';
 import { getModuleGlobals } from '../modules';
@@ -13,7 +15,7 @@ import { getModuleGlobals } from '../modules';
  * Module isolation: If we're in an imported function (frame has modulePath),
  * we check that module's globals instead of walking up to the main program.
  */
-export function lookupVariable(state: RuntimeState, name: string): { variable: Variable; frameIndex: number } | null {
+export function lookupVariable(state: RuntimeState, name: string): { variable: VibeValue; frameIndex: number } | null {
   let frameIndex: number | null = state.callStack.length - 1;
   let modulePath: string | undefined;
 
@@ -56,7 +58,7 @@ export function execDeclareVar(
   state: RuntimeState,
   name: string,
   isConst: boolean,
-  type: string | null,
+  type: VibeType,
   initialValue?: unknown,
   location?: SourceLocation
 ): RuntimeState {
@@ -66,17 +68,29 @@ export function execDeclareVar(
     throw new Error(`Variable '${name}' is already declared`);
   }
 
-  const value = initialValue !== undefined ? initialValue : state.lastResult;
-  // Copy source from lastResultSource if using lastResult (not explicit initialValue)
-  const source = initialValue !== undefined ? undefined : state.lastResultSource;
-  const { value: validatedValue, inferredType } = validateAndCoerce(value, type, name, location, source);
+  const rawValue = initialValue !== undefined ? initialValue : state.lastResult;
+
+  // If value is already a VibeValue (e.g., from AI response), extract its properties
+  let innerValue: unknown;
+  let toolCalls: ToolCallRecord[] = [];
+  let source = initialValue !== undefined ? undefined : state.lastResultSource;
+
+  if (isVibeValue(rawValue)) {
+    innerValue = rawValue.value;
+    toolCalls = rawValue.toolCalls;
+    source = rawValue.source ?? source;
+  } else {
+    innerValue = rawValue;
+  }
+
+  const { value: validatedValue, inferredType } = validateAndCoerce(innerValue, type, name, location, source);
 
   // Use explicit type if provided, otherwise use inferred type
   const finalType = type ?? inferredType;
 
   const newLocals = {
     ...frame.locals,
-    [name]: { value: validatedValue, isConst, typeAnnotation: finalType, source },
+    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking
@@ -130,7 +144,22 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     throw new Error(`TypeError: Cannot assign to constant '${name}'`);
   }
 
-  const { value: validatedValue } = validateAndCoerce(state.lastResult, variable.typeAnnotation, name, location, state.lastResultSource);
+  const rawValue = state.lastResult;
+
+  // If value is already a VibeValue (e.g., from AI response), extract its properties
+  let innerValue: unknown;
+  let toolCalls: ToolCallRecord[] = [];
+  let source = state.lastResultSource;
+
+  if (isVibeValue(rawValue)) {
+    innerValue = rawValue.value;
+    toolCalls = rawValue.toolCalls;
+    source = rawValue.source ?? source;
+  } else {
+    innerValue = rawValue;
+  }
+
+  const { value: validatedValue } = validateAndCoerce(innerValue, variable.typeAnnotation, name, location, source);
 
   // Handle module global assignment (frameIndex -1)
   if (frameIndex === -1) {
@@ -147,7 +176,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
     const newGlobals = {
       ...module.globals,
-      [name]: { ...variable, value: validatedValue, source: state.lastResultSource },
+      [name]: { ...variable, value: validatedValue, source, toolCalls },
     };
 
     return {
@@ -173,7 +202,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
-    [name]: { ...variable, value: validatedValue, source: state.lastResultSource },
+    [name]: { ...variable, value: validatedValue, source, toolCalls },
   };
 
   // Add assignment to ordered entries with snapshotted value for context tracking
@@ -186,7 +215,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
       value: validatedValue,  // Snapshot at assignment time
       type: variable.typeAnnotation,
       isConst: false,  // Assignments only happen to non-const variables
-      source: state.lastResultSource,
+      source,
     },
   ];
 
@@ -218,7 +247,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 function getCurrentModulePath(state: RuntimeState): string | undefined {
   let frameIndex: number | null = state.callStack.length - 1;
   while (frameIndex !== null && frameIndex >= 0) {
-    const frame = state.callStack[frameIndex];
+    const frame: StackFrame = state.callStack[frameIndex];
     if (frame.modulePath) {
       return frame.modulePath;
     }

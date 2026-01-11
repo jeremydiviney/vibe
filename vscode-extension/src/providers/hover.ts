@@ -40,6 +40,15 @@ const typeDocs: Record<string, string> = {
   number: 'Number type - numeric values.',
 };
 
+// VibeValue property documentation
+const vibeValuePropertyDocs: Record<string, string> = {
+  err: '**err** (VibeValue property)\n\n`VibeError | null`\n\nReturns the error if the operation failed, or `null` if successful.\n\n```vibe\nlet result = do "..." model default\nif result.err {\n  print("Error: " + result.err.message)\n}\n```\n\nVibeError has:\n- `message: text` - Error message\n- `type: text` - Error type (e.g., "TypeError", "ReferenceError")\n- `location` - Source location info',
+  toolCalls: '**toolCalls** (VibeValue property)\n\n`ToolCallRecord[]`\n\nArray of tool calls made during AI execution. Empty for non-AI values.\n\n```vibe\nlet result = vibe "Do something" model default\nfor call in result.toolCalls {\n  print("Tool: " + call.toolName)\n  print("Duration: " + call.duration + "ms")\n}\n```\n\nEach ToolCallRecord has:\n- `toolName: text` - Name of the tool called\n- `args: json` - Arguments passed\n- `result` - Return value\n- `error: text | null` - Error if failed\n- `duration: number` - Execution time in ms',
+  len: '**len()** (array/string method)\n\nReturns the length of an array or string.\n\n```vibe\nlet arr = [1, 2, 3]\nlet count = arr.len()  // 3\n\nlet str = "hello"\nlet length = str.len()  // 5\n```',
+  push: '**push(item)** (array method)\n\nAdds an item to the end of an array. Returns the array for chaining.\n\n```vibe\nlet arr = [1, 2]\narr.push(3)  // arr is now [1, 2, 3]\n```',
+  pop: '**pop()** (array method)\n\nRemoves and returns the last item from an array.\n\n```vibe\nlet arr = [1, 2, 3]\nlet last = arr.pop()  // last is 3, arr is [1, 2]\n```',
+};
+
 /**
  * Provide hover information for a position in the document
  */
@@ -65,6 +74,16 @@ export function provideHover(document: TextDocument, position: Position): Hover 
       contents: {
         kind: MarkupKind.Markdown,
         value: `**${word}** (type)\n\n${typeDocs[word]}`,
+      },
+    };
+  }
+
+  // Check if it's a VibeValue property or method (after a dot)
+  if (vibeValuePropertyDocs[word]) {
+    return {
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: vibeValuePropertyDocs[word],
       },
     };
   }

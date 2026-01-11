@@ -1,0 +1,5 @@
+// Test error handling from imported TS functions
+import { alwaysThrows, validatePositive, accessNullProperty, outerFunction } from "./helpers.ts"
+
+// This will throw an error
+let result = alwaysThrows()

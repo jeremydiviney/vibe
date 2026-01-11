@@ -3,7 +3,8 @@
 
 import * as AST from '../ast';
 import { parse } from '../parser/parse';
-import type { RuntimeState, TsModule, VibeModule, ExportedItem, Variable } from './types';
+import type { RuntimeState, TsModule, VibeModule, ExportedItem, VibeValue } from './types';
+import { createVibeValue } from './types';
 import { resolve, dirname, join } from 'path';
 
 // Map system module names to their implementation files
@@ -227,39 +228,35 @@ function extractVibeExports(program: AST.Program): Record<string, ExportedItem> 
 
 // Extract all module-level variables (both exported and non-exported)
 // These form the module's isolated global scope
-function extractModuleGlobals(program: AST.Program): Record<string, Variable> {
-  const globals: Record<string, Variable> = {};
+function extractModuleGlobals(program: AST.Program): Record<string, VibeValue> {
+  const globals: Record<string, VibeValue> = {};
 
   for (const stmt of program.body) {
     // Handle direct declarations
     if (stmt.type === 'LetDeclaration') {
-      globals[stmt.name] = {
-        value: evaluateSimpleLiteral(stmt.initializer),
+      globals[stmt.name] = createVibeValue(evaluateSimpleLiteral(stmt.initializer), {
         isConst: false,
         typeAnnotation: stmt.typeAnnotation,
-      };
+      });
     } else if (stmt.type === 'ConstDeclaration') {
-      globals[stmt.name] = {
-        value: evaluateSimpleLiteral(stmt.initializer),
+      globals[stmt.name] = createVibeValue(evaluateSimpleLiteral(stmt.initializer), {
         isConst: true,
         typeAnnotation: stmt.typeAnnotation,
-      };
+      });
     }
     // Handle exported declarations
     else if (stmt.type === 'ExportDeclaration') {
       const decl = stmt.declaration;
       if (decl.type === 'LetDeclaration') {
-        globals[decl.name] = {
-          value: evaluateSimpleLiteral(decl.initializer),
+        globals[decl.name] = createVibeValue(evaluateSimpleLiteral(decl.initializer), {
           isConst: false,
           typeAnnotation: decl.typeAnnotation,
-        };
+        });
       } else if (decl.type === 'ConstDeclaration') {
-        globals[decl.name] = {
-          value: evaluateSimpleLiteral(decl.initializer),
+        globals[decl.name] = createVibeValue(evaluateSimpleLiteral(decl.initializer), {
           isConst: true,
           typeAnnotation: decl.typeAnnotation,
-        };
+        });
       }
     }
     // Note: Functions and models are accessed via exports, not globals
@@ -280,8 +277,6 @@ function evaluateSimpleLiteral(expr: AST.Expression | null): unknown {
       return expr.value;
     case 'BooleanLiteral':
       return expr.value;
-    case 'NullLiteral':
-      return null;
     case 'ArrayLiteral':
       return expr.elements.map(e => evaluateSimpleLiteral(e));
     case 'ObjectLiteral':
@@ -436,6 +431,6 @@ export function getImportedVibeFunctionModulePath(
 export function getModuleGlobals(
   state: RuntimeState,
   modulePath: string
-): Record<string, Variable> | undefined {
+): Record<string, VibeValue> | undefined {
   return state.vibeModules[modulePath]?.globals;
 }

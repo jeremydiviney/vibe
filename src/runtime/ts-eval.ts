@@ -1,6 +1,8 @@
 // TypeScript evaluation with caching
 // Uses AsyncFunction constructor to compile and execute TypeScript code
 
+import type { SourceLocation } from '../errors';
+
 // Cache compiled functions by signature (params + body)
 const functionCache = new Map<string, (...args: unknown[]) => Promise<unknown>>();
 
@@ -20,10 +22,31 @@ export class TsBlockError extends Error {
     message: string,
     public readonly params: string[],
     public readonly body: string,
-    public readonly originalError: Error
+    public readonly originalError: Error,
+    public readonly location?: SourceLocation
   ) {
     super(message);
     this.name = 'TsBlockError';
+  }
+
+  // Format error with source location and original stack trace
+  format(): string {
+    let result = '';
+
+    // Add Vibe source location if available
+    if (this.location) {
+      const loc = `[${this.location.file ?? 'vibe'}:${this.location.line}:${this.location.column}]`;
+      result = `${loc} `;
+    }
+
+    result += this.message;
+
+    // Add original TypeScript stack trace for debugging
+    if (this.originalError.stack) {
+      result += `\n\nTypeScript stack trace:\n${this.originalError.stack}`;
+    }
+
+    return result;
   }
 }
 
@@ -31,7 +54,8 @@ export class TsBlockError extends Error {
 export async function evalTsBlock(
   params: string[],
   body: string,
-  paramValues: unknown[]
+  paramValues: unknown[],
+  location?: SourceLocation
 ): Promise<unknown> {
   const cacheKey = getCacheKey(params, body);
 
@@ -50,7 +74,8 @@ export async function evalTsBlock(
         `ts block compilation error: ${error instanceof Error ? error.message : String(error)}\n  Code: ${snippet}`,
         params,
         body,
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
+        location
       );
     }
   }
@@ -65,7 +90,8 @@ export async function evalTsBlock(
       `ts block runtime error: ${error instanceof Error ? error.message : String(error)}\n  Code: ${snippet}`,
       params,
       body,
-      error instanceof Error ? error : new Error(String(error))
+      error instanceof Error ? error : new Error(String(error)),
+      location
     );
   }
 }

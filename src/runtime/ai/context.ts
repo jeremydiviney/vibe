@@ -160,8 +160,8 @@ function buildToolSystemMessage(tools: ToolSchema[]): string {
  * Build the prompt message with type instructions if needed.
  * Delegates to formatters.ts for consistent formatting.
  */
-function buildPromptMessage(prompt: string, targetType: TargetType): string {
-  return buildPromptMessageImpl(prompt, targetType, false);
+function buildPromptMessage(prompt: string, _targetType: TargetType): string {
+  return buildPromptMessageImpl(prompt);
 }
 
 // Re-export formatters for backward compatibility

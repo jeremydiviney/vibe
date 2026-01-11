@@ -1,6 +1,7 @@
 // TypeScript execution: interpolation, ts blocks, ts eval
 
 import * as AST from '../../ast';
+import type { SourceLocation } from '../../errors';
 import type { RuntimeState } from '../types';
 import { resolveValue } from '../types';
 import { lookupVariable } from './variables';
@@ -83,7 +84,7 @@ export function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeStat
 /**
  * TypeScript eval - pause for async evaluation.
  */
-export function execTsEval(state: RuntimeState, params: string[], body: string): RuntimeState {
+export function execTsEval(state: RuntimeState, params: string[], body: string, location: SourceLocation): RuntimeState {
   // Look up parameter values from scope or imports
   const paramValues = params.map((name) => {
     // First try regular variables
@@ -112,6 +113,7 @@ export function execTsEval(state: RuntimeState, params: string[], body: string):
       params,
       body,
       paramValues,
+      location,  // Include source location for error reporting
     },
     executionLog: [
       ...state.executionLog,

@@ -1,8 +1,9 @@
 // Function call execution
 
 import * as AST from '../../ast';
+import type { SourceLocation } from '../../errors';
 import type { RuntimeState, StackFrame } from '../types';
-import { resolveValue } from '../types';
+import { resolveValue, createVibeValue } from '../types';
 import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction, getImportedVibeFunctionModulePath } from '../modules';
@@ -35,11 +36,10 @@ function createFunctionFrame(
       param.name
     );
 
-    newFrame.locals[param.name] = {
-      value: validatedValue,
+    newFrame.locals[param.name] = createVibeValue(validatedValue, {
       isConst: false,
       typeAnnotation: param.typeAnnotation,
-    };
+    });
     // Include snapshotted value in ordered entries for context tracking
     newFrame.orderedEntries.push({
       kind: 'variable' as const,
@@ -93,11 +93,17 @@ function executeVibeFunction(
 export function execCallFunction(
   state: RuntimeState,
   _funcName: string,
-  argCount: number
+  argCount: number,
+  location: SourceLocation
 ): RuntimeState {
-  const args = state.valueStack.slice(-argCount);
-  const callee = state.valueStack[state.valueStack.length - argCount - 1];
+  // Get args and callee from value stack, unwrapping VibeValues
+  const rawArgs = state.valueStack.slice(-argCount);
+  const rawCallee = state.valueStack[state.valueStack.length - argCount - 1];
   const newValueStack = state.valueStack.slice(0, -(argCount + 1));
+
+  // Unwrap VibeValue for callee and args
+  const callee = resolveValue(rawCallee);
+  const args = rawArgs.map(arg => resolveValue(arg));
 
   // Handle local Vibe function
   if (typeof callee === 'object' && callee !== null && '__vibeFunction' in callee) {
@@ -121,7 +127,7 @@ export function execCallFunction(
       ...state,
       valueStack: newValueStack,
       status: 'awaiting_ts',
-      pendingImportedTsCall: { funcName, args: resolvedArgs },
+      pendingImportedTsCall: { funcName, args: resolvedArgs, location },
       executionLog: [
         ...state.executionLog,
         {

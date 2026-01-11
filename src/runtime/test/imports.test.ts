@@ -7,6 +7,7 @@ import { loadImports } from '../modules';
 import { runUntilPause, step } from '../step';
 import { resumeWithAIResponse, resumeWithImportedTsResult } from '../state';
 import { Runtime } from '../index';
+import { resolveValue } from '../types';
 
 // Helper to load and run a vibe script with imports
 async function loadAndRun(
@@ -45,7 +46,7 @@ async function loadAndRun(
     state = runUntilPause(state);
   }
 
-  return { state, result: state.lastResult };
+  return { state, result: resolveValue(state.lastResult) };
 }
 
 describe('Runtime - TypeScript Imports', () => {

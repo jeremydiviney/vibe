@@ -74,6 +74,21 @@
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
 
+### Error Handling (VibeValue)
+- [ ] VibeValue unified type system
+  - [ ] Phase 1: Define VibeValue and VibeError types in types.ts
+  - [ ] Phase 2: Update variable operations (declare, assign, lookup)
+  - [ ] Phase 3: Update expression evaluation (auto-unwrap, error propagation)
+  - [ ] Phase 4: AI integration (migrate AIResultObject to VibeValue)
+  - [ ] Phase 5: Cleanup and tests
+- [ ] Error handling enhancements (backlog)
+  - [ ] `??` operator for default values
+  - [ ] `or` keyword for fallback operations
+  - [ ] `?` operator for error propagation
+  - [ ] `!` operator for crash-if-error
+  - [ ] Method calls on values (`x.toUpperCase()`)
+  - [ ] Stricter error modes
+
 ## Completed (Last 10)
 
 - [x] Module scope isolation for imported Vibe functions

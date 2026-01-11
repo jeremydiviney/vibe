@@ -2,7 +2,8 @@
 
 import * as AST from '../../ast';
 import type { SourceLocation } from '../../errors';
-import type { RuntimeState, Variable } from '../types';
+import type { RuntimeState, VibeValue } from '../types';
+import { createVibeValue, resolveValue } from '../types';
 import { currentFrame } from '../state';
 import { requireBoolean, validateAndCoerce } from '../validation';
 import { execDeclareVar } from './variables';
@@ -72,7 +73,7 @@ const MODEL_CONFIG_FIELDS = ['modelName', 'apiKey', 'url', 'provider', 'maxRetri
  * This allows CallExpressions (like env(), ts blocks, function calls) to work in model config.
  */
 export function execModelDeclaration(state: RuntimeState, stmt: AST.ModelDeclaration): RuntimeState {
-  const instructions: Array<{ op: string; [key: string]: unknown }> = [];
+  const instructions: typeof state.instructionStack = [];
 
   // Push evaluation instructions for each config field
   // Fields are evaluated in order and pushed to valueStack
@@ -106,10 +107,13 @@ export function finalizeModelDeclaration(
   // Pop values from stack in reverse order (LIFO)
   // Fields were pushed in order: modelName, apiKey, url, provider, maxRetriesOnError, thinkingLevel, tools
   const fieldCount = MODEL_CONFIG_FIELDS.length;
-  const values = state.valueStack.slice(-fieldCount);
+  const rawValues = state.valueStack.slice(-fieldCount);
   const newValueStack = state.valueStack.slice(0, -fieldCount);
 
-  const [modelName, apiKey, url, provider, maxRetriesOnError, thinkingLevel, tools] = values;
+  // Unwrap VibeValues to get raw values
+  const [modelName, apiKey, url, provider, maxRetriesOnError, thinkingLevel, tools] = rawValues.map(
+    v => resolveValue(v)
+  );
 
   const modelValue = {
     __vibeModel: true,
@@ -125,7 +129,7 @@ export function finalizeModelDeclaration(
   const frame = currentFrame(state);
   const newLocals = {
     ...frame.locals,
-    [stmt.name]: { value: modelValue, isConst: true, typeAnnotation: 'model' },
+    [stmt.name]: createVibeValue(modelValue, { isConst: true, typeAnnotation: null }),
   };
 
   return {
@@ -251,7 +255,7 @@ export function execExitBlock(state: RuntimeState, savedKeys: string[]): Runtime
   const frame = currentFrame(state);
   const savedKeySet = new Set(savedKeys);
 
-  const newLocals: Record<string, Variable> = {};
+  const newLocals: Record<string, VibeValue> = {};
   for (const key of Object.keys(frame.locals)) {
     if (savedKeySet.has(key)) {
       newLocals[key] = frame.locals[key];

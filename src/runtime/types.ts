@@ -1,4 +1,5 @@
 import * as AST from '../ast';
+import type { VibeType, VibeTypeRequired } from '../ast';
 import type { SourceLocation } from '../errors';
 import type { PendingToolCall } from './tools/types';
 export type { PendingToolCall } from './tools/types';
@@ -20,7 +21,144 @@ export type RuntimeStatus =
 // Source of a variable's value
 export type ValueSource = 'ai' | 'user' | undefined;
 
+// ============================================================================
+// VibeValue - Unified value wrapper with error handling
+// ============================================================================
+
+// Error information captured when an operation fails
+export interface VibeError {
+  message: string;
+  type: string;                      // Error class name: "TypeError", "ReferenceError", etc.
+  location: SourceLocation | null;   // Source location in Vibe code (where the error occurred in .vibe file)
+  stack?: string;                    // Original error stack trace (for debugging TS errors)
+}
+
+// Universal value wrapper - ALL values in Vibe are VibeValue
+// Replaces both Variable and AIResultObject with a unified type
+export interface VibeValue {
+  value: unknown;                    // The actual primitive data
+  err: VibeError | null;             // Error if operation failed, null if success
+  toolCalls: ToolCallRecord[];       // AI tool calls (empty array for non-AI operations)
+  isConst: boolean;                  // true for const, false for let
+  typeAnnotation: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
+  source?: ValueSource;              // 'ai', 'user', or undefined
+}
+
+// Type guard for VibeValue
+export function isVibeValue(val: unknown): val is VibeValue {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    'value' in val &&
+    'err' in val &&
+    'toolCalls' in val &&
+    'isConst' in val
+  );
+}
+
+// Create a successful VibeValue (no error)
+export function createVibeValue(
+  value: unknown,
+  options: {
+    isConst?: boolean;
+    typeAnnotation?: VibeType;
+    source?: ValueSource;
+    toolCalls?: ToolCallRecord[];
+  } = {}
+): VibeValue {
+  return {
+    value,
+    err: null,
+    toolCalls: options.toolCalls ?? [],
+    isConst: options.isConst ?? false,
+    typeAnnotation: options.typeAnnotation ?? null,
+    source: options.source,
+  };
+}
+
+// Create a VibeValue with an error
+export function createVibeError(
+  error: Error | string,
+  location: SourceLocation | null = null,
+  options: {
+    isConst?: boolean;
+    typeAnnotation?: VibeType;
+  } = {}
+): VibeValue {
+  const isErrorObject = error instanceof Error;
+  const err: VibeError = {
+    message: typeof error === 'string' ? error : error.message,
+    type: typeof error === 'string' ? 'Error' : error.constructor.name,
+    location,
+    // Capture stack trace from Error objects (useful for debugging TS errors)
+    stack: isErrorObject ? error.stack : undefined,
+  };
+  return {
+    value: undefined,
+    err,
+    toolCalls: [],
+    isConst: options.isConst ?? false,
+    typeAnnotation: options.typeAnnotation ?? null,
+    source: undefined,
+  };
+}
+
+// Propagate error from one VibeValue to another (for expression evaluation)
+// If source has error, result inherits it; otherwise uses provided value
+export function propagateError(
+  source: VibeValue,
+  value: unknown,
+  options: {
+    isConst?: boolean;
+    typeAnnotation?: VibeType;
+    source?: ValueSource;
+  } = {}
+): VibeValue {
+  if (source.err) {
+    return {
+      value: undefined,
+      err: source.err,
+      toolCalls: [],
+      isConst: options.isConst ?? false,
+      typeAnnotation: options.typeAnnotation ?? null,
+      source: options.source,
+    };
+  }
+  return createVibeValue(value, options);
+}
+
+// Propagate error from multiple sources (for binary operations)
+// Returns first error found, or creates successful value
+export function propagateErrors(
+  sources: VibeValue[],
+  value: unknown,
+  options: {
+    isConst?: boolean;
+    typeAnnotation?: VibeType;
+    source?: ValueSource;
+  } = {}
+): VibeValue {
+  for (const src of sources) {
+    if (src.err) {
+      return {
+        value: undefined,
+        err: src.err,
+        toolCalls: [],
+        isConst: options.isConst ?? false,
+        typeAnnotation: options.typeAnnotation ?? null,
+        source: options.source,
+      };
+    }
+  }
+  return createVibeValue(value, options);
+}
+
+// ============================================================================
+// Legacy Variable type (being replaced by VibeValue)
+// ============================================================================
+
 // Variable entry with mutability flag and optional type
+// @deprecated Use VibeValue instead
 export interface Variable {
   value: unknown;
   isConst: boolean;
@@ -50,7 +188,7 @@ export interface PromptToolCall {
   error?: string;
 }
 
-// Tool call record for AIResultObject (includes timing)
+// Tool call record for VibeValue (includes timing)
 export interface ToolCallRecord {
   toolName: string;
   args: Record<string, unknown>;
@@ -59,23 +197,10 @@ export interface ToolCallRecord {
   duration: number;        // milliseconds
 }
 
-// AI result object returned when assigning AI call to variable
-// Supports: ret (value), ret.toolCalls (array), ret.value (explicit)
-export interface AIResultObject {
-  __type: 'AIResult';      // Type discriminator
-  value: unknown;          // The AI's final response (parsed if JSON)
-  toolCalls: ToolCallRecord[];  // Ordered list of tool calls made
-}
-
-// Type guard for AIResultObject
-export function isAIResultObject(val: unknown): val is AIResultObject {
-  return typeof val === 'object' && val !== null && (val as AIResultObject).__type === 'AIResult';
-}
-
-// Resolve AIResultObject to its primitive value for coercion
+// Resolve VibeValue to its primitive value for coercion
 // Used in string interpolation, binary ops, print, etc.
 export function resolveValue(val: unknown): unknown {
-  if (isAIResultObject(val)) {
+  if (isVibeValue(val)) {
     return val.value;
   }
   return val;
@@ -166,10 +291,10 @@ export type FrameEntry =
 // Stack frame (serializable - uses Record instead of Map)
 export interface StackFrame {
   name: string;
-  locals: Record<string, Variable>;
-  parentFrameIndex: number | null;  // Lexical parent frame for scope chain
-  orderedEntries: FrameEntry[];     // Track order of variable assignments and AI prompts
-  modulePath?: string;              // Module this frame belongs to (for imported functions)
+  locals: Record<string, VibeValue>;  // All variables are VibeValue
+  parentFrameIndex: number | null;    // Lexical parent frame for scope chain
+  orderedEntries: FrameEntry[];       // Track order of variable assignments and AI prompts
+  modulePath?: string;                // Module this frame belongs to (for imported functions)
 }
 
 // AI operation history entry
@@ -257,7 +382,7 @@ export interface PendingAI {
 // Expected field for destructuring/typed returns
 export interface ExpectedField {
   name: string;
-  type: string;  // 'text' | 'number' | 'boolean' | 'json' | array types
+  type: VibeTypeRequired;
 }
 
 // Pending compress request (for compress context mode)
@@ -275,12 +400,14 @@ export interface PendingTS {
   params: string[];
   body: string;
   paramValues: unknown[];
+  location: SourceLocation;  // Source location in .vibe file for error reporting
 }
 
 // Pending imported TS function call
 export interface PendingImportedTsCall {
   funcName: string;
   args: unknown[];
+  location: SourceLocation;  // Source location in .vibe file for error reporting
 }
 
 // Loaded TypeScript module
@@ -292,7 +419,7 @@ export interface TsModule {
 export interface VibeModule {
   exports: Record<string, ExportedItem>;
   program: AST.Program;
-  globals: Record<string, Variable>;  // Module-level variables (isolated per module)
+  globals: Record<string, VibeValue>;  // Module-level variables (isolated per module)
 }
 
 // Exported item from a Vibe module
@@ -364,7 +491,7 @@ export type Instruction =
   | { op: 'exec_statements'; stmts: AST.Statement[]; index: number; location: SourceLocation }
 
   // Variable operations (use lastResult)
-  | { op: 'declare_var'; name: string; isConst: boolean; type: string | null; location: SourceLocation }
+  | { op: 'declare_var'; name: string; isConst: boolean; type: VibeType; location: SourceLocation }
   | { op: 'assign_var'; name: string; location: SourceLocation }
 
   // Function calls (functions always forget context - no context mode support)
@@ -427,7 +554,7 @@ export type Instruction =
   // Method call on object (built-in methods)
   | { op: 'method_call'; method: string; argCount: number; location: SourceLocation }
 
-  // Member/property access (handles AIResultObject.toolCalls, regular properties, and bound methods)
+  // Member/property access (handles VibeValue.toolCalls, VibeValue.err, regular properties, and bound methods)
   | { op: 'member_access'; property: string; location: SourceLocation }
 
   // Tool operations

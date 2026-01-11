@@ -1,7 +1,17 @@
 // Type validation and coercion utilities
 
+import type { VibeType, VibeTypeRequired } from '../ast';
 import { RuntimeError, type SourceLocation } from '../errors';
-import { resolveValue } from './types';
+import { isVibeValue, resolveValue } from './types';
+
+// Map array types to their element types (type-safe alternative to string slicing)
+const ARRAY_ELEMENT_TYPES: Record<string, VibeTypeRequired> = {
+  'text[]': 'text',
+  'json[]': 'json',
+  'boolean[]': 'boolean',
+  'number[]': 'number',
+  'prompt[]': 'prompt',
+};
 
 /**
  * Validates a value against a type annotation and coerces if necessary.
@@ -9,22 +19,22 @@ import { resolveValue } from './types';
  */
 export function validateAndCoerce(
   value: unknown,
-  type: string | null,
+  type: VibeType,
   varName: string,
   location?: SourceLocation,
   source?: 'ai' | 'user'
-): { value: unknown; inferredType: string | null } {
-  // Resolve AIResultObject unless this is a direct AI result to an UNTYPED variable
+): { value: unknown; inferredType: VibeType } {
+  // Resolve VibeValue unless this is a direct AI result to an UNTYPED variable
   // (source === 'ai' means the value came directly from an AI call)
   // For typed variables, always resolve so type validation can work on the primitive value
-  const keepAIResultWrapper = source === 'ai' && type === null;
-  if (!keepAIResultWrapper) {
+  const keepVibeValueWrapper = source === 'ai' && type === null;
+  if (!keepVibeValueWrapper) {
     value = resolveValue(value);
   }
 
   // If no type annotation, infer from JavaScript type
   if (!type) {
-    // For AIResultObject, infer type from the underlying value, not the wrapper
+    // For VibeValue, infer type from the underlying value, not the wrapper
     const valueToInfer = resolveValue(value);
 
     if (typeof valueToInfer === 'string') {
@@ -43,10 +53,9 @@ export function validateAndCoerce(
     return { value, inferredType: null };
   }
 
-  // Validate array types (text[], json[], boolean[], text[][], etc.)
-  if (type.endsWith('[]')) {
-    const elementType = type.slice(0, -2);  // "text[]" -> "text", "text[][]" -> "text[]"
-
+  // Validate array types (text[], json[], boolean[], number[], prompt[])
+  const elementType = ARRAY_ELEMENT_TYPES[type];
+  if (elementType) {
     if (!Array.isArray(value)) {
       throw new RuntimeError(`Variable '${varName}': expected ${type} (array), got ${typeof value}`, location);
     }
@@ -107,18 +116,7 @@ export function validateAndCoerce(
     return { value, inferredType: 'number' };
   }
 
-  // Validate model type - must be a VibeModelValue (has __vibeModel: true)
-  if (type === 'model') {
-    if (typeof value !== 'object' || value === null) {
-      throw new RuntimeError(`Variable '${varName}': expected model, got ${typeof value}`, location);
-    }
-    if (!('__vibeModel' in value) || (value as { __vibeModel: unknown }).__vibeModel !== true) {
-      throw new RuntimeError(`Variable '${varName}': expected model value with __vibeModel marker`, location);
-    }
-    return { value, inferredType: 'model' };
-  }
-
-  // For other types (prompt, etc.), accept as-is
+  // For prompt type, accept string values as-is
   return { value, inferredType: type };
 }
 
@@ -127,9 +125,17 @@ export function validateAndCoerce(
  * Throws if value is not a boolean.
  */
 export function requireBoolean(value: unknown, context: string): boolean {
-  if (typeof value !== 'boolean') {
-    const valueType = value === null ? 'null' : typeof value;
+  // Handle VibeValue with error - throw the error
+  if (isVibeValue(value) && value.err) {
+    throw new Error(`${value.err.type}: ${value.err.message}`);
+  }
+
+  // Auto-unwrap VibeValue
+  const unwrapped = resolveValue(value);
+
+  if (typeof unwrapped !== 'boolean') {
+    const valueType = unwrapped === null ? 'null' : typeof unwrapped;
     throw new Error(`TypeError: ${context} must be a boolean, got ${valueType}`);
   }
-  return value;
+  return unwrapped;
 }
