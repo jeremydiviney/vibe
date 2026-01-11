@@ -77,6 +77,42 @@ export {
   getFrameIdForOrigin,
 } from './stack-merger';
 
+// TS import tracker
+export {
+  type TsImportInfo,
+  registerTsImport,
+  getTsImportInfo,
+  isTsImportCall,
+  setTsImportEntryLine,
+  registerTempBreakpoint,
+  popTempBreakpoint,
+  clearTempBreakpoints,
+  getAllTsImports,
+  getTsImportsForFile,
+  clearTsImports,
+  buildTsEntryPointId,
+  parseTsEntryPointId,
+} from './ts-import-tracker';
+
+// Handoff manager
+export {
+  type HandoffState,
+  createHandoffState,
+  shouldInitiateHandoff,
+  initiateHandoff,
+  completeHandoff,
+  shouldReturnControl,
+  returnToVibe,
+  handleTsStepIn,
+  handleTsStepOut,
+  getCurrentMode,
+  isInTsMode,
+  getSavedVibeState,
+  setupTsImportBreakpoint,
+  cleanupTempBreakpoint,
+  cleanupAllTempBreakpoints,
+} from './handoff-manager';
+
 // Re-export debug-core types for convenience
 export type {
   Breakpoint,
