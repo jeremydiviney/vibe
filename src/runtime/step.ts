@@ -625,6 +625,41 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return finalizeModelDeclaration(state, instruction.stmt);
     }
 
+    // Destructuring assignment - assign AI result fields to variables
+    case 'destructure_assign': {
+      const { fields, isConst } = instruction;
+
+      // Get the result value (should be Record<string, unknown> from AI return)
+      let fieldValues: Record<string, unknown>;
+      if (isAIResultObject(state.lastResult)) {
+        fieldValues = state.lastResult.value as Record<string, unknown>;
+      } else if (typeof state.lastResult === 'object' && state.lastResult !== null) {
+        fieldValues = state.lastResult as Record<string, unknown>;
+      } else {
+        throw new RuntimeError(
+          `Destructuring requires an object, got ${typeof state.lastResult}`,
+          instruction.location,
+          ''
+        );
+      }
+
+      // Declare each field as a variable
+      let newState = { ...state, pendingDestructuring: null };
+      for (const field of fields) {
+        const value = fieldValues[field.name];
+        if (value === undefined) {
+          throw new RuntimeError(
+            `Missing field '${field.name}' in destructuring result`,
+            instruction.location,
+            ''
+          );
+        }
+        newState = execDeclareVar(newState, field.name, isConst, field.type, value);
+      }
+
+      return newState;
+    }
+
     // Member/property access
     case 'member_access': {
       const object = state.lastResult;

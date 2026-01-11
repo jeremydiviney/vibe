@@ -1,89 +1,22 @@
 import { describe, it, expect } from 'bun:test';
 import {
   getReturnTools,
-  getReturnToolName,
   isReturnToolCall,
   shouldUseReturnTool,
-  RETURN_NUMBER_TOOL,
-  RETURN_BOOLEAN_TOOL,
-  RETURN_NUMBER_ARRAY_TOOL,
-  RETURN_BOOLEAN_ARRAY_TOOL,
-  RETURN_TEXT_ARRAY_TOOL,
-  RETURN_JSON_TOOL,
-  RETURN_JSON_ARRAY_TOOL,
+  collectAndValidateFieldResults,
+  buildReturnInstruction,
+  isFieldReturnResult,
+  RETURN_FIELD_TOOL,
 } from '../return-tools';
 import { executeWithTools } from '../tool-loop';
 import type { AIRequest, AIResponse } from '../types';
-import type { VibeToolValue } from '../../tools/types';
 
 const TEST_ROOT_DIR = process.cwd();
 
 describe('return-tools', () => {
-  describe('getReturnToolName', () => {
-    it('should return number tool name for number type', () => {
-      expect(getReturnToolName('number')).toBe(RETURN_NUMBER_TOOL);
-    });
-
-    it('should return boolean tool name for boolean type', () => {
-      expect(getReturnToolName('boolean')).toBe(RETURN_BOOLEAN_TOOL);
-    });
-
-    it('should return null for text type', () => {
-      expect(getReturnToolName('text')).toBeNull();
-    });
-
-    it('should return number array tool name for number[] type', () => {
-      expect(getReturnToolName('number[]')).toBe(RETURN_NUMBER_ARRAY_TOOL);
-    });
-
-    it('should return boolean array tool name for boolean[] type', () => {
-      expect(getReturnToolName('boolean[]')).toBe(RETURN_BOOLEAN_ARRAY_TOOL);
-    });
-
-    it('should return text array tool name for text[] type', () => {
-      expect(getReturnToolName('text[]')).toBe(RETURN_TEXT_ARRAY_TOOL);
-    });
-
-    it('should return json tool name for json type', () => {
-      expect(getReturnToolName('json')).toBe(RETURN_JSON_TOOL);
-    });
-
-    it('should return json array tool name for json[] type', () => {
-      expect(getReturnToolName('json[]')).toBe(RETURN_JSON_ARRAY_TOOL);
-    });
-
-    it('should return null for null type', () => {
-      expect(getReturnToolName(null)).toBeNull();
-    });
-  });
-
   describe('isReturnToolCall', () => {
-    it('should return true for number return tool', () => {
-      expect(isReturnToolCall(RETURN_NUMBER_TOOL)).toBe(true);
-    });
-
-    it('should return true for boolean return tool', () => {
-      expect(isReturnToolCall(RETURN_BOOLEAN_TOOL)).toBe(true);
-    });
-
-    it('should return true for number array return tool', () => {
-      expect(isReturnToolCall(RETURN_NUMBER_ARRAY_TOOL)).toBe(true);
-    });
-
-    it('should return true for boolean array return tool', () => {
-      expect(isReturnToolCall(RETURN_BOOLEAN_ARRAY_TOOL)).toBe(true);
-    });
-
-    it('should return true for text array return tool', () => {
-      expect(isReturnToolCall(RETURN_TEXT_ARRAY_TOOL)).toBe(true);
-    });
-
-    it('should return true for json return tool', () => {
-      expect(isReturnToolCall(RETURN_JSON_TOOL)).toBe(true);
-    });
-
-    it('should return true for json array return tool', () => {
-      expect(isReturnToolCall(RETURN_JSON_ARRAY_TOOL)).toBe(true);
+    it('should return true for return field tool', () => {
+      expect(isReturnToolCall(RETURN_FIELD_TOOL)).toBe(true);
     });
 
     it('should return false for other tools', () => {
@@ -131,520 +64,238 @@ describe('return-tools', () => {
   });
 
   describe('getReturnTools', () => {
-    it('should return array with all return tools', () => {
+    it('should return array with single return field tool', () => {
       const tools = getReturnTools();
-      expect(tools).toHaveLength(7);
-
-      const names = tools.map((t) => t.name);
-      expect(names).toContain(RETURN_NUMBER_TOOL);
-      expect(names).toContain(RETURN_BOOLEAN_TOOL);
-      expect(names).toContain(RETURN_NUMBER_ARRAY_TOOL);
-      expect(names).toContain(RETURN_BOOLEAN_ARRAY_TOOL);
-      expect(names).toContain(RETURN_TEXT_ARRAY_TOOL);
-      expect(names).toContain(RETURN_JSON_TOOL);
-      expect(names).toContain(RETURN_JSON_ARRAY_TOOL);
+      expect(tools).toHaveLength(1);
+      expect(tools[0].name).toBe(RETURN_FIELD_TOOL);
     });
 
-    it('should return tools with valid schemas', () => {
+    it('should return tool with valid schema', () => {
       const tools = getReturnTools();
+      const tool = tools[0];
 
-      for (const tool of tools) {
-        expect(tool.__vibeTool).toBe(true);
-        expect(tool.schema.name).toBe(tool.name);
-        expect(tool.schema.parameters).toHaveLength(1);
-        expect(tool.schema.parameters[0].name).toBe('value');
-        expect(tool.schema.parameters[0].required).toBe(true);
-      }
+      expect(tool.__vibeTool).toBe(true);
+      expect(tool.schema.name).toBe(RETURN_FIELD_TOOL);
+      expect(tool.schema.parameters).toHaveLength(2);
+      expect(tool.schema.parameters[0].name).toBe('field');
+      expect(tool.schema.parameters[0].required).toBe(true);
+      expect(tool.schema.parameters[1].name).toBe('value');
+      expect(tool.schema.parameters[1].required).toBe(true);
     });
   });
 
-  describe('return number tool executor', () => {
-    it('should return valid number', async () => {
+  describe('return field tool executor', () => {
+    it('should return field return result object', async () => {
       const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
+      const fieldTool = tools[0];
 
-      const result = await numberTool.executor({ value: 42 });
-      expect(result).toBe(42);
+      const result = await fieldTool.executor({ field: 'value', value: 42 });
+      expect(result).toEqual({ __fieldReturn: true, field: 'value', value: 42 });
     });
 
-    it('should return zero', async () => {
+    it('should pass through any value type', async () => {
       const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
+      const fieldTool = tools[0];
 
-      const result = await numberTool.executor({ value: 0 });
-      expect(result).toBe(0);
-    });
+      // Numbers
+      const num = await fieldTool.executor({ field: 'n', value: 123 });
+      expect(num).toEqual({ __fieldReturn: true, field: 'n', value: 123 });
 
-    it('should return negative number', async () => {
-      const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
+      // Strings
+      const str = await fieldTool.executor({ field: 's', value: 'hello' });
+      expect(str).toEqual({ __fieldReturn: true, field: 's', value: 'hello' });
 
-      const result = await numberTool.executor({ value: -123.45 });
-      expect(result).toBe(-123.45);
-    });
+      // Booleans
+      const bool = await fieldTool.executor({ field: 'b', value: true });
+      expect(bool).toEqual({ __fieldReturn: true, field: 'b', value: true });
 
-    it('should throw for string value', async () => {
-      const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
+      // Arrays
+      const arr = await fieldTool.executor({ field: 'a', value: [1, 2, 3] });
+      expect(arr).toEqual({ __fieldReturn: true, field: 'a', value: [1, 2, 3] });
 
-      await expect(numberTool.executor({ value: 'not a number' })).rejects.toThrow(
-        /Expected a number/
-      );
-    });
-
-    it('should throw for boolean value', async () => {
-      const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
-
-      await expect(numberTool.executor({ value: true })).rejects.toThrow(/Expected a number/);
-    });
-
-    it('should throw for NaN', async () => {
-      const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
-
-      await expect(numberTool.executor({ value: NaN })).rejects.toThrow(/Expected a number/);
-    });
-
-    it('should throw for Infinity', async () => {
-      const tools = getReturnTools();
-      const numberTool = tools.find((t) => t.name === RETURN_NUMBER_TOOL)!;
-
-      await expect(numberTool.executor({ value: Infinity })).rejects.toThrow(/Expected a number/);
+      // Objects
+      const obj = await fieldTool.executor({ field: 'o', value: { name: 'Alice' } });
+      expect(obj).toEqual({ __fieldReturn: true, field: 'o', value: { name: 'Alice' } });
     });
   });
 
-  describe('return boolean tool executor', () => {
-    it('should return true', async () => {
-      const tools = getReturnTools();
-      const boolTool = tools.find((t) => t.name === RETURN_BOOLEAN_TOOL)!;
-
-      const result = await boolTool.executor({ value: true });
-      expect(result).toBe(true);
+  describe('isFieldReturnResult', () => {
+    it('should return true for valid field return result', () => {
+      expect(isFieldReturnResult({ __fieldReturn: true, field: 'value', value: 42 })).toBe(true);
     });
 
-    it('should return false', async () => {
-      const tools = getReturnTools();
-      const boolTool = tools.find((t) => t.name === RETURN_BOOLEAN_TOOL)!;
-
-      const result = await boolTool.executor({ value: false });
-      expect(result).toBe(false);
+    it('should return false for non-objects', () => {
+      expect(isFieldReturnResult(null)).toBe(false);
+      expect(isFieldReturnResult(undefined)).toBe(false);
+      expect(isFieldReturnResult(42)).toBe(false);
+      expect(isFieldReturnResult('string')).toBe(false);
     });
 
-    it('should throw for string value', async () => {
-      const tools = getReturnTools();
-      const boolTool = tools.find((t) => t.name === RETURN_BOOLEAN_TOOL)!;
-
-      await expect(boolTool.executor({ value: 'true' })).rejects.toThrow(/Expected a boolean/);
-    });
-
-    it('should throw for number value', async () => {
-      const tools = getReturnTools();
-      const boolTool = tools.find((t) => t.name === RETURN_BOOLEAN_TOOL)!;
-
-      await expect(boolTool.executor({ value: 1 })).rejects.toThrow(/Expected a boolean/);
-    });
-
-    it('should throw for null value', async () => {
-      const tools = getReturnTools();
-      const boolTool = tools.find((t) => t.name === RETURN_BOOLEAN_TOOL)!;
-
-      await expect(boolTool.executor({ value: null })).rejects.toThrow(/Expected a boolean/);
+    it('should return false for objects without __fieldReturn', () => {
+      expect(isFieldReturnResult({ field: 'value', value: 42 })).toBe(false);
+      expect(isFieldReturnResult({ __fieldReturn: false, field: 'value', value: 42 })).toBe(false);
     });
   });
 
-  describe('return number array tool executor', () => {
-    it('should return valid number array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
+  describe('collectAndValidateFieldResults', () => {
+    describe('single field validation', () => {
+      it('should validate number field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: 42 }];
+        const expected = [{ name: 'value', type: 'number' }];
 
-      const result = await arrayTool.executor({ value: [1, 2, 3] });
-      expect(result).toEqual([1, 2, 3]);
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ value: 42 });
+      });
+
+      it('should validate boolean field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: true }];
+        const expected = [{ name: 'value', type: 'boolean' }];
+
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ value: true });
+      });
+
+      it('should validate text field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: 'hello' }];
+        const expected = [{ name: 'value', type: 'text' }];
+
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ value: 'hello' });
+      });
+
+      it('should validate json field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: { name: 'Alice' } }];
+        const expected = [{ name: 'value', type: 'json' }];
+
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ value: { name: 'Alice' } });
+      });
+
+      it('should throw for wrong number type', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: 'not a number' }];
+        const expected = [{ name: 'value', type: 'number' }];
+
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/expected number/);
+      });
+
+      it('should throw for wrong boolean type', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: 'yes' }];
+        const expected = [{ name: 'value', type: 'boolean' }];
+
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/expected boolean/);
+      });
+
+      it('should throw for NaN as number', () => {
+        const results = [{ __fieldReturn: true as const, field: 'value', value: NaN }];
+        const expected = [{ name: 'value', type: 'number' }];
+
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/expected number/);
+      });
     });
 
-    it('should return empty array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
+    describe('array type validation', () => {
+      it('should validate number[] field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'nums', value: [1, 2, 3] }];
+        const expected = [{ name: 'nums', type: 'number[]' }];
 
-      const result = await arrayTool.executor({ value: [] });
-      expect(result).toEqual([]);
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ nums: [1, 2, 3] });
+      });
+
+      it('should validate text[] field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'items', value: ['a', 'b', 'c'] }];
+        const expected = [{ name: 'items', type: 'text[]' }];
+
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ items: ['a', 'b', 'c'] });
+      });
+
+      it('should validate boolean[] field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'flags', value: [true, false, true] }];
+        const expected = [{ name: 'flags', type: 'boolean[]' }];
+
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ flags: [true, false, true] });
+      });
+
+      it('should validate json[] field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'objects', value: [{ a: 1 }, { b: 2 }] }];
+        const expected = [{ name: 'objects', type: 'json[]' }];
+
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ objects: [{ a: 1 }, { b: 2 }] });
+      });
+
+      it('should throw for non-array when expecting array', () => {
+        const results = [{ __fieldReturn: true as const, field: 'nums', value: 42 }];
+        const expected = [{ name: 'nums', type: 'number[]' }];
+
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/expected number\[\]/);
+      });
+
+      it('should throw for array with wrong element types', () => {
+        const results = [{ __fieldReturn: true as const, field: 'nums', value: [1, 'two', 3] }];
+        const expected = [{ name: 'nums', type: 'number[]' }];
+
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/element 1/);
+      });
     });
 
-    it('should return array with negative and decimal numbers', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
+    describe('multi-field validation', () => {
+      it('should validate multiple fields', () => {
+        const results = [
+          { __fieldReturn: true as const, field: 'name', value: 'Alice' },
+          { __fieldReturn: true as const, field: 'age', value: 30 },
+        ];
+        const expected = [
+          { name: 'name', type: 'text' },
+          { name: 'age', type: 'number' },
+        ];
 
-      const result = await arrayTool.executor({ value: [-1, 0, 3.14, -2.5] });
-      expect(result).toEqual([-1, 0, 3.14, -2.5]);
-    });
+        const collected = collectAndValidateFieldResults(results, expected);
+        expect(collected).toEqual({ name: 'Alice', age: 30 });
+      });
 
-    it('should throw for non-array value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
+      it('should throw for missing field', () => {
+        const results = [{ __fieldReturn: true as const, field: 'name', value: 'Alice' }];
+        const expected = [
+          { name: 'name', type: 'text' },
+          { name: 'age', type: 'number' },
+        ];
 
-      await expect(arrayTool.executor({ value: 42 })).rejects.toThrow(/Expected an array/);
-    });
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/Missing field 'age'/);
+      });
 
-    it('should throw for string value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
+      it('should throw for unexpected field', () => {
+        const results = [
+          { __fieldReturn: true as const, field: 'name', value: 'Alice' },
+          { __fieldReturn: true as const, field: 'extra', value: 'unexpected' },
+        ];
+        const expected = [{ name: 'name', type: 'text' }];
 
-      await expect(arrayTool.executor({ value: '[1,2,3]' })).rejects.toThrow(/Expected an array/);
-    });
-
-    it('should throw for array with non-number element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [1, 'two', 3] })).rejects.toThrow(
-        /Expected number at index 1/
-      );
-    });
-
-    it('should throw for array with NaN', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [1, NaN, 3] })).rejects.toThrow(
-        /Expected number at index 1/
-      );
-    });
-
-    it('should throw for array with Infinity', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_NUMBER_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [1, Infinity, 3] })).rejects.toThrow(
-        /Expected number at index 1/
-      );
-    });
-  });
-
-  describe('return boolean array tool executor', () => {
-    it('should return valid boolean array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [true, false, true] });
-      expect(result).toEqual([true, false, true]);
-    });
-
-    it('should return empty array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [] });
-      expect(result).toEqual([]);
-    });
-
-    it('should return array with all true', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [true, true, true] });
-      expect(result).toEqual([true, true, true]);
-    });
-
-    it('should return array with all false', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [false, false, false] });
-      expect(result).toEqual([false, false, false]);
-    });
-
-    it('should throw for non-array value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: true })).rejects.toThrow(/Expected an array/);
-    });
-
-    it('should throw for string value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: '[true,false]' })).rejects.toThrow(
-        /Expected an array/
-      );
-    });
-
-    it('should throw for array with non-boolean element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [true, 'yes', false] })).rejects.toThrow(
-        /Expected boolean at index 1/
-      );
-    });
-
-    it('should throw for array with number element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [true, 1, false] })).rejects.toThrow(
-        /Expected boolean at index 1/
-      );
-    });
-
-    it('should throw for array with null element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_BOOLEAN_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [true, null, false] })).rejects.toThrow(
-        /Expected boolean at index 1/
-      );
+        expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/Unexpected field 'extra'/);
+      });
     });
   });
 
-  describe('return text array tool executor', () => {
-    it('should return valid text array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: ['hello', 'world', 'test'] });
-      expect(result).toEqual(['hello', 'world', 'test']);
+  describe('buildReturnInstruction', () => {
+    it('should return empty string for no fields', () => {
+      expect(buildReturnInstruction([])).toBe('');
     });
 
-    it('should return empty array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [] });
-      expect(result).toEqual([]);
+    it('should build instruction for single field', () => {
+      const instruction = buildReturnInstruction([{ name: 'value', type: 'number' }]);
+      expect(instruction).toContain('__vibe_return_field');
+      expect(instruction).toContain('"value" (number)');
     });
 
-    it('should return array with empty strings', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: ['', 'a', ''] });
-      expect(result).toEqual(['', 'a', '']);
-    });
-
-    it('should return array with unicode strings', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: ['hello', 'мир', '世界'] });
-      expect(result).toEqual(['hello', 'мир', '世界']);
-    });
-
-    it('should throw for non-array value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: 'hello' })).rejects.toThrow(/Expected an array/);
-    });
-
-    it('should throw for number value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: 123 })).rejects.toThrow(/Expected an array/);
-    });
-
-    it('should throw for array with non-string element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: ['hello', 123, 'world'] })).rejects.toThrow(
-        /Expected string at index 1/
-      );
-    });
-
-    it('should throw for array with boolean element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: ['hello', true, 'world'] })).rejects.toThrow(
-        /Expected string at index 1/
-      );
-    });
-
-    it('should throw for array with null element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: ['hello', null, 'world'] })).rejects.toThrow(
-        /Expected string at index 1/
-      );
-    });
-
-    it('should throw for array with object element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_TEXT_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: ['hello', { text: 'hi' }, 'world'] })).rejects.toThrow(
-        /Expected string at index 1/
-      );
-    });
-  });
-
-  describe('return json tool executor', () => {
-    it('should return valid object', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      const result = await jsonTool.executor({ value: { name: 'Alice', age: 30 } });
-      expect(result).toEqual({ name: 'Alice', age: 30 });
-    });
-
-    it('should return valid array', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      const result = await jsonTool.executor({ value: [1, 2, 3] });
-      expect(result).toEqual([1, 2, 3]);
-    });
-
-    it('should return empty object', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      const result = await jsonTool.executor({ value: {} });
-      expect(result).toEqual({});
-    });
-
-    it('should return empty array', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      const result = await jsonTool.executor({ value: [] });
-      expect(result).toEqual([]);
-    });
-
-    it('should return nested object', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      const nested = { user: { name: 'Bob', tags: ['a', 'b'] }, active: true };
-      const result = await jsonTool.executor({ value: nested });
-      expect(result).toEqual(nested);
-    });
-
-    it('should throw for null value', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      await expect(jsonTool.executor({ value: null })).rejects.toThrow(/Expected a JSON object or array/);
-    });
-
-    it('should throw for string value', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      await expect(jsonTool.executor({ value: 'hello' })).rejects.toThrow(/Expected a JSON object or array/);
-    });
-
-    it('should throw for number value', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      await expect(jsonTool.executor({ value: 42 })).rejects.toThrow(/Expected a JSON object or array/);
-    });
-
-    it('should throw for boolean value', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      await expect(jsonTool.executor({ value: true })).rejects.toThrow(/Expected a JSON object or array/);
-    });
-
-    it('should throw for undefined value', async () => {
-      const tools = getReturnTools();
-      const jsonTool = tools.find((t) => t.name === RETURN_JSON_TOOL)!;
-
-      await expect(jsonTool.executor({ value: undefined })).rejects.toThrow(/Expected a JSON value, got undefined/);
-    });
-  });
-
-  describe('return json array tool executor', () => {
-    it('should return valid array of objects', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [{ name: 'Alice' }, { name: 'Bob' }] });
-      expect(result).toEqual([{ name: 'Alice' }, { name: 'Bob' }]);
-    });
-
-    it('should return empty array', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [] });
-      expect(result).toEqual([]);
-    });
-
-    it('should return array with nested objects', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      const nested = [{ user: { name: 'Alice', tags: ['a'] } }, { user: { name: 'Bob', tags: ['b'] } }];
-      const result = await arrayTool.executor({ value: nested });
-      expect(result).toEqual(nested);
-    });
-
-    it('should return array with empty objects', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      const result = await arrayTool.executor({ value: [{}, {}, {}] });
-      expect(result).toEqual([{}, {}, {}]);
-    });
-
-    it('should throw for non-array value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: { name: 'Alice' } })).rejects.toThrow(
-        /Expected an array of JSON objects/
-      );
-    });
-
-    it('should throw for string value', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: 'hello' })).rejects.toThrow(
-        /Expected an array of JSON objects/
-      );
-    });
-
-    it('should throw for array with null element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [{ name: 'Alice' }, null, { name: 'Bob' }] })).rejects.toThrow(
-        /Expected object at index 1/
-      );
-    });
-
-    it('should throw for array with string element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [{ name: 'Alice' }, 'not an object', { name: 'Bob' }] })).rejects.toThrow(
-        /Expected object at index 1/
-      );
-    });
-
-    it('should throw for array with number element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [{ name: 'Alice' }, 42, { name: 'Bob' }] })).rejects.toThrow(
-        /Expected object at index 1/
-      );
-    });
-
-    it('should throw for array with boolean element', async () => {
-      const tools = getReturnTools();
-      const arrayTool = tools.find((t) => t.name === RETURN_JSON_ARRAY_TOOL)!;
-
-      await expect(arrayTool.executor({ value: [{ name: 'Alice' }, true, { name: 'Bob' }] })).rejects.toThrow(
-        /Expected object at index 1/
-      );
+    it('should build instruction for multiple fields', () => {
+      const instruction = buildReturnInstruction([
+        { name: 'name', type: 'text' },
+        { name: 'age', type: 'number' },
+      ]);
+      expect(instruction).toContain('"name" (text)');
+      expect(instruction).toContain('"age" (number)');
     });
   });
 });
@@ -665,22 +316,58 @@ describe('executeWithTools with return tools', () => {
     const executeProvider = async (): Promise<AIResponse> => ({
       content: '',
       parsedValue: '',
-      toolCalls: [{ id: 'call_1', toolName: RETURN_NUMBER_TOOL, args: { value: 42 } }],
+      toolCalls: [{ id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'value', value: 42 } }],
       stopReason: 'tool_use',
     });
 
-    const { returnValue, completedViaReturnTool, rounds } = await executeWithTools(
+    const { returnFieldResults, completedViaReturnTool, rounds } = await executeWithTools(
       request,
       tools,
       TEST_ROOT_DIR,
       executeProvider,
-      { expectedReturnTool: RETURN_NUMBER_TOOL }
+      { expectedReturnTool: RETURN_FIELD_TOOL }
     );
 
     expect(completedViaReturnTool).toBe(true);
-    expect(returnValue).toBe(42);
+    expect(returnFieldResults).toHaveLength(1);
+    expect(returnFieldResults![0]).toEqual({ __fieldReturn: true, field: 'value', value: 42 });
     expect(rounds).toHaveLength(1);
-    expect(rounds[0].results[0].result).toBe(42);
+  });
+
+  it('should collect multiple field results', async () => {
+    const tools = getReturnTools();
+
+    const request: AIRequest = {
+      operationType: 'do',
+      prompt: 'Return name and age',
+      contextText: '',
+      targetType: null,
+      model: { name: 'test', apiKey: 'key', url: null },
+    };
+
+    // AI calls return tool twice in one response
+    const executeProvider = async (): Promise<AIResponse> => ({
+      content: '',
+      parsedValue: '',
+      toolCalls: [
+        { id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'name', value: 'Alice' } },
+        { id: 'call_2', toolName: RETURN_FIELD_TOOL, args: { field: 'age', value: 30 } },
+      ],
+      stopReason: 'tool_use',
+    });
+
+    const { returnFieldResults, completedViaReturnTool } = await executeWithTools(
+      request,
+      tools,
+      TEST_ROOT_DIR,
+      executeProvider,
+      { expectedReturnTool: RETURN_FIELD_TOOL }
+    );
+
+    expect(completedViaReturnTool).toBe(true);
+    expect(returnFieldResults).toHaveLength(2);
+    expect(returnFieldResults![0]).toEqual({ __fieldReturn: true, field: 'name', value: 'Alice' });
+    expect(returnFieldResults![1]).toEqual({ __fieldReturn: true, field: 'age', value: 30 });
   });
 
   it('should retry when AI responds with text instead of tool call', async () => {
@@ -709,73 +396,25 @@ describe('executeWithTools with return tools', () => {
       return {
         content: '',
         parsedValue: '',
-        toolCalls: [{ id: 'call_1', toolName: RETURN_NUMBER_TOOL, args: { value: 42 } }],
+        toolCalls: [{ id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'value', value: 42 } }],
         stopReason: 'tool_use',
       };
     };
 
-    const { returnValue, completedViaReturnTool, rounds } = await executeWithTools(
+    const { returnFieldResults, completedViaReturnTool, rounds } = await executeWithTools(
       request,
       tools,
       TEST_ROOT_DIR,
       executeProvider,
-      { expectedReturnTool: RETURN_NUMBER_TOOL, maxRounds: 3 }
+      { expectedReturnTool: RETURN_FIELD_TOOL, maxRounds: 3 }
     );
 
     expect(callCount).toBe(2);
     expect(completedViaReturnTool).toBe(true);
-    expect(returnValue).toBe(42);
+    expect(returnFieldResults).toHaveLength(1);
     // First round has synthesized error, second round has successful tool call
     expect(rounds).toHaveLength(2);
     expect(rounds[0].results[0].error).toContain('must call');
-  });
-
-  it('should retry when return tool validation fails', async () => {
-    const tools = getReturnTools();
-
-    const request: AIRequest = {
-      operationType: 'do',
-      prompt: 'Return a number',
-      contextText: '',
-      targetType: null,
-      model: { name: 'test', apiKey: 'key', url: null },
-    };
-
-    let callCount = 0;
-    const executeProvider = async (): Promise<AIResponse> => {
-      callCount++;
-      if (callCount === 1) {
-        // First call: AI passes string instead of number
-        return {
-          content: '',
-          parsedValue: '',
-          toolCalls: [{ id: 'call_1', toolName: RETURN_NUMBER_TOOL, args: { value: 'forty-two' } }],
-          stopReason: 'tool_use',
-        };
-      }
-      // Second call: AI corrects and passes number
-      return {
-        content: '',
-        parsedValue: '',
-        toolCalls: [{ id: 'call_2', toolName: RETURN_NUMBER_TOOL, args: { value: 42 } }],
-        stopReason: 'tool_use',
-      };
-    };
-
-    const { returnValue, completedViaReturnTool, rounds } = await executeWithTools(
-      request,
-      tools,
-      TEST_ROOT_DIR,
-      executeProvider,
-      { expectedReturnTool: RETURN_NUMBER_TOOL, maxRounds: 3 }
-    );
-
-    expect(callCount).toBe(2);
-    expect(completedViaReturnTool).toBe(true);
-    expect(returnValue).toBe(42);
-    // First round has validation error, second round succeeds
-    expect(rounds).toHaveLength(2);
-    expect(rounds[0].results[0].error).toContain('Expected a number');
   });
 
   it('should not complete via return tool when not expected', async () => {
@@ -796,7 +435,7 @@ describe('executeWithTools with return tools', () => {
       stopReason: 'end',
     });
 
-    const { returnValue, completedViaReturnTool, rounds } = await executeWithTools(
+    const { returnFieldResults, completedViaReturnTool, rounds } = await executeWithTools(
       request,
       tools,
       TEST_ROOT_DIR,
@@ -805,7 +444,7 @@ describe('executeWithTools with return tools', () => {
     );
 
     expect(completedViaReturnTool).toBe(false);
-    expect(returnValue).toBeUndefined();
+    expect(returnFieldResults).toBeUndefined();
     expect(rounds).toHaveLength(0);
   });
 });

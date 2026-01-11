@@ -49,6 +49,8 @@ export function createInitialState(
     pendingTS: null,
     pendingImportedTsCall: null,
     pendingToolCall: null,
+    pendingDestructuring: null,
+    expectedFields: null,
     lastUsedModel: null,
     rootDir: options?.rootDir ?? process.cwd(),
     error: null,

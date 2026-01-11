@@ -93,11 +93,24 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return { type: 'ExportDeclaration', declaration: this.visit(decl), location: tokenLocation(ctx.Export[0]) };
   }
 
-  letDeclaration(ctx: { Let: IToken[]; Identifier: IToken[]; typeAnnotation?: CstNode[]; expression?: CstNode[] }): AST.LetDeclaration {
+  letDeclaration(ctx: { Let: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression?: CstNode[]; destructuringPattern?: CstNode[] }): AST.LetDeclaration | AST.DestructuringDeclaration {
+    // Check for destructuring pattern
+    if (ctx.destructuringPattern) {
+      const fields = this.visit(ctx.destructuringPattern) as AST.DestructuringField[];
+      return {
+        type: 'DestructuringDeclaration',
+        fields,
+        initializer: this.visit(ctx.expression!),
+        isConst: false,
+        location: tokenLocation(ctx.Let[0]),
+      };
+    }
+
+    // Regular let declaration
     const typeAnnotation = ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null;
     return {
       type: 'LetDeclaration',
-      name: ctx.Identifier[0].image,
+      name: ctx.Identifier![0].image,
       typeAnnotation,
       initializer: ctx.expression ? this.visit(ctx.expression) : null,
       location: tokenLocation(ctx.Let[0]),
@@ -112,14 +125,38 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return baseType + '[]'.repeat(bracketCount);
   }
 
-  constDeclaration(ctx: { Const: IToken[]; Identifier: IToken[]; typeAnnotation?: CstNode[]; expression: CstNode[] }): AST.ConstDeclaration {
+  constDeclaration(ctx: { Const: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression: CstNode[]; destructuringPattern?: CstNode[] }): AST.ConstDeclaration | AST.DestructuringDeclaration {
+    // Check for destructuring pattern
+    if (ctx.destructuringPattern) {
+      const fields = this.visit(ctx.destructuringPattern) as AST.DestructuringField[];
+      return {
+        type: 'DestructuringDeclaration',
+        fields,
+        initializer: this.visit(ctx.expression),
+        isConst: true,
+        location: tokenLocation(ctx.Const[0]),
+      };
+    }
+
+    // Regular const declaration
     const typeAnnotation = ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null;
     return {
       type: 'ConstDeclaration',
-      name: ctx.Identifier[0].image,
+      name: ctx.Identifier![0].image,
       typeAnnotation,
       initializer: this.visit(ctx.expression),
       location: tokenLocation(ctx.Const[0]),
+    };
+  }
+
+  destructuringPattern(ctx: { destructuringField: CstNode[] }): AST.DestructuringField[] {
+    return ctx.destructuringField.map((f) => this.visit(f));
+  }
+
+  destructuringField(ctx: { Identifier: IToken[]; typeAnnotation: CstNode[] }): AST.DestructuringField {
+    return {
+      name: ctx.Identifier[0].image,
+      type: this.visit(ctx.typeAnnotation),
     };
   }
 

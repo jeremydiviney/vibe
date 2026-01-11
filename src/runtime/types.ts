@@ -253,6 +253,12 @@ export interface PendingAI {
   vibeScopeParams?: Array<{ name: string; type: string; value: unknown }>;
 }
 
+// Expected field for destructuring/typed returns
+export interface ExpectedField {
+  name: string;
+  type: string;  // 'text' | 'number' | 'boolean' | 'json' | array types
+}
+
 // Pending compress request (for compress context mode)
 export interface PendingCompress {
   prompt: string | null;           // Custom prompt or null for default
@@ -331,6 +337,10 @@ export interface RuntimeState {
   pendingTS: PendingTS | null;
   pendingImportedTsCall: PendingImportedTsCall | null;
   pendingToolCall: PendingToolCall | null;
+
+  // Destructuring support
+  pendingDestructuring: ExpectedField[] | null;  // Fields expected from AI for destructuring
+  expectedFields: ExpectedField[] | null;        // Expected fields for current AI call (single or multi-value)
 
   // Model tracking for compress
   lastUsedModel: string | null;  // Set on model declaration, updated on AI calls
@@ -425,4 +435,7 @@ export type Instruction =
   | { op: 'declare_model'; stmt: AST.ModelDeclaration; location: SourceLocation }
 
   // AI tool call result (for context building)
-  | { op: 'ai_tool_call_result'; toolName: string; args: unknown; result: unknown; error?: string; location: SourceLocation };
+  | { op: 'ai_tool_call_result'; toolName: string; args: unknown; result: unknown; error?: string; location: SourceLocation }
+
+  // Destructuring assignment (assign multiple fields from AI result)
+  | { op: 'destructure_assign'; fields: ExpectedField[]; isConst: boolean; location: SourceLocation };

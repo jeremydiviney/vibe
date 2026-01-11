@@ -41,6 +41,29 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
   };
 }
 
+/**
+ * Destructuring declaration - evaluate initializer (AI expression) and assign fields.
+ * const {name: text, age: number} = do "..." model default
+ */
+export function execDestructuringDeclaration(
+  state: RuntimeState,
+  stmt: AST.DestructuringDeclaration
+): RuntimeState {
+  // Convert AST fields to ExpectedField format for runtime
+  const expectedFields = stmt.fields.map((f) => ({ name: f.name, type: f.type }));
+
+  return {
+    ...state,
+    // Set pendingDestructuring so AI provider knows what fields to expect
+    pendingDestructuring: expectedFields,
+    instructionStack: [
+      { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
+      { op: 'destructure_assign', fields: expectedFields, isConst: stmt.isConst, location: stmt.location },
+      ...state.instructionStack,
+    ],
+  };
+}
+
 // Model config fields in evaluation order
 const MODEL_CONFIG_FIELDS = ['modelName', 'apiKey', 'url', 'provider', 'maxRetriesOnError', 'thinkingLevel', 'tools'] as const;
 
@@ -337,6 +360,9 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
 
     case 'ConstDeclaration':
       return execConstDeclaration(state, stmt);
+
+    case 'DestructuringDeclaration':
+      return execDestructuringDeclaration(state, stmt);
 
     case 'FunctionDeclaration':
       // Functions are already collected at init, nothing to do

@@ -42,6 +42,10 @@ export class SemanticAnalyzer {
         this.visitVariableDeclaration(node, 'constant');
         break;
 
+      case 'DestructuringDeclaration':
+        this.visitDestructuringDeclaration(node);
+        break;
+
       case 'ModelDeclaration':
         this.declare(node.name, 'model', node.location);
         this.validateModelConfig(node);
@@ -224,6 +228,41 @@ export class SemanticAnalyzer {
       if (node.typeAnnotation) {
         this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
       }
+    }
+  }
+
+  private visitDestructuringDeclaration(node: AST.DestructuringDeclaration): void {
+    // Validate each field has a valid type
+    for (const field of node.fields) {
+      if (!isValidType(field.type)) {
+        this.error(`Invalid type '${field.type}' for field '${field.name}'`, node.location);
+      }
+    }
+
+    // Validate initializer is a do/vibe expression
+    if (node.initializer.type !== 'VibeExpression') {
+      this.error('Destructuring assignment requires a do or vibe expression', node.location);
+    }
+
+    // Check for duplicate field names and collect unique ones
+    const seenNames = new Set<string>();
+    const uniqueFields: typeof node.fields = [];
+    for (const field of node.fields) {
+      if (seenNames.has(field.name)) {
+        this.error(`Duplicate field '${field.name}' in destructuring pattern`, node.location);
+      } else {
+        seenNames.add(field.name);
+        uniqueFields.push(field);
+      }
+    }
+
+    // Visit the initializer expression
+    this.visitExpression(node.initializer);
+
+    // Register only unique fields as variables in scope
+    const kind = node.isConst ? 'constant' : 'variable';
+    for (const field of uniqueFields) {
+      this.declare(field.name, kind, node.location, { typeAnnotation: field.type });
     }
   }
 

@@ -48,6 +48,7 @@ export type Statement =
   | ExportDeclaration
   | LetDeclaration
   | ConstDeclaration
+  | DestructuringDeclaration
   | ModelDeclaration
   | FunctionDeclaration
   | ToolDeclaration
@@ -87,6 +88,20 @@ export interface ConstDeclaration extends BaseNode {
   name: string;
   typeAnnotation: string | null;
   initializer: Expression;
+}
+
+/** A single field in a destructuring pattern: name: type */
+export interface DestructuringField {
+  name: string;
+  type: string;  // 'text' | 'number' | 'boolean' | 'json' | array types
+}
+
+/** Destructuring declaration: const {a: text, b: number} = expr */
+export interface DestructuringDeclaration extends BaseNode {
+  type: 'DestructuringDeclaration';
+  fields: DestructuringField[];
+  initializer: Expression;
+  isConst: boolean;  // true for const, false for let
 }
 
 export interface ModelDeclaration extends BaseNode {

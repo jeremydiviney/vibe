@@ -14,9 +14,13 @@ import { buildVibeMessages, type VibeScopeParam } from './ai/formatters';
 import {
   getReturnTools,
   shouldUseReturnTool,
-  getReturnToolName,
   isReturnToolCall,
+  buildReturnInstruction,
+  collectAndValidateFieldResults,
+  isFieldReturnResult,
+  RETURN_FIELD_TOOL,
 } from './ai/return-tools';
+import type { ExpectedField } from './types';
 
 /**
  * Get model value from runtime state by model name.
@@ -125,13 +129,24 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const allTools = [...returnTools, ...modelTools];
       const toolSchemas: ToolSchema[] = allTools.map((t) => t.schema);
 
-      // Determine if this request should use tool-based return
-      const useToolReturn = shouldUseReturnTool(targetType);
-      const returnToolName = useToolReturn ? getReturnToolName(targetType) : null;
+      // Build expected fields for return validation
+      // Priority: 1) pendingDestructuring (multi-value), 2) targetType (single-value)
+      let expectedFields: ExpectedField[] | null = null;
+      if (state.pendingDestructuring) {
+        // Multi-value destructuring: const {name: text, age: number} = do "..."
+        expectedFields = state.pendingDestructuring.map((f) => ({ name: f.name, type: f.type }));
+      } else if (shouldUseReturnTool(targetType)) {
+        // Single-value typed return: const x: number = do "..."
+        expectedFields = [{ name: 'value', type: targetType! }];
+      }
 
-      // Append return tool instruction to prompt if needed
-      const finalPrompt = returnToolName
-        ? `${prompt}\n\nIMPORTANT: You MUST call the ${returnToolName} tool with your answer. Do not respond with plain text.`
+      // Determine if this request should use tool-based return
+      const useToolReturn = expectedFields !== null && expectedFields.length > 0;
+      const returnToolName = useToolReturn ? RETURN_FIELD_TOOL : null;
+
+      // Append return instruction to prompt if we have expected fields
+      const finalPrompt = expectedFields
+        ? prompt + buildReturnInstruction(expectedFields)
         : prompt;
 
       // Build unified AI context (single source of truth)
@@ -172,7 +187,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // 'do'/'compress' = single round (maxRounds: 1), 'vibe' = multi-turn (maxRounds: 10)
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const isDo = aiType === 'do' || aiType === 'compress';
-      const { response, rounds, returnValue, completedViaReturnTool } = await executeWithTools(
+      const { response, rounds, returnFieldResults, completedViaReturnTool } = await executeWithTools(
         request,
         allTools,
         state.rootDir,
@@ -202,8 +217,14 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // Determine final value
       let finalValue: unknown;
       if (useToolReturn) {
-        if (completedViaReturnTool) {
-          finalValue = returnValue;
+        if (completedViaReturnTool && returnFieldResults) {
+          // Filter and validate field return results
+          const fieldResults = returnFieldResults.filter(isFieldReturnResult);
+          if (fieldResults.length === 0) {
+            throw new Error('No valid field return results from AI');
+          }
+          // Validate and collect all fields
+          finalValue = collectAndValidateFieldResults(fieldResults, expectedFields!);
         } else {
           // After max retries, AI still didn't call return tool
           throw new Error(`AI failed to call ${returnToolName} after multiple attempts`);

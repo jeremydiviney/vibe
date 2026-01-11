@@ -21,8 +21,8 @@ export interface ToolLoopResult {
   response: AIResponse;
   /** Tool execution rounds */
   rounds: ToolRoundResult[];
-  /** Value from return tool (if called successfully) */
-  returnValue?: unknown;
+  /** All values from return tool calls (for multi-field destructuring) */
+  returnFieldResults?: unknown[];
   /** Whether execution completed via return tool */
   completedViaReturnTool?: boolean;
 }
@@ -108,7 +108,7 @@ export async function executeWithTools(
   let request = initialRequest;
   let response = await executeProvider(request);
   let roundCount = 0;
-  let returnValue: unknown;
+  let returnFieldResults: unknown[] = [];
   let completedViaReturnTool = false;
 
   // Continue while there are tool calls to execute (or we need to retry for missing return tool)
@@ -126,20 +126,20 @@ export async function executeWithTools(
         results,
       });
 
-      // Check if a return tool was called successfully
+      // Collect all return tool results from this round
       for (const call of response.toolCalls) {
         if (isReturnToolCall(call.toolName)) {
           const result = results.find((r) => r.toolCallId === call.id);
           if (result && result.error === undefined) {
-            // Return tool succeeded - extract value
-            returnValue = result.result;
+            // Return tool succeeded - collect result
+            returnFieldResults.push(result.result);
             completedViaReturnTool = true;
           }
           // If return tool errored, error flows back to AI for retry
         }
       }
 
-      // If we got a successful return value, we're done
+      // If we got return tool results, we're done (AI returns all fields in one round)
       if (completedViaReturnTool) {
         break;
       }
@@ -187,7 +187,12 @@ export async function executeWithTools(
     console.warn(`Tool loop hit max rounds (${maxRounds}), stopping with pending tool calls`);
   }
 
-  return { response, rounds, returnValue, completedViaReturnTool };
+  return {
+    response,
+    rounds,
+    returnFieldResults: returnFieldResults.length > 0 ? returnFieldResults : undefined,
+    completedViaReturnTool,
+  };
 }
 
 /**

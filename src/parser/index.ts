@@ -78,15 +78,31 @@ class VibeParser extends CstParser {
 
   private letDeclaration = this.RULE('letDeclaration', () => {
     this.CONSUME(T.Let);
-    this.CONSUME(T.Identifier);
-    this.OPTION(() => {
-      this.CONSUME(T.Colon);
-      this.SUBRULE(this.typeAnnotation);
-    });
-    this.OPTION2(() => {
-      this.CONSUME(T.Equals);
-      this.SUBRULE(this.expression);
-    });
+    this.OR([
+      // Destructuring: let { name: type, name: type } = expression
+      {
+        GATE: () => this.LA(1).tokenType === T.LBrace,
+        ALT: () => {
+          this.SUBRULE(this.destructuringPattern);
+          this.CONSUME(T.Equals);
+          this.SUBRULE(this.expression);
+        },
+      },
+      // Regular: let name : type = expression
+      {
+        ALT: () => {
+          this.CONSUME(T.Identifier);
+          this.OPTION(() => {
+            this.CONSUME(T.Colon);
+            this.SUBRULE(this.typeAnnotation);
+          });
+          this.OPTION2(() => {
+            this.CONSUME2(T.Equals);
+            this.SUBRULE2(this.expression);
+          });
+        },
+      },
+    ]);
   });
 
   // Type annotation: text, json, prompt, boolean, number, model, or any of these followed by []
@@ -108,13 +124,47 @@ class VibeParser extends CstParser {
 
   private constDeclaration = this.RULE('constDeclaration', () => {
     this.CONSUME(T.Const);
-    this.CONSUME(T.Identifier);
-    this.OPTION(() => {
-      this.CONSUME(T.Colon);
-      this.SUBRULE(this.typeAnnotation);
+    this.OR([
+      // Destructuring: const { name: type, name: type } = expression
+      {
+        GATE: () => this.LA(1).tokenType === T.LBrace,
+        ALT: () => {
+          this.SUBRULE(this.destructuringPattern);
+          this.CONSUME(T.Equals);
+          this.SUBRULE(this.expression);
+        },
+      },
+      // Regular: const name : type = expression
+      {
+        ALT: () => {
+          this.CONSUME(T.Identifier);
+          this.OPTION(() => {
+            this.CONSUME(T.Colon);
+            this.SUBRULE(this.typeAnnotation);
+          });
+          this.CONSUME2(T.Equals);
+          this.SUBRULE2(this.expression);
+        },
+      },
+    ]);
+  });
+
+  // Destructuring pattern: { name: type, name: type, ... }
+  private destructuringPattern = this.RULE('destructuringPattern', () => {
+    this.CONSUME(T.LBrace);
+    this.SUBRULE(this.destructuringField);
+    this.MANY(() => {
+      this.CONSUME(T.Comma);
+      this.SUBRULE2(this.destructuringField);
     });
-    this.CONSUME(T.Equals);
-    this.SUBRULE(this.expression);
+    this.CONSUME(T.RBrace);
+  });
+
+  // Single destructuring field: name: type
+  private destructuringField = this.RULE('destructuringField', () => {
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Colon);
+    this.SUBRULE(this.typeAnnotation);
   });
 
   private modelDeclaration = this.RULE('modelDeclaration', () => {
