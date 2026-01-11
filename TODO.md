@@ -96,8 +96,8 @@
     - [x] Watch expressions
     - [x] Exception breakpoints
   - [ ] Vibe-Specific Debug Features
-    - [ ] Show `.toolCalls` for VibeValue variables in debug inspector
-    - [ ] Show `.err` field inline for variables with errors
+    - [x] Show `.toolCalls` for VibeValue variables in debug inspector
+    - [x] Show `.err` field inline for variables with errors
     - [ ] Context visualization panel (local vs default context)
     - [ ] Show context entries with their values
     - [ ] Highlight which context is active for current scope
