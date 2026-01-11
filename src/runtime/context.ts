@@ -21,7 +21,7 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
           return [];
         }
         // Use snapshotted value from entry, resolving VibeValue to its value
-        const contextVar: ContextEntry = {
+        const contextVar: ContextVariable = {
           kind: 'variable',
           name: entry.name,
           value: resolveValue(entry.value),  // Resolve VibeValue to primitive
@@ -29,11 +29,8 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
           isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,
           frameDepth: frameIndex,
+          source: entry.source ?? null,  // Always include source, use null as default
         };
-        // Only include source if defined
-        if (entry.source !== undefined) {
-          (contextVar as ContextVariable).source = entry.source;
-        }
         return [contextVar];
       } else if (entry.kind === 'prompt') {
         const contextPrompt: ContextPrompt = {
@@ -103,7 +100,7 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
           return [];
         }
         // Use snapshotted value from entry, resolving VibeValue to its value
-        const contextVar: ContextEntry = {
+        const contextVar: ContextVariable = {
           kind: 'variable',
           name: entry.name,
           value: resolveValue(entry.value),  // Resolve VibeValue to primitive
@@ -111,11 +108,8 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
           isConst: entry.isConst,  // Use snapshotted isConst
           frameName: frame.name,
           frameDepth,
+          source: entry.source ?? null,  // Always include source, use null as default
         };
-        // Only include source if defined
-        if (entry.source !== undefined) {
-          (contextVar as ContextVariable).source = entry.source;
-        }
         return [contextVar];
       } else if (entry.kind === 'prompt') {
         const contextPrompt: ContextPrompt = {

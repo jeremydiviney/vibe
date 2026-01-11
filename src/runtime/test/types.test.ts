@@ -80,11 +80,13 @@ describe('Runtime - Type Validation', () => {
     await expect(runtime.run()).rejects.toThrow("Variable 'x': invalid JSON string");
   });
 
-  test('json type throws on primitive null', async () => {
+  test('json type accepts null (uninitialized)', async () => {
     const runtime = createRuntime(`
       let x: json
     `);
-    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
+    await runtime.run();
+    // Uninitialized json variable gets null, which is valid for any typed variable
+    expect(runtime.getValue('x')).toBe(null);
   });
 
   // ============================================================================

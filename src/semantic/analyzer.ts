@@ -136,6 +136,7 @@ export class SemanticAnalyzer {
       case 'StringLiteral':
       case 'BooleanLiteral':
       case 'NumberLiteral':
+      case 'NullLiteral':
         // Literals are always valid
         break;
 
@@ -215,6 +216,20 @@ export class SemanticAnalyzer {
     node: AST.LetDeclaration | AST.ConstDeclaration,
     kind: 'variable' | 'constant'
   ): void {
+    // Check for null initializer rules
+    const isNullInitializer = node.initializer?.type === 'NullLiteral';
+
+    if (isNullInitializer) {
+      if (kind === 'constant') {
+        // const x = null or const x: T = null - both errors
+        this.error(`Cannot initialize const with null - const values cannot be reassigned`, node.location);
+      } else if (!node.typeAnnotation) {
+        // let x = null - error (can't infer type)
+        this.error(`Cannot infer type from null - provide a type annotation: let ${node.name}: <type> = null`, node.location);
+      }
+      // let x: T = null - OK (falls through)
+    }
+
     // Model type variables must be const (immutable)
     if (node.typeAnnotation === 'model' && kind === 'variable') {
       this.error(`Variables with type 'model' must be declared with 'const', not 'let'`, node.location);
@@ -673,6 +688,8 @@ export class SemanticAnalyzer {
         return 'boolean';
       case 'NumberLiteral':
         return 'number';
+      case 'NullLiteral':
+        return 'null';  // Special type - compatible with any typed variable
       case 'ObjectLiteral':
         return 'json';
       case 'ArrayLiteral':

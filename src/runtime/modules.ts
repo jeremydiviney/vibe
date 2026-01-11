@@ -277,6 +277,8 @@ function evaluateSimpleLiteral(expr: AST.Expression | null): unknown {
       return expr.value;
     case 'BooleanLiteral':
       return expr.value;
+    case 'NullLiteral':
+      return null;
     case 'ArrayLiteral':
       return expr.elements.map(e => evaluateSimpleLiteral(e));
     case 'ObjectLiteral':

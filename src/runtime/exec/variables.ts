@@ -70,15 +70,17 @@ export function execDeclareVar(
 
   const rawValue = initialValue !== undefined ? initialValue : state.lastResult;
 
-  // If value is already a VibeValue (e.g., from AI response), extract its properties
+  // If value is already a VibeValue (e.g., from AI response or error), extract its properties
   let innerValue: unknown;
   let toolCalls: ToolCallRecord[] = [];
-  let source = initialValue !== undefined ? undefined : state.lastResultSource;
+  let source = initialValue !== undefined ? null : state.lastResultSource;
+  let err: VibeValue['err'] = null;
 
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
     toolCalls = rawValue.toolCalls;
     source = rawValue.source ?? source;
+    err = rawValue.err;  // Preserve error from operations like null arithmetic
   } else {
     innerValue = rawValue;
   }
@@ -90,7 +92,7 @@ export function execDeclareVar(
 
   const newLocals = {
     ...frame.locals,
-    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls }),
+    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls, err }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking
@@ -108,7 +110,7 @@ export function execDeclareVar(
 
   const newState: RuntimeState = {
     ...state,
-    lastResultSource: undefined,  // Clear after consuming
+    lastResultSource: null,  // Clear after consuming
     callStack: [
       ...state.callStack.slice(0, -1),
       { ...frame, locals: newLocals, orderedEntries: newOrderedEntries },
@@ -146,15 +148,17 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
   const rawValue = state.lastResult;
 
-  // If value is already a VibeValue (e.g., from AI response), extract its properties
+  // If value is already a VibeValue (e.g., from AI response or error), extract its properties
   let innerValue: unknown;
   let toolCalls: ToolCallRecord[] = [];
   let source = state.lastResultSource;
+  let err: VibeValue['err'] = null;
 
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
     toolCalls = rawValue.toolCalls;
     source = rawValue.source ?? source;
+    err = rawValue.err;  // Preserve error from operations like null arithmetic
   } else {
     innerValue = rawValue;
   }
@@ -176,12 +180,12 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
     const newGlobals = {
       ...module.globals,
-      [name]: { ...variable, value: validatedValue, source, toolCalls },
+      [name]: { ...variable, value: validatedValue, source, toolCalls, err },
     };
 
     return {
       ...state,
-      lastResultSource: undefined,
+      lastResultSource: null,
       vibeModules: {
         ...state.vibeModules,
         [currentModulePath]: { ...module, globals: newGlobals },
@@ -202,7 +206,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
-    [name]: { ...variable, value: validatedValue, source, toolCalls },
+    [name]: { ...variable, value: validatedValue, source, toolCalls, err },
   };
 
   // Add assignment to ordered entries with snapshotted value for context tracking
@@ -222,7 +226,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   // Update the correct frame in the call stack
   return {
     ...state,
-    lastResultSource: undefined,  // Clear after consuming
+    lastResultSource: null,  // Clear after consuming
     callStack: [
       ...state.callStack.slice(0, frameIndex),
       { ...frame, locals: newLocals, orderedEntries: newOrderedEntries },

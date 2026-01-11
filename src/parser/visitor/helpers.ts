@@ -194,6 +194,13 @@ export function makeBooleanLiteral(token: IToken, value: boolean): AST.BooleanLi
   };
 }
 
+export function makeNullLiteral(token: IToken): AST.NullLiteral {
+  return {
+    type: 'NullLiteral',
+    location: tokenLocation(token),
+  };
+}
+
 export function makeIdentifier(token: IToken): AST.Identifier {
   return {
     type: 'Identifier',

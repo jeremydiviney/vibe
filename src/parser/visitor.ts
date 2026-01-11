@@ -13,6 +13,7 @@ import {
   makeTemplateLiteral,
   makeNumberLiteral,
   makeBooleanLiteral,
+  makeNullLiteral,
   makeIdentifier,
   makeTsBlock,
   makeCallExpression,
@@ -623,6 +624,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     NumberLiteral?: IToken[];
     True?: IToken[];
     False?: IToken[];
+    Null?: IToken[];
     Identifier?: IToken[];
     objectLiteralExpr?: CstNode[];
     arrayLiteral?: CstNode[];
@@ -634,6 +636,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.NumberLiteral) return makeNumberLiteral(ctx.NumberLiteral[0]);
     if (ctx.True) return makeBooleanLiteral(ctx.True[0], true);
     if (ctx.False) return makeBooleanLiteral(ctx.False[0], false);
+    if (ctx.Null) return makeNullLiteral(ctx.Null[0]);
     if (ctx.objectLiteralExpr) return this.visit(ctx.objectLiteralExpr);
     if (ctx.arrayLiteral) return this.visit(ctx.arrayLiteral);
     if (ctx.Identifier) return makeIdentifier(ctx.Identifier[0]);

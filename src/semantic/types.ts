@@ -28,6 +28,9 @@ export function typesCompatible(sourceType: string, targetType: string): boolean
   // Exact match
   if (sourceType === targetType) return true;
 
+  // null is compatible with any type (null can be assigned to any typed variable)
+  if (sourceType === 'null') return true;
+
   // text and prompt are compatible
   if ((sourceType === 'text' || sourceType === 'prompt') &&
       (targetType === 'text' || targetType === 'prompt')) {

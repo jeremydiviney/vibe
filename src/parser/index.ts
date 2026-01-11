@@ -620,7 +620,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.CONSUME(T.StringLiteral) },
       { ALT: () => this.CONSUME(T.TemplateLiteral) },
       { ALT: () => this.CONSUME(T.NumberLiteral) },
-      { ALT: () => this.CONSUME(T.True) }, { ALT: () => this.CONSUME(T.False) },
+      { ALT: () => this.CONSUME(T.True) }, { ALT: () => this.CONSUME(T.False) }, { ALT: () => this.CONSUME(T.Null) },
       { ALT: () => this.SUBRULE(this.objectLiteralExpr) },
       { ALT: () => this.SUBRULE(this.arrayLiteral) },
       { ALT: () => this.CONSUME(T.Identifier) },

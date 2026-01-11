@@ -32,6 +32,11 @@ export function validateAndCoerce(
     value = resolveValue(value);
   }
 
+  // null is valid for any typed variable
+  if (value === null) {
+    return { value: null, inferredType: type };
+  }
+
   // If no type annotation, infer from JavaScript type
   if (!type) {
     // For VibeValue, infer type from the underlying value, not the wrapper

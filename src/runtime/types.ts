@@ -19,7 +19,7 @@ export type RuntimeStatus =
   | 'error';
 
 // Source of a variable's value
-export type ValueSource = 'ai' | 'user' | undefined;
+export type ValueSource = 'ai' | 'user' | null;
 
 // ============================================================================
 // VibeValue - Unified value wrapper with error handling
@@ -41,7 +41,7 @@ export interface VibeValue {
   toolCalls: ToolCallRecord[];       // AI tool calls (empty array for non-AI operations)
   isConst: boolean;                  // true for const, false for let
   typeAnnotation: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
-  source?: ValueSource;              // 'ai', 'user', or undefined
+  source: ValueSource;               // 'ai', 'user', or null (no source)
 }
 
 // Type guard for VibeValue
@@ -56,7 +56,7 @@ export function isVibeValue(val: unknown): val is VibeValue {
   );
 }
 
-// Create a successful VibeValue (no error)
+// Create a VibeValue (optionally with error for preserving errors through assignments)
 export function createVibeValue(
   value: unknown,
   options: {
@@ -64,15 +64,16 @@ export function createVibeValue(
     typeAnnotation?: VibeType;
     source?: ValueSource;
     toolCalls?: ToolCallRecord[];
+    err?: VibeError | null;
   } = {}
 ): VibeValue {
   return {
     value,
-    err: null,
+    err: options.err ?? null,
     toolCalls: options.toolCalls ?? [],
     isConst: options.isConst ?? false,
     typeAnnotation: options.typeAnnotation ?? null,
-    source: options.source,
+    source: options.source ?? null,
   };
 }
 
@@ -94,12 +95,12 @@ export function createVibeError(
     stack: isErrorObject ? error.stack : undefined,
   };
   return {
-    value: undefined,
+    value: null,
     err,
     toolCalls: [],
     isConst: options.isConst ?? false,
     typeAnnotation: options.typeAnnotation ?? null,
-    source: undefined,
+    source: null,
   };
 }
 
@@ -116,12 +117,12 @@ export function propagateError(
 ): VibeValue {
   if (source.err) {
     return {
-      value: undefined,
+      value: null,
       err: source.err,
       toolCalls: [],
       isConst: options.isConst ?? false,
       typeAnnotation: options.typeAnnotation ?? null,
-      source: options.source,
+      source: options.source ?? null,
     };
   }
   return createVibeValue(value, options);
@@ -141,12 +142,12 @@ export function propagateErrors(
   for (const src of sources) {
     if (src.err) {
       return {
-        value: undefined,
+        value: null,
         err: src.err,
         toolCalls: [],
         isConst: options.isConst ?? false,
         typeAnnotation: options.typeAnnotation ?? null,
-        source: options.source,
+        source: options.source ?? null,
       };
     }
   }
@@ -174,7 +175,7 @@ export interface ContextVariable {
   value: unknown;
   type: 'text' | 'json' | 'boolean' | 'number' | null;
   isConst: boolean;
-  source?: ValueSource;   // Where the value came from (AI response, user input, or code)
+  source: ValueSource;    // Where the value came from (AI response, user input, or null for code)
   // Call stack location info (helps AI understand variable scope)
   frameName: string;      // Name of the function/scope (e.g., "main", "processData")
   frameDepth: number;     // 0 = deepest/current frame, higher = older frames

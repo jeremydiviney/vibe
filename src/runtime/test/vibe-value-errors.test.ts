@@ -27,7 +27,7 @@ describe('VibeValue Error Handling', () => {
       expect(vibeValue.err).not.toBe(null);
       expect(vibeValue.err?.message).toBe('Something went wrong');
       expect(vibeValue.err?.type).toBe('Error');
-      expect(vibeValue.value).toBe(undefined);
+      expect(vibeValue.value).toBe(null);  // Error values have null, not undefined
     });
 
     it('creates VibeValue with error from Error object', () => {
@@ -65,7 +65,7 @@ describe('VibeValue Error Handling', () => {
 
       expect(result.err).not.toBe(null);
       expect(result.err?.message).toBe('Left failed');
-      expect(result.value).toBe(undefined);
+      expect(result.value).toBe(null);  // Error propagation uses null, not undefined
     });
 
     it('returns first error when right operand has error', () => {
@@ -225,6 +225,7 @@ describe('VibeValue Error Handling', () => {
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
+        source: null,
       };
       const rightValue: VibeValue = {
         value: 5,
@@ -232,6 +233,7 @@ describe('VibeValue Error Handling', () => {
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
+        source: null,
       };
 
       const result = propagateErrors([leftError, rightValue], null);
@@ -245,6 +247,7 @@ describe('VibeValue Error Handling', () => {
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
+        source: null,
       };
       const rightError: VibeValue = {
         value: null,
@@ -252,6 +255,7 @@ describe('VibeValue Error Handling', () => {
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
+        source: null,
       };
 
       const result = propagateErrors([leftValue, rightError], null);
@@ -265,6 +269,7 @@ describe('VibeValue Error Handling', () => {
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
+        source: null,
       };
       const rightError: VibeValue = {
         value: null,
@@ -272,6 +277,7 @@ describe('VibeValue Error Handling', () => {
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
+        source: null,
       };
 
       const result = propagateErrors([leftError, rightError], null);

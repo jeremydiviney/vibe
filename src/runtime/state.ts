@@ -38,7 +38,7 @@ export function createInitialState(
     instructionStack,
     valueStack: [],
     lastResult: null,
-    lastResultSource: undefined,
+    lastResultSource: null,
     aiHistory: [],
     executionLog: [],
     logAiInteractions: options?.logAiInteractions ?? false,
@@ -232,10 +232,13 @@ export function resumeWithTsResult(state: RuntimeState, result: unknown): Runtim
     throw new Error('Cannot resume: not awaiting TypeScript result');
   }
 
+  // Normalize undefined to null for Vibe's single null concept
+  const normalizedResult = result === undefined ? null : result;
+
   return {
     ...state,
     status: 'running',
-    lastResult: result,
+    lastResult: normalizedResult,
     pendingTS: null,
     executionLog: [
       ...state.executionLog,
@@ -243,7 +246,7 @@ export function resumeWithTsResult(state: RuntimeState, result: unknown): Runtim
         timestamp: Date.now(),
         instructionType: 'ts_eval_result',
         details: { params: state.pendingTS.params },
-        result,
+        result: normalizedResult,
       },
     ],
   };
@@ -255,10 +258,13 @@ export function resumeWithImportedTsResult(state: RuntimeState, result: unknown)
     throw new Error('Cannot resume: not awaiting imported TS function result');
   }
 
+  // Normalize undefined to null for Vibe's single null concept
+  const normalizedResult = result === undefined ? null : result;
+
   return {
     ...state,
     status: 'running',
-    lastResult: result,
+    lastResult: normalizedResult,
     pendingImportedTsCall: null,
     executionLog: [
       ...state.executionLog,
@@ -266,7 +272,7 @@ export function resumeWithImportedTsResult(state: RuntimeState, result: unknown)
         timestamp: Date.now(),
         instructionType: 'imported_ts_call_result',
         details: { funcName: state.pendingImportedTsCall.funcName },
-        result,
+        result: normalizedResult,
       },
     ],
   };

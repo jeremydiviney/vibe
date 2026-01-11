@@ -210,6 +210,7 @@ export type Expression =
   | StringLiteral
   | TemplateLiteral
   | BooleanLiteral
+  | NullLiteral
   | NumberLiteral
   | ObjectLiteral
   | ArrayLiteral
@@ -242,6 +243,10 @@ export interface TemplateLiteral extends BaseNode {
 export interface BooleanLiteral extends BaseNode {
   type: 'BooleanLiteral';
   value: boolean;
+}
+
+export interface NullLiteral extends BaseNode {
+  type: 'NullLiteral';
 }
 
 export interface NumberLiteral extends BaseNode {

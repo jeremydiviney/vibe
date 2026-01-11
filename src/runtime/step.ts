@@ -1,7 +1,7 @@
 // Core stepping and instruction execution
 
 import type { RuntimeState, Instruction, StackFrame, FrameEntry } from './types';
-import { isVibeValue, resolveValue } from './types';
+import { isVibeValue, resolveValue, createVibeError } from './types';
 import type { ContextMode } from '../ast';
 import { buildLocalContext, buildGlobalContext } from './context';
 import { execDeclareVar, execAssignVar } from './exec/variables';
@@ -551,16 +551,38 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
       // Error propagation: if either operand is a VibeValue with error, propagate it
       if (isVibeValue(rawLeft) && rawLeft.err) {
-        return { ...state, valueStack: newStack, lastResult: rawLeft.err };
+        return { ...state, valueStack: newStack, lastResult: rawLeft };
       }
       if (isVibeValue(rawRight) && rawRight.err) {
-        return { ...state, valueStack: newStack, lastResult: rawRight.err };
+        return { ...state, valueStack: newStack, lastResult: rawRight };
       }
 
       // Auto-unwrap VibeValue for operations
       const left = resolveValue(rawLeft);
       const right = resolveValue(rawRight);
-      const result = evaluateBinaryOp(instruction.operator, left, right);
+
+      // Handle null in operations
+      const op = instruction.operator;
+
+      // String concatenation with + - coerce null to empty string
+      if (op === '+' && (typeof left === 'string' || typeof right === 'string')) {
+        const leftStr = left === null ? '' : String(left);
+        const rightStr = right === null ? '' : String(right);
+        return { ...state, valueStack: newStack, lastResult: leftStr + rightStr };
+      }
+
+      // Arithmetic operations with null - create error
+      if (left === null || right === null) {
+        if (op === '-' || op === '*' || op === '/' || op === '%' || (op === '+' && typeof left !== 'string' && typeof right !== 'string')) {
+          const errorValue = createVibeError(
+            `Cannot perform arithmetic operation '${op}' with null`,
+            instruction.location
+          );
+          return { ...state, valueStack: newStack, lastResult: errorValue };
+        }
+      }
+
+      const result = evaluateBinaryOp(op, left, right);
       return { ...state, valueStack: newStack, lastResult: result };
     }
 
@@ -569,12 +591,23 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
       // Error propagation: if operand is VibeValue with error, propagate it
       if (isVibeValue(rawOperand) && rawOperand.err) {
-        return { ...state, lastResult: rawOperand.err };
+        return { ...state, lastResult: rawOperand };
       }
 
       // Auto-unwrap VibeValue for operations
       const operand = resolveValue(rawOperand);
-      const result = evaluateUnaryOp(instruction.operator, operand);
+      const op = instruction.operator;
+
+      // Unary minus with null - create error
+      if (operand === null && op === '-') {
+        const errorValue = createVibeError(
+          `Cannot perform unary '${op}' on null`,
+          instruction.location
+        );
+        return { ...state, lastResult: errorValue };
+      }
+
+      const result = evaluateUnaryOp(op, operand);
       return { ...state, lastResult: result };
     }
 

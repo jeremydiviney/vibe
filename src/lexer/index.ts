@@ -50,6 +50,7 @@ export const Else = token({ name: 'Else', pattern: /else/, longer_alt: Identifie
 export const While = token({ name: 'While', pattern: /while/, longer_alt: Identifier });
 export const True = token({ name: 'True', pattern: /true/, longer_alt: Identifier });
 export const False = token({ name: 'False', pattern: /false/, longer_alt: Identifier });
+export const Null = token({ name: 'Null', pattern: /null/, longer_alt: Identifier });
 export const Model = token({ name: 'Model', pattern: /model/, longer_alt: Identifier });
 export const Default = token({ name: 'Default', pattern: /default/, longer_alt: Identifier });
 export const Local = token({ name: 'Local', pattern: /local/, longer_alt: Identifier });
@@ -267,6 +268,7 @@ export const allTokens = [
   Not,
   True,
   False,
+  Null,
   Model,
   Default,
   Local,

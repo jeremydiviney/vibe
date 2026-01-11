@@ -371,6 +371,9 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
     case 'NumberLiteral':
       return { ...state, lastResult: expr.value };
 
+    case 'NullLiteral':
+      return { ...state, lastResult: null };
+
     case 'ObjectLiteral':
       return execObjectLiteral(state, expr);
 
