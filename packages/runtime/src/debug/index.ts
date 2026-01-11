@@ -113,6 +113,28 @@ export {
   cleanupAllTempBreakpoints,
 } from './handoff-manager';
 
+// Advanced debug features
+export {
+  type AdvancedBreakpoint,
+  type WatchExpression,
+  type ExceptionBreakpointConfig,
+  type AdvancedDebugState,
+  createAdvancedDebugState,
+  setAdvancedBreakpoint,
+  removeAdvancedBreakpoint,
+  getAdvancedBreakpoint,
+  evaluateCondition,
+  checkHitCondition,
+  shouldBreakpointTrigger,
+  interpolateLogMessage,
+  addWatchExpression,
+  removeWatchExpression,
+  evaluateWatchExpressions,
+  setExceptionBreakpoints,
+  shouldBreakOnException,
+  flushLogOutput,
+} from './advanced-features';
+
 // Re-export debug-core types for convenience
 export type {
   Breakpoint,
