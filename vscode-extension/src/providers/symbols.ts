@@ -76,6 +76,27 @@ function statementToSymbol(statement: AST.Statement): DocumentSymbol | null {
         []
       );
 
+    case 'DestructuringDeclaration':
+      // Create symbols for each destructured field
+      const fieldSymbols = statement.fields.map(field =>
+        createSymbol(
+          field.name,
+          statement.isConst ? SymbolKind.Constant : SymbolKind.Variable,
+          statement.location,
+          field.type,
+          []
+        )
+      );
+      // Return a container symbol with children
+      const fieldNames = statement.fields.map(f => f.name).join(', ');
+      return createSymbol(
+        `{${fieldNames}}`,
+        SymbolKind.Struct,
+        statement.location,
+        statement.isConst ? 'const destructuring' : 'let destructuring',
+        fieldSymbols
+      );
+
     case 'ExportDeclaration':
       // Unwrap the export and mark it
       const inner = statementToSymbol(statement.declaration);

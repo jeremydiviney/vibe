@@ -5,9 +5,10 @@ import { findNodeAtPosition, getNodeDescription } from '../utils/ast-utils';
 
 // Keyword documentation
 const keywordDocs: Record<string, string> = {
-  vibe: 'AI expression - sends a prompt to an AI model.\n\nSyntax: `vibe <prompt> <model> <context>`',
-  let: 'Declare a mutable variable.\n\nSyntax: `let name: type = value`',
-  const: 'Declare an immutable constant.\n\nSyntax: `const name: type = value`',
+  vibe: 'AI expression - sends a prompt to an AI model with multi-turn tool calling.\n\nSyntax: `vibe <prompt> <model> <context>`',
+  do: 'AI expression - single-round AI call (executes tools once, no loop back).\n\nSyntax: `do <prompt> <model> <context>`',
+  let: 'Declare a mutable variable.\n\nSyntax: `let name: type = value`\n\nDestructuring: `let {name: text, age: number} = do "..." model`',
+  const: 'Declare an immutable constant.\n\nSyntax: `const name: type = value`\n\nDestructuring: `const {name: text, age: number} = do "..." model`',
   function: 'Define a function.\n\nSyntax: `function name(params): returnType { body }`',
   tool: 'Define an AI-callable tool.\n\nSyntax: `tool name(params): returnType @description "..." { body }`',
   model: 'Define an AI model configuration.\n\nSyntax: `model name = { provider: "...", modelName: "..." }`',

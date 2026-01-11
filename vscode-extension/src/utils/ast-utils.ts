@@ -2,7 +2,7 @@ import type * as AST from '../../../src/ast';
 
 interface NodeInfo {
   node: AST.Node;
-  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'identifier';
+  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'identifier' | 'destructured';
   name: string;
   type?: string;
   description?: string;
@@ -96,6 +96,21 @@ function findInStatement(
         };
       }
       break;
+
+    case 'DestructuringDeclaration':
+      if (statement.location.line === line) {
+        // Check if cursor is on any of the field names
+        for (const field of statement.fields) {
+          return {
+            node: statement,
+            kind: 'destructured',
+            name: field.name,
+            type: field.type,
+            description: statement.isConst ? 'const destructuring' : 'let destructuring',
+          };
+        }
+      }
+      break;
   }
 
   return null;
@@ -160,6 +175,12 @@ export function getNodeDescription(info: NodeInfo): string {
     case 'parameter':
       lines.push(`**${info.name}** (parameter)`);
       if (info.type) lines.push(`Type: \`${info.type}\``);
+      break;
+
+    case 'destructured':
+      lines.push(`**${info.name}** (destructured field)`);
+      if (info.type) lines.push(`Type: \`${info.type}\``);
+      if (info.description) lines.push('', info.description);
       break;
 
     case 'identifier':

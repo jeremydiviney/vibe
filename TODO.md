@@ -18,6 +18,12 @@
 - [ ] Context orchestration functions
 - [ ] Variable visibility modifiers
 
+### Module System
+- [ ] Research multiple global scopes when importing files
+  - [ ] How to handle identical variable/function names across imported vibe files
+  - [ ] Should functions in one file have access to variables in another file's global scope?
+  - [ ] Module isolation vs shared global state
+
 ### Permission System
 - [ ] Command permission scheme (like Claude Code settings)
   - [ ] Config file format (`.vibe/settings.json` or `vibe.config.json`)
