@@ -1,5 +1,13 @@
 import type * as AST from '../../../src/ast';
 
+// Declaration info returned by findDeclaration
+export interface DeclarationInfo {
+  name: string;
+  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'destructured';
+  location: { line: number; column: number };
+  node: AST.Node;
+}
+
 interface NodeInfo {
   node: AST.Node;
   kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'identifier' | 'destructured';
@@ -189,4 +197,437 @@ export function getNodeDescription(info: NodeInfo): string {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Find the identifier name at a given position (1-based line/column)
+ * Walks through expressions to find identifiers, not just declarations
+ */
+export function findIdentifierAtPosition(
+  ast: AST.Program,
+  line: number,
+  column: number
+): string | null {
+  for (const statement of ast.body) {
+    const result = findIdentifierInStatement(statement, line, column);
+    if (result) return result;
+  }
+  return null;
+}
+
+function findIdentifierInStatement(
+  statement: AST.Statement,
+  line: number,
+  column: number
+): string | null {
+  // Check declarations first - return their name if cursor is on declaration
+  switch (statement.type) {
+    case 'FunctionDeclaration':
+      if (isPositionAtDeclarationName(statement.location, 'function', statement.name, line, column)) {
+        return statement.name;
+      }
+      // Check parameters - they appear after the name and '('
+      // Parameters don't have reliable locations, skip for now
+      // Recurse into body
+      for (const s of statement.body.body) {
+        const result = findIdentifierInStatement(s, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'ToolDeclaration':
+      if (isPositionAtDeclarationName(statement.location, 'tool', statement.name, line, column)) {
+        return statement.name;
+      }
+      for (const s of statement.body.body) {
+        const result = findIdentifierInStatement(s, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'ModelDeclaration':
+      if (isPositionAtDeclarationName(statement.location, 'model', statement.name, line, column)) {
+        return statement.name;
+      }
+      break;
+
+    case 'LetDeclaration':
+      if (isPositionAtDeclarationName(statement.location, 'let', statement.name, line, column)) {
+        return statement.name;
+      }
+      if (statement.initializer) {
+        const result = findIdentifierInExpression(statement.initializer, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'ConstDeclaration':
+      if (isPositionAtDeclarationName(statement.location, 'const', statement.name, line, column)) {
+        return statement.name;
+      }
+      if (statement.initializer) {
+        const result = findIdentifierInExpression(statement.initializer, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'DestructuringDeclaration':
+      // Fields don't have individual locations, check initializer
+      if (statement.initializer) {
+        const result = findIdentifierInExpression(statement.initializer, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'ExpressionStatement':
+      return findIdentifierInExpression(statement.expression, line, column);
+
+    case 'ReturnStatement':
+      if (statement.value) {
+        return findIdentifierInExpression(statement.value, line, column);
+      }
+      break;
+
+    case 'IfStatement':
+      {
+        const condResult = findIdentifierInExpression(statement.test, line, column);
+        if (condResult) return condResult;
+        for (const s of statement.consequent.body) {
+          const result = findIdentifierInStatement(s, line, column);
+          if (result) return result;
+        }
+        if (statement.alternate) {
+          for (const s of statement.alternate.body) {
+            const result = findIdentifierInStatement(s, line, column);
+            if (result) return result;
+          }
+        }
+      }
+      break;
+
+    case 'ForInStatement':
+      if (isPositionAtDeclarationName(statement.location, 'for', statement.variable, line, column)) {
+        return statement.variable;
+      }
+      {
+        const iterResult = findIdentifierInExpression(statement.iterable, line, column);
+        if (iterResult) return iterResult;
+        for (const s of statement.body.body) {
+          const result = findIdentifierInStatement(s, line, column);
+          if (result) return result;
+        }
+      }
+      break;
+
+    case 'WhileStatement':
+      {
+        const testResult = findIdentifierInExpression(statement.test, line, column);
+        if (testResult) return testResult;
+        for (const s of statement.body.body) {
+          const result = findIdentifierInStatement(s, line, column);
+          if (result) return result;
+        }
+      }
+      break;
+  }
+
+  return null;
+}
+
+function findIdentifierInExpression(
+  expr: AST.Expression,
+  line: number,
+  column: number
+): string | null {
+  switch (expr.type) {
+    case 'Identifier':
+      if (isPositionInRange(expr.location, expr.name, line, column)) {
+        return expr.name;
+      }
+      break;
+
+    case 'CallExpression':
+      {
+        const calleeResult = findIdentifierInExpression(expr.callee, line, column);
+        if (calleeResult) return calleeResult;
+        for (const arg of expr.arguments) {
+          const result = findIdentifierInExpression(arg, line, column);
+          if (result) return result;
+        }
+      }
+      break;
+
+    case 'BinaryExpression':
+      {
+        const leftResult = findIdentifierInExpression(expr.left, line, column);
+        if (leftResult) return leftResult;
+        const rightResult = findIdentifierInExpression(expr.right, line, column);
+        if (rightResult) return rightResult;
+      }
+      break;
+
+    case 'UnaryExpression':
+      return findIdentifierInExpression(expr.argument, line, column);
+
+    case 'MemberExpression':
+      {
+        const objResult = findIdentifierInExpression(expr.object, line, column);
+        if (objResult) return objResult;
+        // Don't resolve property - it's not an identifier reference
+      }
+      break;
+
+    case 'IndexExpression':
+      {
+        const objResult = findIdentifierInExpression(expr.object, line, column);
+        if (objResult) return objResult;
+        const indexResult = findIdentifierInExpression(expr.index, line, column);
+        if (indexResult) return indexResult;
+      }
+      break;
+
+    case 'AssignmentExpression':
+      {
+        const targetResult = findIdentifierInExpression(expr.target, line, column);
+        if (targetResult) return targetResult;
+        const valueResult = findIdentifierInExpression(expr.value, line, column);
+        if (valueResult) return valueResult;
+      }
+      break;
+
+    case 'ArrayLiteral':
+      for (const elem of expr.elements) {
+        const result = findIdentifierInExpression(elem, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'ObjectLiteral':
+      for (const prop of expr.properties) {
+        const result = findIdentifierInExpression(prop.value, line, column);
+        if (result) return result;
+      }
+      break;
+
+    case 'VibeExpression':
+      {
+        const promptResult = findIdentifierInExpression(expr.prompt, line, column);
+        if (promptResult) return promptResult;
+        // Check model reference - model is an Identifier node
+        if (expr.model && expr.model.type === 'Identifier') {
+          const modelResult = findIdentifierInExpression(expr.model, line, column);
+          if (modelResult) return modelResult;
+        }
+      }
+      break;
+
+    case 'TemplateLiteral':
+      for (const part of expr.parts) {
+        if (part.type === 'expression') {
+          const result = findIdentifierInExpression(part.value, line, column);
+          if (result) return result;
+        }
+      }
+      break;
+  }
+
+  return null;
+}
+
+function isPositionInRange(
+  location: { line: number; column: number },
+  name: string,
+  line: number,
+  column: number
+): boolean {
+  if (location.line !== line) return false;
+  const startCol = location.column;
+  const endCol = location.column + name.length;
+  return column >= startCol && column <= endCol;
+}
+
+// Calculate where the declaration name actually starts (after keyword)
+function getDeclarationNameColumn(kind: string, baseColumn: number): number {
+  const keywordLengths: Record<string, number> = {
+    function: 9,  // "function "
+    tool: 5,      // "tool "
+    model: 6,     // "model "
+    let: 4,       // "let "
+    const: 6,     // "const "
+    for: 4,       // "for "
+  };
+  return baseColumn + (keywordLengths[kind] ?? 0);
+}
+
+function isPositionAtDeclarationName(
+  location: { line: number; column: number },
+  kind: string,
+  name: string,
+  line: number,
+  column: number
+): boolean {
+  if (location.line !== line) return false;
+  const nameCol = getDeclarationNameColumn(kind, location.column);
+  const endCol = nameCol + name.length;
+  return column >= nameCol && column <= endCol;
+}
+
+/**
+ * Find the declaration of a symbol by name
+ * Returns the declaration info with location
+ */
+export function findDeclaration(
+  ast: AST.Program,
+  name: string,
+  fromLine?: number,
+  fromColumn?: number
+): DeclarationInfo | null {
+  // Collect all declarations
+  const declarations: DeclarationInfo[] = [];
+
+  for (const statement of ast.body) {
+    collectDeclarations(statement, declarations);
+  }
+
+  // Find matching declaration
+  // If multiple exist (shadowing), prefer the one closest before the reference
+  const matches = declarations.filter(d => d.name === name);
+
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+
+  // Multiple matches - find best one (closest before reference position)
+  if (fromLine !== undefined) {
+    const before = matches.filter(d => d.location.line <= fromLine);
+    if (before.length > 0) {
+      // Return the last one before the reference
+      return before[before.length - 1];
+    }
+  }
+
+  // Default to first declaration
+  return matches[0];
+}
+
+function collectDeclarations(
+  statement: AST.Statement,
+  declarations: DeclarationInfo[]
+): void {
+  switch (statement.type) {
+    case 'FunctionDeclaration':
+      declarations.push({
+        name: statement.name,
+        kind: 'function',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('function', statement.location.column),
+        },
+        node: statement,
+      });
+      // Recurse into body
+      for (const s of statement.body.body) {
+        collectDeclarations(s, declarations);
+      }
+      break;
+
+    case 'ToolDeclaration':
+      declarations.push({
+        name: statement.name,
+        kind: 'tool',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('tool', statement.location.column),
+        },
+        node: statement,
+      });
+      for (const s of statement.body.body) {
+        collectDeclarations(s, declarations);
+      }
+      break;
+
+    case 'ModelDeclaration':
+      declarations.push({
+        name: statement.name,
+        kind: 'model',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('model', statement.location.column),
+        },
+        node: statement,
+      });
+      break;
+
+    case 'LetDeclaration':
+      declarations.push({
+        name: statement.name,
+        kind: 'variable',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('let', statement.location.column),
+        },
+        node: statement,
+      });
+      break;
+
+    case 'ConstDeclaration':
+      declarations.push({
+        name: statement.name,
+        kind: 'constant',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('const', statement.location.column),
+        },
+        node: statement,
+      });
+      break;
+
+    case 'DestructuringDeclaration':
+      // Each destructured field is a declaration
+      // Use const or let keyword offset
+      for (const field of statement.fields) {
+        declarations.push({
+          name: field.name,
+          kind: 'destructured',
+          location: {
+            line: statement.location.line,
+            column: getDeclarationNameColumn(statement.isConst ? 'const' : 'let', statement.location.column),
+          },
+          node: statement,
+        });
+      }
+      break;
+
+    case 'ForInStatement':
+      // Loop variable is a declaration
+      declarations.push({
+        name: statement.variable,
+        kind: 'variable',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('for', statement.location.column),
+        },
+        node: statement,
+      });
+      for (const s of statement.body.body) {
+        collectDeclarations(s, declarations);
+      }
+      break;
+
+    case 'IfStatement':
+      for (const s of statement.consequent.body) {
+        collectDeclarations(s, declarations);
+      }
+      if (statement.alternate) {
+        for (const s of statement.alternate.body) {
+          collectDeclarations(s, declarations);
+        }
+      }
+      break;
+
+    case 'WhileStatement':
+      for (const s of statement.body.body) {
+        collectDeclarations(s, declarations);
+      }
+      break;
+  }
 }

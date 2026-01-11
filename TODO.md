@@ -53,12 +53,12 @@
   - Simple REPL chat demonstrating context management
 
 ### VSCode Integration
-- [ ] Build VSCode LSP for Vibe
-  - [ ] Syntax highlighting
-  - [ ] Diagnostics (errors, warnings)
-  - [ ] Go to definition
-  - [ ] Hover information
-  - [ ] Autocomplete
+- [x] Build VSCode LSP for Vibe
+  - [x] Syntax highlighting
+  - [x] Diagnostics (errors, warnings)
+  - [x] Go to definition
+  - [x] Hover information
+  - [x] Autocomplete
 - [ ] Build debug support for VSCode
   - [ ] Debug Adapter Protocol (DAP) implementation
   - [ ] Breakpoints
@@ -90,6 +90,14 @@
   - [ ] Stricter error modes
 
 ## Completed (Last 10)
+
+- [x] Null as first-class value type
+  - [x] Add `null` keyword to lexer/parser with NullLiteral AST node
+  - [x] Semantic validation: `const x = null` errors, `let x = null` errors (no type inference), `let x: T = null` valid
+  - [x] Runtime: null valid for any typed variable, arithmetic with null creates error VibeValue
+  - [x] String concatenation coerces null to empty string, comparison works normally
+  - [x] JS interop: normalize undefined from TS functions to null at boundaries
+  - [x] Preserve error field through variable assignments
 
 - [x] Module scope isolation for imported Vibe functions
   - [x] Each module has isolated global scope (variables don't leak between modules)
@@ -163,22 +171,3 @@
   - [x] Parser, visitor, runtime types, AI provider updated
   - [x] Removed `Ask` token from lexer (internal `'ask'` type preserved for user input)
 
-- [x] Runtime safety for const objects in ts blocks
-  - [x] Deep freeze const JSON objects before passing to ts blocks
-  - [x] Added 'use strict' to AsyncFunction for proper error throwing
-  - [x] Const objects/arrays cannot be mutated; let objects can be
-
-- [x] Code Generation Tool (bash, runCode)
-  - [x] `bash` tool using Bun's cross-platform shell via temp script
-  - [x] `runCode` tool with subprocess isolation and scope injection
-  - [x] Unique run folders (.vibe-cache/r1, r2...) with mutex for concurrency
-  - [x] Timeout enforcement with process kill
-
-- [x] AI-initiated tool calling (Phase 5)
-  - [x] Tool schema conversion for OpenAI, Anthropic, Google providers
-  - [x] Tool call parsing from AI responses (all 3 providers)
-  - [x] Multi-turn tool execution loop (`executeWithTools`)
-  - [x] Tool calls embedded in prompt entries for proper context ordering
-  - [x] Context shows: AI call → tool calls → results → final response
-  - [x] Flow tests with mock AI provider executing real tools
-  - [x] Loop context modes (forget/verbose) properly handle tool calls
