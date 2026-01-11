@@ -30,9 +30,12 @@
 - [ ] Add CLI options to vibe command
   - [ ] `--verbose` / `-v` for verbose logging
   - [ ] `--quiet` / `-q` for minimal output
-  - [ ] `--log-ai` to enable AI interaction logging
-  - [ ] `--version` to show version
-  - [ ] `--help` to show usage
+  - [x] `--log-ai` to enable AI interaction logging
+  - [x] `--version` to show version
+  - [x] `--help` to show usage
+  - [x] `--inspect` to start with debugger server
+  - [x] `--inspect-brk` to break on entry
+  - [x] `--inspect-port=PORT` for custom debug port
 
 ### Documentation
 - [ ] Create README for GitHub and npm
@@ -65,17 +68,17 @@
   - [x] Folding ranges
   - [x] Document formatting
   - [x] TypeScript import support (hover, go-to-definition)
-- [ ] Build debug support for VSCode (see `docs/debugger-plan.md`)
-  - [ ] Phase 1: Basic Vibe Debugging
-    - [ ] Add `--inspect` flag to Vibe CLI
-    - [ ] Implement runtime debug hooks (beforeStatement, breakpoints)
-    - [ ] Create WebSocket server in runtime for debug communication
-    - [ ] Build Debug Adapter (DAP server) in VSCode extension
-    - [ ] Add debugger contribution to VSCode extension package.json
-    - [ ] Implement breakpoints support
-    - [ ] Implement stepping (continue, stepIn, stepOver, stepOut)
-    - [ ] Implement call stack inspection
-    - [ ] Implement variable inspection
+- [x] Build debug support for VSCode (see `docs/debugger-plan.md`)
+  - [x] Phase 1: Basic Vibe Debugging
+    - [x] Add `--inspect` flag to Vibe CLI
+    - [x] Implement runtime debug hooks (beforeStatement, breakpoints)
+    - [x] Create WebSocket server in runtime for debug communication
+    - [x] Build Debug Adapter (DAP server) in VSCode extension
+    - [x] Add debugger contribution to VSCode extension package.json
+    - [x] Implement breakpoints support
+    - [x] Implement stepping (continue, stepIn, stepOver, stepOut)
+    - [x] Implement call stack inspection
+    - [x] Implement variable inspection
   - [ ] Phase 2: TS Block Debugging
     - [ ] Connect Debug Adapter to Bun inspector WebSocket
     - [ ] Source map TS blocks to locations within .vibe files
@@ -123,6 +126,16 @@
   - [ ] Stricter error modes
 
 ## Completed (Last 10)
+
+- [x] Monorepo restructure and Phase 1 debugger
+  - [x] Restructure to `packages/` monorepo (runtime, vscode-extension, debug-core)
+  - [x] Bun workspaces with `workspace:*` protocol
+  - [x] Functional debug state management (pure functions, immutable state)
+  - [x] Debug runner with stepping, breakpoints, call stack, variables
+  - [x] WebSocket debug server for DAP communication
+  - [x] VSCode Debug Adapter implementing full DAP protocol
+  - [x] 42 debug tests (state, runner, e2e)
+  - [x] 1663 total tests passing
 
 - [x] Null as first-class value type
   - [x] Add `null` keyword to lexer/parser with NullLiteral AST node
@@ -197,10 +210,4 @@
   - [x] Functions now always "forget" context on exit like traditional callstack
   - [x] Loops retain forget/verbose/compress modes
   - [x] Return values are the interface for passing data out
-
-- [x] Single-round AI command (`do` keyword)
-  - [x] `do` keyword for single-round AI call (executes tools once, no loop back)
-  - [x] `vibe` continues to support multi-turn tool calling (up to 10 rounds)
-  - [x] Parser, visitor, runtime types, AI provider updated
-  - [x] Removed `Ask` token from lexer (internal `'ask'` type preserved for user input)
 
