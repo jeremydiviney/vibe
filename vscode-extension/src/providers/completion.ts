@@ -28,6 +28,7 @@ const keywords: Array<{ label: string; detail: string; kind: CompletionItemKind 
   { label: 'not', detail: 'Logical NOT', kind: CompletionItemKind.Operator },
   { label: 'true', detail: 'Boolean true', kind: CompletionItemKind.Constant },
   { label: 'false', detail: 'Boolean false', kind: CompletionItemKind.Constant },
+  { label: 'null', detail: 'Null value', kind: CompletionItemKind.Constant },
   { label: 'default', detail: 'Default context', kind: CompletionItemKind.Keyword },
   { label: 'local', detail: 'Local context', kind: CompletionItemKind.Keyword },
   { label: 'forget', detail: 'Context mode: discard', kind: CompletionItemKind.Keyword },

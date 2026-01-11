@@ -127,6 +127,10 @@
         {
           "name": "constant.language.boolean.vibe",
           "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.vibe",
+          "match": "\\b(null)\\b"
         }
       ]
     },

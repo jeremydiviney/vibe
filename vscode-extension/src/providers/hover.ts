@@ -28,6 +28,7 @@ const keywordDocs: Record<string, string> = {
   not: 'Logical NOT operator.',
   true: 'Boolean literal `true`.',
   false: 'Boolean literal `false`.',
+  null: 'Null value - represents absence of a value.\n\nCan be assigned to typed variables: `let x: text = null`\n\nCannot be used without a type: `let x = null` is an error.',
   in: 'Used in for-in loops: `for item in collection`',
 };
 
