@@ -7,11 +7,6 @@
 - [ ] Parallel AI calls
   - [ ] Auto-parallelize independent AI calls (no data dependencies)
   - [ ] Configurable concurrency limit
-- [ ] Structured multi-value AI returns
-  - [ ] Destructuring with inline types: `const {name: text, age: number} = do "..."`
-  - [ ] Use tool-based assignment: AI calls `assign({name: "...", age: ...})` tool
-  - [ ] Type checking happens in tool execution, validates each field against declared type
-  - [ ] More reliable than structured outputs, especially for open-source models
 - [ ] Model/provider registry and capability mapping
   - [ ] Map of known models with their capabilities (structured output, thinking, tools)
   - [ ] Allow/deny lists for models (e.g., only allow certain models in production)
@@ -81,6 +76,15 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ## Completed (Last 10)
+
+- [x] Destructuring declarations for multi-value AI returns
+  - [x] Syntax: `const {name: text, age: number} = do "prompt" model default`
+  - [x] Also works with `let` for mutable bindings
+  - [x] Single `__vibe_return_field` tool for all typed returns
+  - [x] Post-collection validation via `collectAndValidateFieldResults()`
+  - [x] Semantic analyzer: duplicate field detection, scope conflict checks
+  - [x] Parser and semantic unit tests (27 tests)
+  - [x] Integration tests with Google Gemini 3 (6 tests)
 
 - [x] npm Publishing to `@vibe-lang/vibe`
   - [x] Multi-platform support: Linux x64/ARM64, macOS x64/ARM64, Windows x64
