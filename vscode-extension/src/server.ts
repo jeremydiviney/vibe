@@ -16,6 +16,7 @@ import { provideCompletions } from './providers/completion';
 import { provideDocumentSymbols } from './providers/symbols';
 import { provideDefinition } from './providers/definition';
 import { provideReferences } from './providers/references';
+import { provideRename, prepareRename } from './providers/rename';
 
 // Create connection using all proposed features
 const connection = createConnection(ProposedFeatures.all);
@@ -48,6 +49,9 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
       documentSymbolProvider: true,
       definitionProvider: true,
       referencesProvider: true,
+      renameProvider: {
+        prepareProvider: true,
+      },
     },
   };
 
@@ -118,6 +122,19 @@ connection.onReferences((params) => {
   const document = documents.get(params.textDocument.uri);
   if (!document) return [];
   return provideReferences(document, params.position, params.context.includeDeclaration);
+});
+
+// Provide rename
+connection.onPrepareRename((params) => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) return null;
+  return prepareRename(document, params.position);
+});
+
+connection.onRenameRequest((params) => {
+  const document = documents.get(params.textDocument.uri);
+  if (!document) return null;
+  return provideRename(document, params.position, params.newName);
 });
 
 // Start listening
