@@ -110,20 +110,12 @@
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
 
-### Error Handling (VibeValue)
-- [ ] VibeValue unified type system
-  - [ ] Phase 1: Define VibeValue and VibeError types in types.ts
-  - [ ] Phase 2: Update variable operations (declare, assign, lookup)
-  - [ ] Phase 3: Update expression evaluation (auto-unwrap, error propagation)
-  - [ ] Phase 4: AI integration (migrate AIResultObject to VibeValue)
-  - [ ] Phase 5: Cleanup and tests
-- [ ] Error handling enhancements (backlog)
-  - [ ] `??` operator for default values
-  - [ ] `or` keyword for fallback operations
-  - [ ] `?` operator for error propagation
-  - [ ] `!` operator for crash-if-error
-  - [ ] Method calls on values (`x.toUpperCase()`)
-  - [ ] Stricter error modes
+### Error Handling Enhancements
+- [ ] `??` operator for default values on error (`result ?? "fallback"`)
+- [ ] `?` operator for error propagation (`riskyOp()?`)
+- [ ] `!` operator for crash-if-error (`mustSucceed()!`)
+- [ ] Method calls on values (`x.toUpperCase()`)
+- [ ] Stricter error modes
 
 ## Completed (Last 10)
 
@@ -134,6 +126,13 @@
   - [x] Events: run_start, run_complete, ai_start, ai_complete, tool_start, tool_complete, ts_start, ts_complete
   - [x] Runtime API: `getLogEvents()` for programmatic access
   - [x] 27 unit tests for VerboseLogger
+
+- [x] VibeValue unified type system
+  - [x] VibeValue wraps all runtime values with `.value`, `.err`, `.toolCalls`, `.source`
+  - [x] VibeError with message, type, and source location
+  - [x] Error propagation through arithmetic/operations
+  - [x] Null as first-class value (coercion rules, JS interop)
+  - [x] Type annotations preserved through operations
 
 - [x] Complete debugger implementation (Phase 1-4)
   - [x] Phase 1: Basic Vibe debugging with breakpoints, stepping, variables
