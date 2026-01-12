@@ -3,7 +3,7 @@
 import * as AST from '../../ast';
 import type { SourceLocation } from '../../errors';
 import type { RuntimeState } from '../types';
-import { resolveValue } from '../types';
+import { resolveValue, isVibeValue } from '../types';
 import { lookupVariable } from './variables';
 import { getImportedValue } from '../modules';
 
@@ -33,13 +33,46 @@ function deepFreeze<T>(obj: T): T {
 /**
  * String interpolation - {varName} syntax.
  * Resolves AIResultObject to its value for string conversion.
+ * If any interpolated variable is a pending async operation, triggers awaiting_async.
  */
-export function execInterpolateString(state: RuntimeState, template: string): RuntimeState {
-  const result = template.replace(/\{(\w+)\}/g, (_, name) => {
-    // Walk scope chain to find variable
+export function execInterpolateString(state: RuntimeState, template: string, location?: SourceLocation): RuntimeState {
+  // First pass: check for pending async variables
+  const varPattern = /\{(\w+)\}/g;
+  const pendingAsyncIds: string[] = [];
+  let match;
+
+  while ((match = varPattern.exec(template)) !== null) {
+    const name = match[1];
     const found = lookupVariable(state, name);
     if (found) {
-      // Resolve AIResultObject to primitive value
+      const variable = found.variable;
+      if (isVibeValue(variable) && variable.asyncOperationId) {
+        const opId = variable.asyncOperationId;
+        const operation = state.asyncOperations.get(opId);
+        if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+          pendingAsyncIds.push(opId);
+        }
+      }
+    }
+  }
+
+  // If there are pending async variables, wait for them
+  if (pendingAsyncIds.length > 0) {
+    return {
+      ...state,
+      status: 'awaiting_async',
+      awaitingAsyncIds: pendingAsyncIds,
+      instructionStack: [
+        { op: 'interpolate_string', template, location: location ?? { line: 0, column: 0 } },
+        ...state.instructionStack,
+      ],
+    };
+  }
+
+  // All variables ready, do the interpolation
+  const result = template.replace(/\{(\w+)\}/g, (_, name) => {
+    const found = lookupVariable(state, name);
+    if (found) {
       const value = resolveValue(found.variable.value);
       return String(value);
     }
@@ -52,13 +85,46 @@ export function execInterpolateString(state: RuntimeState, template: string): Ru
 /**
  * Template literal interpolation - ${varName} syntax.
  * Resolves AIResultObject to its value for string conversion.
+ * If any interpolated variable is a pending async operation, triggers awaiting_async.
  */
-export function execInterpolateTemplate(state: RuntimeState, template: string): RuntimeState {
-  const result = template.replace(/\$\{(\w+)\}/g, (_, name) => {
-    // Walk scope chain to find variable
+export function execInterpolateTemplate(state: RuntimeState, template: string, location?: SourceLocation): RuntimeState {
+  // First pass: check for pending async variables
+  const varPattern = /\$\{(\w+)\}/g;
+  const pendingAsyncIds: string[] = [];
+  let match;
+
+  while ((match = varPattern.exec(template)) !== null) {
+    const name = match[1];
     const found = lookupVariable(state, name);
     if (found) {
-      // Resolve AIResultObject to primitive value
+      const variable = found.variable;
+      if (isVibeValue(variable) && variable.asyncOperationId) {
+        const opId = variable.asyncOperationId;
+        const operation = state.asyncOperations.get(opId);
+        if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+          pendingAsyncIds.push(opId);
+        }
+      }
+    }
+  }
+
+  // If there are pending async variables, wait for them
+  if (pendingAsyncIds.length > 0) {
+    return {
+      ...state,
+      status: 'awaiting_async',
+      awaitingAsyncIds: pendingAsyncIds,
+      instructionStack: [
+        { op: 'interpolate_template', template, location: location ?? { line: 0, column: 0 } },
+        ...state.instructionStack,
+      ],
+    };
+  }
+
+  // All variables ready, do the interpolation
+  const result = template.replace(/\$\{(\w+)\}/g, (_, name) => {
+    const found = lookupVariable(state, name);
+    if (found) {
       const value = resolveValue(found.variable.value);
       return String(value);
     }

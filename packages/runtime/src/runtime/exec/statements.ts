@@ -11,11 +11,21 @@ import { getImportedVibeFunction } from '../modules';
 
 /**
  * Let declaration - push instructions for initializer.
+ * For async declarations, sets context flag so AI/TS handlers use non-blocking mode.
  */
 export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration): RuntimeState {
   if (stmt.initializer) {
-    return {
+    // For async declarations, set context flag before evaluating
+    const baseState = stmt.isAsync ? {
       ...state,
+      currentAsyncVarName: stmt.name,
+      currentAsyncIsConst: false,
+      currentAsyncType: stmt.typeAnnotation,
+      currentAsyncIsPrivate: stmt.isPrivate ?? false,
+    } : state;
+
+    return {
+      ...baseState,
       instructionStack: [
         { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
         { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
@@ -30,10 +40,20 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
 
 /**
  * Const declaration - push instructions for initializer.
+ * For async declarations, sets context flag so AI/TS handlers use non-blocking mode.
  */
 export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclaration): RuntimeState {
-  return {
+  // For async declarations, set context flag before evaluating
+  const baseState = stmt.isAsync ? {
     ...state,
+    currentAsyncVarName: stmt.name,
+    currentAsyncIsConst: true,
+    currentAsyncType: stmt.typeAnnotation,
+    currentAsyncIsPrivate: stmt.isPrivate ?? false,
+  } : state;
+
+  return {
+    ...baseState,
     instructionStack: [
       { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
       { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
@@ -45,6 +65,9 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
 /**
  * Destructuring declaration - evaluate initializer (AI expression) and assign fields.
  * const {name: text, age: number} = do "..." model default
+ * For async declarations, sets context flag so AI/TS handlers use non-blocking mode.
+ * For destructuring, currentAsyncIsDestructure=true tells the async system to NOT update
+ * any variable on completion - the actual variables are created by destructure_assign.
  */
 export function execDestructuringDeclaration(
   state: RuntimeState,
@@ -57,8 +80,19 @@ export function execDestructuringDeclaration(
     ...(f.isPrivate ? { isPrivate: true } : {}),
   }));
 
-  return {
+  // For async declarations, set isDestructure flag to enable async path
+  // variableName stays null - destructure_assign creates the actual variables
+  const baseState = stmt.isAsync ? {
     ...state,
+    currentAsyncVarName: null,  // No single variable - destructure_assign handles it
+    currentAsyncIsConst: stmt.isConst,
+    currentAsyncType: null, // Destructuring doesn't have single type
+    currentAsyncIsPrivate: false,
+    currentAsyncIsDestructure: true,  // Signals async path without variable tracking
+  } : state;
+
+  return {
+    ...baseState,
     // Set pendingDestructuring so AI provider knows what fields to expect
     pendingDestructuring: expectedFields,
     instructionStack: [
@@ -405,6 +439,17 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
       return execBlockStatement(state, stmt);
 
     case 'ExpressionStatement':
+      return {
+        ...state,
+        instructionStack: [
+          { op: 'exec_expression', expr: stmt.expression, location: stmt.expression.location },
+          ...state.instructionStack,
+        ],
+      };
+
+    case 'AsyncStatement':
+      // For now, async statements execute like regular expressions
+      // True parallel execution is a future enhancement
       return {
         ...state,
         instructionStack: [

@@ -539,10 +539,10 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return { ...state, lastResult: instruction.value };
 
     case 'interpolate_string':
-      return execInterpolateString(state, instruction.template);
+      return execInterpolateString(state, instruction.template, instruction.location);
 
     case 'interpolate_template':
-      return execInterpolateTemplate(state, instruction.template);
+      return execInterpolateTemplate(state, instruction.template, instruction.location);
 
     case 'binary_op': {
       const rawRight = state.lastResult;
@@ -720,6 +720,28 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       // Get the result value (should be Record<string, unknown> from AI return)
       let fieldValues: Record<string, unknown>;
       let rawResult = state.lastResult;
+
+      // Check if this is a pending async operation - if so, await it
+      if (isVibeValue(rawResult) && rawResult.asyncOperationId) {
+        const opId = rawResult.asyncOperationId;
+        const operation = state.asyncOperations.get(opId);
+
+        // If operation is still pending or running, trigger await
+        if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+          return {
+            ...state,
+            status: 'awaiting_async',
+            awaitingAsyncIds: [opId],
+            // Re-add current instruction to retry after await
+            instructionStack: [instruction, ...state.instructionStack],
+          };
+        }
+
+        // If operation completed, use the result
+        if (operation && operation.status === 'completed' && operation.result) {
+          rawResult = operation.result;
+        }
+      }
 
       // Unwrap VibeValue if present
       if (isVibeValue(rawResult)) {

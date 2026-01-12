@@ -183,6 +183,16 @@ async function main(): Promise<void> {
     logDir = logDirArg.split('=')[1];
   }
 
+  // Parse --max-parallel=N option (for async operations)
+  let maxParallel = 4; // Default
+  const maxParallelArg = args.find(arg => arg.startsWith('--max-parallel='));
+  if (maxParallelArg) {
+    const parsed = parseInt(maxParallelArg.split('=')[1], 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      maxParallel = parsed;
+    }
+  }
+
   const fileArgs = args.filter(arg => !arg.startsWith('--'));
 
   if (fileArgs.length === 0) {
@@ -195,6 +205,7 @@ async function main(): Promise<void> {
     console.log('Options:');
     console.log('  --verbose             Enable verbose JSONL logging (console + file)');
     console.log('  --log-dir=PATH        Directory for logs (default: .vibe-logs)');
+    console.log('  --max-parallel=N      Max concurrent async operations (default: 4)');
     console.log('  --inspect             Start with debugger server');
     console.log('  --inspect-brk         Start with debugger, break on entry');
     console.log('  --inspect-port=PORT   Debug server port (default: 9229)');
@@ -239,6 +250,7 @@ async function main(): Promise<void> {
           basePath: filePath,
           verbose,
           logDir,
+          maxParallel,
         }
       );
 

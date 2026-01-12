@@ -53,6 +53,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
   statement(ctx: Record<string, CstNode[]>): AST.Statement {
     if (ctx.importDeclaration) return this.visit(ctx.importDeclaration);
     if (ctx.exportDeclaration) return this.visit(ctx.exportDeclaration);
+    if (ctx.asyncStatement) return this.visit(ctx.asyncStatement);
     if (ctx.letDeclaration) return this.visit(ctx.letDeclaration);
     if (ctx.constDeclaration) return this.visit(ctx.constDeclaration);
     if (ctx.modelDeclaration) return this.visit(ctx.modelDeclaration);
@@ -92,6 +93,104 @@ class VibeAstVisitor extends BaseVibeVisitor {
     const decl = ctx.functionDeclaration ?? ctx.letDeclaration ?? ctx.constDeclaration ?? ctx.modelDeclaration;
     if (!decl) throw new Error('Unknown export declaration type');
     return { type: 'ExportDeclaration', declaration: this.visit(decl), location: tokenLocation(ctx.Export[0]) };
+  }
+
+  asyncStatement(ctx: { Async: IToken[]; asyncLetDeclaration?: CstNode[]; asyncConstDeclaration?: CstNode[]; asyncExpression?: CstNode[] }): AST.Statement {
+    if (ctx.asyncLetDeclaration) {
+      return this.visit(ctx.asyncLetDeclaration);
+    }
+    if (ctx.asyncConstDeclaration) {
+      return this.visit(ctx.asyncConstDeclaration);
+    }
+    // Standalone async expression (fire-and-forget)
+    const expr = this.visit(ctx.asyncExpression!) as AST.VibeExpression | AST.TsBlock | AST.CallExpression;
+    return {
+      type: 'AsyncStatement',
+      expression: expr,
+      location: tokenLocation(ctx.Async[0]),
+    };
+  }
+
+  asyncLetDeclaration(ctx: { Let: IToken[]; Private?: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; asyncExpression?: CstNode[]; destructuringPattern?: CstNode[] }): AST.LetDeclaration | AST.DestructuringDeclaration {
+    // Check for destructuring pattern
+    if (ctx.destructuringPattern) {
+      const fields = this.visit(ctx.destructuringPattern) as AST.DestructuringField[];
+      return {
+        type: 'DestructuringDeclaration',
+        fields,
+        initializer: this.visit(ctx.asyncExpression!),
+        isConst: false,
+        isAsync: true,
+        location: tokenLocation(ctx.Let[0]),
+      };
+    }
+
+    // Regular let declaration
+    const typeAnnotation = ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null;
+    const isPrivate = ctx.Private !== undefined;
+    const node: AST.LetDeclaration = {
+      type: 'LetDeclaration',
+      name: ctx.Identifier![0].image,
+      typeAnnotation,
+      initializer: this.visit(ctx.asyncExpression!),
+      isAsync: true,
+      location: tokenLocation(ctx.Let[0]),
+    };
+    if (isPrivate) {
+      node.isPrivate = true;
+    }
+    return node;
+  }
+
+  asyncConstDeclaration(ctx: { Const: IToken[]; Private?: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; asyncExpression: CstNode[]; destructuringPattern?: CstNode[] }): AST.ConstDeclaration | AST.DestructuringDeclaration {
+    // Check for destructuring pattern
+    if (ctx.destructuringPattern) {
+      const fields = this.visit(ctx.destructuringPattern) as AST.DestructuringField[];
+      return {
+        type: 'DestructuringDeclaration',
+        fields,
+        initializer: this.visit(ctx.asyncExpression),
+        isConst: true,
+        isAsync: true,
+        location: tokenLocation(ctx.Const[0]),
+      };
+    }
+
+    // Regular const declaration
+    const typeAnnotation = ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null;
+    const isPrivate = ctx.Private !== undefined;
+    const node: AST.ConstDeclaration = {
+      type: 'ConstDeclaration',
+      name: ctx.Identifier![0].image,
+      typeAnnotation,
+      initializer: this.visit(ctx.asyncExpression),
+      isAsync: true,
+      location: tokenLocation(ctx.Const[0]),
+    };
+    if (isPrivate) {
+      node.isPrivate = true;
+    }
+    return node;
+  }
+
+  asyncExpression(ctx: { Vibe?: IToken[]; Do?: IToken[]; TsBlock?: IToken[]; expression?: CstNode[]; vibeModifiers?: CstNode[]; postfixExpression?: CstNode[] }): AST.Expression {
+    if (ctx.Vibe) {
+      const prompt = this.visit(ctx.expression![0]);
+      const modifiers = this.visit(ctx.vibeModifiers![0]) as { model: AST.Expression | null; context: AST.ContextSpecifier | null };
+      return makeVibeExpression(ctx.Vibe[0], prompt, modifiers.model, modifiers.context, 'vibe');
+    }
+    if (ctx.Do) {
+      const prompt = this.visit(ctx.expression![0]);
+      const modifiers = this.visit(ctx.vibeModifiers![0]) as { model: AST.Expression | null; context: AST.ContextSpecifier | null };
+      return makeVibeExpression(ctx.Do[0], prompt, modifiers.model, modifiers.context, 'do');
+    }
+    if (ctx.TsBlock) {
+      return makeTsBlock(ctx.TsBlock[0]);
+    }
+    if (ctx.postfixExpression) {
+      return this.visit(ctx.postfixExpression);
+    }
+    throw new Error('Unknown async expression type');
   }
 
   letDeclaration(ctx: { Let: IToken[]; Private?: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression?: CstNode[]; destructuringPattern?: CstNode[] }): AST.LetDeclaration | AST.DestructuringDeclaration {

@@ -27,6 +27,10 @@ class VibeParser extends CstParser {
     this.OR([
       { ALT: () => this.SUBRULE(this.importDeclaration) },
       { ALT: () => this.SUBRULE(this.exportDeclaration) },
+      {
+        GATE: () => this.LA(1).tokenType === T.Async,
+        ALT: () => this.SUBRULE(this.asyncStatement),
+      },  // Must be before let/const to capture async let/const
       { ALT: () => this.SUBRULE(this.letDeclaration) },
       { ALT: () => this.SUBRULE(this.constDeclaration) },
       { ALT: () => this.SUBRULE(this.modelDeclaration) },
@@ -73,6 +77,120 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.letDeclaration) },
       { ALT: () => this.SUBRULE(this.constDeclaration) },
       { ALT: () => this.SUBRULE(this.modelDeclaration) },
+    ]);
+  });
+
+  // async let/const declaration OR async standalone expression
+  // async let x = do "prompt" model
+  // async const x = tsFunc()
+  // async do "prompt" model  (fire-and-forget)
+  // async tsFunc()  (fire-and-forget)
+  private asyncStatement = this.RULE('asyncStatement', () => {
+    this.CONSUME(T.Async);
+    this.OR([
+      // async let declaration
+      {
+        GATE: () => this.LA(1).tokenType === T.Let,
+        ALT: () => this.SUBRULE(this.asyncLetDeclaration),
+      },
+      // async const declaration
+      {
+        GATE: () => this.LA(1).tokenType === T.Const,
+        ALT: () => this.SUBRULE(this.asyncConstDeclaration),
+      },
+      // async standalone expression (fire-and-forget)
+      { ALT: () => this.SUBRULE(this.asyncExpression) },
+    ]);
+  });
+
+  // async let ... (mirrors letDeclaration but marked as async)
+  private asyncLetDeclaration = this.RULE('asyncLetDeclaration', () => {
+    this.CONSUME(T.Let);
+    this.OR([
+      // Destructuring: async let { name: type } = expression
+      {
+        GATE: () => this.LA(1).tokenType === T.LBrace,
+        ALT: () => {
+          this.SUBRULE(this.destructuringPattern);
+          this.CONSUME(T.Equals);
+          this.SUBRULE(this.asyncExpression);
+        },
+      },
+      // Regular: async let [private] name : type = expression
+      {
+        ALT: () => {
+          this.OPTION(() => {
+            this.CONSUME(T.Private);
+          });
+          this.CONSUME(T.Identifier);
+          this.OPTION2(() => {
+            this.CONSUME(T.Colon);
+            this.SUBRULE(this.typeAnnotation);
+          });
+          this.CONSUME2(T.Equals);
+          this.SUBRULE2(this.asyncExpression);
+        },
+      },
+    ]);
+  });
+
+  // async const ... (mirrors constDeclaration but marked as async)
+  private asyncConstDeclaration = this.RULE('asyncConstDeclaration', () => {
+    this.CONSUME(T.Const);
+    this.OR([
+      // Destructuring: async const { name: type } = expression
+      {
+        GATE: () => this.LA(1).tokenType === T.LBrace,
+        ALT: () => {
+          this.SUBRULE(this.destructuringPattern);
+          this.CONSUME(T.Equals);
+          this.SUBRULE(this.asyncExpression);
+        },
+      },
+      // Regular: async const [private] name : type = expression
+      {
+        ALT: () => {
+          this.OPTION(() => {
+            this.CONSUME(T.Private);
+          });
+          this.CONSUME(T.Identifier);
+          this.OPTION2(() => {
+            this.CONSUME(T.Colon);
+            this.SUBRULE(this.typeAnnotation);
+          });
+          this.CONSUME2(T.Equals);
+          this.SUBRULE2(this.asyncExpression);
+        },
+      },
+    ]);
+  });
+
+  // Valid expressions for async: do, vibe, ts block, or function call
+  private asyncExpression = this.RULE('asyncExpression', () => {
+    this.OR([
+      // vibe "prompt" model
+      {
+        ALT: () => {
+          this.CONSUME(T.Vibe);
+          this.SUBRULE(this.expression);
+          this.SUBRULE(this.vibeModifiers);
+        },
+      },
+      // do "prompt" model
+      {
+        ALT: () => {
+          this.CONSUME(T.Do);
+          this.SUBRULE2(this.expression);
+          this.SUBRULE2(this.vibeModifiers);
+        },
+      },
+      // ts(...) { ... }
+      { ALT: () => this.CONSUME(T.TsBlock) },
+      // functionCall() - identifier followed by (
+      {
+        GATE: () => this.LA(1).tokenType === T.Identifier,
+        ALT: () => this.SUBRULE(this.postfixExpression),
+      },
     ]);
   });
 

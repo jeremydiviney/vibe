@@ -15,6 +15,7 @@ export type RuntimeStatus =
   | 'awaiting_ts'
   | 'awaiting_tool'
   | 'awaiting_vibe_code'  // Waiting for vibe-generated code to be processed
+  | 'awaiting_async'      // Waiting for async operations to complete
   | 'completed'
   | 'error';
 
@@ -43,6 +44,7 @@ export interface VibeValue {
   typeAnnotation: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
   source: ValueSource;               // 'ai', 'user', or null (no source)
   isPrivate?: boolean;               // true if hidden from AI context
+  asyncOperationId?: string;         // ID of pending async operation (when value is pending)
 }
 
 // Type guard for VibeValue
@@ -67,6 +69,7 @@ export function createVibeValue(
     toolCalls?: ToolCallRecord[];
     err?: VibeError | null;
     isPrivate?: boolean;
+    asyncOperationId?: string;
   } = {}
 ): VibeValue {
   const result: VibeValue = {
@@ -79,6 +82,9 @@ export function createVibeValue(
   };
   if (options.isPrivate) {
     result.isPrivate = true;
+  }
+  if (options.asyncOperationId) {
+    result.asyncOperationId = options.asyncOperationId;
   }
   return result;
 }
@@ -526,6 +532,77 @@ export type ExportedItem =
   | { kind: 'variable'; name: string; value: unknown; isConst: boolean; typeAnnotation: string | null }
   | { kind: 'model'; declaration: AST.ModelDeclaration };
 
+// ============================================================================
+// Async Execution Types
+// ============================================================================
+
+/** Status of an async operation */
+export type AsyncOperationStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+/** Type of async operation */
+export type AsyncOperationType = 'do' | 'vibe' | 'ts' | 'ts-function' | 'vibe-function';
+
+/** Scheduled async operation waiting to be started by Runtime.run() */
+export interface PendingAsyncStart {
+  operationId: string;                        // ID in asyncOperations map
+  type: AsyncOperationType;                   // What kind of operation
+  variableName: string | null;                // Variable to store result (null for fire-and-forget)
+
+  // AI operation details (when type is 'do' or 'vibe')
+  aiDetails?: {
+    prompt: string;
+    model: string;
+    context: unknown[];
+    operationType: 'do' | 'vibe';
+  };
+
+  // TS operation details (when type is 'ts')
+  tsDetails?: {
+    params: string[];
+    body: string;
+    paramValues: unknown[];
+    location: SourceLocation;
+  };
+
+  // Imported TS function details (when type is 'ts-function')
+  tsFuncDetails?: {
+    funcName: string;
+    args: unknown[];
+    location: SourceLocation;
+  };
+
+  // Vibe function details (when type is 'vibe-function')
+  vibeFuncDetails?: {
+    funcName: string;
+    args: unknown[];
+  };
+}
+
+/** Individual async operation being tracked */
+export interface AsyncOperation {
+  id: string;                                // Unique identifier (e.g., "async-001")
+  variableName: string | null;               // null for standalone async (fire-and-forget)
+  status: AsyncOperationStatus;
+  operationType: AsyncOperationType;
+  startTime?: number;                        // ms timestamp when started
+  endTime?: number;                          // ms timestamp when completed
+  result?: VibeValue;                        // Result when completed
+  error?: VibeError;                         // Error if failed
+  dependencies: string[];                    // Variable names this depends on
+  contextSnapshot: ContextEntry[];           // Context captured at wave start
+  waveId: number;                            // Which wave this operation belongs to
+  promise?: Promise<VibeValue>;              // The actual promise (not serializable)
+}
+
+/** A wave of async operations that can run in parallel */
+export interface AsyncWave {
+  id: number;
+  operationIds: string[];                    // IDs of operations in this wave
+  contextSnapshot: ContextEntry[];           // Context at wave start
+  startTime: number;
+  endTime?: number;
+}
+
 // The complete runtime state (fully serializable)
 export interface RuntimeState {
   status: RuntimeStatus;
@@ -578,6 +655,26 @@ export interface RuntimeState {
   // Error info
   error: string | null;
   errorObject: Error | null;
+
+  // Async execution tracking
+  asyncOperations: Map<string, AsyncOperation>;  // id -> operation
+  pendingAsyncIds: Set<string>;                  // Currently executing operation IDs
+  asyncVarToOpId: Map<string, string>;           // varName -> operation ID
+  asyncWaves: AsyncWave[];                       // Execution waves
+  currentWaveId: number;                         // Current wave being built/executed
+  maxParallel: number;                           // Max concurrent operations (from --max-parallel)
+  nextAsyncId: number;                           // Counter for generating unique IDs
+  awaitingAsyncIds: string[];                    // Operation IDs we're currently awaiting (when status is awaiting_async)
+
+  // Async declaration context - set when inside async let/const to enable non-blocking mode
+  currentAsyncVarName: string | null;            // Variable being assigned (null = not in async context)
+  currentAsyncIsConst: boolean;                  // Whether it's a const declaration
+  currentAsyncType: VibeType;                    // Type annotation for the variable
+  currentAsyncIsPrivate: boolean;                // Whether it's a private declaration
+  currentAsyncIsDestructure: boolean;            // True if async destructuring (variables created by destructure_assign)
+
+  // Scheduled async operations - waiting for Runtime.run() to start them
+  pendingAsyncStarts: PendingAsyncStart[];       // Operations to start as Promises
 }
 
 // Instructions - what to execute next

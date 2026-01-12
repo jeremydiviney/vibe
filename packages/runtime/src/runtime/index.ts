@@ -93,7 +93,10 @@ import * as AST from '../ast';
 import { dirname } from 'path';
 import type { RuntimeState, AIInteraction } from './types';
 import { resolveValue } from './types';
-import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult, resumeWithCompressResult } from './state';
+import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult, resumeWithCompressResult, resumeWithAsyncResults } from './state';
+import type { VibeValue, PendingAsyncStart } from './types';
+import { createVibeValue } from './types';
+import { awaitOperations, completeAsyncOperation, failAsyncOperation } from './async';
 import { step, runUntilPause } from './step';
 import { evalTsBlock, TsBlockError } from './ts-eval';
 import { loadImports, getImportedTsFunction } from './modules';
@@ -133,6 +136,7 @@ export interface RuntimeOptions {
   logDir?: string;             // Directory for verbose logs (default: .vibe-logs)
   printToConsole?: boolean;    // Print verbose logs to console (default: true)
   writeToFile?: boolean;       // Write verbose logs to file (default: true)
+  maxParallel?: number;        // Max concurrent async operations (default: 4)
 }
 
 // Legacy Runtime class - convenience wrapper around functional API
@@ -149,6 +153,7 @@ export class Runtime {
     this.state = createInitialState(program, {
       logAiInteractions: this.logAiInteractions,
       rootDir: options?.rootDir,
+      maxParallel: options?.maxParallel,
     });
     this.aiProvider = aiProvider;
     this.basePath = options?.basePath ?? process.cwd() + '/main.vibe';
@@ -204,14 +209,29 @@ export class Runtime {
     // Run until pause or complete
     this.state = runUntilPause(this.state);
 
-    // Handle AI calls, TS evaluation, tool calls, and compress in a loop
+    // Start any scheduled async operations (non-blocking)
+    await this.startScheduledAsyncOps();
+
+    // Handle AI calls, TS evaluation, tool calls, compress, and async in a loop
     while (
       this.state.status === 'awaiting_ai' ||
       this.state.status === 'awaiting_user' ||
       this.state.status === 'awaiting_ts' ||
       this.state.status === 'awaiting_tool' ||
-      this.state.status === 'awaiting_compress'
+      this.state.status === 'awaiting_compress' ||
+      this.state.status === 'awaiting_async'
     ) {
+      // Handle awaiting_async - wait for pending async operations
+      if (this.state.status === 'awaiting_async') {
+        const results = await awaitOperations(
+          this.state.awaitingAsyncIds,
+          this.state.asyncOperations
+        );
+        this.state = resumeWithAsyncResults(this.state, results);
+        this.state = runUntilPause(this.state);
+        await this.startScheduledAsyncOps();
+        continue;
+      }
       if (this.state.status === 'awaiting_ts') {
         if (this.state.pendingTS) {
           // Handle inline ts block evaluation
@@ -427,6 +447,9 @@ export class Runtime {
 
       // Continue running
       this.state = runUntilPause(this.state);
+
+      // Start any newly scheduled async operations
+      await this.startScheduledAsyncOps();
     }
 
     if (this.state.status === 'error') {
@@ -437,6 +460,17 @@ export class Runtime {
       this.saveLogsIfEnabled();
       // Throw the original error object to preserve location info
       throw this.state.errorObject ?? new Error(this.state.error ?? 'Unknown runtime error');
+    }
+
+    // At program completion, await any remaining pending async operations
+    // This implements "await at block boundary" for the main program
+    if (this.state.pendingAsyncIds.size > 0) {
+      const pendingIds = Array.from(this.state.pendingAsyncIds);
+      const results = await awaitOperations(pendingIds, this.state.asyncOperations);
+      this.state = resumeWithAsyncResults(
+        { ...this.state, status: 'awaiting_async', awaitingAsyncIds: pendingIds },
+        results
+      );
     }
 
     // Log run complete
@@ -454,6 +488,80 @@ export class Runtime {
     if (this.logAiInteractions && this.state.aiInteractions.length > 0) {
       const projectRoot = dirname(this.basePath);
       saveAIInteractions(this.state, projectRoot);
+    }
+  }
+
+  // Start scheduled async operations as background Promises
+  private async startScheduledAsyncOps(): Promise<void> {
+    const pending = this.state.pendingAsyncStarts;
+    if (pending.length === 0) return;
+
+    // Clear pending starts
+    this.state = { ...this.state, pendingAsyncStarts: [] };
+
+    // Start each operation as a Promise (non-blocking)
+    for (const start of pending) {
+      if (start.aiDetails) {
+        // Start AI operation
+        const { prompt, model, context, operationType } = start.aiDetails;
+        const operation = this.state.asyncOperations.get(start.operationId);
+        if (!operation) continue;
+
+        // Create the Promise for this AI call
+        const promise = this.executeAIAsync(start.operationId, prompt, model, operationType);
+
+        // Store the promise in the operation (so awaiting_async can wait on it)
+        operation.promise = promise;
+        operation.status = 'running';
+        operation.startTime = Date.now();
+      }
+      // TODO: Handle TS block and function operations similarly
+    }
+  }
+
+  // Execute an AI call asynchronously (returns Promise that resolves to VibeValue)
+  private async executeAIAsync(
+    operationId: string,
+    prompt: string,
+    model: string,
+    operationType: 'do' | 'vibe'
+  ): Promise<VibeValue> {
+    try {
+      const result = await this.aiProvider.execute(prompt);
+
+      // Create VibeValue with the result
+      const vibeValue = createVibeValue(result.value, {
+        source: 'ai',
+        toolCalls: result.toolRounds?.flatMap((round) =>
+          round.toolCalls.map((call, i) => ({
+            toolName: call.toolName,
+            args: call.args,
+            result: round.results[i]?.error ? null : String(round.results[i]?.result ?? ''),
+            error: round.results[i]?.error ?? null,
+            duration: round.results[i]?.duration ?? 0,
+          }))
+        ) ?? [],
+      });
+
+      // Mark operation as complete
+      completeAsyncOperation(this.state, operationId, vibeValue);
+
+      return vibeValue;
+    } catch (error) {
+      // Mark operation as failed
+      const vibeError = {
+        message: error instanceof Error ? error.message : String(error),
+        type: error instanceof Error ? error.constructor.name : 'Error',
+        location: null,
+        stack: error instanceof Error ? error.stack : undefined,
+      };
+      failAsyncOperation(this.state, operationId, vibeError);
+
+      // Return VibeValue with error
+      return createVibeValue(null, {
+        source: 'ai',
+        err: vibeError,
+      });
     }
   }
 

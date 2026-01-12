@@ -16,12 +16,54 @@ import { execTsBlock } from './typescript';
  * Identifier - get variable VibeValue.
  * Returns the VibeValue so member access can see .err and .toolCalls.
  * Expressions use resolveValue() to auto-unwrap when needed.
+ *
+ * If the variable is pending async (has asyncOperationId and operation is still pending),
+ * triggers awaiting_async status to wait for the async result.
  */
 export function execIdentifier(state: RuntimeState, expr: AST.Identifier): RuntimeState {
   // Walk the scope chain to find the variable
   const found = lookupVariable(state, expr.name);
   if (found) {
-    return { ...state, lastResult: found.variable };  // Return VibeValue, not just value
+    const variable = found.variable;
+
+    // Check if this variable is pending async
+    if (isVibeValue(variable) && variable.asyncOperationId) {
+      const opId = variable.asyncOperationId;
+      const operation = state.asyncOperations.get(opId);
+
+      // If operation is still pending or running, trigger await
+      if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+        return {
+          ...state,
+          status: 'awaiting_async',
+          awaitingAsyncIds: [opId],
+          // Re-add current instruction to retry after await
+          instructionStack: [
+            { op: 'exec_expression', expr, location: expr.location },
+            ...state.instructionStack,
+          ],
+        };
+      }
+
+      // If operation completed, use the result
+      if (operation && operation.status === 'completed' && operation.result) {
+        return { ...state, lastResult: operation.result };
+      }
+
+      // If operation failed, return the error
+      if (operation && operation.status === 'failed' && operation.error) {
+        // Return a VibeValue with the error
+        const errorValue: typeof variable = {
+          ...variable,
+          value: null,
+          err: operation.error,
+          asyncOperationId: undefined, // Clear the async marker
+        };
+        return { ...state, lastResult: errorValue };
+      }
+    }
+
+    return { ...state, lastResult: variable };  // Return VibeValue, not just value
   }
 
   // Check if it's a local function

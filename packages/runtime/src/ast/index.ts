@@ -67,7 +67,8 @@ export type Statement =
   | ForInStatement
   | WhileStatement
   | BlockStatement
-  | ExpressionStatement;
+  | ExpressionStatement
+  | AsyncStatement;
 
 export interface ImportSpecifier {
   imported: string;  // Name in the source module
@@ -92,6 +93,7 @@ export interface LetDeclaration extends BaseNode {
   typeAnnotation: VibeType;
   initializer: Expression | null;
   isPrivate?: boolean;  // If true, variable is hidden from AI context
+  isAsync?: boolean;    // If true, execute asynchronously in parallel
 }
 
 export interface ConstDeclaration extends BaseNode {
@@ -100,6 +102,7 @@ export interface ConstDeclaration extends BaseNode {
   typeAnnotation: VibeType;
   initializer: Expression;
   isPrivate?: boolean;  // If true, variable is hidden from AI context
+  isAsync?: boolean;    // If true, execute asynchronously in parallel
 }
 
 /** A single field in a destructuring pattern: name: type */
@@ -115,6 +118,7 @@ export interface DestructuringDeclaration extends BaseNode {
   fields: DestructuringField[];
   initializer: Expression;
   isConst: boolean;  // true for const, false for let
+  isAsync?: boolean; // If true, execute asynchronously in parallel
 }
 
 export interface ModelDeclaration extends BaseNode {
@@ -202,6 +206,12 @@ export interface BlockStatement extends BaseNode {
 export interface ExpressionStatement extends BaseNode {
   type: 'ExpressionStatement';
   expression: Expression;
+}
+
+/** Standalone async statement (fire-and-forget): async do/vibe/ts/function() */
+export interface AsyncStatement extends BaseNode {
+  type: 'AsyncStatement';
+  expression: VibeExpression | TsBlock | CallExpression;
 }
 
 // ============================================================================

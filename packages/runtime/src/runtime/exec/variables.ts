@@ -76,12 +76,14 @@ export function execDeclareVar(
   let toolCalls: ToolCallRecord[] = [];
   let source = initialValue !== undefined ? null : state.lastResultSource;
   let err: VibeValue['err'] = null;
+  let asyncOperationId: string | undefined;
 
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
     toolCalls = rawValue.toolCalls;
     source = rawValue.source ?? source;
     err = rawValue.err;  // Preserve error from operations like null arithmetic
+    asyncOperationId = rawValue.asyncOperationId;  // Preserve async operation ID for pending async
   } else {
     innerValue = rawValue;
   }
@@ -93,7 +95,7 @@ export function execDeclareVar(
 
   const newLocals = {
     ...frame.locals,
-    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls, err, isPrivate }),
+    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls, err, isPrivate, asyncOperationId }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking

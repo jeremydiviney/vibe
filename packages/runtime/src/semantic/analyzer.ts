@@ -122,6 +122,11 @@ export class SemanticAnalyzer {
         });
         this.validateToolDeclaration(node);
         break;
+
+      case 'AsyncStatement':
+        this.validateAsyncExpression(node.expression, node.location);
+        this.visitExpression(node.expression);
+        break;
     }
   }
 
@@ -230,6 +235,11 @@ export class SemanticAnalyzer {
       // let x: T = null - OK (falls through)
     }
 
+    // Validate async declarations have valid RHS
+    if (node.isAsync && node.initializer) {
+      this.validateAsyncExpression(node.initializer, node.location);
+    }
+
     // Model type variables must be const (immutable)
     if (node.typeAnnotation === 'model' && kind === 'variable') {
       this.error(`Variables with type 'model' must be declared with 'const', not 'let'`, node.location);
@@ -257,6 +267,11 @@ export class SemanticAnalyzer {
     // Validate initializer is a do/vibe expression
     if (node.initializer.type !== 'VibeExpression') {
       this.error('Destructuring assignment requires a do or vibe expression', node.location);
+    }
+
+    // Validate async declarations have valid RHS
+    if (node.isAsync) {
+      this.validateAsyncExpression(node.initializer, node.location);
     }
 
     // Check for duplicate field names and collect unique ones
@@ -617,6 +632,21 @@ export class SemanticAnalyzer {
     // Additional JSON validation for string literals
     if (type === 'json' && expr.type === 'StringLiteral') {
       this.validateJsonLiteral(expr.value, location);
+    }
+  }
+
+  /**
+   * Validates that an async expression is a single async-capable operation.
+   * Valid: VibeExpression (do/vibe), TsBlock, CallExpression
+   * Invalid: Literals, binary expressions, other compound expressions
+   */
+  private validateAsyncExpression(expr: AST.Expression, location: SourceLocation): void {
+    const validTypes = ['VibeExpression', 'TsBlock', 'CallExpression'];
+    if (!validTypes.includes(expr.type)) {
+      this.error(
+        `async declarations require a single do, vibe, ts block, or function call`,
+        location
+      );
     }
   }
 

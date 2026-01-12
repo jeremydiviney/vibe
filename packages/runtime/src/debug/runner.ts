@@ -12,7 +12,9 @@ import {
   resumeWithImportedTsResult,
   resumeWithToolResult,
   resumeWithCompressResult,
+  resumeWithAsyncResults,
 } from '../runtime/state';
+import { awaitOperations } from '../runtime/async';
 import { evalTsBlock } from '../runtime/ts-eval';
 import { getImportedTsFunction, loadImports } from '../runtime/modules';
 import type { AIProvider, AIExecutionResult } from '../runtime';
@@ -65,7 +67,8 @@ export function debugStep(
     runtimeState.status === 'awaiting_ts' ||
     runtimeState.status === 'awaiting_user' ||
     runtimeState.status === 'awaiting_tool' ||
-    runtimeState.status === 'awaiting_compress'
+    runtimeState.status === 'awaiting_compress' ||
+    runtimeState.status === 'awaiting_async'
   ) {
     return { runtimeState, debugState };
   }
@@ -124,7 +127,8 @@ export function debugContinue(
       state.status === 'awaiting_ts' ||
       state.status === 'awaiting_user' ||
       state.status === 'awaiting_tool' ||
-      state.status === 'awaiting_compress'
+      state.status === 'awaiting_compress' ||
+      state.status === 'awaiting_async'
     ) {
       break;
     }
@@ -231,6 +235,29 @@ export async function handleDebugTSCall(
 }
 
 /**
+ * Handle async await during debug
+ */
+export async function handleDebugAsyncAwait(
+  runtimeState: RuntimeState,
+  debugState: VibeDebugState
+): Promise<DebugStepResult> {
+  if (runtimeState.status !== 'awaiting_async' || runtimeState.awaitingAsyncIds.length === 0) {
+    return { runtimeState, debugState };
+  }
+
+  // Await the pending operations
+  const results = await awaitOperations(
+    runtimeState.awaitingAsyncIds,
+    runtimeState.asyncOperations
+  );
+
+  // Resume with results
+  const newRuntimeState = resumeWithAsyncResults(runtimeState, results);
+
+  return { runtimeState: newRuntimeState, debugState };
+}
+
+/**
  * Run program with debug support until stopped or completed
  * This is the main debug loop
  */
@@ -263,6 +290,13 @@ export async function runWithDebug(
 
     if (state.status === 'awaiting_ts') {
       const result = await handleDebugTSCall(state, dState);
+      state = result.runtimeState;
+      dState = result.debugState;
+      continue;
+    }
+
+    if (state.status === 'awaiting_async') {
+      const result = await handleDebugAsyncAwait(state, dState);
       state = result.runtimeState;
       dState = result.debugState;
       continue;

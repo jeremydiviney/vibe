@@ -6,7 +6,8 @@ import type { ToolRoundResult } from './ai/tool-loop';
 // Options for creating initial state
 export interface InitialStateOptions {
   logAiInteractions?: boolean;
-  rootDir?: string;  // Root directory for file operation sandboxing (defaults to cwd)
+  rootDir?: string;       // Root directory for file operation sandboxing (defaults to cwd)
+  maxParallel?: number;   // Max concurrent async operations (default: 4)
 }
 
 // Create initial runtime state from a program AST
@@ -56,6 +57,26 @@ export function createInitialState(
     rootDir: options?.rootDir ?? process.cwd(),
     error: null,
     errorObject: null,
+
+    // Async execution tracking
+    asyncOperations: new Map(),
+    pendingAsyncIds: new Set(),
+    asyncVarToOpId: new Map(),
+    asyncWaves: [],
+    currentWaveId: 0,
+    maxParallel: options?.maxParallel ?? 4,
+    nextAsyncId: 1,
+    awaitingAsyncIds: [],
+
+    // Async declaration context (set when inside async let/const)
+    currentAsyncVarName: null,
+    currentAsyncIsConst: false,
+    currentAsyncType: null,
+    currentAsyncIsPrivate: false,
+    currentAsyncIsDestructure: false,
+
+    // Scheduled async operations
+    pendingAsyncStarts: [],
   };
 }
 
@@ -343,6 +364,64 @@ export function resumeWithToolResult(
           hasError: !!error,
         },
         result: finalResult,
+      },
+    ],
+  };
+}
+
+// Resume execution after async operations complete
+export function resumeWithAsyncResults(
+  state: RuntimeState,
+  results: Map<string, VibeValue>
+): RuntimeState {
+  if (state.status !== 'awaiting_async') {
+    throw new Error('Cannot resume: not awaiting async results');
+  }
+
+  // Update variables with their async results
+  const frame = state.callStack[state.callStack.length - 1];
+  const newLocals = { ...frame.locals };
+
+  // Track the last result for operations that need it (e.g., destructuring)
+  let lastResult: VibeValue | null = null;
+
+  for (const [opId, result] of results) {
+    const operation = state.asyncOperations.get(opId);
+    if (operation?.variableName) {
+      // Preserve existing variable properties (isConst, isPrivate, typeAnnotation)
+      // when updating with the async result
+      const existingVar = newLocals[operation.variableName];
+      newLocals[operation.variableName] = {
+        ...result,
+        isConst: existingVar?.isConst ?? result.isConst,
+        isPrivate: existingVar?.isPrivate ?? result.isPrivate,
+        typeAnnotation: existingVar?.typeAnnotation ?? result.typeAnnotation,
+      };
+    }
+    // Mark operation as no longer pending
+    state.pendingAsyncIds.delete(opId);
+    // Keep track of the result (for destructuring and other uses)
+    lastResult = result;
+  }
+
+  const updatedCallStack = [
+    ...state.callStack.slice(0, -1),
+    { ...frame, locals: newLocals },
+  ];
+
+  return {
+    ...state,
+    status: 'running',
+    // Set lastResult so instructions like destructure_assign can use it
+    lastResult: lastResult ?? state.lastResult,
+    callStack: updatedCallStack,
+    awaitingAsyncIds: [],
+    executionLog: [
+      ...state.executionLog,
+      {
+        timestamp: Date.now(),
+        instructionType: 'async_results',
+        details: { operationCount: results.size },
       },
     ],
   };
