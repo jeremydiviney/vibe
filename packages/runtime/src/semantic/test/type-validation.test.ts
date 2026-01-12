@@ -123,6 +123,21 @@ describe('Semantic Analyzer - Type Validation', () => {
     expect(errors).toContain('Type error: cannot assign boolean to number');
   });
 
+  test('null assigned to boolean errors', () => {
+    const errors = getErrors('let b: boolean = null');
+    expect(errors).toContain('Type error: cannot assign null to boolean');
+  });
+
+  test('null assigned to text is valid', () => {
+    const errors = getErrors('let t: text = null');
+    expect(errors).toEqual([]);
+  });
+
+  test('null assigned to number is valid', () => {
+    const errors = getErrors('let n: number = null');
+    expect(errors).toEqual([]);
+  });
+
   test('text variable assigned to text is valid', () => {
     const errors = getErrors('const t: text = "hello"\nconst t2: text = t');
     expect(errors).toEqual([]);
