@@ -18,14 +18,14 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
       ...state,
       instructionStack: [
         { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
-        { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, location: stmt.location },
+        { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
         ...state.instructionStack,
       ],
     };
   }
 
   // No initializer, declare with null
-  return execDeclareVar(state, stmt.name, false, stmt.typeAnnotation, null);
+  return execDeclareVar(state, stmt.name, false, stmt.typeAnnotation, null, stmt.isPrivate);
 }
 
 /**
@@ -36,7 +36,7 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
     ...state,
     instructionStack: [
       { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
-      { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, location: stmt.location },
+      { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
       ...state.instructionStack,
     ],
   };
@@ -50,8 +50,12 @@ export function execDestructuringDeclaration(
   state: RuntimeState,
   stmt: AST.DestructuringDeclaration
 ): RuntimeState {
-  // Convert AST fields to ExpectedField format for runtime
-  const expectedFields = stmt.fields.map((f) => ({ name: f.name, type: f.type }));
+  // Convert AST fields to ExpectedField format for runtime (including isPrivate)
+  const expectedFields = stmt.fields.map((f) => ({
+    name: f.name,
+    type: f.type,
+    ...(f.isPrivate ? { isPrivate: true } : {}),
+  }));
 
   return {
     ...state,

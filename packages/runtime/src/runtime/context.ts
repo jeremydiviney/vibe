@@ -7,7 +7,7 @@ const FILTERED_TYPES = ['model', 'prompt'];
 // Build local context - entries from current frame only
 // Pure function: takes full state, returns context array
 // Uses snapshotted values from entries for accurate history
-// Note: Model and prompt variables are filtered out (they are config/instructions, not data for AI context)
+// Note: Model, prompt, and private variables are filtered out (they are config/instructions, not data for AI context)
 export function buildLocalContext(state: RuntimeState): ContextEntry[] {
   const frameIndex = state.callStack.length - 1;
   const frame = state.callStack[frameIndex];
@@ -16,8 +16,8 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
   return frame.orderedEntries
     .flatMap((entry): ContextEntry[] => {
       if (entry.kind === 'variable') {
-        // Filter out model and prompt types
-        if (FILTERED_TYPES.includes(entry.type ?? '')) {
+        // Filter out model, prompt types, and private variables
+        if (FILTERED_TYPES.includes(entry.type ?? '') || entry.isPrivate) {
           return [];
         }
         // Use snapshotted value from entry, resolving VibeValue to its value
@@ -87,7 +87,7 @@ export function buildLocalContext(state: RuntimeState): ContextEntry[] {
 // Build global context - entries from all frames in call stack
 // Pure function: takes full state, returns context array
 // Uses snapshotted values from entries for accurate history
-// Note: Model and prompt variables are filtered out (they are config/instructions, not data for AI context)
+// Note: Model, prompt, and private variables are filtered out (they are config/instructions, not data for AI context)
 // Entries are returned with frameDepth: 0 = entry frame, higher = deeper in call stack
 export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
   return state.callStack.flatMap((frame, frameIndex) => {
@@ -95,8 +95,8 @@ export function buildGlobalContext(state: RuntimeState): ContextEntry[] {
 
     return frame.orderedEntries.flatMap((entry): ContextEntry[] => {
       if (entry.kind === 'variable') {
-        // Filter out model and prompt types
-        if (FILTERED_TYPES.includes(entry.type ?? '')) {
+        // Filter out model, prompt types, and private variables
+        if (FILTERED_TYPES.includes(entry.type ?? '') || entry.isPrivate) {
           return [];
         }
         // Use snapshotted value from entry, resolving VibeValue to its value

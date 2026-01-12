@@ -91,6 +91,7 @@ export interface LetDeclaration extends BaseNode {
   name: string;
   typeAnnotation: VibeType;
   initializer: Expression | null;
+  isPrivate?: boolean;  // If true, variable is hidden from AI context
 }
 
 export interface ConstDeclaration extends BaseNode {
@@ -98,12 +99,14 @@ export interface ConstDeclaration extends BaseNode {
   name: string;
   typeAnnotation: VibeType;
   initializer: Expression;
+  isPrivate?: boolean;  // If true, variable is hidden from AI context
 }
 
 /** A single field in a destructuring pattern: name: type */
 export interface DestructuringField {
   name: string;
   type: VibeTypeRequired;
+  isPrivate?: boolean;  // If true, field is hidden from AI context
 }
 
 /** Destructuring declaration: const {a: text, b: number} = expr */

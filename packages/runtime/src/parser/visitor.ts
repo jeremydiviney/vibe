@@ -94,7 +94,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return { type: 'ExportDeclaration', declaration: this.visit(decl), location: tokenLocation(ctx.Export[0]) };
   }
 
-  letDeclaration(ctx: { Let: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression?: CstNode[]; destructuringPattern?: CstNode[] }): AST.LetDeclaration | AST.DestructuringDeclaration {
+  letDeclaration(ctx: { Let: IToken[]; Private?: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression?: CstNode[]; destructuringPattern?: CstNode[] }): AST.LetDeclaration | AST.DestructuringDeclaration {
     // Check for destructuring pattern
     if (ctx.destructuringPattern) {
       const fields = this.visit(ctx.destructuringPattern) as AST.DestructuringField[];
@@ -109,13 +109,18 @@ class VibeAstVisitor extends BaseVibeVisitor {
 
     // Regular let declaration
     const typeAnnotation = ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null;
-    return {
+    const isPrivate = ctx.Private !== undefined;
+    const node: AST.LetDeclaration = {
       type: 'LetDeclaration',
       name: ctx.Identifier![0].image,
       typeAnnotation,
       initializer: ctx.expression ? this.visit(ctx.expression) : null,
       location: tokenLocation(ctx.Let[0]),
     };
+    if (isPrivate) {
+      node.isPrivate = true;
+    }
+    return node;
   }
 
   typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Model?: IToken[]; LBracket?: IToken[] }): string {
@@ -126,7 +131,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return baseType + '[]'.repeat(bracketCount);
   }
 
-  constDeclaration(ctx: { Const: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression: CstNode[]; destructuringPattern?: CstNode[] }): AST.ConstDeclaration | AST.DestructuringDeclaration {
+  constDeclaration(ctx: { Const: IToken[]; Private?: IToken[]; Identifier?: IToken[]; typeAnnotation?: CstNode[]; expression: CstNode[]; destructuringPattern?: CstNode[] }): AST.ConstDeclaration | AST.DestructuringDeclaration {
     // Check for destructuring pattern
     if (ctx.destructuringPattern) {
       const fields = this.visit(ctx.destructuringPattern) as AST.DestructuringField[];
@@ -141,24 +146,34 @@ class VibeAstVisitor extends BaseVibeVisitor {
 
     // Regular const declaration
     const typeAnnotation = ctx.typeAnnotation ? this.visit(ctx.typeAnnotation) : null;
-    return {
+    const isPrivate = ctx.Private !== undefined;
+    const node: AST.ConstDeclaration = {
       type: 'ConstDeclaration',
       name: ctx.Identifier![0].image,
       typeAnnotation,
       initializer: this.visit(ctx.expression),
       location: tokenLocation(ctx.Const[0]),
     };
+    if (isPrivate) {
+      node.isPrivate = true;
+    }
+    return node;
   }
 
   destructuringPattern(ctx: { destructuringField: CstNode[] }): AST.DestructuringField[] {
     return ctx.destructuringField.map((f) => this.visit(f));
   }
 
-  destructuringField(ctx: { Identifier: IToken[]; typeAnnotation: CstNode[] }): AST.DestructuringField {
-    return {
+  destructuringField(ctx: { Private?: IToken[]; Identifier: IToken[]; typeAnnotation: CstNode[] }): AST.DestructuringField {
+    const isPrivate = ctx.Private !== undefined;
+    const field: AST.DestructuringField = {
       name: ctx.Identifier[0].image,
       type: this.visit(ctx.typeAnnotation),
     };
+    if (isPrivate) {
+      field.isPrivate = true;
+    }
+    return field;
   }
 
   modelDeclaration(ctx: { Model: IToken[]; Identifier: IToken[]; objectLiteral: CstNode[] }): AST.ModelDeclaration {

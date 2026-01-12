@@ -295,7 +295,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execStatements(state, instruction.stmts, instruction.index, instruction.location);
 
     case 'declare_var':
-      return execDeclareVar(state, instruction.name, instruction.isConst, instruction.type, undefined, instruction.location);
+      return execDeclareVar(state, instruction.name, instruction.isConst, instruction.type, undefined, instruction.isPrivate, instruction.location);
 
     case 'assign_var':
       return execAssignVar(state, instruction.name, instruction.location);
@@ -747,7 +747,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
             ''
           );
         }
-        newState = execDeclareVar(newState, field.name, isConst, field.type, value);
+        newState = execDeclareVar(newState, field.name, isConst, field.type, value, field.isPrivate);
       }
 
       return newState;

@@ -42,6 +42,7 @@ export interface VibeValue {
   isConst: boolean;                  // true for const, false for let
   typeAnnotation: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
   source: ValueSource;               // 'ai', 'user', or null (no source)
+  isPrivate?: boolean;               // true if hidden from AI context
 }
 
 // Type guard for VibeValue
@@ -65,9 +66,10 @@ export function createVibeValue(
     source?: ValueSource;
     toolCalls?: ToolCallRecord[];
     err?: VibeError | null;
+    isPrivate?: boolean;
   } = {}
 ): VibeValue {
-  return {
+  const result: VibeValue = {
     value,
     err: options.err ?? null,
     toolCalls: options.toolCalls ?? [],
@@ -75,6 +77,10 @@ export function createVibeValue(
     typeAnnotation: options.typeAnnotation ?? null,
     source: options.source ?? null,
   };
+  if (options.isPrivate) {
+    result.isPrivate = true;
+  }
+  return result;
 }
 
 // Create a VibeValue with an error
@@ -176,6 +182,7 @@ export interface ContextVariable {
   type: 'text' | 'json' | 'boolean' | 'number' | null;
   isConst: boolean;
   source: ValueSource;    // Where the value came from (AI response, user input, or null for code)
+  isPrivate?: boolean;    // true if hidden from AI context
   // Call stack location info (helps AI understand variable scope)
   frameName: string;      // Name of the function/scope (e.g., "main", "processData")
   frameDepth: number;     // 0 = deepest/current frame, higher = older frames
@@ -259,6 +266,7 @@ export type FrameEntry =
       type: string | null;
       isConst: boolean;
       source?: 'ai' | 'user';
+      isPrivate?: boolean;      // true if hidden from AI context
     }
   | {
       kind: 'prompt';
@@ -472,6 +480,7 @@ export interface PendingAI {
 export interface ExpectedField {
   name: string;
   type: VibeTypeRequired;
+  isPrivate?: boolean;  // true if hidden from AI context
 }
 
 // Pending compress request (for compress context mode)
@@ -580,7 +589,7 @@ export type Instruction =
   | { op: 'exec_statements'; stmts: AST.Statement[]; index: number; location: SourceLocation }
 
   // Variable operations (use lastResult)
-  | { op: 'declare_var'; name: string; isConst: boolean; type: VibeType; location: SourceLocation }
+  | { op: 'declare_var'; name: string; isConst: boolean; type: VibeType; isPrivate?: boolean; location: SourceLocation }
   | { op: 'assign_var'; name: string; location: SourceLocation }
 
   // Function calls (functions always forget context - no context mode support)

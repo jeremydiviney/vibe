@@ -88,15 +88,18 @@ class VibeParser extends CstParser {
           this.SUBRULE(this.expression);
         },
       },
-      // Regular: let name : type = expression
+      // Regular: let private name : type = expression (private is optional)
       {
         ALT: () => {
-          this.CONSUME(T.Identifier);
           this.OPTION(() => {
+            this.CONSUME(T.Private);
+          });
+          this.CONSUME(T.Identifier);
+          this.OPTION2(() => {
             this.CONSUME(T.Colon);
             this.SUBRULE(this.typeAnnotation);
           });
-          this.OPTION2(() => {
+          this.OPTION3(() => {
             this.CONSUME2(T.Equals);
             this.SUBRULE2(this.expression);
           });
@@ -134,11 +137,14 @@ class VibeParser extends CstParser {
           this.SUBRULE(this.expression);
         },
       },
-      // Regular: const name : type = expression
+      // Regular: const private name : type = expression (private is optional)
       {
         ALT: () => {
-          this.CONSUME(T.Identifier);
           this.OPTION(() => {
+            this.CONSUME(T.Private);
+          });
+          this.CONSUME(T.Identifier);
+          this.OPTION2(() => {
             this.CONSUME(T.Colon);
             this.SUBRULE(this.typeAnnotation);
           });
@@ -160,8 +166,11 @@ class VibeParser extends CstParser {
     this.CONSUME(T.RBrace);
   });
 
-  // Single destructuring field: name: type
+  // Single destructuring field: private name: type (private is optional)
   private destructuringField = this.RULE('destructuringField', () => {
+    this.OPTION(() => {
+      this.CONSUME(T.Private);
+    });
     this.CONSUME(T.Identifier);
     this.CONSUME(T.Colon);
     this.SUBRULE(this.typeAnnotation);

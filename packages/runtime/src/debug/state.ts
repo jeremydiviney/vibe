@@ -414,6 +414,7 @@ function createVariable(
   let errorMessage: string | undefined;
   let hasToolCalls = false;
   let toolCallCount: number | undefined;
+  let isPrivate = false;
 
   // Check if it's a VibeValue
   if (isVibeValue(value)) {
@@ -432,6 +433,7 @@ function createVariable(
     errorMessage = vibeValue.err?.message ? String(vibeValue.err.message) : undefined;
     hasToolCalls = vibeValue.toolCalls && vibeValue.toolCalls.length > 0;
     toolCallCount = vibeValue.toolCalls?.length;
+    isPrivate = vibeValue.isPrivate === true;
   } else if (Array.isArray(value)) {
     variablesReference = newDebugState.nextVariableRef++;
     newDebugState = {
@@ -454,10 +456,13 @@ function createVariable(
     displayType = 'object';
   }
 
+  // Add [private] suffix to display name if variable is private
+  const displayName = isPrivate ? `${name} [private]` : name;
+
   return {
     debugState: newDebugState,
     variable: {
-      name,
+      name: displayName,
       value: formatValue(value),
       type: displayType,
       variablesReference,
@@ -465,6 +470,7 @@ function createVariable(
       errorMessage,
       hasToolCalls,
       toolCallCount,
+      ...(isPrivate ? { isPrivate: true } : {}),
     },
   };
 }

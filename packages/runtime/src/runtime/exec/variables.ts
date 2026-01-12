@@ -60,6 +60,7 @@ export function execDeclareVar(
   isConst: boolean,
   type: VibeType,
   initialValue?: unknown,
+  isPrivate?: boolean,
   location?: SourceLocation
 ): RuntimeState {
   const frame = currentFrame(state);
@@ -92,7 +93,7 @@ export function execDeclareVar(
 
   const newLocals = {
     ...frame.locals,
-    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls, err }),
+    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls, err, isPrivate }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking
@@ -105,6 +106,7 @@ export function execDeclareVar(
       type: finalType,
       isConst,
       source,
+      ...(isPrivate ? { isPrivate: true } : {}),
     },
   ];
 

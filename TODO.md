@@ -16,7 +16,6 @@
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
 - [ ] Context orchestration functions
-- [ ] Variable visibility modifiers
 
 ### Permission System
 - [ ] Command permission scheme (like Claude Code settings)
@@ -118,6 +117,13 @@
 - [ ] Stricter error modes
 
 ## Completed (Last 10)
+
+- [x] Variable visibility modifiers (`private` keyword)
+  - [x] Syntax: `let private x: text = "hidden"`, `const private X: text = "secret"`
+  - [x] Destructuring: `let {private x: text, y: number} = ...` (per-field visibility)
+  - [x] Private variables exist in runtime but are filtered from AI context
+  - [x] Debugger shows `[private]` suffix for private variables
+  - [x] 18 unit tests for parser and context filtering
 
 - [x] Verbose logging system (`--verbose` flag)
   - [x] JSONL event logging to console and `.vibe-logs/run-{timestamp}.jsonl`

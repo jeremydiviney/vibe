@@ -38,6 +38,7 @@ export interface Variable {
   errorMessage?: string;  // The error message if hasError
   hasToolCalls?: boolean; // true if has .toolCalls
   toolCallCount?: number; // Number of tool calls
+  isPrivate?: boolean;    // true if hidden from AI context
 }
 
 // Tool call record for VibeValue inspection

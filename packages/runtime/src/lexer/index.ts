@@ -57,6 +57,7 @@ export const Local = token({ name: 'Local', pattern: /local/, longer_alt: Identi
 export const Import = token({ name: 'Import', pattern: /import/, longer_alt: Identifier });
 export const Export = token({ name: 'Export', pattern: /export/, longer_alt: Identifier });
 export const From = token({ name: 'From', pattern: /from/, longer_alt: Identifier });
+export const Private = token({ name: 'Private', pattern: /private/, longer_alt: Identifier });
 
 // TsBlock pattern function: Captures entire ts(params) { body }
 // Defined separately to avoid initialization issues
@@ -275,6 +276,7 @@ export const allTokens = [
   Import,
   Export,
   From,
+  Private,
   TsBlock,  // Must be before Identifier - captures entire ts(...) { ... }
   TextType,
   JsonType,
