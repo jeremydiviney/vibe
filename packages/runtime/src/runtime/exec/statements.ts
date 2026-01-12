@@ -3,7 +3,7 @@
 import * as AST from '../../ast';
 import type { SourceLocation } from '../../errors';
 import type { RuntimeState, VibeValue } from '../types';
-import { createVibeValue, resolveValue } from '../types';
+import { createVibeValue, resolveValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
 import { requireBoolean, validateAndCoerce } from '../validation';
 import { execDeclareVar } from './variables';
@@ -288,11 +288,42 @@ export function execEnterBlock(state: RuntimeState, _savedKeys: string[]): Runti
 
 /**
  * Exit block scope - remove variables declared in block.
+ * Before removing, await any pending async operations for those variables.
  */
-export function execExitBlock(state: RuntimeState, savedKeys: string[]): RuntimeState {
+export function execExitBlock(state: RuntimeState, savedKeys: string[], location?: SourceLocation): RuntimeState {
   const frame = currentFrame(state);
   const savedKeySet = new Set(savedKeys);
 
+  // Find variables that will be removed (declared in this block)
+  const pendingAsyncIds: string[] = [];
+  for (const key of Object.keys(frame.locals)) {
+    if (!savedKeySet.has(key)) {
+      const variable = frame.locals[key];
+      // Check if this variable has a pending async operation
+      if (isVibeValue(variable) && variable.asyncOperationId) {
+        const opId = variable.asyncOperationId;
+        const operation = state.asyncOperations.get(opId);
+        if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+          pendingAsyncIds.push(opId);
+        }
+      }
+    }
+  }
+
+  // If there are pending async operations, await them before cleaning up
+  if (pendingAsyncIds.length > 0) {
+    return {
+      ...state,
+      status: 'awaiting_async',
+      awaitingAsyncIds: pendingAsyncIds,
+      instructionStack: [
+        { op: 'exit_block', savedKeys, location: location ?? { line: 0, column: 0 } },
+        ...state.instructionStack,
+      ],
+    };
+  }
+
+  // No pending async - proceed with cleanup
   const newLocals: Record<string, VibeValue> = {};
   for (const key of Object.keys(frame.locals)) {
     if (savedKeySet.has(key)) {

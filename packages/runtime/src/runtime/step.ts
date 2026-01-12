@@ -316,7 +316,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execEnterBlock(state, instruction.savedKeys);
 
     case 'exit_block':
-      return execExitBlock(state, instruction.savedKeys);
+      return execExitBlock(state, instruction.savedKeys, instruction.location);
 
     case 'ai_vibe':
       return execAIVibe(state, instruction.model, instruction.context, instruction.operationType);
@@ -403,15 +403,15 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     }
 
     case 'for_in_iterate': {
-      const { variable, items, index, body, savedKeys, contextMode, label, entryIndex } = instruction;
+      const { variable, items, index, body, savedKeys, contextMode, label, entryIndex, location } = instruction;
 
       if (index >= items.length) {
         // Loop complete - add scope-exit marker and apply context mode
         const frame = currentFrame(state);
         const exitState = applyContextMode(state, frame, contextMode!, entryIndex, 'for', label);
 
-        // Cleanup scope variables
-        return execExitBlock(exitState, savedKeys);
+        // Cleanup scope variables (will await pending async first)
+        return execExitBlock(exitState, savedKeys, location);
       }
 
       // First iteration: declare the loop variable
@@ -498,7 +498,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     }
 
     case 'while_check': {
-      const { stmt, savedKeys, contextMode, label, entryIndex } = instruction;
+      const { stmt, savedKeys, contextMode, label, entryIndex, location } = instruction;
       const condition = requireBoolean(state.lastResult, 'while condition');
 
       if (!condition) {
@@ -506,8 +506,8 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         const frame = currentFrame(state);
         const exitState = applyContextMode(state, frame, contextMode!, entryIndex, 'while', label);
 
-        // Cleanup scope variables
-        return execExitBlock(exitState, savedKeys);
+        // Cleanup scope variables (will await pending async first)
+        return execExitBlock(exitState, savedKeys, location);
       }
 
       // Condition still true - continue loop

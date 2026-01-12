@@ -419,6 +419,119 @@ describe('Async Execution Order Verification', () => {
     });
   });
 
+  describe('block boundary awaits', () => {
+    test('if block awaits pending async before exiting', async () => {
+      const events: ExecutionEvent[] = [];
+
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        let captured = ""
+        if true {
+          async let x = do "in_if_block" m default
+          captured = x
+        }
+        let after = "after_if"
+      `);
+
+      const aiProvider = createOrderTrackingAI(75, {
+        'in_if_block': 'IF_VALUE',
+      }, events);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      // x should be awaited before exiting if block
+      expect(runtime.getValue('captured')).toBe('IF_VALUE');
+      expect(runtime.getValue('after')).toBe('after_if');
+    });
+
+    test('for loop awaits pending async at end of each iteration', async () => {
+      const events: ExecutionEvent[] = [];
+
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        let results = []
+        for i in [1, 2] {
+          async let x = do "iter_{i}" m default
+          results.push(x)
+        }
+      `);
+
+      const aiProvider = createOrderTrackingAI(50, {
+        'iter_1': 'R1',
+        'iter_2': 'R2',
+      }, events);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      // Each iteration should await before next iteration
+      // So results should be in order
+      expect(runtime.getValue('results')).toEqual(['R1', 'R2']);
+
+      // Verify sequential execution (iter_1 ends before iter_2 starts)
+      const iter1End = events.find(e => e.type === 'ai_call_end' && e.id.includes('iter_1'));
+      const iter2Start = events.find(e => e.type === 'ai_call_start' && e.id.includes('iter_2'));
+      expect(iter1End).toBeDefined();
+      expect(iter2Start).toBeDefined();
+      expect(iter1End!.timestamp).toBeLessThanOrEqual(iter2Start!.timestamp);
+    });
+
+    test('while loop awaits pending async at end of each iteration', async () => {
+      const events: ExecutionEvent[] = [];
+
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        let results = []
+        let i = 0
+        while i < 2 {
+          async let x = do "while_{i}" m default
+          results.push(x)
+          i = i + 1
+        }
+      `);
+
+      const aiProvider = createOrderTrackingAI(50, {
+        'while_0': 'W0',
+        'while_1': 'W1',
+      }, events);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      expect(runtime.getValue('results')).toEqual(['W0', 'W1']);
+    });
+
+    test('nested blocks await at each level', async () => {
+      const events: ExecutionEvent[] = [];
+
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        let outer_val = ""
+        let inner_val = ""
+        if true {
+          async let o = do "outer_async" m default
+          outer_val = o
+          if true {
+            async let i = do "inner_async" m default
+            inner_val = i
+          }
+        }
+      `);
+
+      const aiProvider = createOrderTrackingAI(50, {
+        'outer_async': 'OUTER',
+        'inner_async': 'INNER',
+      }, events);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      expect(runtime.getValue('outer_val')).toBe('OUTER');
+      expect(runtime.getValue('inner_val')).toBe('INNER');
+    });
+  });
+
   describe('program completion awaits all pending', () => {
     test('pending async operations complete before program ends', async () => {
       const events: ExecutionEvent[] = [];

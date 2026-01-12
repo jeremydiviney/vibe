@@ -3,9 +3,6 @@
 ## Pending
 
 ### AI Integration
-- [ ] Parallel AI calls
-  - [ ] Auto-parallelize independent AI calls (no data dependencies)
-  - [ ] Configurable concurrency limit
 - [ ] Model/provider registry and capability mapping
   - [ ] Map of known models with their capabilities (structured output, thinking, tools)
   - [ ] Allow/deny lists for models (e.g., only allow certain models in production)
@@ -117,6 +114,18 @@
 - [ ] Stricter error modes
 
 ## Completed (Last 10)
+
+- [x] Parallel async execution (`async let/const`)
+  - [x] Syntax: `async let x = do "prompt" model` for async AI calls
+  - [x] Syntax: `async let x = ts { ... }` and `async let x = tsFunction()` for async TS
+  - [x] Syntax: `async let x = vibeFunction()` for async Vibe function calls
+  - [x] Syntax: `async let {a: text, b: number} = do "..." model` for async destructuring
+  - [x] Syntax: `async do "prompt" model` for fire-and-forget (awaited at block boundaries)
+  - [x] Automatic dependency detection and wave-based execution
+  - [x] Implicit await at: variable usage, string interpolation, block boundaries
+  - [x] CLI flag: `--max-parallel=N` (default 4) for concurrency limit
+  - [x] Error handling: failures captured in VibeValue.err, don't block other parallel ops
+  - [x] 62 unit tests for parallel execution, timing, nested calls, execution order
 
 - [x] Variable visibility modifiers (`private` keyword)
   - [x] Syntax: `let private x: text = "hidden"`, `const private X: text = "secret"`
