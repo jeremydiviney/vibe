@@ -28,9 +28,9 @@
 
 ### CLI Options
 - [ ] Add CLI options to vibe command
-  - [ ] `--verbose` / `-v` for verbose logging
+  - [x] `--verbose` for JSONL logging (console + file)
+  - [x] `--log-dir=PATH` for custom log directory
   - [ ] `--quiet` / `-q` for minimal output
-  - [x] `--log-ai` to enable AI interaction logging
   - [x] `--version` to show version
   - [x] `--help` to show usage
   - [x] `--inspect` to start with debugger server
@@ -126,6 +126,14 @@
   - [ ] Stricter error modes
 
 ## Completed (Last 10)
+
+- [x] Verbose logging system (`--verbose` flag)
+  - [x] JSONL event logging to console and `.vibe-logs/run-{timestamp}.jsonl`
+  - [x] Context files in `.vibe-logs/run-{timestamp}/` subdirectory
+  - [x] Sequential IDs: `do-000001`, `vibe-000001`, `ts-000001`, `tsf-000001`
+  - [x] Events: run_start, run_complete, ai_start, ai_complete, tool_start, tool_complete, ts_start, ts_complete
+  - [x] Runtime API: `getLogEvents()` for programmatic access
+  - [x] 27 unit tests for VerboseLogger
 
 - [x] Complete debugger implementation (Phase 1-4)
   - [x] Phase 1: Basic Vibe debugging with breakpoints, stepping, variables

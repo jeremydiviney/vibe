@@ -370,6 +370,94 @@ export interface ExecutionEntry {
   result?: unknown;
 }
 
+// ============================================================================
+// Verbose Logging Types (JSONL output)
+// ============================================================================
+
+// Base log event fields
+interface LogEventBase {
+  seq: number;           // Sequential event number (1, 2, 3, ...)
+  ts: string;            // ISO timestamp
+  event: string;         // Event type
+}
+
+// Run lifecycle events
+export interface RunStartEvent extends LogEventBase {
+  event: 'run_start';
+  file: string;
+}
+
+export interface RunCompleteEvent extends LogEventBase {
+  event: 'run_complete';
+  durationMs: number;
+  status: 'completed' | 'error';
+  error?: string;
+}
+
+// AI call events
+export interface AIStartEvent extends LogEventBase {
+  event: 'ai_start';
+  id: string;            // e.g., "do-000001", "vibe-000001"
+  type: 'do' | 'vibe';
+  model: string;
+  prompt: string;        // Truncated prompt for display
+}
+
+export interface AICompleteEvent extends LogEventBase {
+  event: 'ai_complete';
+  id: string;
+  durationMs: number;
+  tokens?: { in: number; out: number };
+  toolCalls: number;     // Count of tool calls made
+  error?: string;
+}
+
+// Tool call events (within vibe loops)
+export interface ToolStartEvent extends LogEventBase {
+  event: 'tool_start';
+  parentId: string;      // Parent AI call ID
+  tool: string;
+  args: Record<string, unknown>;
+}
+
+export interface ToolCompleteEvent extends LogEventBase {
+  event: 'tool_complete';
+  parentId: string;
+  tool: string;
+  durationMs: number;
+  success: boolean;
+  error?: string;
+}
+
+// TypeScript execution events
+export interface TSStartEvent extends LogEventBase {
+  event: 'ts_start';
+  id: string;            // e.g., "ts-000001" or "tsf-000001"
+  tsType: 'block' | 'function';  // block = inline ts{}, function = imported ts
+  name?: string;         // Function name (for imported ts functions)
+  params: string[];
+  location: { file: string; line: number };
+}
+
+export interface TSCompleteEvent extends LogEventBase {
+  event: 'ts_complete';
+  id: string;
+  tsType: 'block' | 'function';
+  durationMs: number;
+  error?: string;
+}
+
+// Union of all log events
+export type LogEvent =
+  | RunStartEvent
+  | RunCompleteEvent
+  | AIStartEvent
+  | AICompleteEvent
+  | ToolStartEvent
+  | ToolCompleteEvent
+  | TSStartEvent
+  | TSCompleteEvent;
+
 // Pending AI request info
 export interface PendingAI {
   type: 'do' | 'vibe';  // 'do' = single round, 'vibe' = multi-turn tool loop

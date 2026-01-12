@@ -13,7 +13,7 @@ export * from './errors';
 
 import { parse } from './parser/parse';
 import { analyze } from './semantic';
-import { Runtime, AIProvider, createRealAIProvider, dumpAIInteractions } from './runtime';
+import { Runtime, AIProvider, createRealAIProvider } from './runtime';
 import { readdirSync, rmSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 
@@ -163,7 +163,7 @@ async function main(): Promise<void> {
   }
 
   // Parse flags
-  const logAi = args.includes('--log-ai');
+  const verbose = args.includes('--verbose');
   const inspect = args.includes('--inspect');
   const inspectBrk = args.includes('--inspect-brk');
   const debugMode = inspect || inspectBrk;
@@ -176,6 +176,13 @@ async function main(): Promise<void> {
     debugPort = parseInt(portArg.split('=')[1], 10);
   }
 
+  // Parse --log-dir=PATH option
+  let logDir: string | undefined;
+  const logDirArg = args.find(arg => arg.startsWith('--log-dir='));
+  if (logDirArg) {
+    logDir = logDirArg.split('=')[1];
+  }
+
   const fileArgs = args.filter(arg => !arg.startsWith('--'));
 
   if (fileArgs.length === 0) {
@@ -186,7 +193,8 @@ async function main(): Promise<void> {
     console.log('  upgrade [version]   Update vibe (default: latest)');
     console.log('');
     console.log('Options:');
-    console.log('  --log-ai              Show detailed AI interaction logs');
+    console.log('  --verbose             Enable verbose JSONL logging (console + file)');
+    console.log('  --log-dir=PATH        Directory for logs (default: .vibe-logs)');
     console.log('  --inspect             Start with debugger server');
     console.log('  --inspect-brk         Start with debugger, break on entry');
     console.log('  --inspect-port=PORT   Debug server port (default: 9229)');
@@ -221,22 +229,30 @@ async function main(): Promise<void> {
 
     if (debugMode) {
       // Run in debug mode
-      await runDebugMode(ast, filePath, debugPort, stopOnEntry, logAi);
+      await runDebugMode(ast, filePath, debugPort, stopOnEntry, verbose, logDir);
     } else {
       // Normal execution
       const runtime: Runtime = new Runtime(
         ast,
         createRealAIProvider(() => runtime.getState()),
-        { basePath: filePath, logAiInteractions: logAi }
+        {
+          basePath: filePath,
+          verbose,
+          logDir,
+        }
       );
 
       const result = await runtime.run();
 
-      // Dump AI interactions if logging was enabled (auto-saved by Runtime)
-      if (logAi) {
-        const state = runtime.getState();
-        if (state.aiInteractions.length > 0) {
-          dumpAIInteractions(state);
+      // Show log paths if verbose logging was enabled
+      if (verbose) {
+        const mainLogPath = runtime.getMainLogPath();
+        const contextDir = runtime.getContextDir();
+        if (mainLogPath) {
+          console.error(`[Verbose] Logs written to: ${mainLogPath}`);
+        }
+        if (contextDir) {
+          console.error(`[Verbose] Context files in: ${contextDir}`);
         }
       }
 
@@ -256,7 +272,8 @@ async function runDebugMode(
   filePath: string,
   port: number,
   stopOnEntry: boolean,
-  logAi: boolean
+  verbose?: boolean,
+  logDir?: string
 ): Promise<void> {
   // Import debug modules
   const { createDebugState, runWithDebug, getCurrentLocation } = await import('./debug');
@@ -266,7 +283,8 @@ async function runDebugMode(
   const { createRealAIProvider } = await import('./runtime/ai-provider');
 
   // Create initial state
-  let runtimeState = createInitialState(ast, { logAiInteractions: logAi });
+  // Note: verbose logging in debug mode is limited for now
+  let runtimeState = createInitialState(ast);
 
   // Load imports
   runtimeState = await loadImports(runtimeState, filePath);

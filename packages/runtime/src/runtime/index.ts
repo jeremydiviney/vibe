@@ -84,6 +84,10 @@ export * from './ai';
 // Re-export AI interaction logging utilities
 export { formatAIInteractions, dumpAIInteractions, saveAIInteractions } from './ai-logger';
 
+// Re-export verbose logging
+export { VerboseLogger, type VerboseLoggerOptions } from './verbose-logger';
+export type { LogEvent, AILogMessage, TokenUsage } from './types';
+
 // Legacy imports for backward compatibility
 import * as AST from '../ast';
 import { dirname } from 'path';
@@ -99,7 +103,8 @@ import { saveAIInteractions } from './ai-logger';
 // Token usage from AI providers
 import type { TokenUsage } from './ai/types';
 import type { ToolRoundResult } from './ai/tool-loop';
-import type { AILogMessage, ContextEntry, PromptToolCall } from './types';
+import type { AILogMessage, ContextEntry, PromptToolCall, LogEvent } from './types';
+import { VerboseLogger } from './verbose-logger';
 
 // AI execution result with optional usage and tool rounds
 export interface AIExecutionResult {
@@ -122,8 +127,12 @@ export interface AIProvider {
 // Runtime options
 export interface RuntimeOptions {
   basePath?: string;           // Base path for resolving imports (defaults to cwd)
-  logAiInteractions?: boolean; // Capture detailed AI interaction logs for debugging
+  logAiInteractions?: boolean; // Capture detailed AI interaction logs for debugging (DEPRECATED: use verbose)
   rootDir?: string;            // Root directory for file operation sandboxing (defaults to cwd)
+  verbose?: boolean;           // Enable verbose logging (JSONL events + context files)
+  logDir?: string;             // Directory for verbose logs (default: .vibe-logs)
+  printToConsole?: boolean;    // Print verbose logs to console (default: true)
+  writeToFile?: boolean;       // Write verbose logs to file (default: true)
 }
 
 // Legacy Runtime class - convenience wrapper around functional API
@@ -133,6 +142,7 @@ export class Runtime {
   private basePath: string;
   private importsLoaded: boolean = false;
   private logAiInteractions: boolean;
+  private verboseLogger: VerboseLogger | null = null;
 
   constructor(program: AST.Program, aiProvider: AIProvider, options?: RuntimeOptions) {
     this.logAiInteractions = options?.logAiInteractions ?? false;
@@ -142,6 +152,15 @@ export class Runtime {
     });
     this.aiProvider = aiProvider;
     this.basePath = options?.basePath ?? process.cwd() + '/main.vibe';
+
+    // Initialize verbose logger if enabled
+    if (options?.verbose) {
+      this.verboseLogger = new VerboseLogger({
+        logDir: options.logDir,
+        printToConsole: options.printToConsole,
+        writeToFile: options.writeToFile,
+      });
+    }
   }
 
   getState(): RuntimeState {
@@ -173,6 +192,9 @@ export class Runtime {
 
   // Run the program to completion, handling AI calls and TS evaluation
   async run(): Promise<unknown> {
+    // Log run start
+    this.verboseLogger?.start(this.basePath);
+
     // Load imports if not already loaded
     if (!this.importsLoaded) {
       this.state = await loadImports(this.state, this.basePath);
@@ -194,8 +216,32 @@ export class Runtime {
         if (this.state.pendingTS) {
           // Handle inline ts block evaluation
           const { params, body, paramValues, location } = this.state.pendingTS;
-          const result = await evalTsBlock(params, body, paramValues, location);
-          this.state = resumeWithTsResult(this.state, result);
+
+          // Log TS block start
+          const tsId = this.verboseLogger?.tsBlockStart(
+            params,
+            paramValues,
+            body,
+            { file: location.file ?? this.basePath, line: location.line }
+          );
+          const tsStartTime = Date.now();
+
+          try {
+            const result = await evalTsBlock(params, body, paramValues, location);
+            this.state = resumeWithTsResult(this.state, result);
+
+            // Log TS block complete
+            if (tsId) {
+              this.verboseLogger?.tsBlockComplete(tsId, Date.now() - tsStartTime);
+            }
+          } catch (error) {
+            // Log TS block error
+            if (tsId) {
+              const errMsg = error instanceof Error ? error.message : String(error);
+              this.verboseLogger?.tsBlockComplete(tsId, Date.now() - tsStartTime, errMsg);
+            }
+            throw error;
+          }
         } else if (this.state.pendingImportedTsCall) {
           // Handle imported TS function call
           const { funcName, args, location } = this.state.pendingImportedTsCall;
@@ -203,10 +249,29 @@ export class Runtime {
           if (!fn) {
             throw new Error(`Import error: Function '${funcName}' not found`);
           }
+
+          // Log TS function start
+          const tsfId = this.verboseLogger?.tsFunctionStart(
+            funcName,
+            args,
+            { file: location.file ?? this.basePath, line: location.line }
+          );
+          const tsfStartTime = Date.now();
+
           try {
             const result = await fn(...args);
             this.state = resumeWithImportedTsResult(this.state, result);
+
+            // Log TS function complete
+            if (tsfId) {
+              this.verboseLogger?.tsFunctionComplete(tsfId, Date.now() - tsfStartTime);
+            }
           } catch (error) {
+            // Log TS function error
+            if (tsfId) {
+              const errMsg = error instanceof Error ? error.message : String(error);
+              this.verboseLogger?.tsFunctionComplete(tsfId, Date.now() - tsfStartTime, errMsg);
+            }
             // Wrap imported TS function error with Vibe location info
             const originalError = error instanceof Error ? error : new Error(String(error));
             throw new TsBlockError(
@@ -236,26 +301,57 @@ export class Runtime {
           targetType = nextInstruction.type;
         }
 
-        // vibe is the only AI expression type now
-        const result: AIExecutionResult = await this.aiProvider.execute(pendingAI.prompt);
+        // Get model details from state for logging
+        let modelDetails: AIInteraction['modelDetails'];
+        const modelVar = this.state.callStack[0]?.locals?.[pendingAI.model];
+        if (modelVar?.value && typeof modelVar.value === 'object') {
+          const mv = modelVar.value as Record<string, unknown>;
+          modelDetails = {
+            name: String(mv.name ?? ''),
+            provider: String(mv.provider ?? ''),
+            url: mv.url ? String(mv.url) : undefined,
+            thinkingLevel: mv.thinkingLevel ? String(mv.thinkingLevel) : undefined,
+          };
+        }
 
-        // Create interaction record if logging
+        // Log AI start (verbose logger)
+        const aiId = this.verboseLogger?.aiStart(
+          pendingAI.type,
+          pendingAI.model,
+          pendingAI.prompt,
+          {
+            model: pendingAI.model,
+            modelDetails,
+            type: pendingAI.type,
+            targetType,
+            messages: [], // Will be updated after execution
+          }
+        );
+
+        // vibe is the only AI expression type now
+        let result: AIExecutionResult;
+        let aiError: string | undefined;
+        try {
+          result = await this.aiProvider.execute(pendingAI.prompt);
+        } catch (error) {
+          aiError = error instanceof Error ? error.message : String(error);
+          // Log AI error
+          if (aiId) {
+            this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, undefined, 0, aiError);
+          }
+          throw error;
+        }
+
+        // Log AI complete (verbose logger)
+        if (aiId) {
+          const toolCallCount = result.toolRounds?.reduce((sum, r) => sum + r.toolCalls.length, 0) ?? 0;
+          this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, result.usage, toolCallCount);
+        }
+
+        // Create interaction record if logging (legacy)
         // Uses context from result (single source of truth from ai-provider)
         let interaction: AIInteraction | undefined;
         if (this.logAiInteractions) {
-          // Get model details from state
-          let modelDetails: AIInteraction['modelDetails'];
-          const modelVar = this.state.callStack[0]?.locals?.[pendingAI.model];
-          if (modelVar?.value && typeof modelVar.value === 'object') {
-            const mv = modelVar.value as Record<string, unknown>;
-            modelDetails = {
-              name: String(mv.name ?? ''),
-              provider: String(mv.provider ?? ''),
-              url: mv.url ? String(mv.url) : undefined,
-              thinkingLevel: mv.thinkingLevel ? String(mv.thinkingLevel) : undefined,
-            };
-          }
-
           interaction = {
             type: pendingAI.type,
             prompt: pendingAI.prompt,
@@ -280,12 +376,25 @@ export class Runtime {
           throw new Error('State awaiting tool but no pending tool call');
         }
 
-        const { args, executor } = this.state.pendingToolCall;
+        const { toolName, args, executor } = this.state.pendingToolCall;
 
-        // Execute the tool with context - let errors propagate
-        const context = { rootDir: this.state.rootDir };
-        const result = await executor(args, context);
-        this.state = resumeWithToolResult(this.state, result);
+        // Log tool start (we don't have a parent AI ID here, use empty string)
+        this.verboseLogger?.toolStart('', toolName ?? 'unknown', args as Record<string, unknown>);
+        const toolStartTime = Date.now();
+
+        try {
+          // Execute the tool with context - let errors propagate
+          const context = { rootDir: this.state.rootDir };
+          const result = await executor(args, context);
+          this.state = resumeWithToolResult(this.state, result);
+
+          // Log tool complete
+          this.verboseLogger?.toolComplete('', toolName ?? 'unknown', Date.now() - toolStartTime, true);
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          this.verboseLogger?.toolComplete('', toolName ?? 'unknown', Date.now() - toolStartTime, false, errMsg);
+          throw error;
+        }
       } else if (this.state.status === 'awaiting_compress') {
         // Handle compress AI summarization
         if (!this.state.pendingCompress) {
@@ -321,11 +430,17 @@ export class Runtime {
     }
 
     if (this.state.status === 'error') {
+      // Log run error
+      this.verboseLogger?.complete('error', this.state.error ?? 'Unknown error');
+
       // Save logs even on error if logging enabled
       this.saveLogsIfEnabled();
       // Throw the original error object to preserve location info
       throw this.state.errorObject ?? new Error(this.state.error ?? 'Unknown runtime error');
     }
+
+    // Log run complete
+    this.verboseLogger?.complete('completed');
 
     // Save logs on successful completion
     this.saveLogsIfEnabled();
@@ -364,6 +479,21 @@ export class Runtime {
   resumeWithUserInput(input: string): RuntimeState {
     this.state = resumeWithUserInput(this.state, input);
     return this.state;
+  }
+
+  // Get all logged events (for programmatic access / testing)
+  getLogEvents(): LogEvent[] {
+    return this.verboseLogger?.getEvents() ?? [];
+  }
+
+  // Get the main log file path (for debugging)
+  getMainLogPath(): string | null {
+    return this.verboseLogger?.getMainLogPath() ?? null;
+  }
+
+  // Get the context directory path (for debugging)
+  getContextDir(): string | null {
+    return this.verboseLogger?.getContextDir() ?? null;
   }
 }
 
