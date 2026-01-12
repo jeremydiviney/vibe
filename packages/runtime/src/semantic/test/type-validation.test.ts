@@ -138,6 +138,40 @@ describe('Semantic Analyzer - Type Validation', () => {
     expect(errors).toEqual([]);
   });
 
+  test('null passed to boolean parameter errors', () => {
+    const errors = getErrors(`
+function check(flag: boolean): boolean { return flag }
+let result = check(null)
+`);
+    expect(errors).toContain('Type error: cannot assign null to boolean');
+  });
+
+  test('null as if condition errors', () => {
+    const errors = getErrors('if null { let x = 1 }');
+    expect(errors).toContain('if condition must be boolean, got null');
+  });
+
+  test('null as while condition errors', () => {
+    const errors = getErrors('while null { let x = 1 }');
+    expect(errors).toContain('while condition must be boolean, got null');
+  });
+
+  test('nullable text variable as if condition errors', () => {
+    const errors = getErrors(`
+let x: text = null
+if x { let y = 1 }
+`);
+    expect(errors).toContain('if condition must be boolean, got text');
+  });
+
+  test('nullable text variable as while condition errors', () => {
+    const errors = getErrors(`
+let x: text = null
+while x { let y = 1 }
+`);
+    expect(errors).toContain('while condition must be boolean, got text');
+  });
+
   test('text variable assigned to text is valid', () => {
     const errors = getErrors('const t: text = "hello"\nconst t2: text = t');
     expect(errors).toEqual([]);
