@@ -98,7 +98,7 @@
         },
         {
           "name": "keyword.declaration.vibe",
-          "match": "\\b(let|const|function|tool|model|import|export|from)\\b"
+          "match": "\\b(let|const|function|tool|model|import|export|from|async|private)\\b"
         },
         {
           "name": "keyword.ai.vibe",
@@ -106,7 +106,7 @@
         },
         {
           "name": "keyword.context.vibe",
-          "match": "\\b(forget|verbose|compress|cache|local|default)\\b"
+          "match": "\\b(forget|verbose|compress|local|default)\\b"
         },
         {
           "name": "keyword.operator.logical.vibe",

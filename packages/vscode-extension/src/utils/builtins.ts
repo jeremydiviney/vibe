@@ -176,6 +176,18 @@ export const keywords: KeywordDef[] = [
     detail: 'Context mode: summarize',
     documentation: 'Context mode: AI summarizes context on exit.\n\nSyntax: `compress` or `compress("prompt")`',
   },
+  {
+    name: 'async',
+    kind: CompletionItemKind.Keyword,
+    detail: 'Async declaration',
+    documentation: 'Declare an async variable that executes in parallel.\n\nSyntax: `async let x = do "..." model`\n\nSupports:\n- `async let/const` for AI calls\n- `async let/const` for TS blocks and functions\n- `async let/const` for Vibe function calls\n- Automatic dependency detection and wave-based execution\n- Implicit await at variable usage or block boundaries',
+  },
+  {
+    name: 'private',
+    kind: CompletionItemKind.Keyword,
+    detail: 'Private variable modifier',
+    documentation: 'Mark a variable as private (hidden from AI context).\n\nSyntax: `let private x: text = "hidden"`\n\nPrivate variables:\n- Exist in runtime but filtered from AI context\n- Useful for API keys, internal state, etc.\n- Can be used with destructuring: `let {private x: text, y: number} = ...`',
+  },
 ];
 
 // Create lookup map for hover

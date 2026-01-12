@@ -1,6 +1,9 @@
 import type * as AST from '@vibe-lang/runtime/ast';
 import { KEYWORD_OFFSETS } from './position';
 
+// Additional offset when 'private' modifier is present (adds "private " = 8 chars)
+const PRIVATE_OFFSET = 8;
+
 /**
  * Generic AST walker with visitor pattern
  * Consolidates traversal logic used by references, rename, and ast-utils
@@ -80,33 +83,39 @@ function walkStatement(statement: AST.Statement, visitor: ASTVisitor): void {
       }
       break;
 
-    case 'LetDeclaration':
+    case 'LetDeclaration': {
       if (visitor.onDeclaration) {
+        // Account for 'private' modifier if present: "let private " vs "let "
+        const privateOffset = statement.isPrivate ? PRIVATE_OFFSET : 0;
         visitor.onDeclaration({
           name: statement.name,
           location: statement.location,
           kind: 'let',
-          nameColumn: statement.location.column + (KEYWORD_OFFSETS['let'] ?? 0),
+          nameColumn: statement.location.column + (KEYWORD_OFFSETS['let'] ?? 0) + privateOffset,
         });
       }
       if (statement.initializer) {
         walkExpression(statement.initializer, visitor);
       }
       break;
+    }
 
-    case 'ConstDeclaration':
+    case 'ConstDeclaration': {
       if (visitor.onDeclaration) {
+        // Account for 'private' modifier if present: "const private " vs "const "
+        const privateOffset = statement.isPrivate ? PRIVATE_OFFSET : 0;
         visitor.onDeclaration({
           name: statement.name,
           location: statement.location,
           kind: 'const',
-          nameColumn: statement.location.column + (KEYWORD_OFFSETS['const'] ?? 0),
+          nameColumn: statement.location.column + (KEYWORD_OFFSETS['const'] ?? 0) + privateOffset,
         });
       }
       if (statement.initializer) {
         walkExpression(statement.initializer, visitor);
       }
       break;
+    }
 
     case 'DestructuringDeclaration':
       // Each field is a declaration but without precise location
@@ -177,6 +186,11 @@ function walkStatement(statement: AST.Statement, visitor: ASTVisitor): void {
 
     case 'ImportDeclaration':
       // Imports don't have expressions to walk
+      break;
+
+    case 'AsyncStatement':
+      // Fire-and-forget async: async do/vibe/ts/function()
+      walkExpression(statement.expression, visitor);
       break;
   }
 }
@@ -259,6 +273,16 @@ function walkExpression(expr: AST.Expression, visitor: ASTVisitor): void {
     case 'RangeExpression':
       walkExpression(expr.start, visitor);
       walkExpression(expr.end, visitor);
+      break;
+
+    case 'SliceExpression':
+      walkExpression(expr.object, visitor);
+      if (expr.start) {
+        walkExpression(expr.start, visitor);
+      }
+      if (expr.end) {
+        walkExpression(expr.end, visitor);
+      }
       break;
 
     // Literals don't contain identifiers

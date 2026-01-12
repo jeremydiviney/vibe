@@ -49,4 +49,36 @@ describe('Hover Provider', () => {
     // This is expected behavior until we implement symbol table integration
     expect(hover === null || hover !== null).toBe(true);
   });
+
+  it('should return documentation for async keyword', () => {
+    const doc = createDocument('async let x = do "hello" m default');
+    const hover = provideHover(doc, { line: 0, character: 2 }); // on "async"
+
+    expect(hover).not.toBeNull();
+    if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+      expect(hover.contents.value).toContain('async');
+      expect(hover.contents.value).toContain('parallel');
+    }
+  });
+
+  it('should return documentation for private keyword', () => {
+    const doc = createDocument('let private secret = "key"');
+    const hover = provideHover(doc, { line: 0, character: 6 }); // on "private"
+
+    expect(hover).not.toBeNull();
+    if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+      expect(hover.contents.value).toContain('private');
+      expect(hover.contents.value).toContain('hidden');
+    }
+  });
+
+  it('should return documentation for null keyword', () => {
+    const doc = createDocument('let x: text = null');
+    const hover = provideHover(doc, { line: 0, character: 15 }); // on "null"
+
+    expect(hover).not.toBeNull();
+    if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+      expect(hover.contents.value).toContain('null');
+    }
+  });
 });

@@ -21,6 +21,30 @@ describe('Completion Provider', () => {
     expect(keywords).toContain('for');
   });
 
+  it('should return async keyword for parallel execution', () => {
+    const doc = createDocument('');
+    const completions = provideCompletions(doc, { line: 0, character: 0 });
+
+    const keywords = completions.map(c => c.label);
+    expect(keywords).toContain('async');
+  });
+
+  it('should return private keyword for visibility modifier', () => {
+    const doc = createDocument('');
+    const completions = provideCompletions(doc, { line: 0, character: 0 });
+
+    const keywords = completions.map(c => c.label);
+    expect(keywords).toContain('private');
+  });
+
+  it('should return null keyword', () => {
+    const doc = createDocument('');
+    const completions = provideCompletions(doc, { line: 0, character: 0 });
+
+    const keywords = completions.map(c => c.label);
+    expect(keywords).toContain('null');
+  });
+
   it('should return built-in tools', () => {
     const doc = createDocument('');
     const completions = provideCompletions(doc, { line: 0, character: 0 });

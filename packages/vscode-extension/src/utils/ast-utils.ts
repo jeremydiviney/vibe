@@ -1,6 +1,9 @@
 import type * as AST from '@vibe-lang/runtime/ast';
 import { KEYWORD_OFFSETS } from './position';
 
+// Additional offset when 'private' modifier is present (adds "private " = 8 chars)
+const PRIVATE_OFFSET = 8;
+
 // TypeScript import info - maps local name to import details
 export interface TSImportInfo {
   localName: string;      // Name used in this file
@@ -293,8 +296,10 @@ function findIdentifierInStatement(
       }
       break;
 
-    case 'LetDeclaration':
-      if (isPositionAtDeclarationName(statement.location, 'let', statement.name, line, column)) {
+    case 'LetDeclaration': {
+      // Account for 'private' modifier if present
+      const letPrivateOffset = statement.isPrivate ? PRIVATE_OFFSET : 0;
+      if (isPositionAtDeclarationName(statement.location, 'let', statement.name, line, column, letPrivateOffset)) {
         return statement.name;
       }
       if (statement.initializer) {
@@ -302,9 +307,12 @@ function findIdentifierInStatement(
         if (result) return result;
       }
       break;
+    }
 
-    case 'ConstDeclaration':
-      if (isPositionAtDeclarationName(statement.location, 'const', statement.name, line, column)) {
+    case 'ConstDeclaration': {
+      // Account for 'private' modifier if present
+      const constPrivateOffset = statement.isPrivate ? PRIVATE_OFFSET : 0;
+      if (isPositionAtDeclarationName(statement.location, 'const', statement.name, line, column, constPrivateOffset)) {
         return statement.name;
       }
       if (statement.initializer) {
@@ -312,6 +320,7 @@ function findIdentifierInStatement(
         if (result) return result;
       }
       break;
+    }
 
     case 'DestructuringDeclaration':
       // Fields don't have individual locations, check initializer
@@ -371,6 +380,10 @@ function findIdentifierInStatement(
         }
       }
       break;
+
+    case 'AsyncStatement':
+      // Fire-and-forget async: async do/vibe/ts/function()
+      return findIdentifierInExpression(statement.expression, line, column);
   }
 
   return null;
@@ -471,6 +484,30 @@ function findIdentifierInExpression(
         }
       }
       break;
+
+    case 'SliceExpression':
+      {
+        const objResult = findIdentifierInExpression(expr.object, line, column);
+        if (objResult) return objResult;
+        if (expr.start) {
+          const startResult = findIdentifierInExpression(expr.start, line, column);
+          if (startResult) return startResult;
+        }
+        if (expr.end) {
+          const endResult = findIdentifierInExpression(expr.end, line, column);
+          if (endResult) return endResult;
+        }
+      }
+      break;
+
+    case 'RangeExpression':
+      {
+        const startResult = findIdentifierInExpression(expr.start, line, column);
+        if (startResult) return startResult;
+        const endResult = findIdentifierInExpression(expr.end, line, column);
+        if (endResult) return endResult;
+      }
+      break;
   }
 
   return null;
@@ -501,10 +538,11 @@ function isPositionAtDeclarationName(
   kind: string,
   name: string,
   line: number,
-  column: number
+  column: number,
+  extraOffset: number = 0
 ): boolean {
   if (location.line !== line) return false;
-  const nameCol = getDeclarationNameColumn(kind, location.column);
+  const nameCol = getDeclarationNameColumn(kind, location.column) + extraOffset;
   const endCol = nameCol + name.length;
   return column >= nameCol && column <= endCol;
 }
@@ -594,29 +632,35 @@ function collectDeclarations(
       });
       break;
 
-    case 'LetDeclaration':
+    case 'LetDeclaration': {
+      // Account for 'private' modifier if present: "let private " vs "let "
+      const letPrivateOffset = statement.isPrivate ? PRIVATE_OFFSET : 0;
       declarations.push({
         name: statement.name,
         kind: 'variable',
         location: {
           line: statement.location.line,
-          column: getDeclarationNameColumn('let', statement.location.column),
+          column: getDeclarationNameColumn('let', statement.location.column) + letPrivateOffset,
         },
         node: statement,
       });
       break;
+    }
 
-    case 'ConstDeclaration':
+    case 'ConstDeclaration': {
+      // Account for 'private' modifier if present: "const private " vs "const "
+      const constPrivateOffset = statement.isPrivate ? PRIVATE_OFFSET : 0;
       declarations.push({
         name: statement.name,
         kind: 'constant',
         location: {
           line: statement.location.line,
-          column: getDeclarationNameColumn('const', statement.location.column),
+          column: getDeclarationNameColumn('const', statement.location.column) + constPrivateOffset,
         },
         node: statement,
       });
       break;
+    }
 
     case 'DestructuringDeclaration':
       // Each destructured field is a declaration

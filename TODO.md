@@ -10,6 +10,16 @@
   - [ ] Graceful fallback when capability not supported (use prompt instructions instead)
   - [ ] Model aliases (e.g., `fast` → `gemini-3-flash`, `smart` → `claude-sonnet-4-5`)
 
+### Subagents
+- [ ] Subagent support (async vibe functions with isolated context)
+  - [ ] Clean context with initial prompt from calling AI
+  - [ ] Configurable system prompts per subagent
+  - [ ] Separate model declaration with custom system prompts on top of standard prompts
+  - [ ] Independent toolsets per subagent
+  - [ ] Callable by parent AI model (registered in context like tools)
+  - [ ] Callable by Vibe code directly
+  - [ ] Consider syntax: `agent myAgent = { model: m, systemPrompt: "...", tools: [...] }`
+
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
 - [ ] Context orchestration functions

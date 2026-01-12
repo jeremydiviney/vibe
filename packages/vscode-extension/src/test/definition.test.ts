@@ -128,6 +128,63 @@ for item in items {
     });
   });
 
+  describe('Private variable definitions', () => {
+    it('should find private let definition from reference', () => {
+      const doc = createDocument(`let private apiKey = "secret"
+let url = "http://api.com?key=" + apiKey`);
+
+      // Click on "apiKey" in the expression (line 1, column ~35)
+      const def = provideDefinition(doc, { line: 1, character: 35 }) as Location;
+
+      expect(def).not.toBeNull();
+      expect(def.range.start.line).toBe(0);
+      // "let private " is 12 chars, so name starts at column 12
+      expect(def.range.start.character).toBe(12);
+    });
+
+    it('should find private const definition', () => {
+      const doc = createDocument(`const private SECRET = "key123"
+print(SECRET)`);
+
+      // Click on "SECRET" in the print call
+      const def = provideDefinition(doc, { line: 1, character: 6 }) as Location;
+
+      expect(def).not.toBeNull();
+      expect(def.range.start.line).toBe(0);
+      // "const private " is 14 chars
+      expect(def.range.start.character).toBe(14);
+    });
+  });
+
+  describe('Async declaration definitions', () => {
+    it('should find async let definition from reference', () => {
+      const doc = createDocument(`model m = { name: "test", apiKey: "key", url: "http://example.com" }
+async let result = do "Fetch data" m default
+print(result)`);
+
+      // Click on "result" in the print call
+      const def = provideDefinition(doc, { line: 2, character: 6 }) as Location;
+
+      expect(def).not.toBeNull();
+      expect(def.range.start.line).toBe(1);
+      // Location points to "let", and "let " is 4 chars, so name starts at column 10 (after "async let ")
+      // But wait - location points to "let", not "async", so it's just 4 chars
+      expect(def.range.start.character).toBe(10); // "async let " from start of line
+    });
+
+    it('should find async const definition', () => {
+      const doc = createDocument(`model m = { name: "test", apiKey: "key", url: "http://example.com" }
+async const data = do "Get" m default
+let processed = data`);
+
+      // Click on "data" in the expression
+      const def = provideDefinition(doc, { line: 2, character: 16 }) as Location;
+
+      expect(def).not.toBeNull();
+      expect(def.range.start.line).toBe(1);
+    });
+  });
+
   describe('Edge cases', () => {
     it('should return null for unknown identifiers', () => {
       const doc = createDocument(`let x = unknownVar`);
