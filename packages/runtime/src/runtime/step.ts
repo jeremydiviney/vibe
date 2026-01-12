@@ -318,6 +318,18 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     case 'exit_block':
       return execExitBlock(state, instruction.savedKeys, instruction.location);
 
+    case 'clear_async_context':
+      // Clear all async context flags (used after fire-and-forget async statements)
+      return {
+        ...state,
+        currentAsyncVarName: null,
+        currentAsyncIsConst: false,
+        currentAsyncType: null,
+        currentAsyncIsPrivate: false,
+        currentAsyncIsDestructure: false,
+        currentAsyncIsFireAndForget: false,
+      };
+
     case 'ai_vibe':
       return execAIVibe(state, instruction.model, instruction.context, instruction.operationType);
 

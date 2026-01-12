@@ -10,10 +10,11 @@ export const RETURN_FIELD_TOOL = '__vibe_return_field';
 
 /**
  * Check if we should use tool-based return for this type.
- * Now returns true for all non-text types (text is handled via plain response).
+ * Returns true for all typed returns (including text) for consistent behavior.
+ * Only returns false for untyped (null) returns.
  */
 export function shouldUseReturnTool(targetType: TargetType): boolean {
-  return targetType !== 'text' && targetType !== null;
+  return targetType !== null;
 }
 
 /**
@@ -116,9 +117,9 @@ export function collectAndValidateFieldResults(
       );
     }
 
-    // Validate type
-    validateValueForType(value, expectedType, field);
-    result[field] = value;
+    // Validate and coerce type (handles stringified values from some providers)
+    const coercedValue = validateValueForType(value, expectedType, field);
+    result[field] = coercedValue;
   }
 
   // Check all expected fields were returned
@@ -132,6 +133,52 @@ export function collectAndValidateFieldResults(
 }
 
 /**
+ * Coerce a value to the expected type.
+ * Some providers (e.g., Anthropic) may return stringified values for tool parameters.
+ * This function attempts to parse strings into their expected types.
+ */
+function coerceValue(value: unknown, type: string): unknown {
+  // If value is already the right type, return as-is
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  // Try to coerce string values based on expected type
+  switch (type) {
+    case 'text':
+      return value; // Already a string
+
+    case 'number': {
+      const num = parseFloat(value);
+      if (Number.isFinite(num)) {
+        return num;
+      }
+      return value; // Return original, validation will fail
+    }
+
+    case 'boolean':
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      return value; // Return original, validation will fail
+
+    case 'json':
+    case 'text[]':
+    case 'number[]':
+    case 'boolean[]':
+    case 'json[]':
+      // Try JSON parse for complex types
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value; // Return original, validation will fail
+      }
+
+    default:
+      return value;
+  }
+}
+
+/**
  * Validate a value against an expected type.
  * Throws an error if validation fails.
  */
@@ -139,95 +186,98 @@ function validateValueForType(
   value: unknown,
   type: string,
   fieldName: string
-): void {
+): unknown {
+  // First coerce the value
+  const coerced = coerceValue(value, type);
+
   switch (type) {
     case 'text':
-      if (typeof value !== 'string') {
+      if (typeof coerced !== 'string') {
         throw new Error(
-          `Field '${fieldName}' expected text, got ${typeof value}`
+          `Field '${fieldName}' expected text, got ${typeof coerced}`
         );
       }
-      break;
+      return coerced;
 
     case 'number':
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
+      if (typeof coerced !== 'number' || !Number.isFinite(coerced)) {
         throw new Error(
-          `Field '${fieldName}' expected number, got ${typeof value}`
+          `Field '${fieldName}' expected number, got ${typeof coerced}`
         );
       }
-      break;
+      return coerced;
 
     case 'boolean':
-      if (typeof value !== 'boolean') {
+      if (typeof coerced !== 'boolean') {
         throw new Error(
-          `Field '${fieldName}' expected boolean, got ${typeof value}`
+          `Field '${fieldName}' expected boolean, got ${typeof coerced}`
         );
       }
-      break;
+      return coerced;
 
     case 'json':
-      if (typeof value !== 'object' || value === null) {
+      if (typeof coerced !== 'object' || coerced === null) {
         throw new Error(
-          `Field '${fieldName}' expected json object, got ${typeof value}`
+          `Field '${fieldName}' expected json object, got ${typeof coerced}`
         );
       }
-      break;
+      return coerced;
 
     case 'text[]':
-      if (!Array.isArray(value)) {
-        throw new Error(`Field '${fieldName}' expected text[], got ${typeof value}`);
+      if (!Array.isArray(coerced)) {
+        throw new Error(`Field '${fieldName}' expected text[], got ${typeof coerced}`);
       }
-      for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== 'string') {
+      for (let i = 0; i < coerced.length; i++) {
+        if (typeof coerced[i] !== 'string') {
           throw new Error(
-            `Field '${fieldName}' expected text[] but element ${i} is ${typeof value[i]}`
+            `Field '${fieldName}' expected text[] but element ${i} is ${typeof coerced[i]}`
           );
         }
       }
-      break;
+      return coerced;
 
     case 'number[]':
-      if (!Array.isArray(value)) {
-        throw new Error(`Field '${fieldName}' expected number[], got ${typeof value}`);
+      if (!Array.isArray(coerced)) {
+        throw new Error(`Field '${fieldName}' expected number[], got ${typeof coerced}`);
       }
-      for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== 'number' || !Number.isFinite(value[i])) {
+      for (let i = 0; i < coerced.length; i++) {
+        if (typeof coerced[i] !== 'number' || !Number.isFinite(coerced[i])) {
           throw new Error(
-            `Field '${fieldName}' expected number[] but element ${i} is ${typeof value[i]}`
+            `Field '${fieldName}' expected number[] but element ${i} is ${typeof coerced[i]}`
           );
         }
       }
-      break;
+      return coerced;
 
     case 'boolean[]':
-      if (!Array.isArray(value)) {
-        throw new Error(`Field '${fieldName}' expected boolean[], got ${typeof value}`);
+      if (!Array.isArray(coerced)) {
+        throw new Error(`Field '${fieldName}' expected boolean[], got ${typeof coerced}`);
       }
-      for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== 'boolean') {
+      for (let i = 0; i < coerced.length; i++) {
+        if (typeof coerced[i] !== 'boolean') {
           throw new Error(
-            `Field '${fieldName}' expected boolean[] but element ${i} is ${typeof value[i]}`
+            `Field '${fieldName}' expected boolean[] but element ${i} is ${typeof coerced[i]}`
           );
         }
       }
-      break;
+      return coerced;
 
     case 'json[]':
-      if (!Array.isArray(value)) {
-        throw new Error(`Field '${fieldName}' expected json[], got ${typeof value}`);
+      if (!Array.isArray(coerced)) {
+        throw new Error(`Field '${fieldName}' expected json[], got ${typeof coerced}`);
       }
-      for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== 'object' || value[i] === null) {
+      for (let i = 0; i < coerced.length; i++) {
+        if (typeof coerced[i] !== 'object' || coerced[i] === null) {
           throw new Error(
-            `Field '${fieldName}' expected json[] but element ${i} is ${typeof value[i]}`
+            `Field '${fieldName}' expected json[] but element ${i} is ${typeof coerced[i]}`
           );
         }
       }
-      break;
+      return coerced;
 
     default:
-      // Unknown type - let it pass (could be a custom type)
-      break;
+      // Unknown type - return as-is
+      return coerced;
   }
 }
 

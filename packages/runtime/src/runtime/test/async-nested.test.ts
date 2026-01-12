@@ -549,4 +549,108 @@ describe('Nested Async Execution', () => {
       expect(runtime.getValue('result')).toBe('B_S1ASYNC1S2_ASYNC2');
     });
   });
+
+  describe('deeply nested async Vibe function calls', () => {
+    test('three levels of async function calls', async () => {
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+
+        function level3(prefix: text) {
+          async let x = do "L3_{prefix}" m default
+          return prefix + "_" + x
+        }
+
+        function level2(id: number) {
+          async let r = level3("L2_" + id)
+          return "L2:" + r
+        }
+
+        function level1() {
+          async let a = level2(1)
+          async let b = level2(2)
+          return a + "|" + b
+        }
+
+        let result = level1()
+      `);
+
+      const aiProvider = createLoggingMockAI(30, {
+        'L3_L2_1': 'A',
+        'L3_L2_2': 'B',
+      }, []);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      expect(runtime.getValue('result')).toBe('L2:L2_1_A|L2:L2_2_B');
+    });
+
+    test('recursive async function with base case', async () => {
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+
+        function countdown(n: number) {
+          if n <= 0 {
+            return "done"
+          }
+          async let prefix = do "step_{n}" m default
+          let rest = countdown(n - 1)
+          return prefix + "-" + rest
+        }
+
+        let result = countdown(3)
+      `);
+
+      const aiProvider = createLoggingMockAI(30, {
+        'step_3': 'S3',
+        'step_2': 'S2',
+        'step_1': 'S1',
+      }, []);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      expect(runtime.getValue('result')).toBe('S3-S2-S1-done');
+    });
+
+    test('parallel async calls within nested functions', async () => {
+      const log: ExecutionLog[] = [];
+
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+
+        function innerWork(id: text) {
+          async let x = do "work_{id}" m default
+          return x
+        }
+
+        function middleLevel() {
+          async let a = innerWork("A")
+          async let b = innerWork("B")
+          return a + "+" + b
+        }
+
+        let results = []
+        for i in [1, 2] {
+          async let r = middleLevel()
+          results.push(r)
+        }
+      `);
+
+      const aiProvider = createLoggingMockAI(30, {
+        'work_A': 'WA',
+        'work_B': 'WB',
+      }, log);
+
+      const runtime = new Runtime(ast, aiProvider);
+      const startTime = Date.now();
+      await runtime.run();
+      const elapsed = Date.now() - startTime;
+
+      expect(runtime.getValue('results')).toEqual(['WA+WB', 'WA+WB']);
+      // Two outer calls in parallel, each with two inner parallel calls
+      // Should be ~60ms (30ms for outer level + 30ms for inner level), not ~120ms
+      expect(elapsed).toBeLessThan(200);
+    });
+  });
 });

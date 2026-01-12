@@ -6,6 +6,7 @@ import type { RuntimeState } from '../types';
 import { resolveValue, isVibeValue } from '../types';
 import { lookupVariable } from './variables';
 import { getImportedValue } from '../modules';
+import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
 
 /**
  * Deep freeze an object to prevent any mutation.
@@ -149,6 +150,8 @@ export function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeStat
 
 /**
  * TypeScript eval - pause for async evaluation.
+ * When currentAsyncVarName is set (async declaration), schedules the operation
+ * for non-blocking execution instead of pausing.
  */
 export function execTsEval(state: RuntimeState, params: string[], body: string, location: SourceLocation): RuntimeState {
   // Look up parameter values from scope or imports
@@ -172,6 +175,25 @@ export function execTsEval(state: RuntimeState, params: string[], body: string, 
     throw new Error(`ReferenceError: '${name}' is not defined`);
   });
 
+  // Check if we're in async context (variable, destructuring, or fire-and-forget)
+  if (isInAsyncContext(state)) {
+    // Schedule for non-blocking execution using shared helper
+    return scheduleAsyncOperation(
+      state,
+      {
+        type: 'ts',
+        tsDetails: {
+          params,
+          body,
+          paramValues,
+          location,
+        },
+      },
+      'async_ts_scheduled'
+    );
+  }
+
+  // Normal blocking execution
   return {
     ...state,
     status: 'awaiting_ts',

@@ -44,7 +44,7 @@ let x = greet(unknownArg)
   test('using undefined variable as vibe prompt', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = vibe undefinedPrompt myModel default
+let x: text = vibe undefinedPrompt myModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
@@ -53,7 +53,7 @@ let x = vibe undefinedPrompt myModel default
 
   test('using undefined model in vibe expression', () => {
     const ast = parse(`
-let x = vibe "prompt" undefinedModel default
+let x: text = vibe "prompt" undefinedModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
@@ -63,7 +63,7 @@ let x = vibe "prompt" undefinedModel default
   test('using undefined context variable in vibe expression', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = vibe "prompt" myModel undefinedContext
+let x: text = vibe "prompt" myModel undefinedContext
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
@@ -155,7 +155,7 @@ function greet(name: text): text {
   test('using model in vibe expression', () => {
     const ast = parse(`
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
-let x = vibe "prompt" myModel default
+let x: text = vibe "prompt" myModel default
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(0);

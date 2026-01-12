@@ -124,7 +124,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // Get tools from model (empty array if no tools specified)
       const modelTools: VibeToolValue[] = (modelValue.tools as VibeToolValue[]) ?? [];
 
-      // Always include return tools (root-level, always available)
+      // Always include return tools (keeps tool list consistent for caching)
       const returnTools = getReturnTools();
       const allTools = [...returnTools, ...modelTools];
       const toolSchemas: ToolSchema[] = allTools.map((t) => t.schema);
@@ -224,13 +224,29 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
             throw new Error('No valid field return results from AI');
           }
           // Validate and collect all fields
-          finalValue = collectAndValidateFieldResults(fieldResults, expectedFields!);
+          const validated = collectAndValidateFieldResults(fieldResults, expectedFields!);
+          // For single-value returns, extract the 'value' field
+          // For multi-value destructuring, keep the whole object
+          finalValue = state.pendingDestructuring ? validated : validated['value'];
         } else {
           // After max retries, AI still didn't call return tool
           throw new Error(`AI failed to call ${returnToolName} after multiple attempts`);
         }
       } else {
-        finalValue = response.parsedValue ?? response.content;
+        // Check if model used return tool anyway (even when not expected)
+        // This can happen since return tools are always included for caching
+        if (completedViaReturnTool && returnFieldResults) {
+          const fieldResults = returnFieldResults.filter(isFieldReturnResult);
+          if (fieldResults.length > 0) {
+            // Model used return tool - extract value from it
+            // Take the first field result's value (typically 'value' field)
+            finalValue = fieldResults[0].value;
+          } else {
+            finalValue = response.parsedValue ?? response.content;
+          }
+        } else {
+          finalValue = response.parsedValue ?? response.content;
+        }
       }
 
       // Return the parsed value, usage, tool rounds, and context for logging

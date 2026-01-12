@@ -575,6 +575,7 @@ export interface PendingAsyncStart {
   vibeFuncDetails?: {
     funcName: string;
     args: unknown[];
+    modulePath?: string;  // For imported Vibe functions (scope isolation)
   };
 }
 
@@ -672,6 +673,10 @@ export interface RuntimeState {
   currentAsyncType: VibeType;                    // Type annotation for the variable
   currentAsyncIsPrivate: boolean;                // Whether it's a private declaration
   currentAsyncIsDestructure: boolean;            // True if async destructuring (variables created by destructure_assign)
+  currentAsyncIsFireAndForget: boolean;          // True for fire-and-forget async (no variable assigned)
+
+  // Async function isolation tracking
+  isInAsyncIsolation: boolean;                   // True when running in isolated state (async Vibe function)
 
   // Scheduled async operations - waiting for Runtime.run() to start them
   pendingAsyncStarts: PendingAsyncStart[];       // Operations to start as Promises
@@ -698,6 +703,7 @@ export type Instruction =
   // Block scoping
   | { op: 'enter_block'; savedKeys: string[]; location: SourceLocation }
   | { op: 'exit_block'; savedKeys: string[]; location: SourceLocation }
+  | { op: 'clear_async_context'; location: SourceLocation }
 
   // AI operations (pause points)
   | { op: 'ai_vibe'; model: string | null; context: AST.ContextSpecifier | null; operationType: 'do' | 'vibe'; location: SourceLocation }

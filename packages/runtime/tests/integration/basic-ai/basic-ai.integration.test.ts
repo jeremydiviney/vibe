@@ -54,7 +54,7 @@ model testModel = {
 const testCases = [
   {
     name: 'returns text response',
-    vibeCode: `let result = vibe "Reply with exactly: PONG" testModel default`,
+    vibeCode: `let result: text = vibe "Reply with exactly: PONG" testModel default`,
     assert: (runtime: Runtime) => {
       const result = runtime.getValue('result') as string;
       expect(typeof result).toBe('string');

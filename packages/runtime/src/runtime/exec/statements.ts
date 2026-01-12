@@ -294,19 +294,14 @@ export function execExitBlock(state: RuntimeState, savedKeys: string[], location
   const frame = currentFrame(state);
   const savedKeySet = new Set(savedKeys);
 
-  // Find variables that will be removed (declared in this block)
+  // Await ALL pending async operations at block boundaries
+  // This ensures operations started in loops are properly awaited even if their
+  // variables are overwritten by subsequent iterations
   const pendingAsyncIds: string[] = [];
-  for (const key of Object.keys(frame.locals)) {
-    if (!savedKeySet.has(key)) {
-      const variable = frame.locals[key];
-      // Check if this variable has a pending async operation
-      if (isVibeValue(variable) && variable.asyncOperationId) {
-        const opId = variable.asyncOperationId;
-        const operation = state.asyncOperations.get(opId);
-        if (operation && (operation.status === 'pending' || operation.status === 'running')) {
-          pendingAsyncIds.push(opId);
-        }
-      }
+  for (const opId of state.pendingAsyncIds) {
+    const operation = state.asyncOperations.get(opId);
+    if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+      pendingAsyncIds.push(opId);
     }
   }
 
@@ -365,17 +360,37 @@ export function execReturnValue(state: RuntimeState): RuntimeState {
   const currentFrameRef = state.callStack[state.callStack.length - 1];
   const funcName = currentFrameRef?.name;
 
+  // Check if return value is a pending async operation - need to await it first
+  const returnValue = state.lastResult;
+  if (isVibeValue(returnValue) && returnValue.asyncOperationId) {
+    const opId = returnValue.asyncOperationId;
+    const operation = state.asyncOperations.get(opId);
+    if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+      // Need to await this operation before returning
+      return {
+        ...state,
+        status: 'awaiting_async',
+        awaitingAsyncIds: [opId],
+        // Re-queue the return_value instruction to run after await completes
+        instructionStack: [
+          { op: 'return_value', location: { line: 0, column: 0 } },
+          ...state.instructionStack,
+        ],
+      };
+    }
+  }
+
   // Validate return type if function has one
-  let returnValue = state.lastResult;
+  let validatedReturnValue = returnValue;
   if (funcName && funcName !== 'main') {
     const func = state.functions[funcName] ?? getImportedVibeFunction(state, funcName);
     if (func?.returnType) {
       const { value: validatedValue } = validateAndCoerce(
-        returnValue,
+        validatedReturnValue,
         func.returnType,
         `return value of ${funcName}`
       );
-      returnValue = validatedValue;
+      validatedReturnValue = validatedValue;
     }
   }
 
@@ -383,7 +398,7 @@ export function execReturnValue(state: RuntimeState): RuntimeState {
   const newCallStack = state.callStack.slice(0, -1);
 
   if (newCallStack.length === 0) {
-    return { ...state, status: 'completed', callStack: newCallStack, lastResult: returnValue };
+    return { ...state, status: 'completed', callStack: newCallStack, lastResult: validatedReturnValue };
   }
 
   // Find and skip past the pop_frame instruction
@@ -393,7 +408,7 @@ export function execReturnValue(state: RuntimeState): RuntimeState {
     newInstructionStack = newInstructionStack.slice(popFrameIndex + 1);
   }
 
-  return { ...state, callStack: newCallStack, instructionStack: newInstructionStack, lastResult: returnValue };
+  return { ...state, callStack: newCallStack, instructionStack: newInstructionStack, lastResult: validatedReturnValue };
 }
 
 /**
@@ -479,12 +494,13 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
       };
 
     case 'AsyncStatement':
-      // For now, async statements execute like regular expressions
-      // True parallel execution is a future enhancement
+      // Fire-and-forget async - set flag so handlers schedule async execution
       return {
         ...state,
+        currentAsyncIsFireAndForget: true,
         instructionStack: [
           { op: 'exec_expression', expr: stmt.expression, location: stmt.expression.location },
+          { op: 'clear_async_context', location: stmt.location },
           ...state.instructionStack,
         ],
       };

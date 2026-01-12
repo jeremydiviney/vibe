@@ -1,0 +1,163 @@
+/**
+ * Async scheduling helpers.
+ * Consolidates the common pattern of scheduling async operations.
+ */
+
+import type { RuntimeState, AsyncOperation, PendingAsyncStart, VibeValue, VibeError } from '../types';
+import { createVibeValue } from '../types';
+import { generateAsyncId } from './executor';
+
+/**
+ * Details for different async operation types.
+ */
+export type AsyncOperationDetails =
+  | { type: 'do' | 'vibe'; aiDetails: NonNullable<PendingAsyncStart['aiDetails']> }
+  | { type: 'ts'; tsDetails: NonNullable<PendingAsyncStart['tsDetails']> }
+  | { type: 'ts-function'; tsFuncDetails: NonNullable<PendingAsyncStart['tsFuncDetails']> }
+  | { type: 'vibe-function'; vibeFuncDetails: NonNullable<PendingAsyncStart['vibeFuncDetails']> };
+
+/**
+ * Source type for VibeValue based on operation type.
+ */
+function getSourceFromType(type: string): 'ai' | 'ts' | 'vibe-function' {
+  if (type === 'do' || type === 'vibe') return 'ai';
+  if (type === 'ts' || type === 'ts-function') return 'ts';
+  return 'vibe-function';
+}
+
+/**
+ * Schedules an async operation and returns the updated state.
+ * This consolidates the common pattern used across AI, TS, and Vibe function async scheduling.
+ */
+export function scheduleAsyncOperation(
+  state: RuntimeState,
+  details: AsyncOperationDetails,
+  logInstructionType: string
+): RuntimeState {
+  const operationId = generateAsyncId(state);
+
+  // Determine variable name (null for destructuring or fire-and-forget)
+  const variableName = state.currentAsyncIsDestructure || state.currentAsyncIsFireAndForget
+    ? null
+    : state.currentAsyncVarName;
+
+  // Create async operation record
+  const asyncOp: AsyncOperation = {
+    id: operationId,
+    variableName,
+    status: 'pending',
+    operationType: details.type,
+    dependencies: [],
+    contextSnapshot: [],
+    waveId: state.currentWaveId,
+  };
+
+  // Create pending start record with appropriate details
+  const pendingStart: PendingAsyncStart = {
+    operationId,
+    type: details.type,
+    variableName,
+  };
+
+  // Add the specific details based on operation type
+  if (details.type === 'do' || details.type === 'vibe') {
+    pendingStart.aiDetails = details.aiDetails;
+  } else if (details.type === 'ts') {
+    pendingStart.tsDetails = details.tsDetails;
+  } else if (details.type === 'ts-function') {
+    pendingStart.tsFuncDetails = details.tsFuncDetails;
+  } else if (details.type === 'vibe-function') {
+    pendingStart.vibeFuncDetails = details.vibeFuncDetails;
+  }
+
+  // Create pending marker for variable
+  const pendingMarker: VibeValue = createVibeValue(null, {
+    source: getSourceFromType(details.type),
+    asyncOperationId: operationId,
+  });
+
+  // Update maps
+  const newAsyncOps = new Map(state.asyncOperations);
+  newAsyncOps.set(operationId, asyncOp);
+
+  const newPendingIds = new Set(state.pendingAsyncIds);
+  newPendingIds.add(operationId);
+
+  const newVarToOp = new Map(state.asyncVarToOpId);
+  if (variableName !== null) {
+    newVarToOp.set(variableName, operationId);
+  }
+
+  return {
+    ...state,
+    // Clear async context
+    ...clearAsyncContext(),
+    // Set the pending marker as lastResult
+    lastResult: pendingMarker,
+    lastResultSource: getSourceFromType(details.type),
+    // Track async operation
+    asyncOperations: newAsyncOps,
+    pendingAsyncIds: newPendingIds,
+    asyncVarToOpId: newVarToOp,
+    nextAsyncId: state.nextAsyncId + 1,
+    // Schedule for start
+    pendingAsyncStarts: [...state.pendingAsyncStarts, pendingStart],
+    executionLog: [
+      ...state.executionLog,
+      {
+        timestamp: Date.now(),
+        instructionType: logInstructionType,
+        details: { operationId },
+      },
+    ],
+  };
+}
+
+/**
+ * Returns the properties needed to clear async context.
+ * Used when exiting async scheduling mode.
+ */
+export function clearAsyncContext(): Partial<RuntimeState> {
+  return {
+    currentAsyncVarName: null,
+    currentAsyncIsConst: false,
+    currentAsyncType: null,
+    currentAsyncIsPrivate: false,
+    currentAsyncIsDestructure: false,
+    currentAsyncIsFireAndForget: false,
+  };
+}
+
+/**
+ * Checks if we're currently in an async context.
+ */
+export function isInAsyncContext(state: RuntimeState): boolean {
+  return state.currentAsyncVarName !== null ||
+         state.currentAsyncIsDestructure ||
+         state.currentAsyncIsFireAndForget;
+}
+
+/**
+ * Creates a VibeError from an error.
+ */
+export function createAsyncVibeError(error: unknown, location: { line: number; column: number } | null = null): VibeError {
+  return {
+    message: error instanceof Error ? error.message : String(error),
+    type: error instanceof Error ? error.constructor.name : 'Error',
+    location,
+    stack: error instanceof Error ? error.stack : undefined,
+  };
+}
+
+/**
+ * Marks an async operation as running with its promise.
+ * Consolidates the repeated pattern of setting promise, status, and startTime.
+ */
+export function startAsyncOperation(
+  operation: { promise?: Promise<VibeValue>; status: string; startTime?: number },
+  promise: Promise<VibeValue>
+): void {
+  operation.promise = promise;
+  operation.status = 'running';
+  operation.startTime = Date.now();
+}

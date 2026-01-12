@@ -150,6 +150,16 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     throw new Error(`TypeError: Cannot assign to constant '${name}'`);
   }
 
+  // Warn if modifying non-local variable in async isolation
+  // (modifications won't persist after the async function returns)
+  const currentFrameIndex = state.callStack.length - 1;
+  if (state.isInAsyncIsolation && frameIndex !== currentFrameIndex && frameIndex >= 0) {
+    console.warn(
+      `Warning: Modifying non-local variable '${name}' in async function. ` +
+      `This modification will not persist after the function returns.`
+    );
+  }
+
   const rawValue = state.lastResult;
 
   // If value is already a VibeValue (e.g., from AI response or error), extract its properties

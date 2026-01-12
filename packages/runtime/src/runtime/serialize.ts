@@ -31,6 +31,36 @@ export function cloneState(state: RuntimeState): RuntimeState {
   return JSON.parse(JSON.stringify(state)) as RuntimeState;
 }
 
+/**
+ * Create a true deep clone of the state, properly handling Maps and Sets.
+ * Handles non-cloneable objects like Promises by omitting them.
+ */
+export function deepCloneState(state: RuntimeState): RuntimeState {
+  // Create a version of the state without non-cloneable objects (Promises)
+  // We need to strip promises from asyncOperations before cloning
+  const cleanAsyncOps = new Map<string, unknown>();
+  for (const [id, op] of state.asyncOperations) {
+    // Clone operation without the promise field
+    const { promise, ...rest } = op;
+    cleanAsyncOps.set(id, rest);
+  }
+
+  // Create a clean state object for cloning
+  const stateForCloning = {
+    ...state,
+    asyncOperations: cleanAsyncOps,
+  };
+
+  // Now we can safely use structuredClone
+  const cloned = structuredClone(stateForCloning);
+
+  // Restore proper typing for asyncOperations Map
+  return {
+    ...cloned,
+    asyncOperations: cloned.asyncOperations as RuntimeState['asyncOperations'],
+  };
+}
+
 // Get a summary of the current state (for debugging)
 export function getStateSummary(state: RuntimeState): {
   status: string;
@@ -40,6 +70,7 @@ export function getStateSummary(state: RuntimeState): {
   nextInstruction: string | null;
   variables: Record<string, unknown>;
   lastResult: unknown;
+  pendingAsyncCount: number;
 } {
   const currentFrame = state.callStack[state.callStack.length - 1];
   const nextInstruction = state.instructionStack[0];
@@ -47,6 +78,14 @@ export function getStateSummary(state: RuntimeState): {
   const variables: Record<string, unknown> = {};
   if (currentFrame) {
     for (const [name, variable] of Object.entries(currentFrame.locals)) {
+      // Check if this is a pending async variable
+      if (variable.asyncOperationId) {
+        const op = state.asyncOperations.get(variable.asyncOperationId);
+        if (op && (op.status === 'pending' || op.status === 'running')) {
+          variables[name] = `[pending: ${op.operationType}]`;
+          continue;
+        }
+      }
       variables[name] = variable.value;
     }
   }
@@ -59,5 +98,6 @@ export function getStateSummary(state: RuntimeState): {
     nextInstruction: nextInstruction ? nextInstruction.op : null,
     variables,
     lastResult: state.lastResult,
+    pendingAsyncCount: state.pendingAsyncIds.size,
   };
 }

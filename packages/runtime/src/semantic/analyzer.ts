@@ -240,6 +240,14 @@ export class SemanticAnalyzer {
       this.validateAsyncExpression(node.initializer, node.location);
     }
 
+    // AI calls (do/vibe) require explicit type annotation - types cannot be inferred
+    if (node.initializer?.type === 'VibeExpression' && !node.typeAnnotation) {
+      this.error(
+        `Type cannot be inferred from AI call, must assign to explicitly typed variable: ${kind === 'constant' ? 'const' : 'let'} ${node.name}: <type> = ...`,
+        node.location
+      );
+    }
+
     // Model type variables must be const (immutable)
     if (node.typeAnnotation === 'model' && kind === 'variable') {
       this.error(`Variables with type 'model' must be declared with 'const', not 'let'`, node.location);

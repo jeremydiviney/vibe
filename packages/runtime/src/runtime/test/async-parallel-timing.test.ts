@@ -427,4 +427,120 @@ describe('Async Parallel Execution Timing', () => {
       expect(state.callStack[0].locals['bad'].err?.message).toBe('Simulated failure');
     });
   });
+
+  describe('async TS blocks', () => {
+    test('async TS block runs in parallel', async () => {
+      const ast = parse(`
+        async let x = ts() {
+          await Bun.sleep(50);
+          return 42;
+        }
+        async let y = ts() {
+          await Bun.sleep(50);
+          return 100;
+        }
+        let sum = x + y
+      `);
+
+      const aiProvider = createDelayedMockAI(50);
+      const runtime = new Runtime(ast, aiProvider);
+      const startTime = Date.now();
+      await runtime.run();
+      const elapsed = Date.now() - startTime;
+
+      // Two 50ms operations should complete in ~50ms if parallel, not 100ms
+      expect(elapsed).toBeLessThan(120);
+      expect(runtime.getValue('sum')).toBe(142);
+    });
+
+    test('multiple async TS blocks with max parallel', async () => {
+      const ast = parse(`
+        async let a = ts() { await Bun.sleep(40); return 1; }
+        async let b = ts() { await Bun.sleep(40); return 2; }
+        async let c = ts() { await Bun.sleep(40); return 3; }
+        async let d = ts() { await Bun.sleep(40); return 4; }
+        async let e = ts() { await Bun.sleep(40); return 5; }
+        let sum = a + b + c + d + e
+      `);
+
+      const aiProvider = createDelayedMockAI(50);
+      const runtime = new Runtime(ast, aiProvider, { maxParallel: 4 });
+      const startTime = Date.now();
+      await runtime.run();
+      const elapsed = Date.now() - startTime;
+
+      // With maxParallel=4: wave1 (4 ops, 40ms) + wave2 (1 op, 40ms) = ~80ms
+      expect(elapsed).toBeLessThan(150);
+      expect(runtime.getValue('sum')).toBe(15);
+    });
+
+    test('fire-and-forget async TS block schedules execution', async () => {
+      const ast = parse(`
+        async ts() {
+          await Bun.sleep(30);
+          return "ignored";
+        }
+        let x = "done"
+      `);
+
+      const aiProvider = createDelayedMockAI(50);
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      // The program should complete and the TS block should have been awaited
+      // at block boundary (program end)
+      expect(runtime.getValue('x')).toBe('done');
+      // State should be completed (all async ops finished)
+      expect(runtime.getState().status).toBe('completed');
+    });
+  });
+
+  describe('mixed async types (AI + TS)', () => {
+    test('async AI and TS run in parallel', async () => {
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        async let aiResult = do "get_value" m default
+        async let tsResult = ts() {
+          await Bun.sleep(50);
+          return "ts_value";
+        }
+        let combined = aiResult + "_" + tsResult
+      `);
+
+      const delayMs = 50;
+      const aiProvider = createDelayedMockAI(delayMs, 'ai_value');
+      const runtime = new Runtime(ast, aiProvider);
+      const startTime = Date.now();
+      await runtime.run();
+      const elapsed = Date.now() - startTime;
+
+      // Both 50ms operations should run in parallel
+      expect(elapsed).toBeLessThan(120);
+      expect(runtime.getValue('combined')).toBe('ai_value_ts_value');
+    });
+
+    test('three different async types (AI, TS block, implicit await)', async () => {
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        async let a = do "get_a" m default
+        async let b = ts() { await Bun.sleep(40); return "B"; }
+        async let c = do "get_c" m default
+        let result = a + b + c
+      `);
+
+      const aiProvider = createMultiResponseMockAI(40, {
+        'get_a': 'A',
+        'get_c': 'C',
+      });
+
+      const runtime = new Runtime(ast, aiProvider);
+      const startTime = Date.now();
+      await runtime.run();
+      const elapsed = Date.now() - startTime;
+
+      // All three should run in parallel (~40ms, not 120ms)
+      expect(elapsed).toBeLessThan(100);
+      expect(runtime.getValue('result')).toBe('ABC');
+    });
+  });
 });

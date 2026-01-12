@@ -74,6 +74,10 @@ export function createInitialState(
     currentAsyncType: null,
     currentAsyncIsPrivate: false,
     currentAsyncIsDestructure: false,
+    currentAsyncIsFireAndForget: false,
+
+    // Async function isolation
+    isInAsyncIsolation: false,
 
     // Scheduled async operations
     pendingAsyncStarts: [],

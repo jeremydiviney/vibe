@@ -8,12 +8,13 @@ import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction, getImportedVibeFunctionModulePath } from '../modules';
 import { validateAndCoerce } from '../validation';
+import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
 
 /**
  * Create a new frame with validated parameters for a Vibe function call.
  * @param modulePath - If set, this frame belongs to an imported module (for scope isolation)
  */
-function createFunctionFrame(
+export function createFunctionFrame(
   funcName: string,
   params: AST.FunctionParameter[],
   args: unknown[],
@@ -87,6 +88,33 @@ function executeVibeFunction(
 }
 
 /**
+ * Schedule a Vibe function for async execution.
+ * Creates an async operation that will clone state and run the function in isolation.
+ */
+function scheduleAsyncVibeFunction(
+  state: RuntimeState,
+  funcName: string,
+  args: unknown[],
+  newValueStack: unknown[],
+  modulePath?: string
+): RuntimeState {
+  // Use shared scheduling helper, then update valueStack
+  const newState = scheduleAsyncOperation(
+    state,
+    {
+      type: 'vibe-function',
+      vibeFuncDetails: {
+        funcName,
+        args,
+        modulePath,
+      },
+    },
+    'async_vibe_function_scheduled'
+  );
+  return { ...newState, valueStack: newValueStack };
+}
+
+/**
  * Execute function call - handles local Vibe, imported Vibe, and imported TS functions.
  * Note: Functions always forget context on exit (like traditional callstack).
  */
@@ -114,6 +142,11 @@ export function execCallFunction(
       throw new Error(`ReferenceError: '${funcName}' is not defined`);
     }
 
+    // Check if we're in async context (variable, destructuring, or fire-and-forget)
+    if (isInAsyncContext(state)) {
+      return scheduleAsyncVibeFunction(state, funcName, args, newValueStack);
+    }
+
     return executeVibeFunction(state, func, args, newValueStack);
   }
 
@@ -123,6 +156,25 @@ export function execCallFunction(
     // Resolve AIResultObject values to primitives for TS functions
     const resolvedArgs = args.map(arg => resolveValue(arg));
 
+    // Check if we're in async context (variable, destructuring, or fire-and-forget)
+    if (isInAsyncContext(state)) {
+      // Schedule for non-blocking execution using shared helper
+      const newState = scheduleAsyncOperation(
+        state,
+        {
+          type: 'ts-function',
+          tsFuncDetails: {
+            funcName,
+            args: resolvedArgs,
+            location,
+          },
+        },
+        'async_ts_function_scheduled'
+      );
+      return { ...newState, valueStack: newValueStack };
+    }
+
+    // Normal blocking execution
     return {
       ...state,
       valueStack: newValueStack,
@@ -150,6 +202,11 @@ export function execCallFunction(
 
     // Get the module path for scope isolation
     const modulePath = getImportedVibeFunctionModulePath(state, funcName);
+
+    // Check if we're in async context (variable, destructuring, or fire-and-forget)
+    if (isInAsyncContext(state)) {
+      return scheduleAsyncVibeFunction(state, funcName, args, newValueStack, modulePath);
+    }
 
     return executeVibeFunction(state, func, args, newValueStack, modulePath);
   }

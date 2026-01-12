@@ -54,8 +54,8 @@ describe('return-tools', () => {
       expect(shouldUseReturnTool('json[]')).toBe(true);
     });
 
-    it('should return false for text type', () => {
-      expect(shouldUseReturnTool('text')).toBe(false);
+    it('should return true for text type', () => {
+      expect(shouldUseReturnTool('text')).toBe(true);
     });
 
     it('should return false for null type', () => {

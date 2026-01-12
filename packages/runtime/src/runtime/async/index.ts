@@ -4,6 +4,7 @@
  * This module provides:
  * - Dependency detection for async operations
  * - Wave-based execution with throttling
+ * - Async operation scheduling helpers
  * - Utilities for managing async operation state
  */
 
@@ -29,4 +30,14 @@ export {
   getPendingDependencies,
 } from './executor';
 
+// Scheduling helpers
+export {
+  scheduleAsyncOperation,
+  clearAsyncContext,
+  isInAsyncContext,
+  createAsyncVibeError,
+  startAsyncOperation,
+} from './scheduling';
+
 export type { AsyncExecutionResult, AsyncOperationExecutor } from './executor';
+export type { AsyncOperationDetails } from './scheduling';

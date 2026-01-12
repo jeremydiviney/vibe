@@ -1,10 +1,10 @@
 // AI operations: vibe expression and execution
 
 import * as AST from '../../ast';
-import type { RuntimeState, PendingAsyncStart, AsyncOperation, VibeValue } from '../types';
-import { resolveValue, createVibeValue } from '../types';
+import type { RuntimeState } from '../types';
+import { resolveValue } from '../types';
 import { currentFrame } from '../state';
-import { generateAsyncId } from '../async';
+import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
 
 /**
  * Extract model name from expression (must be an identifier), or null if not provided.
@@ -92,85 +92,24 @@ export function execAIVibe(state: RuntimeState, model: string | null, context: A
   const contextData = getContextForAI(state, context);
   const contextKind = context?.kind ?? 'default';
 
-  // Check if we're in async declaration context (variable or destructuring)
-  if (state.currentAsyncVarName !== null || state.currentAsyncIsDestructure) {
-    // Schedule for non-blocking execution
-    const operationId = generateAsyncId(state);
-
-    // For destructuring, variableName is null (destructure_assign creates the variables)
-    const variableName = state.currentAsyncIsDestructure ? null : state.currentAsyncVarName;
-
-    // Create async operation record
-    const asyncOp: AsyncOperation = {
-      id: operationId,
-      variableName,
-      status: 'pending',
-      operationType: operationType,
-      dependencies: [],
-      contextSnapshot: [],
-      waveId: state.currentWaveId,
-    };
-
-    // Create pending start record
-    const pendingStart: PendingAsyncStart = {
-      operationId,
-      type: operationType,
-      variableName,
-      aiDetails: {
-        prompt,
-        model: resolvedModel,
-        context: contextData,
-        operationType,
-      },
-    };
-
-    // Create pending marker for variable
-    const pendingMarker: VibeValue = createVibeValue(null, {
-      source: 'ai',
-      asyncOperationId: operationId,
-    });
-
-    // Update maps
-    const newAsyncOps = new Map(state.asyncOperations);
-    newAsyncOps.set(operationId, asyncOp);
-
-    const newPendingIds = new Set(state.pendingAsyncIds);
-    newPendingIds.add(operationId);
-
-    const newVarToOp = new Map(state.asyncVarToOpId);
-    // Only track variable->operation mapping if we have a variable name
-    if (variableName !== null) {
-      newVarToOp.set(variableName, operationId);
-    }
-
-    return {
-      ...state,
-      // Clear async context
-      currentAsyncVarName: null,
-      currentAsyncIsConst: false,
-      currentAsyncType: null,
-      currentAsyncIsPrivate: false,
-      currentAsyncIsDestructure: false,
-      // Set the pending marker as lastResult (will be stored by declare_var)
-      lastResult: pendingMarker,
-      lastResultSource: 'ai',
-      lastUsedModel: resolvedModel,
-      // Track async operation
-      asyncOperations: newAsyncOps,
-      pendingAsyncIds: newPendingIds,
-      asyncVarToOpId: newVarToOp,
-      nextAsyncId: state.nextAsyncId + 1,
-      // Schedule for start
-      pendingAsyncStarts: [...state.pendingAsyncStarts, pendingStart],
-      executionLog: [
-        ...state.executionLog,
-        {
-          timestamp: Date.now(),
-          instructionType: `async_${operationType}_scheduled`,
-          details: { prompt, model: resolvedModel, contextKind, operationId },
+  // Check if we're in async context (variable, destructuring, or fire-and-forget)
+  if (isInAsyncContext(state)) {
+    // Schedule for non-blocking execution using shared helper
+    const newState = scheduleAsyncOperation(
+      state,
+      {
+        type: operationType,
+        aiDetails: {
+          prompt,
+          model: resolvedModel,
+          context: contextData,
+          operationType,
         },
-      ],
-    };
+      },
+      `async_${operationType}_scheduled`
+    );
+    // AI operations also update lastUsedModel
+    return { ...newState, lastUsedModel: resolvedModel };
   }
 
   // Normal blocking execution
