@@ -62,7 +62,12 @@
       "WebFetch(domain:docs.rs)",
       "Bash(git reset:*)",
       "Bash(timeout 2 node:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:codeberg.org)",
+      "Bash(pip show:*)",
+      "Bash(done)",
+      "Bash(bunx vsce package:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
