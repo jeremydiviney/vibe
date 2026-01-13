@@ -149,6 +149,8 @@ for article in articles {
   const summary = analyze(article)
   summaries.push(summary)
 } forget
+// } compress
+// } verbose
 ```
 
 ### Custom Tools
