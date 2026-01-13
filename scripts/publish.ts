@@ -3,14 +3,13 @@ import { cpSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 
 const dryRun = process.argv.includes('--dry-run');
-const versionArg = process.argv.find(arg => !arg.startsWith('-') && arg !== process.argv[0] && arg !== process.argv[1]);
-const version = versionArg || '0.1.0';
+const version = (await Bun.file('VERSION').text()).trim();
 
 console.log(`Publishing @vibe-lang/vibe v${version}${dryRun ? ' (dry run)' : ''}...\n`);
 
 // 1. Update version in source (before build so it's baked in)
 console.log('Step 1: Updating source version...');
-const indexPath = 'src/index.ts';
+const indexPath = 'packages/runtime/src/index.ts';
 let indexContent = await Bun.file(indexPath).text();
 indexContent = indexContent.replace(
   /export const VERSION = '[^']+';/,

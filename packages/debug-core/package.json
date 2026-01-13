@@ -1,6 +1,6 @@
 {
   "name": "@vibe-lang/debug-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared debug types and protocol for Vibe debugger",
   "main": "src/index.ts",
   "type": "module",
