@@ -1,0 +1,36 @@
+---
+title: Vibe Documentation
+description: The language to build incredible AI agents
+template: splash
+hero:
+  tagline: The language to build incredible AI agents
+  image:
+    file: ../../assets/vibe-logo.png
+  actions:
+    - text: Get Started
+      link: /docs/getting-started/introduction/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/vibelang-org/vibe
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Vibe?
+
+<CardGrid stagger>
+	<Card title="AI-Native Syntax" icon="pencil">
+		Prompts are first-class language primitives. Write `do "Explain this"` instead of verbose API calls.
+	</Card>
+	<Card title="Strong Typing" icon="approve-check">
+		AI calls return typed values. Get `number`, `boolean`, `text[]` directly—no parsing needed.
+	</Card>
+	<Card title="TypeScript Interop" icon="setting">
+		Drop into TypeScript whenever you need it. Import npm packages directly.
+	</Card>
+	<Card title="Multi-Provider" icon="random">
+		Works with OpenAI, Anthropic, Google, and any OpenAI-compatible API.
+	</Card>
+</CardGrid>

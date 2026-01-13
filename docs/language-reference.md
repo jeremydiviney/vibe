@@ -241,14 +241,6 @@ Context options:
 - `default` - Full execution history
 - `local` - Current scope only
 
-### Ask Expression
-
-Prompt for user input:
-
-```vibe
-let name = ask "What is your name?" myModel default
-```
-
 ## TypeScript Blocks
 
 Embed TypeScript code for operations not available in Vibe:
@@ -398,7 +390,7 @@ The following are reserved and cannot be used as identifiers:
 
 ```
 let, const, function, return, if, else, for, in, while,
-do, ask, vibe, model, tool, import, export, from,
+do, vibe, model, tool, import, export, from,
 true, false, and, or, not, default, local,
 text, json, prompt, boolean, number, model,
 forget, verbose, compress
