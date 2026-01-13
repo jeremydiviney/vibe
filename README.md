@@ -53,7 +53,7 @@ model claude = {
 }
 
 let topic = "the future of programming"
-let summary: text = vibe "Write a brief summary about {topic}"
+let summary: text = do "Write a brief summary about {topic}"
 
 summary
 ```
@@ -76,69 +76,88 @@ vibe hello.vibe
 
 ## Examples
 
-### Multi-Step Workflow
+### AI-Native Syntax
+
+Prompts are first-class language primitives.
 
 ```vibe
-import { env } from "system"
-
-model gpt = {
-  name: "gpt-4o",
-  apiKey: env("OPENAI_API_KEY"),
-  provider: "openai"
-}
-
-function analyzeAndSummarize(content: text): text {
-  let analysis = vibe "Analyze the key themes in: {content}" gpt
-  return vibe "Summarize this analysis in one sentence: {analysis}" gpt
-}
-
-let article = "..." // your content here
-let result = analyzeAndSummarize(article)
-result
+const answer = do "Explain quantum computing"
 ```
 
-### Custom Tool
+### Strong Typing
+
+AI calls return typed values.
 
 ```vibe
-tool fetchWeather(city: text): json
-@description "Get current weather for a city"
-{
-  // Tool implementation - can use TypeScript
-  ts {
-    const response = await fetch(`https://api.weather.com/${city}`)
-    return await response.json()
-  }
-}
-
-let report = vibe "What's the weather like in Tokyo? Use the fetchWeather tool." claude
+const count: number = do "How many planets?"
+const isPrime: boolean = do "Is 17 prime?"
+const tags: text[] = do "List 3 languages"
 ```
 
-### TypeScript Interop
+### Seamless TypeScript Interop
+
+Drop into TypeScript whenever you need it.
 
 ```vibe
-import { readFileSync } from "fs"
-import { join } from "path"
-
-// Embedded TypeScript block
-let files: text[] = ts {
-  const dir = process.cwd()
-  return fs.readdirSync(dir).filter(f => f.endsWith('.vibe'))
+const result = ts(data) {
+  const parsed = JSON.parse(data);
+  return parsed.items
+    .filter(item => item.score > 0.8)
+    .map(item => item.name)
+    .join(", ");
 }
+```
 
-// Use results in AI prompt
-let description = vibe "Describe what these Vibe files might do: {files}" claude
+### Smart Context
+
+Automatically manages AI context windows.
+
+```vibe
+function analyze(url: text): text {
+  const html = fetch(url)
+  const content = do "Extract article text: {html}"
+  return do "Summarize the content of the article"
+}
+```
+
+### Custom Tools
+
+Define tools that AI can invoke with full type safety.
+
+```vibe
+tool getMetrics(service: text, hours: number): json
+  @description "Get performance metrics for a service"
+{ ... }
+```
+
+### Multi-Provider Support
+
+Switch between OpenAI, Anthropic, and Google AI.
+
+```vibe
+model gpt = { name: "gpt-5.2", provider: "openai" }
+model haiku = { name: "claude-haiku-4.5", provider: "anthropic" }
+```
+
+### The 'vibe' Keyword
+
+Core of agent orchestration.
+
+```vibe
+vibe "Write a poem for each topic and save to separate file"
 ```
 
 ### Parallel Execution
 
+Run multiple AI calls concurrently with automatic dependency resolution.
+
 ```vibe
-// Run multiple AI calls in parallel
-async let summary = vibe "Summarize this document" claude
-async let keywords: text[] = vibe "Extract 5 keywords" claude
-async let sentiment: text = vibe "What is the sentiment?" claude
+async let summary = do "Summarize this document"
+async let keywords: text[] = do "Extract 5 keywords"
+async let sentiment: text = do "What is the sentiment?"
 
 // All three run concurrently, await automatically when used
-let report = vibe "Create a report using: {summary}, {keywords}, {sentiment}" claude
+let report = do "Create a report using: {summary}, {keywords}, {sentiment}"
 ```
 
 ## VS Code Extension
@@ -146,7 +165,7 @@ let report = vibe "Create a report using: {summary}, {keywords}, {sentiment}" cl
 Get syntax highlighting and language support for `.vibe` files:
 
 ```bash
-code --install-extension vibe-lang.vibe
+code --install-extension vibelang.vibe-language
 ```
 
 ## Documentation
