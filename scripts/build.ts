@@ -25,7 +25,7 @@ const results = await Promise.all(
   targets.map(async ({ target, name }) => {
     const buildStart = Date.now();
     try {
-      await $`bun build --compile --target=${target} ./src/index.ts --outfile ./dist/${name}`.quiet();
+      await $`bun build --compile --target=${target} ./packages/runtime/src/index.ts --outfile ./dist/${name}`.quiet();
       const duration = ((Date.now() - buildStart) / 1000).toFixed(1);
       return { name, success: true, duration };
     } catch (error) {
