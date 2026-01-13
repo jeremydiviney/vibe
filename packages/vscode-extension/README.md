@@ -59,6 +59,8 @@ Full debugging support for Vibe programs:
 
 1. Install the [Vibe CLI](https://www.npmjs.com/package/@vibe-lang/vibe):
    ```bash
+   npm install -g @vibe-lang/vibe
+   # or
    bun install -g @vibe-lang/vibe
    ```
 
@@ -77,7 +79,7 @@ Full debugging support for Vibe programs:
      provider: "anthropic"
    }
 
-   let greeting = vibe "Say hello in a creative way" claude
+   let greeting = vibe "Say hello in a creative way"
    greeting
    ```
 
