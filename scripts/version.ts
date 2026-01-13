@@ -65,7 +65,7 @@ function isValidVersion(v: string): boolean {
 const arg = process.argv[2]
 const currentVersion = readVersion()
 
-if (!arg) {
+if (arg === '--status' || arg === '-s') {
   // Show current version
   console.log(`Current version: ${currentVersion}`)
   console.log('\nPackages:')
@@ -77,13 +77,21 @@ if (!arg) {
       console.log(`  ${pkg}: ${status}`)
     }
   }
-  console.log('\nUsage: bun scripts/version.ts [version|patch|minor|major]')
+  console.log('\nUsage:')
+  console.log('  bun run version          # Bump patch (default)')
+  console.log('  bun run version minor    # Bump minor')
+  console.log('  bun run version major    # Bump major')
+  console.log('  bun run version 1.0.0    # Set specific version')
+  console.log('  bun run version --status # Show current version')
   process.exit(0)
 }
 
 let newVersion: string
 
-if (arg === 'patch' || arg === 'minor' || arg === 'major') {
+if (!arg || arg === 'patch') {
+  // Default: bump patch
+  newVersion = bumpVersion(currentVersion, 'patch')
+} else if (arg === 'minor' || arg === 'major') {
   newVersion = bumpVersion(currentVersion, arg)
 } else if (isValidVersion(arg)) {
   newVersion = arg
