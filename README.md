@@ -2,8 +2,6 @@
   <img src="assets/vibe-logo.png" alt="Vibe" width="200">
 </p>
 
-<h1 align="center">Vibe</h1>
-
 <p align="center">
   <strong>The language to build incredible AI agents</strong>
 </p>
