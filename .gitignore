@@ -44,3 +44,9 @@ coverage/
 # Test temp files
 .test-tmp/
 **/.test-workspace/
+
+# Claude Code temp files
+tmpclaude-*
+
+# VS Code extension packages
+*.vsix
