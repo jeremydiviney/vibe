@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/vibe-logo.svg" alt="Vibe" width="200">
+  <img src="assets/vibe-logo.png" alt="Vibe" width="200">
 </p>
 
 <h1 align="center">Vibe</h1>
@@ -71,7 +71,7 @@ vibe hello.vibe
 - **Type-Safe AI Responses** — Define expected return types (`text`, `number`, `boolean`, `json`, arrays) and get validated results
 - **Context Awareness** — Variables are automatically visible to AI prompts via string interpolation
 - **Seamless TypeScript Interop** — Import npm packages, call TypeScript functions, embed TS blocks directly in your code
-- **Automagical Async Handling** — Use `async let` for parallel AI calls with automatic dependency resolution
+- **Automagical Async Handling** — Use `async` for parallel AI calls with automatic dependency resolution
 - **Easy Custom Tool Creation** — Define tools with a simple syntax that AI models can invoke
 - **Private Variables** — Mark variables as `private` to exclude them from AI context
 - **Provider Agnostic** — Works with OpenAI, Anthropic, Google, and any OpenAI-compatible API
