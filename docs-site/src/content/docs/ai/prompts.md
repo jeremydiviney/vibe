@@ -1,9 +1,9 @@
 ---
 title: AI Prompts
-description: The do, vibe, and ask keywords
+description: The do and vibe keywords
 ---
 
-Vibe has three keywords for interacting with AI models: `do`, `vibe`, and `ask`.
+Vibe has two keywords for interacting with AI models: `do` and `vibe`.
 
 ## The `do` Keyword
 

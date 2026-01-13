@@ -67,7 +67,8 @@
       "WebFetch(domain:codeberg.org)",
       "Bash(pip show:*)",
       "Bash(done)",
-      "Bash(bunx vsce package:*)"
+      "Bash(bunx vsce package:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",

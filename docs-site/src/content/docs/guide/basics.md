@@ -148,18 +148,29 @@ let name = person.name  // "Alice"
 ### Array Indexing
 
 ```vibe
-let items = ["a", "b", "c"]
-let first = items[0]   // "a"
-let last = items[2]    // "c"
+let items = ["a", "b", "c", "d", "e"]
+let first = items[0]    // "a"
+let third = items[2]    // "c"
+
+// Negative indices count from the end
+let last = items[-1]    // "e"
+let secondLast = items[-2]  // "d"
 ```
 
 ### Array Slicing
+
+Python-style slicing with `[start:end]` syntax:
 
 ```vibe
 let items = [1, 2, 3, 4, 5]
 let slice = items[1:3]    // [2, 3]
 let fromStart = items[:2] // [1, 2]
 let toEnd = items[3:]     // [4, 5]
+
+// Negative indices in slices
+let allButLast = items[:-1]   // [1, 2, 3, 4]
+let lastTwo = items[-2:]      // [4, 5]
+let middle = items[1:-1]      // [2, 3, 4]
 ```
 
 ## Comments

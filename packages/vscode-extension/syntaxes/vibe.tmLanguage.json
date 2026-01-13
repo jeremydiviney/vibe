@@ -102,7 +102,7 @@
         },
         {
           "name": "keyword.ai.vibe",
-          "match": "\\b(vibe|do|ask)\\b"
+          "match": "\\b(vibe|do)\\b"
         },
         {
           "name": "keyword.context.vibe",
