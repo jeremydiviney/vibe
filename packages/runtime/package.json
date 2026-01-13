@@ -24,7 +24,13 @@
     "test:integration": "bun test tests/integration/ --timeout 120000",
     "test:all": "bun test src/ tests/integration/ --timeout 120000"
   },
-  "keywords": ["ai", "agent", "orchestration", "dsl", "language"],
+  "keywords": [
+    "ai",
+    "agent",
+    "orchestration",
+    "dsl",
+    "language"
+  ],
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

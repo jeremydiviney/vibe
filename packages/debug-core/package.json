@@ -8,7 +8,11 @@
     "test": "bun test src/",
     "test:watch": "bun test --watch src/"
   },
-  "keywords": ["vibe", "debug", "dap"],
+  "keywords": [
+    "vibe",
+    "debug",
+    "dap"
+  ],
   "license": "ISC",
   "devDependencies": {
     "@types/bun": "latest"

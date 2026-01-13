@@ -17,7 +17,11 @@
     "test:extension": "bun test packages/vscode-extension/src/test/",
     "build:binaries": "bun run scripts/build.ts",
     "publish:npm": "bun run scripts/publish.ts",
-    "build:extension": "bun run --cwd packages/vscode-extension build"
+    "build:extension": "bun run --cwd packages/vscode-extension build",
+    "version": "bun scripts/version.ts",
+    "version:patch": "bun scripts/version.ts patch",
+    "version:minor": "bun scripts/version.ts minor",
+    "version:major": "bun scripts/version.ts major"
   },
   "keywords": ["ai", "agent", "orchestration", "dsl", "language"],
   "author": "",
