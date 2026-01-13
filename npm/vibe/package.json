@@ -1,6 +1,6 @@
 {
   "name": "@vibe-lang/vibe",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Vibe runtime",
   "bin": {
     "vibe": "bin/vibe.js"
@@ -10,11 +10,11 @@
     "scripts/postinstall.js"
   ],
   "optionalDependencies": {
-    "@vibe-lang/vibe-linux-x64": "0.2.1",
-    "@vibe-lang/vibe-linux-arm64": "0.2.1",
-    "@vibe-lang/vibe-darwin-arm64": "0.2.1",
-    "@vibe-lang/vibe-darwin-x64": "0.2.1",
-    "@vibe-lang/vibe-windows-x64": "0.2.1"
+    "@vibe-lang/vibe-linux-x64": "0.2.2",
+    "@vibe-lang/vibe-linux-arm64": "0.2.2",
+    "@vibe-lang/vibe-darwin-arm64": "0.2.2",
+    "@vibe-lang/vibe-darwin-x64": "0.2.2",
+    "@vibe-lang/vibe-windows-x64": "0.2.2"
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.js"

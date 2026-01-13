@@ -30,6 +30,8 @@ Vibe is a domain-specific language designed for AI agent orchestration. Write de
 ## Installation
 
 ```bash
+npm install -g @vibe-lang/vibe
+# or
 bun install -g @vibe-lang/vibe
 ```
 
@@ -53,7 +55,7 @@ model claude = {
 }
 
 let topic = "the future of programming"
-let summary: text = vibe "Write a brief summary about {topic}" claude
+let summary: text = vibe "Write a brief summary about {topic}"
 
 summary
 ```
