@@ -11,6 +11,10 @@ export default defineConfig({
 			title: 'Vibe',
 			logo: {
 				src: './src/assets/vibe-logo.png',
+				replacesTitle: true,
+			},
+			components: {
+				ThemeSelect: './src/components/ThemeSelect.astro',
 			},
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/vibelang-org/vibe' },

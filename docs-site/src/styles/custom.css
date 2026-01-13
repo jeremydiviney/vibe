@@ -1,9 +1,10 @@
 /* Vibe Documentation Custom Styles */
 
 :root {
-	--sl-color-accent-low: #2d1f4e;
-	--sl-color-accent: #7c3aed;
-	--sl-color-accent-high: #c4b5fd;
+	/* Warm coral/orange accent to match Vibe logo */
+	--sl-color-accent-low: #3d2a1f;
+	--sl-color-accent: #e07850;
+	--sl-color-accent-high: #f5c4a1;
 	--sl-color-white: #ffffff;
 	--sl-color-gray-1: #eceef2;
 	--sl-color-gray-2: #c0c2c7;
@@ -15,7 +16,40 @@
 }
 
 :root[data-theme='light'] {
-	--sl-color-accent-low: #c4b5fd;
-	--sl-color-accent: #7c3aed;
-	--sl-color-accent-high: #2d1f4e;
+	--sl-color-accent-low: #fde8dc;
+	--sl-color-accent: #d96a3f;
+	--sl-color-accent-high: #7a3a20;
+}
+
+/* Dark mode header */
+:root[data-theme='dark'] header.header {
+	background-color: var(--sl-color-black);
+	border-bottom: 1px solid var(--sl-color-gray-5);
+}
+
+/* Light mode header */
+:root[data-theme='light'] header.header {
+	background-color: var(--sl-color-gray-6);
+	border-bottom: 1px solid var(--sl-color-gray-5);
+}
+
+/* Header text/icons light on dark header */
+header.header :where(a, button) {
+	color: var(--sl-color-white);
+}
+
+header.header .site-title {
+	color: var(--sl-color-white);
+}
+
+/* Smaller header logo */
+header.header .site-title img {
+	height: 2rem;
+	width: auto;
+}
+
+/* Smaller hero image */
+.hero img {
+	max-width: 200px;
+	height: auto;
 }
