@@ -1,11 +1,13 @@
+import fs from 'node:fs';
 import { defineEcConfig } from 'astro-expressive-code';
 
-// Use JavaScript highlighting for Vibe code blocks as a fallback
-// until we can properly integrate the custom TextMate grammar
+// Load simplified Vibe grammar (without TypeScript embedding that caused issues)
+const vibeGrammar = JSON.parse(
+	fs.readFileSync(new URL('./vibe-grammar.json', import.meta.url), 'utf-8')
+);
+
 export default defineEcConfig({
 	shiki: {
-		langAlias: {
-			vibe: 'javascript',
-		},
+		langs: [vibeGrammar],
 	},
 });
