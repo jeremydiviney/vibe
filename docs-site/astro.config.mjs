@@ -18,6 +18,7 @@ export default defineConfig({
 				ThemeProvider: './src/components/ThemeProvider.astro',
 				ThemeSelect: './src/components/ThemeSelect.astro',
 			},
+			// Custom language config is in ec.config.mjs
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/vibelang-org/vibe' },
 			],
