@@ -123,6 +123,13 @@
   - Most of the time don't want to interpolate in prompts - the AI already has context access
   - May want to differentiate syntax or make interpolation optional in prompts
 
+- [ ] Auto-import core system functions vs explicit imports
+  - Consider auto-importing essential builtins: `env()`, `print()`, `input()`
+  - Other system library functions would require explicit import
+  - Example: `import { readFile, writeFile } from "vibe:fs"`
+  - Reduces boilerplate for common operations while keeping namespace clean
+  - Need to decide which functions are "core" vs "library"
+
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)
 - [ ] `?` operator for error propagation (`riskyOp()?`)
