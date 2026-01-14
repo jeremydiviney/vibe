@@ -10,10 +10,12 @@ export default defineConfig({
 		starlight({
 			title: 'Vibe',
 			logo: {
-				src: './src/assets/vibe-logo.png',
+				light: './src/assets/vibe-logo-dark.png',
+				dark: './src/assets/vibe-logo.png',
 				replacesTitle: true,
 			},
 			components: {
+				ThemeProvider: './src/components/ThemeProvider.astro',
 				ThemeSelect: './src/components/ThemeSelect.astro',
 			},
 			social: [

@@ -19,6 +19,15 @@
 	--sl-color-accent-low: #fde8dc;
 	--sl-color-accent: #d96a3f;
 	--sl-color-accent-high: #7a3a20;
+	/* Light theme background colors */
+	--sl-color-white: #17181c;
+	--sl-color-gray-1: #24272f;
+	--sl-color-gray-2: #353841;
+	--sl-color-gray-3: #545861;
+	--sl-color-gray-4: #888b96;
+	--sl-color-gray-5: #c0c2c7;
+	--sl-color-gray-6: #eceef2;
+	--sl-color-black: #ffffff;
 }
 
 /* Dark mode header */
@@ -52,4 +61,19 @@ header.header .site-title img {
 .hero img {
 	max-width: 200px;
 	height: auto;
+}
+
+/* Light mode sidebar highlight - faded coral/orange */
+:root[data-theme='light'] .sidebar-content a[aria-current="page"] {
+	background-color: rgba(217, 106, 63, 0.5);
+}
+
+/* Prevent layout shift from scrollbar */
+html {
+	overflow-y: scroll;
+}
+
+/* Stabilize header layout */
+header.header {
+	min-height: 3.5rem;
 }

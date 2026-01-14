@@ -44,12 +44,12 @@
   - [x] `--inspect-port=PORT` for custom debug port
 
 ### Documentation
-- [ ] Create README for GitHub and npm
-  - [ ] Project overview and features
-  - [ ] Installation instructions (`npm install -g @vibe-lang/vibe`)
-  - [ ] Quick start example
-  - [ ] Language syntax guide
-  - [ ] CLI usage (`vibe`, `vibe upgrade`, `vibe --version`)
+- [x] Create README for GitHub and npm
+  - [x] Project overview and features
+  - [x] Installation instructions (`npm install -g @vibe-lang/vibe`)
+  - [x] Quick start example
+  - [x] Language syntax guide
+  - [x] CLI usage (`vibe`, `vibe upgrade`, `vibe --version`)
 
 ### Real-World Examples
 - [ ] Code review assistant (`examples/code-review.vibe`)
@@ -107,14 +107,21 @@
     - [ ] Context visualization panel (local vs default context)
     - [ ] Show context entries with their values
     - [ ] Highlight which context is active for current scope
-- [ ] Publish VSCode extension to marketplace
-  - [ ] Create publisher account on VS Marketplace
-  - [ ] Package extension with `vsce package`
-  - [ ] Publish with `vsce publish`
+- [x] Publish VSCode extension to marketplace
+  - [x] Create publisher account on VS Marketplace
+  - [x] Package extension with `vsce package`
+  - [x] Publish with `vsce publish`
   - [ ] Add marketplace badge to README
 
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
+
+### Language Design
+- [ ] String interpolation in prompts vs text variables
+  - Consider whether `{variable}` should interpolate in prompts since context already has access
+  - Current behavior: prompts use `{var}`, template literals use `${var}`
+  - Most of the time don't want to interpolate in prompts - the AI already has context access
+  - May want to differentiate syntax or make interpolation optional in prompts
 
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)

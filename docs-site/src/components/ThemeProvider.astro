@@ -1,0 +1,12 @@
+---
+// Custom ThemeProvider - sets theme immediately to prevent flicker
+---
+
+<script is:inline>
+  // Run immediately before page renders
+  (function() {
+    const stored = localStorage.getItem('starlight-theme');
+    const theme = (stored === 'light' || stored === 'dark') ? stored : 'dark';
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
