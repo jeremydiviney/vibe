@@ -130,6 +130,13 @@
   - Reduces boilerplate for common operations while keeping namespace clean
   - Need to decide which functions are "core" vs "library"
 
+- [ ] Type checking for TS block parameters and inline TS code
+  - Currently no type checking when passing Vibe variables into `ts()` blocks
+  - Example that should error: `let tvar: text = "hello"; ts(tvar) { addNumbers(1, tvar) }`
+  - Need to verify parameter types match expected TypeScript types
+  - Consider generating `.d.ts` declarations for Vibe variables passed to TS
+  - Could leverage TypeScript compiler API for validation
+
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)
 - [ ] `?` operator for error propagation (`riskyOp()?`)
