@@ -48,5 +48,8 @@ coverage/
 # Claude Code temp files
 tmpclaude-*
 
+# Claude local settings
+.claude/settings.local.json
+
 # VS Code extension packages
 *.vsix
