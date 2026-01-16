@@ -12,11 +12,12 @@ import { getImportedVibeFunction } from '../modules';
 /**
  * Let declaration - push instructions for initializer.
  * For async declarations, sets context flag so AI/TS handlers use non-blocking mode.
+ * For prompt-typed variables, sets inPromptContext for string interpolation semantics.
  */
 export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration): RuntimeState {
   if (stmt.initializer) {
     // For async declarations, set context flag before evaluating
-    const baseState = stmt.isAsync ? {
+    let baseState = stmt.isAsync ? {
       ...state,
       currentAsyncVarName: stmt.name,
       currentAsyncIsConst: false,
@@ -24,13 +25,27 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
       currentAsyncIsPrivate: stmt.isPrivate ?? false,
     } : state;
 
+    // For prompt-typed variables, set inPromptContext for string interpolation
+    const isPromptType = stmt.typeAnnotation === 'prompt';
+    if (isPromptType) {
+      baseState = { ...baseState, inPromptContext: true };
+    }
+
+    // Build instruction stack with optional clear_prompt_context
+    const instructions: RuntimeState['instructionStack'] = [
+      { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
+    ];
+    if (isPromptType) {
+      instructions.push({ op: 'clear_prompt_context', location: stmt.location });
+    }
+    instructions.push(
+      { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
+      ...state.instructionStack
+    );
+
     return {
       ...baseState,
-      instructionStack: [
-        { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
-        { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
-        ...state.instructionStack,
-      ],
+      instructionStack: instructions,
     };
   }
 
@@ -41,10 +56,11 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
 /**
  * Const declaration - push instructions for initializer.
  * For async declarations, sets context flag so AI/TS handlers use non-blocking mode.
+ * For prompt-typed variables, sets inPromptContext for string interpolation semantics.
  */
 export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclaration): RuntimeState {
   // For async declarations, set context flag before evaluating
-  const baseState = stmt.isAsync ? {
+  let baseState = stmt.isAsync ? {
     ...state,
     currentAsyncVarName: stmt.name,
     currentAsyncIsConst: true,
@@ -52,13 +68,27 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
     currentAsyncIsPrivate: stmt.isPrivate ?? false,
   } : state;
 
+  // For prompt-typed variables, set inPromptContext for string interpolation
+  const isPromptType = stmt.typeAnnotation === 'prompt';
+  if (isPromptType) {
+    baseState = { ...baseState, inPromptContext: true };
+  }
+
+  // Build instruction stack with optional clear_prompt_context
+  const instructions: RuntimeState['instructionStack'] = [
+    { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
+  ];
+  if (isPromptType) {
+    instructions.push({ op: 'clear_prompt_context', location: stmt.location });
+  }
+  instructions.push(
+    { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
+    ...state.instructionStack
+  );
+
   return {
     ...baseState,
-    instructionStack: [
-      { op: 'exec_expression', expr: stmt.initializer, location: stmt.initializer.location },
-      { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
-      ...state.instructionStack,
-    ],
+    instructionStack: instructions,
   };
 }
 

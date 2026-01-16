@@ -390,19 +390,26 @@ export function execCallExpression(state: RuntimeState, expr: AST.CallExpression
 export function execExpression(state: RuntimeState, expr: AST.Expression): RuntimeState {
   switch (expr.type) {
     case 'StringLiteral':
+      // Use prompt interpolation if in prompt context (do/vibe, prompt-typed variable)
       return {
         ...state,
         instructionStack: [
-          { op: 'interpolate_string', template: expr.value, location: expr.location },
+          state.inPromptContext
+            ? { op: 'interpolate_prompt_string', template: expr.value, location: expr.location }
+            : { op: 'interpolate_string', template: expr.value, location: expr.location },
           ...state.instructionStack,
         ],
       };
 
     case 'TemplateLiteral':
+      // Template literals also use {var} pattern now (unified)
+      // Use prompt interpolation if in prompt context
       return {
         ...state,
         instructionStack: [
-          { op: 'interpolate_template', template: expr.value, location: expr.location },
+          state.inPromptContext
+            ? { op: 'interpolate_prompt_string', template: expr.value, location: expr.location }
+            : { op: 'interpolate_string', template: expr.value, location: expr.location },
           ...state.instructionStack,
         ],
       };

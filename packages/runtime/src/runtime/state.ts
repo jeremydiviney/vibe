@@ -81,6 +81,9 @@ export function createInitialState(
 
     // Scheduled async operations
     pendingAsyncStarts: [],
+
+    // String interpolation context (for prompt strings in do/vibe)
+    inPromptContext: false,
   };
 }
 

@@ -26,22 +26,48 @@ export function tokenLocation(token: IToken): SourceLocation {
   };
 }
 
+// Placeholders for escaped braces (will be converted back after interpolation)
+export const ESCAPED_LBRACE = '\x00ESC_LBRACE\x00';
+export const ESCAPED_RBRACE = '\x00ESC_RBRACE\x00';
+export const ESCAPED_BANG_LBRACE = '\x00ESC_BANG_LBRACE\x00';
+
+/**
+ * Convert escape placeholders back to literal characters.
+ * Called after interpolation is complete.
+ */
+export function unescapeBraces(str: string): string {
+  return str
+    .replace(new RegExp(ESCAPED_LBRACE, 'g'), '{')
+    .replace(new RegExp(ESCAPED_RBRACE, 'g'), '}')
+    .replace(new RegExp(ESCAPED_BANG_LBRACE, 'g'), '!{');
+}
+
 /**
  * Extract string value from a string literal token.
+ * Escaped braces (\{, \}, \!{) are converted to placeholders for interpolation.
  */
 export function parseStringLiteral(token: IToken): string {
   const raw = token.image;
-  // Remove quotes and unescape
-  return raw.slice(1, -1).replace(/\\(.)/g, '$1');
+  // Remove quotes, handle brace escapes with placeholders, then general escapes
+  return raw.slice(1, -1)
+    .replace(/\\!\{/g, ESCAPED_BANG_LBRACE)  // \!{ -> placeholder (must be before \{)
+    .replace(/\\\{/g, ESCAPED_LBRACE)         // \{ -> placeholder
+    .replace(/\\\}/g, ESCAPED_RBRACE)         // \} -> placeholder
+    .replace(/\\(.)/g, '$1');                 // Other escapes: \n -> n, \\ -> \, etc.
 }
 
 /**
  * Extract string value from a template literal token.
+ * Escaped braces (\{, \}, \!{) are converted to placeholders for interpolation.
  */
 export function parseTemplateLiteral(token: IToken): string {
   const raw = token.image;
-  // Remove backticks and unescape
-  return raw.slice(1, -1).replace(/\\(.)/g, '$1');
+  // Remove backticks, handle brace escapes with placeholders, then general escapes
+  return raw.slice(1, -1)
+    .replace(/\\!\{/g, ESCAPED_BANG_LBRACE)  // \!{ -> placeholder (must be before \{)
+    .replace(/\\\{/g, ESCAPED_LBRACE)         // \{ -> placeholder
+    .replace(/\\\}/g, ESCAPED_RBRACE)         // \} -> placeholder
+    .replace(/\\(.)/g, '$1');                 // Other escapes: \n -> n, \\ -> \, etc.
 }
 
 /**

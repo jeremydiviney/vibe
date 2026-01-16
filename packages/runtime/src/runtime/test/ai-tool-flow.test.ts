@@ -830,18 +830,19 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
     // With 'verbose', the loop preserves all history including tool calls and scope markers
     // Note: sum = 0 + 1 = 1, then sum = 1 + 3 = 4
     // Order: AI call → tool calls → response (via variable assignment)
+    // With unified interpolation, {i} is left as reference in prompt strings
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - sum (number): 0
     ==> for i
     - i (number): 1
-    --> vibe: "Add 1"
+    --> vibe: "Add {i}"
     [tool] add({"a":0,"b":1})
     [result] 1
     <-- partial (number): 1
     - sum (number): 1
     - i (number): 2
-    --> vibe: "Add 2"
+    --> vibe: "Add {i}"
     [tool] add({"a":1,"b":2})
     [result] 3
     <-- partial (number): 3

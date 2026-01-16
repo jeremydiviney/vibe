@@ -257,14 +257,15 @@ describe('Async Execution Order Verification', () => {
       expect(asyncElapsed).toBeLessThan(syncElapsed);
     });
 
-    test('dependent operations execute in correct order', async () => {
+    test('dependent async operations with !{} expansion execute in correct order', async () => {
       const events: ExecutionEvent[] = [];
 
-      // b depends on a (uses a's value in prompt)
+      // Both are async, but b depends on a via !{a} expansion
+      // !{a} expands the value into the prompt, creating a true dependency
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
         async let a = do "get_value" m default
-        let b = do "use_{a}" m default
+        async let b = do "use_!{a}" m default
       `);
 
       const aiProvider = createOrderTrackingAI(50, {
@@ -275,7 +276,39 @@ describe('Async Execution Order Verification', () => {
       const runtime = new Runtime(ast, aiProvider);
       await runtime.run();
 
-      // a should complete before b starts (b depends on a)
+      // a should complete before b starts (b depends on a via !{a} expansion)
+      const aEnd = events.find(e => e.type === 'ai_call_end' && e.id.includes('get_value'));
+      const bStart = events.find(e => e.type === 'ai_call_start' && e.id.includes('use_'));
+
+      expect(aEnd).toBeDefined();
+      expect(bStart).toBeDefined();
+      expect(aEnd!.timestamp).toBeLessThanOrEqual(bStart!.timestamp);
+
+      expect(runtime.getValue('b')).toBe('RESULT');
+    });
+
+    test('dependent async operations with {} reference execute in correct order', async () => {
+      const events: ExecutionEvent[] = [];
+
+      // Both are async, b references a via {a} (reference syntax)
+      // Even though {a} is left as literal in prompt, the context system needs
+      // the resolved value, so b should wait for a to complete
+      const ast = parse(`
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        async let a = do "get_value" m default
+        async let b = do "use_{a}" m default
+      `);
+
+      const aiProvider = createOrderTrackingAI(50, {
+        'get_value': 'VALUE',
+        // Note: prompt will be "use_{a}" (literal), not "use_VALUE"
+        'use_{a}': 'RESULT',
+      }, events);
+
+      const runtime = new Runtime(ast, aiProvider);
+      await runtime.run();
+
+      // a should complete before b starts (b references a, context needs resolved value)
       const aEnd = events.find(e => e.type === 'ai_call_end' && e.id.includes('get_value'));
       const bStart = events.find(e => e.type === 'ai_call_start' && e.id.includes('use_'));
 
@@ -365,7 +398,7 @@ describe('Async Execution Order Verification', () => {
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let results = []
         for i in [1, 2, 3] {
-          async let r = do "iter_{i}" m default
+          async let r = do "iter_!{i}" m default
           results.push(r)
         }
       `);
@@ -452,7 +485,7 @@ describe('Async Execution Order Verification', () => {
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let results = []
         for i in [1, 2] {
-          async let x = do "iter_{i}" m default
+          async let x = do "iter_!{i}" m default
           results.push(x)
         }
       `);
@@ -485,7 +518,7 @@ describe('Async Execution Order Verification', () => {
         let results = []
         let i = 0
         while i < 2 {
-          async let x = do "while_{i}" m default
+          async let x = do "while_!{i}" m default
           results.push(x)
           i = i + 1
         }

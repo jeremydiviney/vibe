@@ -58,7 +58,8 @@ describe('AI Context Tests', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('awaiting_ai');
-    expect(state.pendingAI?.prompt).toBe('Process this: user query');
+    // With unified interpolation, {input} is left as reference in prompt-typed variables
+    expect(state.pendingAI?.prompt).toBe('Process this: {input}');
 
     // Local context: function frame only, LOCAL_PROMPT filtered out
     // Note: function parameters now have explicit type annotations
@@ -191,7 +192,8 @@ describe('AI Context Tests', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('awaiting_ai');
-    expect(state.pendingAI?.prompt).toBe('Process deep input');
+    // With unified interpolation, {input} is left as reference in vibe expressions
+    expect(state.pendingAI?.prompt).toBe('Process {input}');
 
     // Local context: level2 frame only, L2_PROMPT filtered
     // Note: function parameters now have explicit type annotations
@@ -564,7 +566,9 @@ Variables from the VIBE language call stack.
     // === Checkpoint 1: Inside main(), at first do call ===
     state = runUntilPause(state);
     expect(state.status).toBe('awaiting_ai');
-    expect(state.pendingAI?.prompt).toBe('main work with test');
+    // With unified interpolation, {input} is left as reference in prompt strings
+    // The AI sees the literal {input} and gets the value through context
+    expect(state.pendingAI?.prompt).toBe('main work with {input}');
 
     // Local context: main's frame only (depth 1 = called from entry)
     // Note: function parameters now have explicit type annotations
@@ -592,7 +596,8 @@ Variables from the VIBE language call stack.
     // === Checkpoint 2: Inside helper(), at second do call ===
     state = runUntilPause(state);
     expect(state.status).toBe('awaiting_ai');
-    expect(state.pendingAI?.prompt).toBe('helper work with test');
+    // With unified interpolation, {value} is left as reference in prompt strings
+    expect(state.pendingAI?.prompt).toBe('helper work with {value}');
 
     // Local context: helper's frame only (depth 2 = called from main which is called from entry)
     // Note: function parameters now have explicit type annotations
@@ -609,7 +614,7 @@ Variables from the VIBE language call stack.
       { kind: 'variable', name: 'input', value: 'test', type: 'text', isConst: false, frameName: 'main', frameDepth: 1, source: null },
       { kind: 'variable', name: 'MAIN_CONST', value: 'main const', type: 'text', isConst: true, frameName: 'main', frameDepth: 1, source: null },
       { kind: 'variable', name: 'mainVar', value: 'main value', type: 'text', isConst: false, frameName: 'main', frameDepth: 1, source: null },
-      { kind: 'prompt', aiType: 'vibe', prompt: 'main work with test', response: 'main response', frameName: 'main', frameDepth: 1 },
+      { kind: 'prompt', aiType: 'vibe', prompt: 'main work with {input}', response: 'main response', frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'mainResult', value: 'main response', type: 'text', isConst: false, source: 'ai', frameName: 'main', frameDepth: 1 },
       { kind: 'variable', name: 'value', value: 'test', type: 'text', isConst: false, frameName: 'helper', frameDepth: 2, source: null },
       { kind: 'variable', name: 'HELPER_CONST', value: 'helper const', type: 'text', isConst: true, frameName: 'helper', frameDepth: 2, source: null },
@@ -635,7 +640,7 @@ Variables from the VIBE language call stack.
       - input (text): test
       - MAIN_CONST (text): main const
       - mainVar (text): main value
-      --> vibe: "main work with test"
+      --> vibe: "main work with {input}"
       <-- mainResult (text): main response
 
       helper (current scope)

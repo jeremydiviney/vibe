@@ -31,6 +31,11 @@ import {
   execInterpolateTemplate,
   execTsEval,
 } from './exec/typescript';
+import {
+  execInterpolatePromptString,
+  execInterpolateRegularString,
+  execClearPromptContext,
+} from './exec/interpolation';
 import { execCallFunction } from './exec/functions';
 import { execPushFrame, execPopFrame } from './exec/frames';
 import { execToolDeclaration } from './exec/tools';
@@ -551,10 +556,20 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return { ...state, lastResult: instruction.value };
 
     case 'interpolate_string':
-      return execInterpolateString(state, instruction.template, instruction.location);
+      // Regular string interpolation - {var} expands to value
+      return execInterpolateRegularString(state, instruction.template, instruction.location);
+
+    case 'interpolate_prompt_string':
+      // Prompt string interpolation - {var} = reference, !{var} = expand
+      return execInterpolatePromptString(state, instruction.template, instruction.location);
+
+    case 'clear_prompt_context':
+      // Clear the inPromptContext flag after evaluating prompt
+      return execClearPromptContext(state);
 
     case 'interpolate_template':
-      return execInterpolateTemplate(state, instruction.template, instruction.location);
+      // Legacy template literal handling - redirect to regular string (unified to {var} pattern)
+      return execInterpolateRegularString(state, instruction.template, instruction.location);
 
     case 'binary_op': {
       const rawRight = state.lastResult;

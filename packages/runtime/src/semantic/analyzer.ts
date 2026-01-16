@@ -2,6 +2,7 @@ import * as AST from '../ast';
 import { SemanticError, type SourceLocation } from '../errors';
 import { SymbolTable, type SymbolKind } from './symbol-table';
 import { isValidType, typesCompatible, isValidJson, getBaseType } from './types';
+import { ESCAPED_LBRACE, ESCAPED_RBRACE, ESCAPED_BANG_LBRACE } from '../parser/visitor/helpers';
 
 export class SemanticAnalyzer {
   private symbols = new SymbolTable();
@@ -139,6 +140,15 @@ export class SemanticAnalyzer {
         break;
 
       case 'StringLiteral':
+        // Validate interpolations in regular context (prompt context handled separately)
+        this.validateStringInterpolation(node.value, false, node.location);
+        break;
+
+      case 'TemplateLiteral':
+        // Validate interpolations in regular context (prompt context handled separately)
+        this.validateStringInterpolation(node.value, false, node.location);
+        break;
+
       case 'BooleanLiteral':
       case 'NumberLiteral':
       case 'NullLiteral':
@@ -158,7 +168,8 @@ export class SemanticAnalyzer {
         break;
 
       case 'VibeExpression':
-        this.visitExpression(node.prompt);
+        // Validate prompt in prompt context (special handling)
+        this.visitVibePrompt(node.prompt);
         this.checkPromptType(node.prompt);
         if (node.model) this.checkModelType(node.model);
         if (node.context) this.checkContextVariable(node.context);
@@ -217,6 +228,24 @@ export class SemanticAnalyzer {
     }
   }
 
+  /**
+   * Visit a prompt expression in a VibeExpression (do/vibe).
+   * String literals are validated in PROMPT context.
+   */
+  private visitVibePrompt(node: AST.Expression): void {
+    // For string literals, validate in prompt context
+    if (node.type === 'StringLiteral') {
+      this.validateStringInterpolation(node.value, true, node.location);
+      return; // Don't call visitExpression which would validate in regular context
+    }
+    if (node.type === 'TemplateLiteral') {
+      this.validateStringInterpolation(node.value, true, node.location);
+      return;
+    }
+    // For other expressions (variables, etc.), use regular visitation
+    this.visitExpression(node);
+  }
+
   private visitVariableDeclaration(
     node: AST.LetDeclaration | AST.ConstDeclaration,
     kind: 'variable' | 'constant'
@@ -257,7 +286,19 @@ export class SemanticAnalyzer {
       this.validateTypeAnnotation(node.typeAnnotation, node.location);
     }
     if (node.initializer) {
-      this.visitExpression(node.initializer);
+      // If type is 'prompt', validate string initializer in prompt context
+      const isPromptType = node.typeAnnotation === 'prompt';
+      if (isPromptType && (node.initializer.type === 'StringLiteral' || node.initializer.type === 'TemplateLiteral')) {
+        // Validate in prompt context
+        this.validateStringInterpolation(
+          node.initializer.value,
+          true, // isPromptContext
+          node.initializer.location
+        );
+      } else {
+        // Regular visitation (includes interpolation validation in regular context)
+        this.visitExpression(node.initializer);
+      }
       if (node.typeAnnotation) {
         this.validateLiteralType(node.initializer, node.typeAnnotation, node.location);
       }
@@ -754,6 +795,93 @@ export class SemanticAnalyzer {
         // AI expressions, etc. - can't determine at compile time
         return null;
     }
+  }
+
+  // ============================================================================
+  // String Interpolation Validation
+  // ============================================================================
+
+  /**
+   * Pattern to match interpolation syntax:
+   * - {var} or {obj.prop} or {arr[0]} or {arr[1:3]} - reference
+   * - !{var} or !{obj.prop} etc. - expansion
+   *
+   * Access path pattern: identifier followed by optional .prop, [index], or [start:end]
+   */
+  private readonly INTERPOLATION_PATTERN = /(!?)\{(\w+(?:\.\w+|\[\d+\]|\[\d*:\d*\])*)\}/g;
+
+  /**
+   * Validates string interpolation references.
+   *
+   * In prompt context (do/vibe, prompt-typed variables):
+   * - {var} = reference, validates var exists and is NOT private
+   * - !{var} = expansion, validates var exists (private allowed)
+   *
+   * In regular context (all other strings):
+   * - {var} = expansion, validates var exists (private allowed)
+   * - !{var} = ERROR (expansion syntax only valid in prompts)
+   */
+  private validateStringInterpolation(
+    value: string,
+    isPromptContext: boolean,
+    location: SourceLocation
+  ): void {
+    // Skip escaped placeholders (they won't be interpolated)
+    const testValue = value
+      .replace(new RegExp(ESCAPED_LBRACE, 'g'), '')
+      .replace(new RegExp(ESCAPED_RBRACE, 'g'), '')
+      .replace(new RegExp(ESCAPED_BANG_LBRACE, 'g'), '');
+
+    // Reset regex state
+    this.INTERPOLATION_PATTERN.lastIndex = 0;
+
+    let match;
+    while ((match = this.INTERPOLATION_PATTERN.exec(testValue)) !== null) {
+      const [fullMatch, bang, path] = match;
+      const isExpansion = bang === '!';
+
+      // Extract the variable name (first part of the path)
+      const varName = path.split(/[.\[]/)[0];
+
+      // Check if variable exists
+      const symbol = this.symbols.lookup(varName);
+      if (!symbol) {
+        this.error(`'${varName}' is not defined`, location);
+        continue;
+      }
+
+      if (isPromptContext) {
+        // In prompt context
+        if (!isExpansion) {
+          // {var} reference - private vars not allowed
+          if (symbol.kind === 'variable' || symbol.kind === 'constant' || symbol.kind === 'parameter') {
+            // Check if it's a private variable by looking at the symbol table
+            // Note: We need to track private status in the symbol table
+            // For now, we can't fully validate this at semantic analysis time
+            // The runtime will handle private variable checking
+          }
+        }
+        // !{var} expansion - all vars allowed (including private)
+      } else {
+        // In regular context
+        if (isExpansion) {
+          // !{var} not allowed in regular strings
+          this.error(`Expansion syntax !{${path}} is only valid in prompt strings (do/vibe expressions or prompt-typed variables)`, location);
+        }
+        // {var} expansion - all vars allowed
+      }
+    }
+  }
+
+  /**
+   * Check if a variable is marked as private.
+   * Currently tracked via symbol properties.
+   */
+  private isPrivateVariable(varName: string): boolean {
+    // Note: The current symbol table doesn't track private status
+    // This would need to be added to fully support compile-time private checks
+    // For now, return false and let runtime handle it
+    return false;
   }
 
 }
