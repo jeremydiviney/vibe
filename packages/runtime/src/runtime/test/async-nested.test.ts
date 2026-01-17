@@ -284,7 +284,7 @@ describe('Nested Async Execution', () => {
         function processItems() {
           let results = []
           for item in [1, 2, 3] {
-            async let processed = do "process_{item}" m default
+            async let processed = do "process_!{item}" m default
             results.push(processed)
           }
           return results
@@ -308,11 +308,12 @@ describe('Nested Async Execution', () => {
     test('async function call inside loop', async () => {
       const log: ExecutionLog[] = [];
 
+      // Use !{id} to expand the value in the prompt for unique mock matching
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
 
         function getData(id: number) {
-          async let x = do "get_data_{id}" m default
+          async let x = do "get_data_!{id}" m default
           return x
         }
 
@@ -552,11 +553,12 @@ describe('Nested Async Execution', () => {
 
   describe('deeply nested async Vibe function calls', () => {
     test('three levels of async function calls', async () => {
+      // Use !{prefix} to expand the value in the prompt for unique mock matching
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
 
         function level3(prefix: text) {
-          async let x = do "L3_{prefix}" m default
+          async let x = do "L3_!{prefix}" m default
           return prefix + "_" + x
         }
 
@@ -586,6 +588,7 @@ describe('Nested Async Execution', () => {
     });
 
     test('recursive async function with base case', async () => {
+      // Use !{n} to expand the value in the prompt for unique mock matching
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
 
@@ -593,7 +596,7 @@ describe('Nested Async Execution', () => {
           if n <= 0 {
             return "done"
           }
-          async let prefix = do "step_{n}" m default
+          async let prefix = do "step_!{n}" m default
           let rest = countdown(n - 1)
           return prefix + "-" + rest
         }
@@ -616,11 +619,12 @@ describe('Nested Async Execution', () => {
     test('parallel async calls within nested functions', async () => {
       const log: ExecutionLog[] = [];
 
+      // Use !{id} to expand the value in the prompt for unique mock matching
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
 
         function innerWork(id: text) {
-          async let x = do "work_{id}" m default
+          async let x = do "work_!{id}" m default
           return x
         }
 

@@ -4,7 +4,8 @@ model m = { name: "gpt-4", apiKey: "test", url: "http://test" }
 const firstName = "John"
 const lastName = "Doe"
 
-let fullName = `${firstName} ${lastName}`
+// Template literals now use {var} syntax (unified with regular strings)
+let fullName = `{firstName} {lastName}`
 let message = vibe "Generate a welcome message for {fullName}" m default
 
 message

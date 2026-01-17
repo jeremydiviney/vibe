@@ -68,6 +68,12 @@
       "Bash(pip show:*)",
       "Bash(done)",
       "Bash(bunx vsce package:*)",
+      "Bash(del nul)",
+      "WebFetch(domain:vibelang.net)",
+      "WebFetch(domain:ziglang.org)",
+      "WebFetch(domain:ocaml.org)",
+      "WebFetch(domain:starlight.astro.build)",
+      "Bash(git stash:*)",
       "Bash(git pull:*)"
     ],
     "deny": [

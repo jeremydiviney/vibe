@@ -680,6 +680,9 @@ export interface RuntimeState {
 
   // Scheduled async operations - waiting for Runtime.run() to start them
   pendingAsyncStarts: PendingAsyncStart[];       // Operations to start as Promises
+
+  // String interpolation context - true when evaluating prompt for do/vibe or prompt variable
+  inPromptContext: boolean;
 }
 
 // Instructions - what to execute next
@@ -736,10 +739,16 @@ export type Instruction =
   // Literals
   | { op: 'literal'; value: unknown; location: SourceLocation }
 
-  // String interpolation
+  // String interpolation (regular strings - expands {var} to value)
   | { op: 'interpolate_string'; template: string; location: SourceLocation }
 
-  // Template literal interpolation (${var} syntax)
+  // Prompt string interpolation ({var} = reference, !{var} = expand)
+  | { op: 'interpolate_prompt_string'; template: string; location: SourceLocation }
+
+  // Clear prompt context flag after evaluating prompt expression
+  | { op: 'clear_prompt_context'; location: SourceLocation }
+
+  // Template literal interpolation (${var} syntax) - DEPRECATED, use interpolate_string
   | { op: 'interpolate_template'; template: string; location: SourceLocation }
 
   // Binary operators

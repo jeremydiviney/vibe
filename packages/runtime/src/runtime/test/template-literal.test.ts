@@ -12,10 +12,10 @@ describe('Runtime - Template Literals', () => {
     expect(state.callStack[0].locals['x'].value).toBe('hello world');
   });
 
-  test('template literal with ${var} interpolation', () => {
+  test('template literal with {var} interpolation', () => {
     const ast = parse(`
       let name = "World"
-      let greeting = \`Hello \${name}!\`
+      let greeting = \`Hello {name}!\`
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
@@ -28,7 +28,7 @@ describe('Runtime - Template Literals', () => {
     const ast = parse(`
       let first = "John"
       let last = "Doe"
-      let full = \`\${first} \${last}\`
+      let full = \`{first} {last}\`
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
@@ -51,7 +51,7 @@ line3\``);
   test('template literal with multiline and interpolation', () => {
     const ast = parse(`
       let name = "Alice"
-      let msg = \`Hello \${name},
+      let msg = \`Hello {name},
 Welcome to our app!\`
     `);
     let state = createInitialState(ast);
@@ -61,20 +61,24 @@ Welcome to our app!\`
     expect(state.callStack[0].locals['msg'].value).toBe('Hello Alice,\nWelcome to our app!');
   });
 
-  test('template literal undefined variable stays as placeholder', () => {
-    const ast = parse('let x = `Hello ${unknown}!`');
+  test('template literal undefined property keeps placeholder', () => {
+    const ast = parse(`
+      let user = { name: "Alice" }
+      let x = \`Hello {user.unknown}!\`
+    `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
-    expect(state.callStack[0].locals['x'].value).toBe('Hello ${unknown}!');
+    // Undefined property keeps the placeholder
+    expect(state.callStack[0].locals['x'].value).toBe('Hello {user.unknown}!');
   });
 
   test('template literal in function with scope chain', () => {
     const ast = parse(`
       let greeting = "Hello"
       function greet(name: text): text {
-        return \`\${greeting}, \${name}!\`
+        return \`{greeting}, {name}!\`
       }
       let result = greet("World")
     `);
@@ -90,7 +94,7 @@ Welcome to our app!\`
       let name = "Global"
       function greet() {
         let name = "Local"
-        return \`Hello \${name}!\`
+        return \`Hello {name}!\`
       }
       let result = greet()
     `);
@@ -101,23 +105,23 @@ Welcome to our app!\`
     expect(state.callStack[0].locals['result'].value).toBe('Hello Local!');
   });
 
-  test('template literal with object value', () => {
+  test('template literal with object value (JSON stringify)', () => {
     const ast = parse(`
       let data: json = { name: "test" }
-      let msg = \`Data: \${data}\`
+      let msg = \`Data: {data}\`
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
-    // Objects get stringified with [object Object] by default
-    expect(state.callStack[0].locals['msg'].value).toBe('Data: [object Object]');
+    // Objects get JSON stringified
+    expect(state.callStack[0].locals['msg'].value).toBe('Data: {"name":"test"}');
   });
 
   test('template literal with boolean value', () => {
     const ast = parse(`
       let flag = true
-      let msg = \`Flag is \${flag}\`
+      let msg = \`Flag is {flag}\`
     `);
     let state = createInitialState(ast);
     state = runUntilPause(state);
@@ -126,7 +130,7 @@ Welcome to our app!\`
     expect(state.callStack[0].locals['msg'].value).toBe('Flag is true');
   });
 
-  test('regular string still uses {var} syntax', () => {
+  test('regular string uses same {var} syntax as template literals', () => {
     const ast = parse(`
       let name = "World"
       let greeting = "Hello {name}!"
@@ -138,7 +142,7 @@ Welcome to our app!\`
     expect(state.callStack[0].locals['greeting'].value).toBe('Hello World!');
   });
 
-  test('template literal does not use {var} syntax', () => {
+  test('template literal uses unified {var} syntax', () => {
     const ast = parse(`
       let name = "World"
       let greeting = \`Hello {name}!\`
@@ -147,7 +151,31 @@ Welcome to our app!\`
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
-    // {name} should NOT be interpolated in template literals
-    expect(state.callStack[0].locals['greeting'].value).toBe('Hello {name}!');
+    // {name} IS interpolated in template literals (unified syntax)
+    expect(state.callStack[0].locals['greeting'].value).toBe('Hello World!');
+  });
+
+  test('template literal with escaped braces', () => {
+    const ast = parse(String.raw`
+      let name = "World"
+      let msg = ` + '`Use \\{name\\} for interpolation`' + `
+    `);
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    expect(state.callStack[0].locals['msg'].value).toBe('Use {name} for interpolation');
+  });
+
+  test('dollar sign in template literal is literal', () => {
+    // Use regular string parsing to include literal $ in Vibe code
+    // In Vibe: `Price: ${price}` - the $ is literal, {price} expands
+    const ast = parse('let price = 100\nlet msg = `Price: \\${price}`');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    // ${price} is NOT valid interpolation syntax - $ is literal, {price} gets expanded
+    expect(state.callStack[0].locals['msg'].value).toBe('Price: $100');
   });
 });

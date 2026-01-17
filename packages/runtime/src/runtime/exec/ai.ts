@@ -18,12 +18,15 @@ export function extractModelName(expr: AST.Expression | null): string | null {
 /**
  * Vibe/Do expression - push instructions for AI call.
  * operationType determines tool loop behavior: 'vibe' = multi-turn, 'do' = single round.
+ * Sets inPromptContext flag so string literals use prompt interpolation semantics.
  */
 export function execVibeExpression(state: RuntimeState, expr: AST.VibeExpression): RuntimeState {
   return {
     ...state,
+    inPromptContext: true,  // Prompt string interpolation mode
     instructionStack: [
       { op: 'exec_expression', expr: expr.prompt, location: expr.prompt.location },
+      { op: 'clear_prompt_context', location: expr.location },  // Clear flag after prompt eval
       { op: 'ai_vibe', model: extractModelName(expr.model), context: expr.context, operationType: expr.operationType, location: expr.location },
       ...state.instructionStack,
     ],

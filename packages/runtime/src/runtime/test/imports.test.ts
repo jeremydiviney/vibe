@@ -78,8 +78,9 @@ describe('Runtime - TypeScript Imports', () => {
 
 describe('Runtime - Vibe Imports', () => {
   test('can import and call Vibe functions', async () => {
+    // {name} is left as reference in vibe expression
     const { state, result } = await loadAndRun('vibe-import/main.vibe', {
-      'Say hello to Alice': 'Hello, Alice!',
+      'Say hello to {name}': 'Hello, Alice!',
     });
 
     expect(state.status).toBe('completed');

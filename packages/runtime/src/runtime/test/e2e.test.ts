@@ -23,8 +23,10 @@ function runVibeScript(
 
 describe('End-to-End Vibe Scripts', () => {
   test('simple-greeting.vibe - basic AI call with interpolation', () => {
+    // With unified interpolation, {name} in prompt strings is left as a reference
+    // The AI sees the literal {name} and gets the value through context
     const finalState = runVibeScript('simple-greeting.vibe', {
-      'Generate a friendly greeting for Alice': 'Hello Alice! Welcome!',
+      'Generate a friendly greeting for {name}': 'Hello Alice! Welcome!',
     });
 
     expect(finalState.status).toBe('completed');
@@ -33,11 +35,12 @@ describe('End-to-End Vibe Scripts', () => {
   });
 
   test('function-call.vibe - functions with multiple AI calls', () => {
+    // First prompt: aiPrompt is a regular string variable, {topic} expands to value
+    // Second prompt: directly in vibe expression, {content} is left as reference
     const finalState = runVibeScript('function-call.vibe', {
       'Write a short story about a brave knight':
         'Once upon a time, a brave knight saved the kingdom.',
-      'Summarize this: Once upon a time, a brave knight saved the kingdom.':
-        'Knight saves kingdom.',
+      'Summarize this: {content}': 'Knight saves kingdom.',
     });
 
     expect(finalState.status).toBe('completed');
@@ -56,8 +59,9 @@ describe('End-to-End Vibe Scripts', () => {
   });
 
   test('template-literals.vibe - template literal interpolation with AI', () => {
+    // {fullName} is left as reference in prompt (vibe expression)
     const finalState = runVibeScript('template-literals.vibe', {
-      'Generate a welcome message for John Doe':
+      'Generate a welcome message for {fullName}':
         'Welcome to our platform, John Doe!',
     });
 
@@ -67,12 +71,13 @@ describe('End-to-End Vibe Scripts', () => {
   });
 
   test('multiple-ai-calls.vibe - sequential AI calls with data flow', () => {
+    // {topic}, {overview}, {details} are left as references in prompts
     const finalState = runVibeScript('multiple-ai-calls.vibe', {
-      'Give a one-sentence overview of machine learning':
+      'Give a one-sentence overview of {topic}':
         'Machine learning is AI that learns from data.',
-      'Expand on this: Machine learning is AI that learns from data.':
+      'Expand on this: {overview}':
         'Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.',
-      'Summarize in 5 words: Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.':
+      'Summarize in 5 words: {details}':
         'AI learns from data automatically',
     });
 
