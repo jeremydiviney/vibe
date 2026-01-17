@@ -17,6 +17,10 @@ src/
   index.ts     - Entry point
 ```
 
+## Lessons Learned
+
+Review `auto-learning.md` at the project root for past mistakes and lessons learned. Pay attention to high-priority (P7+) entries to avoid repeating previous errors.
+
 ## Build Commands
 ```bash
 bun run start              # Run the CLI
