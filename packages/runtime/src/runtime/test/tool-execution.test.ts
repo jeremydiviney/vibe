@@ -154,11 +154,10 @@ let timestamp = now()
     await expect(runtime.run()).rejects.toThrow("'now' is not defined");
   });
 
-  // Standard functions can be imported from system
-  test('env function works when imported from system', async () => {
+  // Core functions (env, print) are auto-imported and available without explicit import
+  test('env function works without import (auto-imported)', async () => {
     process.env.TEST_TOOL_VAR = 'test-value';
     const ast = parse(`
-import { env } from "system"
 let value = env("TEST_TOOL_VAR")
 `);
     const runtime = new Runtime(ast, createMockProvider());
@@ -167,9 +166,8 @@ let value = env("TEST_TOOL_VAR")
     delete process.env.TEST_TOOL_VAR;
   });
 
-  test('print function works when imported from system', async () => {
+  test('print function works without import (auto-imported)', async () => {
     const ast = parse(`
-import { print } from "system"
 let _ = print("hello")
 let x = 1
 `);

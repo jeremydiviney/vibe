@@ -258,9 +258,8 @@ let info = ts(testModel) {
   test('model config with env() function call', async () => {
     process.env.TEST_MODEL_API_KEY = 'env-api-key-value';
 
+    // env() is auto-imported, no import needed
     const runtime = createRuntime(`
-import { env } from "system"
-
 model testModel = {
   name: "test",
   apiKey: env("TEST_MODEL_API_KEY"),

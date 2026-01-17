@@ -28,9 +28,8 @@ async function runVibe(code: string, logAi = true): Promise<Runtime> {
 describe.skipIf(!GOOGLE_API_KEY)('Hello World Translator', () => {
 
   test('translate Hello World to multiple languages', async () => {
+    // print() and env() are auto-imported core functions - no import needed
     const code = `
-import { print, env } from "system"
-
 model translator = {
   name: "gemini-3-flash-preview",
   provider: "google",

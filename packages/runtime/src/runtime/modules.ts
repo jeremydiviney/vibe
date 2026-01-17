@@ -13,6 +13,13 @@ const SYSTEM_MODULES: Record<string, string> = {
   'system/tools': join(__dirname, 'stdlib', 'tools', 'index.ts'),
 };
 
+// Blocked system module paths - these cannot be imported
+// Core functions (print, env) are auto-imported and cannot be explicitly imported
+const BLOCKED_SYSTEM_MODULES = new Set([
+  'system/core',
+  'core',
+]);
+
 // Check if an import source is a system module
 function isSystemModule(source: string): boolean {
   return source === 'system' || source.startsWith('system/');
@@ -20,6 +27,13 @@ function isSystemModule(source: string): boolean {
 
 // Resolve a module path, handling system modules specially
 function resolveModulePath(source: string, basePath: string): string {
+  // Block certain system module paths that should not be importable
+  if (BLOCKED_SYSTEM_MODULES.has(source)) {
+    throw new Error(
+      `Import error: '${source}' cannot be imported. Core functions like print() and env() are auto-imported and available without explicit import.`
+    );
+  }
+
   if (isSystemModule(source)) {
     const systemPath = SYSTEM_MODULES[source];
     if (!systemPath) {

@@ -7,6 +7,7 @@ import { resolveValue, createVibeValue } from '../types';
 import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction, getImportedVibeFunctionModulePath } from '../modules';
+import { getCoreFunction } from '../stdlib/core';
 import { validateAndCoerce } from '../validation';
 import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
 
@@ -218,6 +219,25 @@ export function execCallFunction(
     throw new Error(
       `TypeError: Cannot call tool '${tool.name}' directly. Tools can only be used by AI models via the tools array in model declarations.`
     );
+  }
+
+  // Handle core function (auto-imported, available everywhere without import)
+  if (typeof callee === 'object' && callee !== null && '__vibeCoreFunction' in callee) {
+    const funcName = (callee as { __vibeCoreFunction: boolean; name: string }).name;
+    const coreFunc = getCoreFunction(funcName);
+
+    if (!coreFunc) {
+      throw new Error(`ReferenceError: Core function '${funcName}' is not defined`);
+    }
+
+    // Core functions are synchronous, execute directly
+    const result = coreFunc(...args);
+
+    return {
+      ...state,
+      valueStack: newValueStack,
+      lastResult: result,
+    };
   }
 
   // Handle bound method call on object (built-in methods)

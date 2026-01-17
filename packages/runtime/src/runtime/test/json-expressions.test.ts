@@ -65,9 +65,8 @@ let obj:json = {
   test('json object with env() function call', async () => {
     process.env.TEST_JSON_VAR = 'env-value';
 
+    // env() is auto-imported, no import needed
     const runtime = createRuntime(`
-import { env } from "system"
-
 let obj:json = {
   fromEnv: env("TEST_JSON_VAR")
 }
@@ -79,9 +78,8 @@ let obj:json = {
   });
 
   test('json object with env() and default value', async () => {
+    // env() is auto-imported, no import needed
     const runtime = createRuntime(`
-import { env } from "system"
-
 let obj:json = {
   value: env("NONEXISTENT_VAR", "default-value")
 }
@@ -173,9 +171,8 @@ let obj:json = {
   test('complex nested json with mixed expressions', async () => {
     process.env.TEST_NESTED_VAR = 'from-env';
 
+    // env() is auto-imported, no import needed
     const runtime = createRuntime(`
-import { env } from "system"
-
 function getVersion(): text {
   return "1.0.0"
 }
@@ -205,9 +202,8 @@ let config:json = {
   test('deeply nested object with env() at leaf level', async () => {
     process.env.DEEP_SECRET = 'secret-value';
 
+    // env() is auto-imported, no import needed
     const runtime = createRuntime(`
-import { env } from "system"
-
 let config:json = {
   level1: {
     level2: {

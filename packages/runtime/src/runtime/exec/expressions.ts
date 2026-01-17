@@ -8,6 +8,7 @@ import {
   isImportedTsFunction,
   isImportedVibeFunction,
 } from '../modules';
+import { isCoreFunction } from '../stdlib/core';
 import { lookupVariable } from './variables';
 import { execVibeExpression } from './ai';
 import { execTsBlock } from './typescript';
@@ -85,6 +86,11 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
   const importedValue = getImportedValue(state, expr.name);
   if (importedValue !== undefined) {
     return { ...state, lastResult: importedValue };
+  }
+
+  // Check if it's a core function (auto-imported, available everywhere)
+  if (isCoreFunction(expr.name)) {
+    return { ...state, lastResult: { __vibeCoreFunction: true, name: expr.name } };
   }
 
   throw new Error(`ReferenceError: '${expr.name}' is not defined`);

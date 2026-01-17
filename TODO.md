@@ -117,11 +117,11 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ### Language Design
-- [ ] String interpolation in prompts vs text variables
-  - Consider whether `{variable}` should interpolate in prompts since context already has access
-  - Current behavior: prompts use `{var}`, template literals use `${var}`
-  - Most of the time don't want to interpolate in prompts - the AI already has context access
-  - May want to differentiate syntax or make interpolation optional in prompts
+- [x] String interpolation in prompts vs text variables
+  - Regular strings (`"..."`) use `{var}` syntax for interpolation
+  - Template literals (`` `...` ``) use `${var}` syntax for interpolation
+  - Template literals ignore `{var}` syntax (stays literal)
+  - This allows prompts to include literal `{placeholders}` for AI while template literals work like JS
 
 - [ ] Auto-import core system functions vs explicit imports
   - Consider auto-importing essential builtins: `env()`, `print()`, `input()`

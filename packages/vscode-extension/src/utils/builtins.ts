@@ -221,38 +221,56 @@ export interface BuiltinFunctionDef {
   signature: string;
   params: Array<{ name: string; type: string; description: string }>;
   documentation: string;
+  /** If true, this function is auto-imported and available without explicit import */
+  isAutoImported?: boolean;
 }
 
-export const builtinFunctions: BuiltinFunctionDef[] = [
+// Core functions - auto-imported, available everywhere without import
+export const coreFunctions: BuiltinFunctionDef[] = [
   {
     name: 'print',
     signature: 'print(message: text)',
     params: [{ name: 'message', type: 'text', description: 'The message to print' }],
-    documentation: 'Print a message to the console',
+    documentation: 'Print a message to the console.\n\n*Auto-imported: available everywhere without import.*',
+    isAutoImported: true,
+  },
+  {
+    name: 'env',
+    signature: 'env(name: text, defaultValue?: text)',
+    params: [
+      { name: 'name', type: 'text', description: 'Environment variable name' },
+      { name: 'defaultValue', type: 'text', description: 'Default value if not set (optional)' },
+    ],
+    documentation: 'Get environment variable value.\n\n*Auto-imported: available everywhere without import.*',
+    isAutoImported: true,
+  },
+];
+
+// Library functions - require explicit import from "system"
+export const libraryFunctions: BuiltinFunctionDef[] = [
+  {
+    name: 'uuid',
+    signature: 'uuid()',
+    params: [],
+    documentation: 'Generate a UUID v4.\n\n*Requires: `import { uuid } from "system"`*',
   },
   {
     name: 'sleep',
     signature: 'sleep(ms: number)',
     params: [{ name: 'ms', type: 'number', description: 'Milliseconds to sleep' }],
-    documentation: 'Pause execution for specified milliseconds',
+    documentation: 'Pause execution for specified milliseconds.\n\n*Requires: `import { sleep } from "system"`*',
   },
   {
     name: 'now',
     signature: 'now()',
     params: [],
-    documentation: 'Get current timestamp in milliseconds',
-  },
-  {
-    name: 'env',
-    signature: 'env(name: text)',
-    params: [{ name: 'name', type: 'text', description: 'Environment variable name' }],
-    documentation: 'Get environment variable',
+    documentation: 'Get current timestamp in milliseconds.\n\n*Requires: `import { now } from "system"`*',
   },
   {
     name: 'read',
     signature: 'read(path: text)',
     params: [{ name: 'path', type: 'text', description: 'File path to read' }],
-    documentation: 'Read file contents',
+    documentation: 'Read file contents.\n\n*Requires: `import { read } from "system"`*',
   },
   {
     name: 'write',
@@ -261,39 +279,50 @@ export const builtinFunctions: BuiltinFunctionDef[] = [
       { name: 'path', type: 'text', description: 'File path' },
       { name: 'content', type: 'text', description: 'Content to write' },
     ],
-    documentation: 'Write content to file',
+    documentation: 'Write content to file.\n\n*Requires: `import { write } from "system"`*',
   },
   {
     name: 'exec',
     signature: 'exec(command: text)',
     params: [{ name: 'command', type: 'text', description: 'Shell command to execute' }],
-    documentation: 'Execute shell command',
+    documentation: 'Execute shell command.\n\n*Requires: `import { exec } from "system"`*',
   },
   {
     name: 'fetch',
     signature: 'fetch(url: text)',
     params: [{ name: 'url', type: 'text', description: 'URL to fetch' }],
-    documentation: 'HTTP GET request',
+    documentation: 'HTTP GET request.\n\n*Requires: `import { fetch } from "system"`*',
   },
   {
     name: 'length',
     signature: 'length(value: text | json[])',
     params: [{ name: 'value', type: 'text | json[]', description: 'String or array' }],
-    documentation: 'Get length of string or array',
+    documentation: 'Get length of string or array.\n\n*Requires: `import { length } from "system"`*',
   },
   {
     name: 'jsonParse',
     signature: 'jsonParse(text: text)',
     params: [{ name: 'text', type: 'text', description: 'JSON string' }],
-    documentation: 'Parse JSON string to object',
+    documentation: 'Parse JSON string to object.\n\n*Requires: `import { jsonParse } from "system"`*',
   },
   {
     name: 'jsonStringify',
     signature: 'jsonStringify(value: json)',
     params: [{ name: 'value', type: 'json', description: 'Object to stringify' }],
-    documentation: 'Convert object to JSON string',
+    documentation: 'Convert object to JSON string.\n\n*Requires: `import { jsonStringify } from "system"`*',
   },
 ];
+
+// All built-in functions (core + library)
+export const builtinFunctions: BuiltinFunctionDef[] = [
+  ...coreFunctions,
+  ...libraryFunctions,
+];
+
+// Set of auto-imported function names for quick lookup
+export const autoImportedFunctionNames = new Set(
+  coreFunctions.map(f => f.name)
+);
 
 // Create lookup map for signature help
 export const builtinSignatures: Record<string, { label: string; params: string[]; doc: string }> = Object.fromEntries(
