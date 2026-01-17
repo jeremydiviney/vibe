@@ -123,12 +123,11 @@
   - Template literals ignore `{var}` syntax (stays literal)
   - This allows prompts to include literal `{placeholders}` for AI while template literals work like JS
 
-- [ ] Auto-import core system functions vs explicit imports
-  - Consider auto-importing essential builtins: `env()`, `print()`, `input()`
-  - Other system library functions would require explicit import
-  - Example: `import { readFile, writeFile } from "vibe:fs"`
-  - Reduces boilerplate for common operations while keeping namespace clean
-  - Need to decide which functions are "core" vs "library"
+- [x] Auto-import core system functions vs explicit imports
+  - Core functions (`print`, `env`) are auto-imported and available everywhere
+  - Library functions (`uuid`, etc.) require `import { ... } from "system"`
+  - Core functions cannot be imported (blocked paths: "system/core", "core")
+  - Adding new core functions: add to `stdlib/core.ts` coreFunctions registry
 
 - [ ] Type checking for TS block parameters and inline TS code
   - Currently no type checking when passing Vibe variables into `ts()` blocks
