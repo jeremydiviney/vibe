@@ -301,7 +301,7 @@ function outer() {
 
   test('function at global scope is allowed', () => {
     const ast = parse(`
-function topLevel() {
+function topLevel(): text {
   return "allowed"
 }
 let result = topLevel()

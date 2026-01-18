@@ -3,6 +3,7 @@ import { SemanticError, type SourceLocation } from '../errors';
 import { SymbolTable, type SymbolKind } from './symbol-table';
 import { isValidType, typesCompatible, isValidJson, getBaseType } from './types';
 import { ESCAPED_LBRACE, ESCAPED_RBRACE, ESCAPED_BANG_LBRACE } from '../parser/visitor/helpers';
+import { isCoreFunction } from '../runtime/stdlib/core';
 
 export class SemanticAnalyzer {
   private symbols = new SymbolTable();
@@ -134,7 +135,7 @@ export class SemanticAnalyzer {
   private visitExpression(node: AST.Expression): void {
     switch (node.type) {
       case 'Identifier':
-        if (!this.symbols.lookup(node.name)) {
+        if (!this.symbols.lookup(node.name) && !isCoreFunction(node.name)) {
           this.error(`'${node.name}' is not defined`, node.location);
         }
         break;
@@ -281,11 +282,28 @@ export class SemanticAnalyzer {
     if (node.typeAnnotation === 'model' && kind === 'variable') {
       this.error(`Variables with type 'model' must be declared with 'const', not 'let'`, node.location);
     }
-    this.declare(node.name, kind, node.location, { typeAnnotation: node.typeAnnotation });
+
+    // Infer type from initializer if no explicit annotation
+    let effectiveType = node.typeAnnotation;
+    if (!effectiveType && node.initializer) {
+      effectiveType = this.getExpressionType(node.initializer);
+    }
+
+    this.declare(node.name, kind, node.location, { typeAnnotation: effectiveType });
     if (node.typeAnnotation) {
       this.validateTypeAnnotation(node.typeAnnotation, node.location);
     }
     if (node.initializer) {
+      // Check if trying to assign a void function call to a variable
+      if (node.initializer.type === 'CallExpression' && node.initializer.callee.type === 'Identifier') {
+        const funcSymbol = this.symbols.lookup(node.initializer.callee.name);
+        if (funcSymbol?.kind === 'function' && !funcSymbol.returnType) {
+          this.error(
+            `Cannot assign result of '${node.initializer.callee.name}()' to a variable - function has no return type`,
+            node.location
+          );
+        }
+      }
       // If type is 'prompt', validate string initializer in prompt context
       const isPromptType = node.typeAnnotation === 'prompt';
       if (isPromptType && (node.initializer.type === 'StringLiteral' || node.initializer.type === 'TemplateLiteral')) {
@@ -843,9 +861,9 @@ export class SemanticAnalyzer {
       // Extract the variable name (first part of the path)
       const varName = path.split(/[.\[]/)[0];
 
-      // Check if variable exists
+      // Check if variable exists (also allow core functions)
       const symbol = this.symbols.lookup(varName);
-      if (!symbol) {
+      if (!symbol && !isCoreFunction(varName)) {
         this.error(`'${varName}' is not defined`, location);
         continue;
       }

@@ -330,8 +330,9 @@ while 5 {
     expect(errors[0].message).toBe('while condition must be boolean, got number');
   });
 
-  test('while with untyped variable condition passes (runtime check)', () => {
-    // Variables without type annotations can't be checked at compile time
+  test('while with inferred text variable condition errors', () => {
+    // With type inference, const x = "test" has inferred type 'text'
+    // Using text as while condition should error
     const ast = parse(`
 const x = "test"
 while x {
@@ -339,7 +340,7 @@ while x {
 }
 `);
     const errors = analyze(ast);
-    // No semantic errors - no type annotation means runtime check
-    expect(errors.length).toBe(0);
+    expect(errors.length).toBe(1);
+    expect(errors[0].message).toBe('while condition must be boolean, got text');
   });
 });

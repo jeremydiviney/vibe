@@ -366,4 +366,28 @@ while x { let y = 1 }
     const errors = getErrors(code);
     expect(errors).toEqual([]);
   });
+
+  // ============================================================================
+  // Function return type handling
+  // ============================================================================
+
+  test('function without return type is valid (side-effect function)', () => {
+    const errors = getErrors('function logIt() { let x = "hi" }');
+    expect(errors).toEqual([]);
+  });
+
+  test('function with return type is valid', () => {
+    const errors = getErrors('function foo(): text { return "hi" }');
+    expect(errors).toEqual([]);
+  });
+
+  test('cannot assign void function result to variable', () => {
+    const errors = getErrors('function logIt() { let x = "hi" }\nlet y = logIt()');
+    expect(errors).toContain("Cannot assign result of 'logIt()' to a variable - function has no return type");
+  });
+
+  test('can assign function with return type to variable', () => {
+    const errors = getErrors('function getText(): text { return "hi" }\nlet x = getText()');
+    expect(errors).toEqual([]);
+  });
 });
