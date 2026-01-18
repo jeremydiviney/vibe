@@ -31,6 +31,10 @@
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
 - [ ] Context orchestration functions
+- [ ] Allow assigning compress summaries to variables
+  - Currently compress summaries from loops float unattached in context
+  - Consider syntax: `let summary = for item in items compress { ... }`
+  - Would allow explicit control over where summaries are stored/used
 
 ### Permission System
 - [ ] Command permission scheme (like Claude Code settings)
@@ -143,6 +147,12 @@
   - [x] Infer return types from ts() blocks and imported TS functions
   - [x] Vibe↔TypeScript type mapping (text↔string, json↔Record, etc.)
   - [x] 52 tests for TS type checking
+
+### Async/Parallel Execution
+- [ ] Detect variables in prompt interpolation for async dependency awaiting
+  - Variables in `{var}` and `!{var}` should trigger implicit await
+  - Currently may not be detected during async dependency analysis
+  - Example: `async let x = do "..."; do "Result: {x}"` should await x
 
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)
