@@ -34,7 +34,7 @@ describe('Signature Help Provider', () => {
       const result = provideSignatureHelp(doc, { line: 0, character: 14 });
 
       expect(result).not.toBeNull();
-      expect(result?.signatures[0].label).toBe('env(name: text)');
+      expect(result?.signatures[0].label).toBe('env(name: text, defaultValue?: text)');
     });
   });
 
