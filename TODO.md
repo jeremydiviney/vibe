@@ -20,6 +20,14 @@
   - [ ] Callable by Vibe code directly
   - [ ] Consider syntax: `agent myAgent = { model: m, systemPrompt: "...", tools: [...] }`
 
+### User Interaction
+- [ ] Ask user question tool (for AI to request input from user)
+  - [ ] Text input (single question, free-form response)
+  - [ ] Multiple choice input (select from options)
+  - [ ] Multi-question input (batch multiple questions)
+  - [ ] Confirmation input (yes/no)
+  - [ ] Potentially other input types (file picker, number, etc.)
+
 ### Context Management Features
 - [ ] Context checkpoints beyond local/global
 - [ ] Context orchestration functions
