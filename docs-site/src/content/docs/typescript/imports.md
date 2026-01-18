@@ -14,6 +14,40 @@ import { sendEmail } from "./services/email.ts"
 let formatted = formatDate("2025-01-15")
 ```
 
+### Type Checking
+
+Vibe extracts function signatures from TypeScript files and validates calls at compile time:
+
+```typescript
+// helpers.ts
+export function add(a: number, b: number): number {
+  return a + b;
+}
+```
+
+```vibe
+import { add } from "./helpers.ts"
+
+// Valid - correct types
+let result = add(1, 2)
+
+// Error at compile time - expected number, got text
+let x: text = "hello"
+add(x, 2)  // Error: Argument 1 of 'add': expected number, got text
+
+// Error - wrong number of arguments
+add(1)     // Error: Function 'add' requires 2 arguments, got 1
+```
+
+Return types are also inferred:
+
+```vibe
+import { add } from "./helpers.ts"
+
+let result = add(1, 2)     // Inferred as number
+let bad: text = add(1, 2)  // Error: cannot assign number to text
+```
+
 ## Importing npm Packages
 
 ### Node.js Built-ins

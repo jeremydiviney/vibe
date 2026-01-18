@@ -1,5 +1,6 @@
 import { Diagnostic, DiagnosticSeverity } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { URI } from 'vscode-uri';
 import { parse } from '@vibe-lang/runtime/parser/parse';
 import { analyze } from '@vibe-lang/runtime/semantic';
 import { LexerError, ParserError, SemanticError } from '@vibe-lang/runtime/errors';
@@ -11,12 +12,15 @@ export function validateDocument(document: TextDocument): Diagnostic[] {
   const text = document.getText();
   const diagnostics: Diagnostic[] = [];
 
+  // Convert URI to file path for TS import resolution
+  const filePath = URI.parse(document.uri).fsPath;
+
   try {
     // Parse the document
     const ast = parse(text, { file: document.uri });
 
-    // Run semantic analysis
-    const errors = analyze(ast, text);
+    // Run semantic analysis with file path for TS type checking
+    const errors = analyze(ast, text, filePath);
 
     // Convert semantic errors to diagnostics
     for (const error of errors) {

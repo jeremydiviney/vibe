@@ -28,6 +28,44 @@ let sum = ts(x, y) {
 
 Variables are passed by name and available inside the block.
 
+## Type Checking
+
+Vibe performs compile-time type checking on ts() blocks. The types of Vibe variables are mapped to TypeScript types:
+
+| Vibe Type | TypeScript Type |
+|-----------|-----------------|
+| `text` | `string` |
+| `number` | `number` |
+| `boolean` | `boolean` |
+| `json` | `Record<string, unknown>` |
+
+```vibe
+let x: text = "hello"
+
+// This will error at compile time - can't multiply a string
+let bad = ts(x) {
+  return x * 2;  // Error: left-hand side must be number
+}
+
+// This is valid
+let good = ts(x) {
+  return x.toUpperCase();
+}
+```
+
+### Return Type Inference
+
+Vibe automatically infers the return type of ts() blocks:
+
+```vibe
+let num = ts() { return 42; }         // Inferred as number
+let str = ts() { return "hello"; }    // Inferred as text
+let obj = ts() { return { a: 1 }; }   // Inferred as json
+
+// Type mismatch will error
+let x: text = ts() { return 42; }     // Error: cannot assign number to text
+```
+
 ## Complex Operations
 
 ### JSON Processing
