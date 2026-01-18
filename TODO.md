@@ -129,12 +129,12 @@
   - Core functions cannot be imported (blocked paths: "system/core", "core")
   - Adding new core functions: add to `stdlib/core.ts` coreFunctions registry
 
-- [ ] Type checking for TS block parameters and inline TS code
-  - Currently no type checking when passing Vibe variables into `ts()` blocks
-  - Example that should error: `let tvar: text = "hello"; ts(tvar) { addNumbers(1, tvar) }`
-  - Need to verify parameter types match expected TypeScript types
-  - Consider generating `.d.ts` declarations for Vibe variables passed to TS
-  - Could leverage TypeScript compiler API for validation
+- [x] Type checking for TS block parameters and inline TS code
+  - [x] Type-check ts() block bodies using virtual TypeScript compilation
+  - [x] Validate imported TS function calls against extracted signatures
+  - [x] Infer return types from ts() blocks and imported TS functions
+  - [x] Vibe↔TypeScript type mapping (text↔string, json↔Record, etc.)
+  - [x] 52 tests for TS type checking
 
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)
@@ -144,6 +144,14 @@
 - [ ] Stricter error modes
 
 ## Completed (Last 10)
+
+- [x] Type checking for TS block parameters and inline TS code
+  - [x] Type-check ts() block bodies using virtual TypeScript compilation
+  - [x] Validate imported TS function calls against extracted signatures
+  - [x] Infer return types from ts() blocks and imported TS functions
+  - [x] Vibe↔TypeScript type mapping (text↔string, json↔Record, etc.)
+  - [x] Refactored analyzer into modular architecture (analyzer.ts 1017→81 lines)
+  - [x] 52 tests for TS type checking
 
 - [x] Parallel async execution (`async let/const`)
   - [x] Syntax: `async let x = do "prompt" model` for async AI calls
