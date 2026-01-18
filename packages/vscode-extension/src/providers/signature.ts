@@ -1,8 +1,11 @@
 import { SignatureHelp, SignatureInformation, ParameterInformation, Position } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { URI } from 'vscode-uri';
 import { parse } from '@vibe-lang/runtime/parser/parse';
 import type * as AST from '@vibe-lang/runtime/ast';
 import { builtinSignatures } from '../utils/builtins';
+import { getTSImportForIdentifier } from '../utils/ast-utils';
+import { tsService } from '../services/typescript-service';
 
 /**
  * Provide signature help for function calls
@@ -28,6 +31,32 @@ export function provideSignatureHelp(
   const funcDef = findFunctionByRegex(text, callInfo.name);
   if (funcDef) {
     return createSignatureHelp(funcDef.label, funcDef.params, funcDef.doc, callInfo.activeParam);
+  }
+
+  // Try TypeScript imports
+  try {
+    const ast = parse(text, { file: document.uri });
+    const tsImport = getTSImportForIdentifier(ast, callInfo.name);
+    if (tsImport) {
+      const vibeFilePath = URI.parse(document.uri).fsPath;
+      const tsFilePath = tsService.resolveImportPath(vibeFilePath, tsImport.sourcePath);
+      if (tsFilePath) {
+        const tsHover = tsService.getHoverInfo(tsFilePath, tsImport.importedName);
+        if (tsHover) {
+          const tsSignature = parseTSSignature(tsHover.displayString);
+          if (tsSignature) {
+            return createSignatureHelp(
+              tsSignature.label,
+              tsSignature.params,
+              tsHover.documentation || undefined,
+              callInfo.activeParam
+            );
+          }
+        }
+      }
+    }
+  } catch {
+    // Parse error - continue to AST fallback
   }
 
   // Fallback: try AST parsing (may fail with incomplete code)
@@ -181,4 +210,37 @@ function formatSignature(func: AST.FunctionDeclaration | AST.ToolDeclaration): s
   const params = func.params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
   const returnType = func.returnType ? `: ${func.returnType}` : '';
   return `${func.name}(${params})${returnType}`;
+}
+
+interface TSSignature {
+  label: string;
+  params: string[];
+}
+
+/**
+ * Parse a TypeScript display string to extract signature info
+ * Examples:
+ *   "function add(a: number, b: number): number"
+ *   "const multiply: (a: number, b: number) => number"
+ */
+function parseTSSignature(displayString: string): TSSignature | null {
+  // Try function declaration: "function name(params): returnType"
+  const funcMatch = displayString.match(/function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*(.+))?/);
+  if (funcMatch) {
+    const [, name, paramsStr, returnType] = funcMatch;
+    const params = parseParams(paramsStr);
+    const label = `${name}(${paramsStr})${returnType ? `: ${returnType}` : ''}`;
+    return { label, params };
+  }
+
+  // Try arrow function: "const name: (params) => returnType"
+  const arrowMatch = displayString.match(/(?:const|let|var)\s+(\w+)\s*:\s*\(([^)]*)\)\s*=>\s*(.+)/);
+  if (arrowMatch) {
+    const [, name, paramsStr, returnType] = arrowMatch;
+    const params = parseParams(paramsStr);
+    const label = `${name}(${paramsStr}): ${returnType.trim()}`;
+    return { label, params };
+  }
+
+  return null;
 }
