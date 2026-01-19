@@ -39,6 +39,7 @@ export default defineConfig({
 						{ label: 'Control Flow', slug: 'guide/control-flow' },
 						{ label: 'Functions', slug: 'guide/functions' },
 						{ label: 'Modules', slug: 'guide/modules' },
+						{ label: 'Error Handling', slug: 'guide/error-handling' },
 					],
 				},
 				{
