@@ -102,16 +102,25 @@ let data = ts() {
 }
 ```
 
-## Using npm Packages
+## Dynamic Imports
+
+Inside ts blocks, you can use dynamic `await import()` for Node built-ins:
 
 ```vibe
-let markdown = "# Hello World"
+let files = ts() {
+  const { readdirSync } = await import('fs');
+  return readdirSync('.').filter(f => f.endsWith('.vibe'));
+}
 
-let html = ts(markdown) {
-  const marked = require('marked');
-  return marked.parse(markdown);
+let fullPath = ts(filename) {
+  const { join } = await import('path');
+  return join(process.cwd(), filename);
 }
 ```
+
+:::note
+Use `await import()` instead of `require()` for dynamic imports inside ts blocks.
+:::
 
 ## Processing AI Results
 
@@ -174,26 +183,6 @@ tool processData(data: json): json
       average: data.items.reduce((sum, item) => sum + item.value, 0) / data.items.length
     };
   }
-}
-```
-
-## Accessing Environment
-
-```vibe
-let apiUrl = ts() {
-  return process.env.API_URL || 'http://localhost:3000';
-}
-```
-
-## File System Operations
-
-```vibe
-let files = ts() {
-  const fs = require('fs');
-  const path = require('path');
-
-  return fs.readdirSync(process.cwd())
-    .filter(f => f.endsWith('.vibe'));
 }
 ```
 

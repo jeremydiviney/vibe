@@ -41,13 +41,13 @@ print(!isPrime)         // false
 print(languages[0])     // "Python"
 ```
 
-### TypeScript Runtime
+### TypeScript Interop
 
-Vibe runs on a TypeScript runtime, giving you seamless access to the entire npm ecosystem:
+Drop into TypeScript whenever you need it:
 
 ```vibe
-import { readFileSync } from "fs"
-import { join } from "path"
+// Import from local TypeScript files
+import { processData } from "./helpers.ts"
 
 // Embed TypeScript for complex operations
 const result = ts(data) {

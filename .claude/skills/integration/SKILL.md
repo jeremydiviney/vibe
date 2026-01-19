@@ -13,9 +13,9 @@ Use these models for integration tests:
 
 | Provider | Model Name | API Key Env Var |
 |----------|------------|-----------------|
-| Google | `gemini-3-flash-preview` | `GOOGLE_API_KEY` |
+| Anthropic | `claude-haiku-4-5-20251001` | `ANTHROPIC_API_KEY` |
 | OpenAI | `gpt-5-mini` | `OPENAI_API_KEY` |
-| Anthropic | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
+| Google | `gemini-3-flash` | `GOOGLE_API_KEY` |
 
 ### Why These Models?
 
@@ -28,14 +28,14 @@ Use these models for integration tests:
 ### Example Vibe Code
 
 ```vibe
-// Google
-model google = { name: "gemini-3-flash-preview", apiKey: env("GOOGLE_API_KEY") }
+// Anthropic
+model anthropic = { name: "claude-haiku-4-5-20251001", apiKey: env("ANTHROPIC_API_KEY") }
 
 // OpenAI
 model openai = { name: "gpt-5-mini", apiKey: env("OPENAI_API_KEY") }
 
-// Anthropic
-model anthropic = { name: "claude-haiku-4-5", apiKey: env("ANTHROPIC_API_KEY") }
+// Google
+model google = { name: "gemini-3-flash", apiKey: env("GOOGLE_API_KEY") }
 ```
 
 ### Test File Location

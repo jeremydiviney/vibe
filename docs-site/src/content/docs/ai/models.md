@@ -21,7 +21,7 @@ model myModel = {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `name` | text | Model identifier (e.g., "claude-sonnet-4-20250514", "gpt-4o") |
+| `name` | text | Model identifier (e.g., "claude-sonnet-4-20250514", "gpt-5.2") |
 | `apiKey` | text | API key for authentication |
 | `provider` | text | Provider type: `"anthropic"`, `"openai"`, `"google"` |
 
@@ -47,37 +47,36 @@ model claude = {
 ```
 
 Available models:
-- `claude-opus-4.5` - Most capable
+- `claude-opus-4-5-20251101` - Most capable
 - `claude-sonnet-4-20250514` - Balanced
-- `claude-haiku-4.5` - Fast and efficient
+- `claude-haiku-4-5-20251001` - Fast and efficient
 
 ### OpenAI
 
 ```vibe
 model gpt = {
-  name: "gpt-4o",
+  name: "gpt-5.2",
   provider: "openai",
   apiKey: env("OPENAI_API_KEY")
 }
 ```
 
 Available models:
-- `gpt-4o` - Latest GPT-4
-- `gpt-4-turbo` - Fast GPT-4
-- `gpt-3.5-turbo` - Efficient
+- `gpt-5.2` - Flagship reasoning model
+- `gpt-5-mini` - Fast and cost-effective
 
 ### Google
 
 ```vibe
 model gemini = {
-  name: "gemini-2.0-flash",
+  name: "gemini-3-flash",
   provider: "google",
   apiKey: env("GOOGLE_API_KEY")
 }
 ```
 
 Available models:
-- `gemini-2.0-flash` - Fast and capable
+- `gemini-3-flash` - Fast and capable
 - `gemini-1.5-pro` - Advanced reasoning
 
 ## Extended Thinking
@@ -101,7 +100,7 @@ Automatically retry on transient errors:
 
 ```vibe
 model resilient = {
-  name: "gpt-4o",
+  name: "gpt-5.2",
   provider: "openai",
   apiKey: env("OPENAI_API_KEY"),
   maxRetriesOnError: 3
@@ -147,13 +146,13 @@ Use different models for different tasks:
 
 ```vibe
 model fast = {
-  name: "claude-haiku-4.5",
+  name: "claude-haiku-4-5-20251001",
   provider: "anthropic",
   apiKey: env("ANTHROPIC_API_KEY")
 }
 
 model smart = {
-  name: "claude-opus-4.5",
+  name: "claude-opus-4-5-20251101",
   provider: "anthropic",
   apiKey: env("ANTHROPIC_API_KEY")
 }

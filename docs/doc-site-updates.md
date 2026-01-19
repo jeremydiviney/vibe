@@ -13,12 +13,32 @@ All documentation site text changes, new sections, and section removals.
 ### Getting Started - Installation
 - [ ] Replace "You should see the version number printed" with example output
 - [ ] Add note: Vibe supports any OpenAI-compatible API/provider with tool calling
-- [ ] Verify: Is Node.js 18+ actually required?
+- [ ] **Remove "Requirements" section entirely** - Vibe ships as compiled binary, no runtime needed
 
 ### Getting Started - Hello World
 - [ ] Update model names in "Try Different Providers":
-  - Change `gpt-4o` → latest GPT model (verify name)
-  - Use latest Gemini model (verify name)
+  - OpenAI: `gpt-4o` (correct, keep as-is)
+  - Google: Change `gemini-2.0-flash` → `gemini-2.5-flash` (stable) or `gemini-3-flash` (latest)
+
+### Model Name Standards (Global)
+
+**Use these latest models consistently across all docs:**
+| Provider | Recommended Model | API ID |
+|----------|-------------------|--------|
+| Anthropic | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` |
+| OpenAI | GPT-4o | `gpt-4o` |
+| Google | Gemini 3 Flash | `gemini-3-flash` |
+
+**Anthropic uses dashes not dots** in model IDs:
+- ❌ `claude-haiku-4.5` → ✅ `claude-haiku-4-5-20251001`
+- ❌ `claude-opus-4.5` → ✅ `claude-opus-4-5-20251101`
+
+**Files needing model name updates:**
+- `docs-site/src/content/docs/ai/tools.md`: `claude-opus-4.5` → fix
+- `docs-site/src/content/docs/ai/prompts.md`: `claude-haiku-4.5`, `claude-opus-4.5` → fix
+- `docs-site/src/content/docs/getting-started/hello-world.md`: `claude-haiku-4.5` → fix
+- `docs-site/src/content/docs/getting-started/hello-world.md`: `gemini-2.0-flash` → `gemini-3-flash`
+- All other files: search and replace outdated model names
 
 ### Guide - Basics (Variables)
 - [ ] Add note: `const` is truly immutable (not "JavaScript const") - no array/object mutation
@@ -50,7 +70,7 @@ All documentation site text changes, new sections, and section removals.
 ### AI - Models
 - [ ] Remove "Available models" for each provider
 - [ ] Update model names to most recent versions
-- [ ] Verify: Do we implement `thinkingLevel`?
+- [ ] ✅ `thinkingLevel` IS implemented (OpenAI→reasoning_effort, Anthropic→budget_tokens, Google→thinkingConfig)
 
 ### AI - Tools
 - [ ] Change "commonly used" → "are used"
@@ -73,13 +93,13 @@ All documentation site text changes, new sections, and section removals.
 - [ ] Change "The AI will:" → "The AI will (most likely):"
 - [ ] Complex Tool Example: change `vibe` → `do`
 - [ ] Async Operations: explain all ts calls treated as promises
-- [ ] Verify npm require pattern works, or use async import
+- [ ] Update ts block npm examples: use `await import()` instead of `require()` (if we keep them)
 - [ ] Update error handling to throw errors
 
 ### TypeScript - Imports
 - [ ] Remove "Re-exporting" section
 - [ ] Remove "Example: Full Integration" section
-- [ ] Remove "Package Installation" section (verify npm support first)
+- [ ] Remove "Package Installation" section (confirmed: npm imports not supported)
 - [ ] Pull system functions into new System Imports section
 
 ### Reference - CLI
@@ -96,7 +116,15 @@ All documentation site text changes, new sections, and section removals.
 - [ ] Remove "Nested Arrays" section
 - [ ] Fix null/boolean: "null cannot be assigned to boolean"
 - [ ] Remove "JSON Flexibility" section
-- [ ] Verify text and prompt are interchangeable
+- [x] ✅ VERIFIED: text and prompt ARE interchangeable (see `semantic/types.ts:34-38`)
+  - ✅ `prompt` → `string` TS mapping implemented (ts-types.ts:22, :95)
+
+  **Tests to add** (in `type-validation.test.ts`):
+  1. `text` → `prompt` assignment is valid
+  2. Type preservation: `text` variable assigned from `prompt` stays `text` type
+  3. Type preservation: `prompt` variable assigned from `text` stays `prompt` type
+  4. TS interop: `prompt` variable passed to ts block maps to `string`
+  5. TS interop: function with `string` param accepts `prompt` variable
 
 ---
 
@@ -148,11 +176,82 @@ All documentation site text changes, new sections, and section removals.
 - [ ] Async: "Fire-and-Forget for Logging"
 - [ ] Async: "Comparison with Sequential"
 - [ ] TS Blocks: "Accessing Environment"
+- [ ] TS Blocks: "Using npm Packages" - update to use `await import()` or remove
+- [ ] TS Blocks: "File System Operations" - update to use `await import('fs')` or remove
+- [ ] Importing: "Importing npm Packages" (lines 51-71, Node.js builtins + third-party)
 - [ ] Importing: "Re-exporting"
 - [ ] Importing: "Example: Full Integration"
-- [ ] Importing: "Package Installation" (if no npm support)
+- [ ] Importing: "Package Installation"
 - [ ] Types: "Nested Arrays"
 - [ ] Types: "JSON Flexibility"
+
+---
+
+## 4. NPM PACKAGE REFERENCES TO REMOVE
+
+**Status: CONFIRMED - Vibe-level npm imports are NOT supported**
+
+Vibe's `resolveModulePath()` treats all non-system imports as relative file paths.
+`import {foo} from 'lodash'` resolves to a relative path, not node_modules lookup.
+
+Supported Vibe import sources:
+- System modules: `system`, `system/tools`
+- Relative paths to `.ts` files: `./helpers.ts`
+- Relative paths to `.vibe` files: `./utils.vibe`
+
+**Inside ts blocks**: Dynamic `await import()` may work for npm packages (needs verification):
+```vibe
+let result = ts(data) {
+  const { marked } = await import('marked');  // Modern ESM syntax
+  return marked.parse(data);
+}
+```
+Do NOT use `require()` - it's not available in AsyncFunction scope.
+
+### Verification Test
+
+Add to `packages/runtime/src/runtime/test/ts-block.test.ts`:
+
+```typescript
+test('ts block can use dynamic import for Node built-ins', async () => {
+  const ast = parse(`
+    let result = ts() {
+      const { join } = await import('path');
+      return join('foo', 'bar');
+    }
+  `);
+  const runtime = new Runtime(ast, createMockProvider());
+  await runtime.run();
+  // Note: path separator varies by OS
+  expect(runtime.getValue('result')).toMatch(/foo[\/\\]bar/);
+});
+```
+
+### Files with npm references to fix:
+
+**index.mdx** (line 32)
+- Change: "Drop into TypeScript whenever you need it. Import npm packages directly."
+- To: "Drop into TypeScript whenever you need it. Access TypeScript functions and utilities."
+
+**getting-started/introduction.md** (lines 44-56)
+- Remove "giving you seamless access to the entire npm ecosystem"
+- Remove example showing `import { readFileSync } from "fs"` and `import { join } from "path"`
+- Replace with example showing local TS file imports or system imports
+
+**guide/modules.md** (lines 27-36)
+- Remove entire "Importing npm Packages" section
+- The example shows `import { readFileSync } from "fs"` which doesn't work
+
+**typescript/imports.md**
+- Line 3: Change description "Using TypeScript and npm packages" → "Using TypeScript files and modules"
+- Line 6: Change "from TypeScript files and npm packages" → "from TypeScript files, Vibe modules, and system utilities"
+- Remove "Importing npm Packages" section (lines 51-71)
+- Remove "Package Installation" section (lines 179-196)
+
+**typescript/blocks.md**
+- Update "Using npm Packages" section (lines 105-114): change `require('marked')` to `await import('marked')`
+- Update "File System Operations" section (lines 188-198): change `require('fs')` to `await import('fs')`
+- Or remove these sections entirely if we don't want to document ts-block npm usage
 
 ---
 
@@ -160,19 +259,20 @@ All documentation site text changes, new sections, and section removals.
 
 | File | Changes |
 |------|---------|
-| `getting-started/introduction.md` | TS ecosystem line |
+| `index.mdx` | Remove npm claim from TypeScript Interop card |
+| `getting-started/introduction.md` | Remove npm ecosystem claim, fix TS Runtime example |
 | `getting-started/installation.md` | Version output, API note |
 | `getting-started/hello-world.md` | Model names |
 | `guide/basics.md` | const note, numbers note |
 | `guide/control-flow.md` | Context wording |
-| `guide/modules.md` | Export wording, structure |
+| `guide/modules.md` | Export wording, remove npm section |
 | `ai/prompts.md` | Multiple updates |
 | `ai/models.md` | Model names |
 | `ai/tools.md` | Error handling |
 | `ai/context.md` | Local/default description |
 | `ai/async.md` | Major restructure |
-| `typescript/blocks.md` | Multiple updates |
-| `typescript/imports.md` | System imports refactor |
+| `typescript/blocks.md` | Remove npm/require sections, other updates |
+| `typescript/imports.md` | Remove npm sections, system imports refactor |
 | `reference/cli.md` | max-parallel fix |
 | `reference/syntax.md` | Template literals |
 | `reference/types.md` | Null, json |

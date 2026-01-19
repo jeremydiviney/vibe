@@ -197,6 +197,35 @@ describe('TS Block Type Checking', () => {
     );
     expect(errors).toHaveLength(0);
   });
+
+  test('prompt type maps to string in ts blocks', () => {
+    // prompt should be treated as string, allowing string operations
+    const errors = checkTsBlockTypes(
+      [{ name: 'p', vibeType: 'prompt' }],
+      'return p.toUpperCase()',
+      { line: 1, column: 1 }
+    );
+    expect(errors).toHaveLength(0);
+  });
+
+  test('prompt type allows string concatenation', () => {
+    const errors = checkTsBlockTypes(
+      [{ name: 'p', vibeType: 'prompt' }],
+      'return "Hello: " + p',
+      { line: 1, column: 1 }
+    );
+    expect(errors).toHaveLength(0);
+  });
+
+  test('prompt type disallows number operations', () => {
+    // prompt maps to string, so number operations should fail
+    const errors = checkTsBlockTypes(
+      [{ name: 'p', vibeType: 'prompt' }],
+      'return p * 2',
+      { line: 1, column: 1 }
+    );
+    expect(errors.length).toBeGreaterThan(0);
+  });
 });
 
 describe('Semantic Analyzer - TS Import Type Checking', () => {
@@ -287,6 +316,24 @@ greet(b)
 `);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some(e => e.includes('expected string') && e.includes('got boolean'))).toBe(true);
+  });
+
+  test('prompt type is compatible with string param in TS function', () => {
+    const errors = getErrors(`
+import { greet } from "./math.ts"
+let p: prompt = "Alice"
+greet(p)
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('prompt type works with TS function expecting string', () => {
+    const errors = getErrors(`
+import { repeat } from "./math.ts"
+let p: prompt = "hello"
+let result = repeat(p, 3)
+`);
+    expect(errors).toEqual([]);
   });
 });
 

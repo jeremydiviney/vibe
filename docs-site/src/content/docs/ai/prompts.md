@@ -44,8 +44,8 @@ AI prompts use `{variable}` syntax (without `$`), which is different from templa
 By default, `do` uses the first model declared. Specify a different model:
 
 ```vibe
-model fast = { name: "claude-haiku-4.5", provider: "anthropic", apiKey: env("ANTHROPIC_API_KEY") }
-model smart = { name: "claude-opus-4.5", provider: "anthropic", apiKey: env("ANTHROPIC_API_KEY") }
+model fast = { name: "claude-haiku-4-5-20251001", provider: "anthropic", apiKey: env("ANTHROPIC_API_KEY") }
+model smart = { name: "claude-opus-4-5-20251101", provider: "anthropic", apiKey: env("ANTHROPIC_API_KEY") }
 
 const quick = do "Simple question" fast
 const detailed = do "Complex analysis" smart

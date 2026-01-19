@@ -63,7 +63,7 @@ for item in items {
 
 ```vibe
 model summarizer = {
-  name: "claude-haiku-4.5",
+  name: "claude-haiku-4-5-20251001",
   provider: "anthropic",
   apiKey: env("ANTHROPIC_API_KEY")
 }

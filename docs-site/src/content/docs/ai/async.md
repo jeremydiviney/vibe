@@ -112,8 +112,8 @@ let analysis = {
 ## Async with Different Models
 
 ```vibe
-model fast = { name: "claude-haiku-4.5", ... }
-model smart = { name: "claude-opus-4.5", ... }
+model fast = { name: "claude-haiku-4-5-20251001", ... }
+model smart = { name: "claude-opus-4-5-20251101", ... }
 
 // Use fast model for simple tasks, smart for complex
 async let quickCheck = do "Is this valid?" fast

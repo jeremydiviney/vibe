@@ -24,17 +24,6 @@ import { formatDate, parseConfig } from "./helpers.ts"
 let formatted = formatDate("2025-01-15")
 ```
 
-## Importing npm Packages
-
-Access any npm package:
-
-```vibe
-import { readFileSync } from "fs"
-import { join } from "path"
-
-let content = readFileSync("data.txt", "utf-8")
-```
-
 ## System Imports
 
 Vibe provides built-in system utilities:
@@ -99,7 +88,7 @@ export model claude = {
 }
 
 export model gpt = {
-  name: "gpt-4o",
+  name: "gpt-5.2",
   provider: "openai",
   apiKey: env("OPENAI_API_KEY")
 }

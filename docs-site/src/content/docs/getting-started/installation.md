@@ -3,10 +3,6 @@ title: Installation
 description: How to install Vibe on your system
 ---
 
-## Requirements
-
-Vibe requires [Node.js](https://nodejs.org/) 18+ or [Bun](https://bun.sh/) runtime.
-
 ## Install via npm
 
 ```bash

@@ -11,7 +11,7 @@ Create a file called `hello.vibe`:
 
 ```vibe
 model translator = {
-  name: "claude-haiku-4.5",
+  name: "claude-haiku-4-5-20251001",
   provider: "anthropic",
   apiKey: env("ANTHROPIC_API_KEY")
 }
@@ -40,7 +40,7 @@ Let's break down what's happening:
 
 ```vibe
 model translator = {
-  name: "claude-haiku-4.5",
+  name: "claude-haiku-4-5-20251001",
   provider: "anthropic",
   apiKey: env("ANTHROPIC_API_KEY")
 }
@@ -73,7 +73,7 @@ Switch to OpenAI by changing the model:
 
 ```vibe
 model translator = {
-  name: "gpt-4o",
+  name: "gpt-5.2",
   provider: "openai",
   apiKey: env("OPENAI_API_KEY")
 }
@@ -83,7 +83,7 @@ Or Google:
 
 ```vibe
 model translator = {
-  name: "gemini-2.0-flash",
+  name: "gemini-3-flash",
   provider: "google",
   apiKey: env("GOOGLE_API_KEY")
 }

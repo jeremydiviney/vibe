@@ -141,7 +141,7 @@ tool getMetrics(service: text, hours: number): json
 }
 
 model monitor = {
-  name: "claude-opus-4.5",
+  name: "claude-opus-4-5-20251101",
   provider: "anthropic",
   apiKey: env("ANTHROPIC_API_KEY"),
   tools: [getMetrics, alertOnCall]

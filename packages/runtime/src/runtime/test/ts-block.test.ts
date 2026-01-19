@@ -573,4 +573,22 @@ describe('Runtime - TypeScript Blocks', () => {
 
     await expect(runtime.run()).rejects.toThrow(/readonly property/);
   });
+
+  // ============================================================================
+  // Dynamic imports in ts blocks
+  // ============================================================================
+
+  test('ts block can use dynamic import for Node built-ins', async () => {
+    const ast = parse(`
+      let result = ts() {
+        const { join } = await import('path');
+        return join('foo', 'bar');
+      }
+    `);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    // Path separator varies by OS (/ on Unix, \ on Windows)
+    expect(runtime.getValue('result')).toMatch(/foo[\/\\]bar/);
+  });
 });

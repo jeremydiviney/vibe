@@ -189,6 +189,35 @@ while x { let y = 1 }
     expect(errors).toEqual([]);
   });
 
+  test('text variable assigned to prompt is valid', () => {
+    const errors = getErrors('let t: text = "hello"\nlet p: prompt = t');
+    expect(errors).toEqual([]);
+  });
+
+  test('text variable keeps text type after prompt assignment', () => {
+    // Variable t is declared as text, assigned from prompt p
+    // t should still be text type, usable where text is expected
+    const errors = getErrors(`
+      let p: prompt = "ask"
+      let t: text = p
+      function needsText(s: text): text { return s }
+      needsText(t)
+    `);
+    expect(errors).toEqual([]);
+  });
+
+  test('prompt variable keeps prompt type after text assignment', () => {
+    // Variable p is declared as prompt, assigned from text t
+    // p should still be prompt type
+    const errors = getErrors(`
+      let t: text = "hello"
+      let p: prompt = t
+      function needsPrompt(s: prompt): prompt { return s }
+      needsPrompt(p)
+    `);
+    expect(errors).toEqual([]);
+  });
+
   test('text variable assigned to json is valid', () => {
     const errors = getErrors('let t: text = "{}"\nlet j: json = t');
     expect(errors).toEqual([]);

@@ -1,9 +1,9 @@
 ---
 title: Importing Modules
-description: Using TypeScript and npm packages in Vibe
+description: Using TypeScript files and modules in Vibe
 ---
 
-Vibe can import from TypeScript files and npm packages directly.
+Vibe can import from TypeScript files, Vibe modules, and system utilities.
 
 ## Importing from TypeScript Files
 
@@ -46,28 +46,6 @@ import { add } from "./helpers.ts"
 
 let result = add(1, 2)     // Inferred as number
 let bad: text = add(1, 2)  // Error: cannot assign number to text
-```
-
-## Importing npm Packages
-
-### Node.js Built-ins
-
-```vibe
-import { readFileSync, writeFileSync } from "fs"
-import { join, resolve } from "path"
-import { exec } from "child_process"
-
-let content = readFileSync("data.txt", "utf-8")
-let fullPath = join(process.cwd(), "output")
-```
-
-### Third-Party Packages
-
-```vibe
-// After: npm install lodash
-import { groupBy, sortBy } from "lodash"
-
-let grouped = groupBy(items, "category")
 ```
 
 ## System Imports
@@ -134,63 +112,3 @@ import { functionName } from "./module.ts"
 // import module from "./module.ts"
 ```
 
-## Re-exporting
-
-```vibe
-// utils.vibe
-export { formatDate } from "./date-utils.ts"
-export { validateEmail } from "./validators.ts"
-
-// main.vibe
-import { formatDate, validateEmail } from "./utils.vibe"
-```
-
-## Example: Full Integration
-
-```vibe
-// Import npm packages
-import { marked } from "marked"
-import { Octokit } from "@octokit/rest"
-
-// Import local TypeScript
-import { processMarkdown } from "./markdown-utils.ts"
-
-// Import system utilities
-import { env, print } from "system"
-import { readFile, writeFile } from "system/tools"
-
-// Configure model with tools
-model assistant = {
-  name: "claude-sonnet-4-20250514",
-  provider: "anthropic",
-  apiKey: env("ANTHROPIC_API_KEY"),
-  tools: [readFile, writeFile]
-}
-
-// Use everything together
-let readme = readFile("README.md")
-let html = ts(readme) {
-  return marked.parse(readme);
-}
-let summary = do "Summarize this documentation: {readme}"
-print(summary)
-```
-
-## Package Installation
-
-Before importing npm packages, install them:
-
-```bash
-# Using npm
-npm install lodash marked
-
-# Using bun
-bun add lodash marked
-```
-
-Then import in your `.vibe` file:
-
-```vibe
-import { marked } from "marked"
-import { groupBy } from "lodash"
-```
