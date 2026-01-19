@@ -519,8 +519,17 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
       return 'null';
     case 'ObjectLiteral':
       return 'json';
-    case 'ArrayLiteral':
+    case 'ArrayLiteral': {
+      // Infer array type from first element
+      if (expr.elements.length === 0) {
+        return null; // Empty array - type unknown
+      }
+      const firstElementType = getExpressionType(ctx, expr.elements[0]);
+      if (firstElementType && !firstElementType.endsWith('[]')) {
+        return `${firstElementType}[]`;
+      }
       return null;
+    }
     case 'SliceExpression': {
       // A slice of an array has the same type as the array
       const objectType = getExpressionType(ctx, expr.object);

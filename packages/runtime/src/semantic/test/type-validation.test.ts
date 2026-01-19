@@ -469,13 +469,54 @@ while x { let y = 1 }
     expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
   });
 
-  test('untyped array slices can be concatenated (no type info to check)', () => {
-    // Without explicit types, we can't catch type mismatches
-    // This is a known limitation - use explicit types for type safety
+  test('inferred array types catch concat mismatches', () => {
+    // Types are now inferred from array literals
     const errors = getErrors(`
       let a = [1, 2, 3]
       let b = ["x", "y"]
       let c = a[:2] + b[:2]
+    `);
+    expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
+  });
+
+  // ============================================================================
+  // Array type inference
+  // ============================================================================
+
+  test('array type is inferred from elements', () => {
+    const errors = getErrors(`
+      let nums = [1, 2, 3]
+      let strs: text[] = ["a", "b"]
+      let result = nums + strs
+    `);
+    expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
+  });
+
+  test('mixed array elements are rejected', () => {
+    const errors = getErrors('let x = [1, 2, "hello"]');
+    expect(errors).toContain('Mixed array types: element 2 is text but expected number');
+  });
+
+  test('homogeneous array elements are valid', () => {
+    const errors = getErrors('let x = [1, 2, 3]');
+    expect(errors).toEqual([]);
+  });
+
+  test('empty array requires explicit type', () => {
+    const errors = getErrors('let x = []');
+    expect(errors).toContain('Cannot infer type from empty array - provide a type annotation: let x: <type>[] = []');
+  });
+
+  test('empty array with explicit type is valid', () => {
+    const errors = getErrors('let x: number[] = []');
+    expect(errors).toEqual([]);
+  });
+
+  test('inferred same types can be concatenated', () => {
+    const errors = getErrors(`
+      let a = [1, 2]
+      let b = [3, 4]
+      let c = a + b
     `);
     expect(errors).toEqual([]);
   });

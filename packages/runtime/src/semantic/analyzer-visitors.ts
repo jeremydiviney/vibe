@@ -51,6 +51,32 @@ export function createVisitors(
     validateLiteralType(ctx, expr, type, location, getExprType);
   };
 
+  // Validate that all elements in an array literal have consistent types
+  function validateArrayLiteralTypes(node: AST.ArrayLiteral): void {
+    if (node.elements.length < 2) {
+      return; // Need at least 2 elements to have a mismatch
+    }
+
+    const firstType = getExprType(node.elements[0]);
+    if (!firstType) {
+      return; // Can't determine type of first element
+    }
+
+    for (let i = 1; i < node.elements.length; i++) {
+      const elemType = getExprType(node.elements[i]);
+      if (!elemType) {
+        continue; // Skip elements with unknown types
+      }
+      if (elemType !== firstType) {
+        ctx.error(
+          `Mixed array types: element ${i} is ${elemType} but expected ${firstType}`,
+          node.elements[i].location ?? node.location
+        );
+        return; // Report first mismatch only
+      }
+    }
+  }
+
   // Check if an expression is definitely an array (by type or AST structure)
   function isArrayExpression(expr: AST.Expression, exprType: string | null): boolean {
     if (exprType?.endsWith('[]')) {
@@ -243,6 +269,7 @@ export function createVisitors(
 
       case 'ArrayLiteral':
         node.elements.forEach((element) => visitExpression(element));
+        validateArrayLiteralTypes(node);
         break;
 
       case 'AssignmentExpression':
@@ -328,6 +355,15 @@ export function createVisitors(
       } else if (!node.typeAnnotation) {
         ctx.error(`Cannot infer type from null - provide a type annotation: let ${node.name}: <type> = null`, node.location);
       }
+    }
+
+    // Empty array requires explicit type annotation
+    const isEmptyArray = node.initializer?.type === 'ArrayLiteral' && node.initializer.elements.length === 0;
+    if (isEmptyArray && !node.typeAnnotation) {
+      ctx.error(
+        `Cannot infer type from empty array - provide a type annotation: let ${node.name}: <type>[] = []`,
+        node.location
+      );
     }
 
     if (node.isAsync && node.initializer) {
