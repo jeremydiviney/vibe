@@ -27,6 +27,7 @@ description: Complete syntax reference for Vibe
 | `for` | For-in loop |
 | `in` | Loop iterator |
 | `while` | While loop |
+| `break` | Exit innermost loop |
 | `return` | Return from function |
 
 ### AI Keywords
@@ -172,6 +173,14 @@ while condition { statements } compress
 return expression
 return
 ```
+
+### Break Statement
+
+```
+break
+```
+
+Exits the innermost `for` or `while` loop immediately.
 
 ### Import Statement
 

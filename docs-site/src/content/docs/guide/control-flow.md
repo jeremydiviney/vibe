@@ -105,17 +105,51 @@ while count < 10 {
 The condition must be a boolean expression.
 :::
 
-## Break and Continue
+## Break
 
-Currently, Vibe does not support `break` or `continue` statements. Use conditionals within loops instead:
+The `break` statement exits the innermost loop immediately:
 
 ```vibe
-for item in items {
-  if shouldProcess(item) {
-    // process item
+for i in [1, 2, 3, 4, 5] {
+  if i == 3 {
+    break
   }
+  print(i)  // prints 1, 2
 }
 ```
+
+Works in both `for-in` and `while` loops:
+
+```vibe
+let i = 0
+while i < 100 {
+  i = i + 1
+  if i == 5 {
+    break
+  }
+}
+// i is now 5
+```
+
+### Nested Loops
+
+`break` only exits the **innermost** loop:
+
+```vibe
+for i in [1, 2, 3] {
+  for j in [1, 2, 3, 4, 5] {
+    if j == 2 {
+      break  // only exits inner loop
+    }
+    print(j)  // prints 1 for each outer iteration
+  }
+  print("outer")  // still runs 3 times
+}
+```
+
+:::note
+Vibe does not currently support `continue`. Use conditionals within loops instead.
+:::
 
 ## Combining with AI
 
