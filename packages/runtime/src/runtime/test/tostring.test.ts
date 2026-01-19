@@ -144,6 +144,19 @@ describe('toString() method', () => {
     expect(resolveValue(frame.locals['str'])).toBe('["a","b","c"]');
   });
 
+  test('typed number[] array.toString()', () => {
+    const program = parse(`
+      let arr: number[] = [1, 2, 3]
+      let str = arr.toString()
+    `);
+    let state = createInitialState(program);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    const frame = currentFrame(state);
+    expect(resolveValue(frame.locals['str'])).toBe('[1,2,3]');
+  });
+
   // ============================================================================
   // Null toString
   // ============================================================================
