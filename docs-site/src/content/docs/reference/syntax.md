@@ -272,7 +272,7 @@ functionName(arg1, arg2)
 ```
 "string"            // Double-quoted string
 'string'            // Single-quoted string
-`template ${var}`   // Template literal
+`template {var}`    // Template literal
 42                  // Integer
 3.14                // Decimal
 true                // Boolean

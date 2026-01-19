@@ -65,7 +65,7 @@ for language in languages {
 }
 ```
 
-Variables like `{language}` are automatically interpolated into prompts. The AI sees the full context of what you're trying to do.
+The `{language}` syntax creates a reference that the AI can see in context. The AI knows what `language` contains and uses it to complete the task. See [AI Prompts](/docs/ai/prompts/) for more on interpolation.
 
 ## Try Different Providers
 

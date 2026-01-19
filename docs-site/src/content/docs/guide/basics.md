@@ -44,14 +44,26 @@ Use double quotes, single quotes, or backticks:
 ```vibe
 let s1 = "double quoted"
 let s2 = 'single quoted'
-let s3 = `template with ${variable} interpolation`
+let s3 = `template with {variable} interpolation`
 ```
 
-Template literals use `${expression}` for interpolation (JavaScript style).
+All string types support `{variable}` interpolation:
+
+```vibe
+let name = "Alice"
+let greeting = "Hello {name}!"  // "Hello Alice!"
+```
 
 :::note
-AI prompts use a different syntax: `{variable}` without the `$`. See [AI Prompts](/docs/ai/prompts/).
+In AI prompts, `{var}` behaves differently—it's kept as a reference rather than expanded. Use `!{var}` to expand values in prompts. See [AI Prompts](/docs/ai/prompts/).
 :::
+
+Use backslash to escape braces:
+
+```vibe
+let literal = "Use \{braces\} literally"  // "Use {braces} literally"
+let path = "C:\\Users\\name"              // "C:\Users\name"
+```
 
 ### Numbers
 

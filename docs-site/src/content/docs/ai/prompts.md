@@ -26,18 +26,58 @@ const data: json = do "Return a person object with name and age"
 
 ### String Interpolation
 
-Variables are automatically interpolated into prompts using `{variable}` syntax:
+Prompts support two interpolation modes:
+
+**Reference syntax `{var}`** — Points the AI to a variable in context without duplicating its value:
 
 ```vibe
-let topic = "machine learning"
-let audience = "beginners"
+let article = "... a very long article ..."
 
-const explanation = do "Explain {topic} for {audience}"
+// AI sees: "Summarize {article}" + context showing article's value
+// The article text is NOT duplicated in the prompt itself
+const summary = do "Summarize {article}"
 ```
 
+This is the preferred approach because it:
+- Directs the model's attention to the correct variable in context
+- Avoids duplicating text in the prompt, reducing token usage
+- Keeps prompts readable
+
+**Expansion syntax `!{var}`** — Inlines the value directly into the prompt text:
+
+```vibe
+let name = "Alice"
+
+// AI sees: "Hello Alice" — value is embedded in the prompt
+const greeting = do "Hello !{name}"
+```
+
+Use `!{var}` when you need the literal value in the prompt text itself, such as for short values or when building dynamic prompt structures.
+
 :::note
-AI prompts use `{variable}` syntax (without `$`), which is different from template literals that use `${variable}`.
+This is different from regular strings, where `{var}` always expands to the value. The `!{var}` syntax is only valid in prompts.
 :::
+
+### Escaping
+
+Use backslash to include literal braces in strings:
+
+```vibe
+let msg = "Use \{braces\} for references"  // "Use {braces} for references"
+let json = "Format: \{ \"key\": \"value\" \}"
+```
+
+In prompts, you can also escape the expansion syntax:
+
+```vibe
+let instruction = do "Explain the \!{var} syntax in Vibe"
+```
+
+Other escape sequences:
+- `\\` — literal backslash
+- `\{` — literal `{`
+- `\}` — literal `}`
+- `\!{` — literal `!{` (in prompts)
 
 ### Specifying a Model
 
