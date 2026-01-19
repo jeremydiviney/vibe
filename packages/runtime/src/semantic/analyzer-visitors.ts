@@ -58,6 +58,12 @@ export function createVisitors(
         break;
 
       case 'ExportDeclaration':
+        if (node.declaration.type === 'LetDeclaration') {
+          ctx.error(
+            `Cannot export mutable variable '${node.declaration.name}'. Only constants can be exported.`,
+            node.location
+          );
+        }
         visitStatement(node.declaration);
         break;
 

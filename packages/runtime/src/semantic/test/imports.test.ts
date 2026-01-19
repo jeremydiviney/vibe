@@ -95,10 +95,10 @@ describe('Semantic Analysis - Export Declarations', () => {
     expect(errors).toHaveLength(0);
   });
 
-  test('valid export variable', () => {
+  test('valid export const', () => {
     const errors = analyze(`
-      export let counter = "0"
       export const API_KEY = "secret"
+      export const COUNT = 42
     `);
     expect(errors).toHaveLength(0);
   });
