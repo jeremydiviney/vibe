@@ -1,0 +1,19 @@
+name: Trigger main-site deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs-site/**'
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger main-site rebuild
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.MAIN_SITE_DISPATCH_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/vibelang-org/main-site/dispatches \
+            -d '{"event_type":"docs-updated"}'
