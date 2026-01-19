@@ -332,4 +332,41 @@ describe('Runtime - Object and Array Literals', () => {
     expect(runtime.getValue('b')).toEqual([3, 4]);
     expect(runtime.getValue('c')).toEqual([1, 2, 3, 4]);
   });
+
+  test('concatenate two array slices', async () => {
+    const runtime = createRuntime(`
+      let arr = [1, 2, 3, 4, 5]
+      let result = arr[0:2] + arr[3:5]
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toEqual([1, 2, 4, 5]);
+  });
+
+  test('concatenate array literal with slice', async () => {
+    const runtime = createRuntime(`
+      let arr = [1, 2, 3, 4, 5]
+      let result = [0] + arr[1:3]
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toEqual([0, 2, 3]);
+  });
+
+  test('concatenate slice with array literal', async () => {
+    const runtime = createRuntime(`
+      let arr = [1, 2, 3, 4, 5]
+      let result = arr[2:4] + [6, 7]
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toEqual([3, 4, 6, 7]);
+  });
+
+  test('concatenate slice with variable array', async () => {
+    const runtime = createRuntime(`
+      let arr = [1, 2, 3, 4, 5]
+      let suffix = [10, 11]
+      let result = arr[0:2] + suffix
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toEqual([1, 2, 10, 11]);
+  });
 });
