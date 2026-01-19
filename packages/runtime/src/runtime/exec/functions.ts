@@ -259,6 +259,17 @@ export function execCallFunction(
  * Execute a built-in method on an object.
  */
 function executeBuiltinMethod(object: unknown, method: string, args: unknown[]): unknown {
+  // Universal toString() method - works on any type
+  if (method === 'toString') {
+    if (object === null || object === undefined) {
+      return '';
+    }
+    if (typeof object === 'object') {
+      return JSON.stringify(object);
+    }
+    return String(object);
+  }
+
   // Array methods
   if (Array.isArray(object)) {
     switch (method) {

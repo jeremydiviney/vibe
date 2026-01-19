@@ -866,6 +866,11 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       // Unwrap VibeValue and AIResultObject for normal property access
       const object = resolveValue(rawObject);
 
+      // Handle toString() method on any type
+      if (property === 'toString') {
+        return { ...state, lastResult: { __boundMethod: true, object, method: 'toString' } };
+      }
+
       // Handle built-in methods on arrays
       if (Array.isArray(object)) {
         if (property === 'len' || property === 'push' || property === 'pop') {
