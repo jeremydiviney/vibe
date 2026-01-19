@@ -910,8 +910,13 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 // Evaluate binary operators
 function evaluateBinaryOp(op: string, left: unknown, right: unknown): unknown {
   switch (op) {
-    // Arithmetic operators
+    // Addition / concatenation
     case '+':
+      // Array concatenation: [1,2] + [3,4] = [1,2,3,4]
+      if (Array.isArray(left) && Array.isArray(right)) {
+        return [...left, ...right];
+      }
+      // String/number addition (JS handles coercion)
       return (left as number) + (right as number);
     case '-':
       return (left as number) - (right as number);

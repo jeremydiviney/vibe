@@ -269,15 +269,15 @@ model m = {
       expect(errors).toHaveLength(0);
     });
 
-    test('no error when standardTools is imported and used in model', () => {
+    test('no error when allTools is imported and used in model', () => {
       const ast = parse(`
-import { standardTools } from "system/tools"
+import { allTools } from "system/tools"
 
 model m = {
   name: "gpt-4",
   apiKey: "key",
   url: "https://api.openai.com",
-  tools: standardTools
+  tools: allTools
 }
 `);
       const errors = analyze(ast);

@@ -128,8 +128,15 @@ All documentation site text changes, new sections, and section removals.
 - [ ] Other system functions require explicit import
 - [ ] Refactor "Built-in Functions" based on this
 
-### New: Tool Bundles Section (under Models)
-- [ ] Document bundles from `system/tools`
+### New: Tool Bundles Section (under AI - Tools)
+- [ ] Document bundles from `system/tools`:
+  - `allTools` (19 tools): Complete set - file, search, directory, utility, system tools
+  - `readonlyTools` (12 tools): Safe read-only - no write, no shell, no codegen
+  - `safeTools` (17 tools): No bash, no runCode - everything else
+- [ ] Show import syntax: `import { allTools, readonlyTools } from "system/tools"`
+- [ ] Show usage in model: `tools: readonlyTools`
+- [ ] Mention individual tools can be imported: `import { bash, runCode } from "system/tools"`
+- [ ] List all 19 tools with brief descriptions
 
 ---
 

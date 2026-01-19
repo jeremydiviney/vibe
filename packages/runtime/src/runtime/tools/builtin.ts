@@ -18,7 +18,7 @@ import { systemTools } from './system-tools';
  *
  * Total: 20 tools
  */
-export const standardTools: RegisteredTool[] = [
+export const allTools: RegisteredTool[] = [
   ...fileTools,
   ...searchTools,
   ...directoryTools,
@@ -26,5 +26,5 @@ export const standardTools: RegisteredTool[] = [
   ...systemTools,
 ];
 
-/** @deprecated Use standardTools instead */
-export const builtinTools = standardTools;
+/** @deprecated Use allTools instead */
+export const builtinTools = allTools;

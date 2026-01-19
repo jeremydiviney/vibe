@@ -390,4 +390,48 @@ while x { let y = 1 }
     const errors = getErrors('function getText(): text { return "hi" }\nlet x = getText()');
     expect(errors).toEqual([]);
   });
+
+  // ============================================================================
+  // Array concatenation type checking
+  // ============================================================================
+
+  test('array concatenation with same types is valid', () => {
+    const errors = getErrors('let a: number[] = [1, 2]\nlet b: number[] = [3, 4]\nlet c = a + b');
+    expect(errors).toEqual([]);
+  });
+
+  test('array concatenation with different types is error', () => {
+    const errors = getErrors('let a: number[] = [1, 2]\nlet b: text[] = ["a", "b"]\nlet c = a + b');
+    expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
+  });
+
+  test('array concatenation with non-array is error', () => {
+    const errors = getErrors('let a: number[] = [1, 2]\nlet b = 5\nlet c = a + b');
+    expect(errors).toContain('Cannot concatenate array with non-array using +');
+  });
+
+  test('array literal concatenation is valid', () => {
+    const errors = getErrors('let c = [1, 2] + [3, 4]');
+    expect(errors).toEqual([]);
+  });
+
+  test('typed array + untyped array literal is valid', () => {
+    const errors = getErrors('let a: number[] = [1, 2]\nlet c = a + [3, 4]');
+    expect(errors).toEqual([]);
+  });
+
+  test('text array concatenation is valid', () => {
+    const errors = getErrors('let a: text[] = ["a"]\nlet b: text[] = ["b"]\nlet c = a + b');
+    expect(errors).toEqual([]);
+  });
+
+  test('json array concatenation is valid', () => {
+    const errors = getErrors('let a: json[] = [{x: 1}]\nlet b: json[] = [{y: 2}]\nlet c = a + b');
+    expect(errors).toEqual([]);
+  });
+
+  test('boolean array concatenation with number array is error', () => {
+    const errors = getErrors('let a: boolean[] = [true]\nlet b: number[] = [1]\nlet c = a + b');
+    expect(errors).toContain('Cannot concatenate boolean[] with number[]: array types must match');
+  });
 });

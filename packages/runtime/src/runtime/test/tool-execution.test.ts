@@ -227,15 +227,15 @@ let str = jsonStringify(obj)
     );
   });
 
-  test('standardTools array can be imported from system/tools', async () => {
+  test('allTools array can be imported from system/tools', async () => {
     const ast = parse(`
-import { standardTools } from "system/tools"
-let toolCount = ts(standardTools) { return standardTools.length }
+import { allTools } from "system/tools"
+let toolCount = ts(allTools) { return allTools.length }
 `);
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
     const toolCount = runtime.getValue('toolCount');
-    expect(toolCount).toBe(17); // File, search, directory, and utility tools for AI
+    expect(toolCount).toBe(19); // File, search, directory, utility, and system tools for AI
   });
 });
 
@@ -317,14 +317,14 @@ let x = 1
     expect((model.tools![1] as { name: string }).name).toBe('writeFile');
   });
 
-  test('model can have tools array with standardTools', async () => {
+  test('model can have tools array with allTools', async () => {
     const ast = parse(`
-import { standardTools } from "system/tools"
+import { allTools } from "system/tools"
 
 model m = {
   name: "gpt-4",
   apiKey: "test-key",
-  tools: standardTools
+  tools: allTools
 }
 
 let x = 1
@@ -332,9 +332,9 @@ let x = 1
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    // Verify model has all 17 standard tools
+    // Verify model has all 19 tools
     const model = runtime.getValue('m') as { tools?: unknown[] };
-    expect(model.tools).toHaveLength(17);
+    expect(model.tools).toHaveLength(19);
   });
 
   test('model without tools parameter has undefined tools', async () => {
@@ -351,5 +351,117 @@ let x = 1
 
     const model = runtime.getValue('m') as { tools?: unknown[] };
     expect(model.tools).toBeUndefined();
+  });
+});
+
+describe('Runtime - Tool Bundles', () => {
+  test('allTools contains all 19 tools including bash and runCode', async () => {
+    const ast = parse(`
+import { allTools } from "system/tools"
+let count = ts(allTools) { return allTools.length }
+let names = ts(allTools) { return allTools.map(t => t.name).sort() }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    expect(runtime.getValue('count')).toBe(19);
+    const names = runtime.getValue('names') as string[];
+    expect(names).toContain('bash');
+    expect(names).toContain('runCode');
+    expect(names).toContain('readFile');
+    expect(names).toContain('writeFile');
+  });
+
+  test('readonlyTools excludes write operations and system tools', async () => {
+    const ast = parse(`
+import { readonlyTools } from "system/tools"
+let count = ts(readonlyTools) { return readonlyTools.length }
+let names = ts(readonlyTools) { return readonlyTools.map(t => t.name).sort() }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    expect(runtime.getValue('count')).toBe(12);
+    const names = runtime.getValue('names') as string[];
+    // Should include read-only tools
+    expect(names).toContain('readFile');
+    expect(names).toContain('fileExists');
+    expect(names).toContain('listDir');
+    expect(names).toContain('glob');
+    expect(names).toContain('grep');
+    expect(names).toContain('dirExists');
+    // Should NOT include write/system tools
+    expect(names).not.toContain('writeFile');
+    expect(names).not.toContain('appendFile');
+    expect(names).not.toContain('edit');
+    expect(names).not.toContain('fastEdit');
+    expect(names).not.toContain('mkdir');
+    expect(names).not.toContain('bash');
+    expect(names).not.toContain('runCode');
+  });
+
+  test('safeTools excludes bash and runCode', async () => {
+    const ast = parse(`
+import { safeTools } from "system/tools"
+let count = ts(safeTools) { return safeTools.length }
+let names = ts(safeTools) { return safeTools.map(t => t.name).sort() }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    expect(runtime.getValue('count')).toBe(17);
+    const names = runtime.getValue('names') as string[];
+    // Should NOT include bash or runCode
+    expect(names).not.toContain('bash');
+    expect(names).not.toContain('runCode');
+    // Should include all file tools
+    expect(names).toContain('readFile');
+    expect(names).toContain('writeFile');
+    expect(names).toContain('edit');
+  });
+
+  test('individual tools can be imported alongside bundles', async () => {
+    const ast = parse(`
+import { readonlyTools, bash, runCode } from "system/tools"
+let readCount = ts(readonlyTools) { return readonlyTools.length }
+let hasBash = ts(bash) { return bash.name === "bash" }
+let hasRunCode = ts(runCode) { return runCode.name === "runCode" }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    expect(runtime.getValue('readCount')).toBe(12);
+    expect(runtime.getValue('hasBash')).toBe(true);
+    expect(runtime.getValue('hasRunCode')).toBe(true);
+  });
+
+  test('tool bundles can be concatenated with + operator', async () => {
+    const ast = parse(`
+import { readonlyTools, bash } from "system/tools"
+let combined = readonlyTools + [bash]
+let count = ts(combined) { return combined.length }
+let names = ts(combined) { return combined.map(t => t.name) }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    // readonlyTools (12) + [bash] (1) = 13
+    expect(runtime.getValue('count')).toBe(13);
+    const names = runtime.getValue('names') as string[];
+    expect(names).toContain('readFile');
+    expect(names).toContain('bash');
+  });
+
+  test('concatenate multiple tool bundles', async () => {
+    const ast = parse(`
+import { readonlyTools, bash, runCode } from "system/tools"
+let custom = readonlyTools + [bash] + [runCode]
+let count = ts(custom) { return custom.length }
+`);
+    const runtime = new Runtime(ast, createMockProvider());
+    await runtime.run();
+
+    // readonlyTools (12) + bash (1) + runCode (1) = 14
+    expect(runtime.getValue('count')).toBe(14);
   });
 });

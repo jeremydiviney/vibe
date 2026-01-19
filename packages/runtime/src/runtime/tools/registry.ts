@@ -1,5 +1,5 @@
 import type { RegisteredTool, ToolRegistry, ToolSchema } from './types';
-import { standardTools } from './builtin';
+import { allTools } from './builtin';
 
 /**
  * Create a new tool registry.
@@ -43,6 +43,6 @@ export function createToolRegistry(): ToolRegistry {
  */
 export function createToolRegistryWithBuiltins(): ToolRegistry {
   const registry = createToolRegistry();
-  registry.registerAll(standardTools);
+  registry.registerAll(allTools);
   return registry;
 }

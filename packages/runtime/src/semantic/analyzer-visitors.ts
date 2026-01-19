@@ -51,6 +51,37 @@ export function createVisitors(
     validateLiteralType(ctx, expr, type, location, getExprType);
   };
 
+  // Validate array concatenation types (guard clause style)
+  function validateArrayConcatenation(node: AST.BinaryExpression): void {
+    if (node.operator !== '+') {
+      return;
+    }
+
+    const leftType = getExprType(node.left);
+    const rightType = getExprType(node.right);
+    const leftIsArray = leftType?.endsWith('[]') || node.left.type === 'ArrayLiteral';
+    const rightIsArray = rightType?.endsWith('[]') || node.right.type === 'ArrayLiteral';
+
+    // Not an array operation - nothing to check
+    if (!leftIsArray && !rightIsArray) {
+      return;
+    }
+
+    // One is array, one is not - error
+    if (!leftIsArray || !rightIsArray) {
+      ctx.error('Cannot concatenate array with non-array using +', node.location);
+      return;
+    }
+
+    // Both arrays but different types - error
+    if (leftType && rightType && leftType !== rightType) {
+      ctx.error(
+        `Cannot concatenate ${leftType} with ${rightType}: array types must match`,
+        node.location
+      );
+    }
+  }
+
   function visitStatement(node: AST.Statement): void {
     switch (node.type) {
       case 'ImportDeclaration':
@@ -237,6 +268,7 @@ export function createVisitors(
       case 'BinaryExpression':
         visitExpression(node.left);
         visitExpression(node.right);
+        validateArrayConcatenation(node);
         break;
 
       case 'UnaryExpression':
@@ -422,7 +454,9 @@ export function createVisitors(
           );
         }
       } else {
-        const importKind = isToolImport && spec.local !== 'standardTools' ? 'tool' : 'import';
+        // Tool bundles (allTools, readonlyTools, safeTools) are imports, individual tools are 'tool' kind
+        const toolBundles = ['allTools', 'readonlyTools', 'safeTools'];
+        const importKind = isToolImport && !toolBundles.includes(spec.local) ? 'tool' : 'import';
         ctx.declare(spec.local, importKind, node.location);
       }
     }

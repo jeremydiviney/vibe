@@ -249,4 +249,87 @@ describe('Runtime - Object and Array Literals', () => {
     const val = runtime.getValue('x') as any;
     expect(val.a.b.c.d).toBe('four levels');
   });
+
+  // ============================================================================
+  // Array Concatenation
+  // ============================================================================
+
+  test('array concatenation with +', async () => {
+    const runtime = createRuntime(`
+      let a = [1, 2]
+      let b = [3, 4]
+      let c = a + b
+    `);
+    await runtime.run();
+    expect(runtime.getValue('c')).toEqual([1, 2, 3, 4]);
+  });
+
+  test('concatenate empty arrays', async () => {
+    const runtime = createRuntime(`
+      let a = []
+      let b = []
+      let c = a + b
+    `);
+    await runtime.run();
+    expect(runtime.getValue('c')).toEqual([]);
+  });
+
+  test('concatenate with empty array', async () => {
+    const runtime = createRuntime(`
+      let a = [1, 2, 3]
+      let b = []
+      let c = a + b
+    `);
+    await runtime.run();
+    expect(runtime.getValue('c')).toEqual([1, 2, 3]);
+  });
+
+  test('concatenate array literals directly', async () => {
+    const runtime = createRuntime('let x = [1] + [2, 3]');
+    await runtime.run();
+    expect(runtime.getValue('x')).toEqual([1, 2, 3]);
+  });
+
+  test('chain multiple array concatenations', async () => {
+    const runtime = createRuntime(`
+      let a = [1]
+      let b = [2]
+      let c = [3]
+      let result = a + b + c
+    `);
+    await runtime.run();
+    expect(runtime.getValue('result')).toEqual([1, 2, 3]);
+  });
+
+  test('concatenate arrays of objects', async () => {
+    const runtime = createRuntime(`
+      let a = [{name: "alice"}]
+      let b = [{name: "bob"}]
+      let c = a + b
+    `);
+    await runtime.run();
+    expect(runtime.getValue('c')).toEqual([{ name: 'alice' }, { name: 'bob' }]);
+  });
+
+  test('concatenate string arrays', async () => {
+    const runtime = createRuntime(`
+      let a = ["hello"]
+      let b = ["world"]
+      let c = a + b
+    `);
+    await runtime.run();
+    expect(runtime.getValue('c')).toEqual(['hello', 'world']);
+  });
+
+  test('original arrays unchanged after concatenation', async () => {
+    const runtime = createRuntime(`
+      let a = [1, 2]
+      let b = [3, 4]
+      let c = a + b
+    `);
+    await runtime.run();
+    expect(runtime.getValue('a')).toEqual([1, 2]);
+    expect(runtime.getValue('b')).toEqual([3, 4]);
+    expect(runtime.getValue('c')).toEqual([1, 2, 3, 4]);
+  });
 });

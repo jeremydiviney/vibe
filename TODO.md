@@ -163,6 +163,19 @@
 
 ## Completed (Last 10)
 
+- [x] Array concatenation with `+` operator
+  - [x] `[1,2] + [3,4]` = `[1,2,3,4]`
+  - [x] Works with tool bundles: `readonlyTools + [customTool]`
+  - [x] Semantic type checking: arrays must have matching types
+  - [x] Error on array + non-array, or `number[]` + `text[]`
+
+- [x] Tool bundles for AI models
+  - [x] `allTools`: all 19 tools (file, search, directory, utility, system)
+  - [x] `readonlyTools`: 12 tools, excludes write/system (readFile, fileExists, listDir, glob, grep, dirExists, env, now, jsonParse, jsonStringify, random, uuid)
+  - [x] `safeTools`: 17 tools, excludes bash and runCode (no shell/codegen)
+  - [x] Individual tools (bash, runCode) can be imported alongside bundles
+  - [x] Usage: `import { allTools } from "system/tools"` then `tools: allTools`
+
 - [x] Type checking for TS block parameters and inline TS code
   - [x] Type-check ts() block bodies using virtual TypeScript compilation
   - [x] Validate imported TS function calls against extracted signatures

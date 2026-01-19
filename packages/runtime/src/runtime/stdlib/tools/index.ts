@@ -1,5 +1,5 @@
 // Standard tools for AI models in Vibe
-// Import with: import { standardTools, readFile, writeFile, ... } from "system/tools"
+// Import with: import { allTools, readFile, writeFile, ... } from "system/tools"
 //
 // These are tools that AI models can use via the tools parameter.
 // For direct script use, import functions from "system" instead.
@@ -498,29 +498,210 @@ export const uuid: VibeToolValue = {
 };
 
 // =============================================================================
-// All Standard Tools (for AI models)
+// System Tools
 // =============================================================================
 
-export const standardTools: VibeToolValue[] = [
+export const bash: VibeToolValue = {
+  __vibeTool: true,
+  name: 'bash',
+  schema: {
+    name: 'bash',
+    description:
+      'Execute a shell command and return stdout, stderr, and exit code. ' +
+      'Works cross-platform (Windows/Mac/Linux). ' +
+      'Supports pipes (cmd1 | cmd2), file redirection (> file, >> file), and standard shell features. ' +
+      'Commands run from the project root directory by default.',
+    parameters: [
+      { name: 'command', type: { type: 'string' }, description: 'The shell command to execute', required: true },
+      { name: 'cwd', type: { type: 'string' }, description: 'Working directory for the command', required: false },
+      { name: 'timeout', type: { type: 'number' }, description: 'Timeout in milliseconds (default: 30000)', required: false },
+    ],
+    returns: {
+      type: 'object',
+      properties: {
+        stdout: { type: 'string' },
+        stderr: { type: 'string' },
+        exitCode: { type: 'number' },
+      },
+    },
+  },
+  executor: async (args: Record<string, unknown>, context?: ToolContext) => {
+    const command = args.command as string;
+    const cwd = (args.cwd as string) || context?.rootDir || process.cwd();
+    const timeout = (args.timeout as number) || 30000;
+
+    const { writeFile: fsWriteFile, rm } = await import('fs/promises');
+    const { join } = await import('path');
+    const { tmpdir } = await import('os');
+
+    const scriptPath = join(tmpdir(), `vibe-bash-${process.pid}-${Date.now()}.ts`);
+    const escapedCommand = command.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
+
+    const scriptContent = `import { $ } from 'bun';
+const result = await $\`${escapedCommand}\`.cwd(${JSON.stringify(cwd)}).nothrow().quiet();
+process.stdout.write(result.stdout);
+process.stderr.write(result.stderr);
+process.exit(result.exitCode);
+`;
+
+    try {
+      await fsWriteFile(scriptPath, scriptContent);
+      const proc = Bun.spawn(['bun', 'run', scriptPath], { stdout: 'pipe', stderr: 'pipe' });
+      const timeoutId = setTimeout(() => proc.kill(), timeout);
+      const exitCode = await proc.exited;
+      clearTimeout(timeoutId);
+
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+
+      return { stdout, stderr, exitCode };
+    } finally {
+      try { await rm(scriptPath); } catch { /* ignore */ }
+    }
+  },
+};
+
+export const runCode: VibeToolValue = {
+  __vibeTool: true,
+  name: 'runCode',
+  schema: {
+    name: 'runCode',
+    description:
+      'Execute TypeScript/JavaScript code in a sandboxed subprocess. ' +
+      'All scope variables are automatically available as local variables. ' +
+      'Use `return value` to pass results back. Bun APIs are available. ' +
+      'Each execution creates a unique folder in .vibe-cache/ for intermediate files.',
+    parameters: [
+      { name: 'code', type: { type: 'string' }, description: 'TypeScript/JavaScript code to execute', required: true },
+      { name: 'scope', type: { type: 'object', additionalProperties: true }, description: 'Variables to make available in the code', required: false },
+      { name: 'timeout', type: { type: 'number' }, description: 'Timeout in milliseconds (default: 30000)', required: false },
+    ],
+    returns: {
+      type: 'object',
+      properties: {
+        result: { type: 'string' },
+        stdout: { type: 'string' },
+        stderr: { type: 'string' },
+        exitCode: { type: 'number' },
+        runFolder: { type: 'string' },
+        error: { type: 'string' },
+      },
+    },
+  },
+  executor: async (args: Record<string, unknown>, context?: ToolContext) => {
+    const code = args.code as string;
+    const scope = (args.scope as Record<string, unknown>) || {};
+    const timeout = (args.timeout as number) || 30000;
+
+    const { mkdir: fsMkdir, writeFile: fsWriteFile, readdir } = await import('fs/promises');
+    const { join } = await import('path');
+
+    const projectDir = context?.rootDir || process.cwd();
+    const cacheDir = join(projectDir, '.vibe-cache');
+
+    // Get unique run folder
+    let runName = 'r1';
+    try {
+      await fsMkdir(cacheDir, { recursive: true });
+      const entries = await readdir(cacheDir);
+      const runNums = entries.filter(e => e.startsWith('r')).map(e => parseInt(e.slice(1), 10)).filter(n => !isNaN(n));
+      runName = runNums.length > 0 ? `r${Math.max(...runNums) + 1}` : 'r1';
+    } catch { /* start at r1 */ }
+
+    const runDir = join(cacheDir, runName);
+    const runPath = `.vibe-cache/${runName}`;
+
+    try {
+      await fsMkdir(runDir, { recursive: true });
+      await fsWriteFile(join(runDir, 'scope.json'), JSON.stringify(scope, null, 2));
+
+      const scopeKeys = Object.keys(scope);
+      const destructure = scopeKeys.length > 0 ? `const { ${scopeKeys.join(', ')} } = __scope;` : '';
+
+      const wrappedCode = `const __scope = JSON.parse(await Bun.file('${runPath}/scope.json').text());
+${destructure}
+const __result = await (async () => {
+${code}
+})();
+console.log('__VIBE_RESULT__' + JSON.stringify(__result));
+`;
+
+      await fsWriteFile(join(runDir, 'script.ts'), wrappedCode);
+
+      const proc = Bun.spawn(['bun', 'run', `${runPath}/script.ts`], {
+        stdout: 'pipe',
+        stderr: 'pipe',
+        cwd: projectDir,
+      });
+
+      const timeoutId = setTimeout(() => proc.kill(), timeout);
+      const exitCode = await proc.exited;
+      clearTimeout(timeoutId);
+
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+
+      let result: unknown;
+      const resultMatch = stdout.match(/__VIBE_RESULT__(.+)/);
+      if (resultMatch) {
+        try { result = JSON.parse(resultMatch[1]); } catch { result = resultMatch[1]; }
+      }
+
+      return { result, stdout: stdout.replace(/__VIBE_RESULT__.+\n?/, ''), stderr, exitCode, runFolder: runPath };
+    } catch (err) {
+      return { stdout: '', stderr: '', exitCode: 1, runFolder: runPath, error: err instanceof Error ? err.message : String(err) };
+    }
+  },
+};
+
+// =============================================================================
+// Tool Bundles
+// =============================================================================
+
+/**
+ * All tools - the complete set of standard tools.
+ * Includes all file, search, directory, utility, and system tools.
+ */
+export const allTools: VibeToolValue[] = [
   // File tools
-  readFile,
-  writeFile,
-  appendFile,
-  fileExists,
-  listDir,
-  edit,
-  fastEdit,
+  readFile, writeFile, appendFile, fileExists, listDir, edit, fastEdit,
   // Search tools
-  glob,
-  grep,
+  glob, grep,
   // Directory tools
-  mkdir,
+  mkdir, dirExists,
+  // Utility tools
+  env, now, jsonParse, jsonStringify, random, uuid,
+  // System tools
+  bash, runCode,
+];
+
+/**
+ * Read-only tools - safe tools that cannot modify the filesystem or execute commands.
+ * Excludes: writeFile, appendFile, edit, fastEdit, mkdir, bash, runCode
+ */
+export const readonlyTools: VibeToolValue[] = [
+  // File tools (read-only)
+  readFile, fileExists, listDir,
+  // Search tools
+  glob, grep,
+  // Directory tools (read-only)
   dirExists,
   // Utility tools
-  env,
-  now,
-  jsonParse,
-  jsonStringify,
-  random,
-  uuid,
+  env, now, jsonParse, jsonStringify, random, uuid,
 ];
+
+/**
+ * Safe tools - all tools except code execution and shell commands.
+ * Excludes: bash, runCode
+ */
+export const safeTools: VibeToolValue[] = [
+  // File tools
+  readFile, writeFile, appendFile, fileExists, listDir, edit, fastEdit,
+  // Search tools
+  glob, grep,
+  // Directory tools
+  mkdir, dirExists,
+  // Utility tools
+  env, now, jsonParse, jsonStringify, random, uuid,
+];
+

@@ -92,7 +92,45 @@ items.forEach(item => {
 - **Nullish Coalescing**: `value ?? defaultValue`
 - **Array Spread**: `[...array1, ...array2]`
 - **Object Destructuring**: `const { name, value } = obj`
-- **Early Returns**: Reduce nesting, improve readability
+- **Guard Clauses / Early Returns**: Handle edge cases first, reduce nesting
+
+### Guard Clause Style (Preferred)
+Use guard clauses (early returns) instead of nested if-else statements. This reduces indentation, makes the "happy path" clearer, and improves readability.
+
+```typescript
+// Good - Guard clause style
+function processUser(user: User | null): Result {
+  if (!user) {
+    return { error: 'No user provided' };
+  }
+  if (!user.isActive) {
+    return { error: 'User is inactive' };
+  }
+  if (!user.hasPermission) {
+    return { error: 'User lacks permission' };
+  }
+
+  // Happy path - main logic at lowest indentation
+  return { value: doSomething(user) };
+}
+
+// Bad - Nested if-else
+function processUser(user: User | null): Result {
+  if (user) {
+    if (user.isActive) {
+      if (user.hasPermission) {
+        return { value: doSomething(user) };
+      } else {
+        return { error: 'User lacks permission' };
+      }
+    } else {
+      return { error: 'User is inactive' };
+    }
+  } else {
+    return { error: 'No user provided' };
+  }
+}
+```
 
 ```typescript
 // Good patterns
