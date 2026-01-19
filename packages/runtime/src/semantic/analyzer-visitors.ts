@@ -51,6 +51,18 @@ export function createVisitors(
     validateLiteralType(ctx, expr, type, location, getExprType);
   };
 
+  // Check if an expression is definitely an array (by type or AST structure)
+  function isArrayExpression(expr: AST.Expression, exprType: string | null): boolean {
+    if (exprType?.endsWith('[]')) {
+      return true;
+    }
+    // Array literals and slices are always arrays
+    if (expr.type === 'ArrayLiteral' || expr.type === 'SliceExpression') {
+      return true;
+    }
+    return false;
+  }
+
   // Validate array concatenation types (guard clause style)
   function validateArrayConcatenation(node: AST.BinaryExpression): void {
     if (node.operator !== '+') {
@@ -59,8 +71,8 @@ export function createVisitors(
 
     const leftType = getExprType(node.left);
     const rightType = getExprType(node.right);
-    const leftIsArray = leftType?.endsWith('[]') || node.left.type === 'ArrayLiteral';
-    const rightIsArray = rightType?.endsWith('[]') || node.right.type === 'ArrayLiteral';
+    const leftIsArray = isArrayExpression(node.left, leftType);
+    const rightIsArray = isArrayExpression(node.right, rightType);
 
     // Not an array operation - nothing to check
     if (!leftIsArray && !rightIsArray) {

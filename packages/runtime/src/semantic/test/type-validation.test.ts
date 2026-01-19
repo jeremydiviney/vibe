@@ -434,4 +434,49 @@ while x { let y = 1 }
     const errors = getErrors('let a: boolean[] = [true]\nlet b: number[] = [1]\nlet c = a + b');
     expect(errors).toContain('Cannot concatenate boolean[] with number[]: array types must match');
   });
+
+  // ============================================================================
+  // Array slice concatenation type checking
+  // ============================================================================
+
+  test('same typed array slices concatenation is valid', () => {
+    const errors = getErrors('let a: number[] = [1, 2, 3]\nlet b: number[] = [4, 5, 6]\nlet c = a[0:2] + b[1:3]');
+    expect(errors).toEqual([]);
+  });
+
+  test('different typed array slices concatenation is error', () => {
+    const errors = getErrors('let nums: number[] = [1, 2, 3]\nlet strs: text[] = ["a", "b"]\nlet c = nums[0:2] + strs[0:2]');
+    expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
+  });
+
+  test('array slice + array literal is valid', () => {
+    const errors = getErrors('let a: number[] = [1, 2, 3]\nlet c = a[0:2] + [4, 5]');
+    expect(errors).toEqual([]);
+  });
+
+  test('array slice + different typed variable is error', () => {
+    const errors = getErrors('let nums: number[] = [1, 2, 3]\nlet strs: text[] = ["a", "b"]\nlet c = nums[0:2] + strs');
+    expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
+  });
+
+  test('typed array slice assigned to variable preserves type', () => {
+    const errors = getErrors(`
+      let nums: number[] = [1, 2, 3, 4]
+      let slice = nums[0:2]
+      let strs: text[] = ["a", "b"]
+      let result = slice + strs
+    `);
+    expect(errors).toContain('Cannot concatenate number[] with text[]: array types must match');
+  });
+
+  test('untyped array slices can be concatenated (no type info to check)', () => {
+    // Without explicit types, we can't catch type mismatches
+    // This is a known limitation - use explicit types for type safety
+    const errors = getErrors(`
+      let a = [1, 2, 3]
+      let b = ["x", "y"]
+      let c = a[:2] + b[:2]
+    `);
+    expect(errors).toEqual([]);
+  });
 });

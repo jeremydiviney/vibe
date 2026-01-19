@@ -521,6 +521,14 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
       return 'json';
     case 'ArrayLiteral':
       return null;
+    case 'SliceExpression': {
+      // A slice of an array has the same type as the array
+      const objectType = getExpressionType(ctx, expr.object);
+      if (objectType?.endsWith('[]')) {
+        return objectType;
+      }
+      return null;
+    }
     case 'Identifier': {
       const symbol = ctx.symbols.lookup(expr.name);
       if (symbol?.typeAnnotation) {
