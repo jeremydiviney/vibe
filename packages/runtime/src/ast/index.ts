@@ -63,6 +63,7 @@ export type Statement =
   | FunctionDeclaration
   | ToolDeclaration
   | ReturnStatement
+  | BreakStatement
   | IfStatement
   | ForInStatement
   | WhileStatement
@@ -174,6 +175,10 @@ export interface ToolDeclaration extends BaseNode {
 export interface ReturnStatement extends BaseNode {
   type: 'ReturnStatement';
   value: Expression | null;
+}
+
+export interface BreakStatement extends BaseNode {
+  type: 'BreakStatement';
 }
 
 export interface IfStatement extends BaseNode {

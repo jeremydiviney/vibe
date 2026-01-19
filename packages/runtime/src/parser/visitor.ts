@@ -60,6 +60,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.functionDeclaration) return this.visit(ctx.functionDeclaration);
     if (ctx.toolDeclaration) return this.visit(ctx.toolDeclaration);
     if (ctx.returnStatement) return this.visit(ctx.returnStatement);
+    if (ctx.breakStatement) return this.visit(ctx.breakStatement);
     if (ctx.ifStatement) return this.visit(ctx.ifStatement);
     if (ctx.forInStatement) return this.visit(ctx.forInStatement);
     if (ctx.whileStatement) return this.visit(ctx.whileStatement);
@@ -402,6 +403,10 @@ class VibeAstVisitor extends BaseVibeVisitor {
 
   returnStatement(ctx: { Return: IToken[]; expression?: CstNode[] }): AST.ReturnStatement {
     return { type: 'ReturnStatement', value: ctx.expression ? this.visit(ctx.expression) : null, location: tokenLocation(ctx.Return[0]) };
+  }
+
+  breakStatement(ctx: { Break: IToken[] }): AST.BreakStatement {
+    return { type: 'BreakStatement', location: tokenLocation(ctx.Break[0]) };
   }
 
   ifStatement(ctx: { If: IToken[]; expression: CstNode[]; blockStatement: CstNode[]; ifStatement?: CstNode[] }): AST.IfStatement {

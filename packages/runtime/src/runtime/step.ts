@@ -537,6 +537,49 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       };
     }
 
+    case 'break_loop': {
+      const { savedKeys, contextMode, label, entryIndex, scopeType, location } = instruction;
+
+      // First, await any pending async operations in the current scope
+      const pendingAsyncIds: string[] = [];
+      for (const opId of state.pendingAsyncIds) {
+        const operation = state.asyncOperations.get(opId);
+        if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+          pendingAsyncIds.push(opId);
+        }
+      }
+
+      if (pendingAsyncIds.length > 0) {
+        // Need to await async operations before breaking
+        return {
+          ...state,
+          status: 'awaiting_async',
+          awaitingAsyncIds: pendingAsyncIds,
+          // Re-queue break_loop to continue after async completes
+          instructionStack: [instruction, ...state.instructionStack],
+        };
+      }
+
+      // Apply context mode (may trigger compress for summarization)
+      const frame = currentFrame(state);
+      const exitState = applyContextMode(state, frame, contextMode ?? 'forget', entryIndex, scopeType, label);
+
+      // If compress triggered awaiting_compress, don't proceed with exit_block yet
+      if (exitState.status === 'awaiting_compress') {
+        // Re-queue a simplified break cleanup after compress completes
+        return {
+          ...exitState,
+          instructionStack: [
+            { op: 'exit_block', savedKeys, location },
+            ...state.instructionStack,
+          ],
+        };
+      }
+
+      // Cleanup scope variables
+      return execExitBlock(exitState, savedKeys, location);
+    }
+
     case 'push_value':
       return execPushValue(state);
 

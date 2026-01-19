@@ -97,6 +97,12 @@ export function createVisitors(
         if (node.value) visitExpression(node.value);
         break;
 
+      case 'BreakStatement':
+        if (state.loopDepth === 0) {
+          ctx.error('break outside of loop', node.location);
+        }
+        break;
+
       case 'IfStatement':
         visitExpression(node.condition);
         validateConditionType(ctx, node.condition, 'if', getExprType);
@@ -108,7 +114,9 @@ export function createVisitors(
         visitExpression(node.iterable);
         ctx.symbols.enterScope();
         ctx.declare(node.variable, 'variable', node.location, { typeAnnotation: null });
+        state.loopDepth++;
         visitStatement(node.body);
+        state.loopDepth--;
         ctx.symbols.exitScope();
         if (node.contextMode) validateContextMode(ctx, node.contextMode, node.location);
         break;
@@ -117,7 +125,9 @@ export function createVisitors(
         visitExpression(node.condition);
         validateConditionType(ctx, node.condition, 'while', getExprType);
         ctx.symbols.enterScope();
+        state.loopDepth++;
         visitStatement(node.body);
+        state.loopDepth--;
         ctx.symbols.exitScope();
         if (node.contextMode) validateContextMode(ctx, node.contextMode, node.location);
         break;

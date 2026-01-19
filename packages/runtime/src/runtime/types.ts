@@ -1,5 +1,5 @@
 import * as AST from '../ast';
-import type { VibeType, VibeTypeRequired } from '../ast';
+import type { VibeType, VibeTypeRequired, ContextMode } from '../ast';
 import type { SourceLocation } from '../errors';
 import type { PendingToolCall } from './tools/types';
 export type { PendingToolCall } from './tools/types';
@@ -777,4 +777,7 @@ export type Instruction =
   | { op: 'ai_tool_call_result'; toolName: string; args: unknown; result: unknown; error?: string; location: SourceLocation }
 
   // Destructuring assignment (assign multiple fields from AI result)
-  | { op: 'destructure_assign'; fields: ExpectedField[]; isConst: boolean; location: SourceLocation };
+  | { op: 'destructure_assign'; fields: ExpectedField[]; isConst: boolean; location: SourceLocation }
+
+  // Break loop - exit innermost loop with cleanup
+  | { op: 'break_loop'; savedKeys: string[]; contextMode?: ContextMode; label?: string; entryIndex: number; scopeType: 'for' | 'while'; location: SourceLocation };

@@ -461,6 +461,66 @@ export function execStatements(state: RuntimeState, stmts: AST.Statement[], inde
 }
 
 /**
+ * Break statement - exit the innermost loop.
+ * Awaits pending async operations and triggers compress if needed.
+ */
+export function execBreakStatement(state: RuntimeState, stmt: AST.BreakStatement): RuntimeState {
+  // Find the innermost loop instruction in the instruction stack
+  const loopIndex = state.instructionStack.findIndex(
+    (instr) => instr.op === 'for_in_iterate' || instr.op === 'while_iterate' || instr.op === 'while_check'
+  );
+
+  if (loopIndex === -1) {
+    // This shouldn't happen if semantic analysis is correct
+    throw new Error('break statement outside of loop');
+  }
+
+  const loopInstr = state.instructionStack[loopIndex];
+
+  // Extract loop info based on instruction type
+  let savedKeys: string[];
+  let contextMode: AST.ContextMode | undefined;
+  let label: string | undefined;
+  let entryIndex: number;
+  let scopeType: 'for' | 'while';
+
+  if (loopInstr.op === 'for_in_iterate') {
+    savedKeys = loopInstr.savedKeys;
+    contextMode = loopInstr.contextMode;
+    label = loopInstr.label;
+    entryIndex = loopInstr.entryIndex;
+    scopeType = 'for';
+  } else {
+    // while_iterate or while_check
+    savedKeys = loopInstr.savedKeys;
+    contextMode = loopInstr.contextMode;
+    label = loopInstr.label;
+    entryIndex = loopInstr.entryIndex;
+    scopeType = 'while';
+  }
+
+  // Remove all instructions up to and including the loop instruction
+  const newInstructionStack = state.instructionStack.slice(loopIndex + 1);
+
+  // Push break_loop instruction to handle async await and context mode
+  return {
+    ...state,
+    instructionStack: [
+      {
+        op: 'break_loop',
+        savedKeys,
+        contextMode,
+        label,
+        entryIndex,
+        scopeType,
+        location: stmt.location,
+      },
+      ...newInstructionStack,
+    ],
+  };
+}
+
+/**
  * Statement dispatcher - routes to appropriate statement handler.
  */
 export function execStatement(state: RuntimeState, stmt: AST.Statement): RuntimeState {
@@ -534,6 +594,9 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
           ...state.instructionStack,
         ],
       };
+
+    case 'BreakStatement':
+      return execBreakStatement(state, stmt);
 
     default:
       throw new Error(`Unknown statement type: ${(stmt as AST.Statement).type}`);

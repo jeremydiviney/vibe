@@ -33,6 +33,7 @@ export class SemanticAnalyzer {
     const state: AnalyzerState = {
       inFunction: false,
       atTopLevel: true,
+      loopDepth: 0,
     };
 
     // Create visitors with context
@@ -58,6 +59,7 @@ export class SemanticAnalyzer {
       source: this.source,
       inFunction: false,
       atTopLevel: true,
+      loopDepth: 0,
       error: (message: string, location: SourceLocation) => {
         this.errors.push(new SemanticError(message, location, this.source));
       },

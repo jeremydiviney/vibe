@@ -31,6 +31,9 @@ export interface AnalyzerContext {
   /** Whether at top level (not in a block) */
   atTopLevel: boolean;
 
+  /** Current loop nesting depth (0 = not in a loop) */
+  loopDepth: number;
+
   /** Report an error at the given location */
   error(message: string, location: SourceLocation): void;
 
@@ -55,4 +58,5 @@ export interface AnalyzerContext {
 export interface AnalyzerState {
   inFunction: boolean;
   atTopLevel: boolean;
+  loopDepth: number;
 }

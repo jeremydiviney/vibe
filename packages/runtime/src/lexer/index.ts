@@ -45,6 +45,7 @@ export const Do = token({ name: 'Do', pattern: /do/, longer_alt: Identifier });
 export const Function = token({ name: 'Function', pattern: /function/, longer_alt: Identifier });
 export const Tool = token({ name: 'Tool', pattern: /tool/, longer_alt: Identifier });
 export const Return = token({ name: 'Return', pattern: /return/, longer_alt: Identifier });
+export const Break = token({ name: 'Break', pattern: /break/, longer_alt: Identifier });
 export const If = token({ name: 'If', pattern: /if/, longer_alt: Identifier });
 export const Else = token({ name: 'Else', pattern: /else/, longer_alt: Identifier });
 export const While = token({ name: 'While', pattern: /while/, longer_alt: Identifier });
@@ -253,6 +254,7 @@ export const allTokens = [
   Function,
   Tool,
   Return,
+  Break,
   If,
   Else,
   While,
