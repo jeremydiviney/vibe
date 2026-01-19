@@ -101,7 +101,7 @@ describe('Runtime - TypeScript Blocks', () => {
 
   test('ts block array map', async () => {
     const ast = parse(`
-      let items:json = ["a", "b", "c"]
+      let items: text[] = ["a", "b", "c"]
       let upper = ts(items) { return items.map(x => x.toUpperCase()) }
     `);
     const runtime = new Runtime(ast, createMockProvider());
@@ -112,7 +112,7 @@ describe('Runtime - TypeScript Blocks', () => {
 
   test('ts block array filter', async () => {
     const ast = parse(`
-      let numbers:json = ["1", "2", "3", "4", "5"]
+      let numbers: text[] = ["1", "2", "3", "4", "5"]
       let evens = ts(numbers) { return numbers.filter(x => Number(x) % 2 === 0) }
     `);
     const runtime = new Runtime(ast, createMockProvider());
@@ -123,7 +123,7 @@ describe('Runtime - TypeScript Blocks', () => {
 
   test('ts block array reduce', async () => {
     const ast = parse(`
-      let numbers:json = ["1", "2", "3", "4", "5"]
+      let numbers: text[] = ["1", "2", "3", "4", "5"]
       let sum = ts(numbers) { return numbers.reduce((a, b) => a + Number(b), 0) }
     `);
     const runtime = new Runtime(ast, createMockProvider());
@@ -497,7 +497,7 @@ describe('Runtime - TypeScript Blocks', () => {
 
   test('const array cannot be mutated in ts block', async () => {
     const ast = parse(`
-      const items:json = [1, 2, 3]
+      const items: number[] = [1, 2, 3]
       let result = ts(items) {
         items.push(4)
         return items
@@ -550,7 +550,7 @@ describe('Runtime - TypeScript Blocks', () => {
 
   test('const array elements cannot be replaced in ts block', async () => {
     const ast = parse(`
-      const items:json = [1, 2, 3]
+      const items: number[] = [1, 2, 3]
       let result = ts(items) {
         items[0] = 999
         return items[0]

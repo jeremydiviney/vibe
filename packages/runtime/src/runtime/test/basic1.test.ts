@@ -76,7 +76,7 @@ let response: json = vibe "Return user data as JSON" myModel default
     expect(response.name).toBe('bob');
   });
 
-  test('full program: create data, call AI, store json result', async () => {
+  test('full program: create data, call AI, store json[] result', async () => {
     const ast = parse(`
 model gpt = { name: "gpt-4", apiKey: "sk-test", url: "https://api.example.com" }
 
@@ -85,7 +85,7 @@ let config: json = {
   filter: "active"
 }
 
-let users: json = vibe "fetch users with config" gpt default
+let users: json[] = vibe "fetch users with config" gpt default
 `);
     // AI returns an array of users
     const provider = createMockProvider('[{"name": "alice"}, {"name": "bob"}]');

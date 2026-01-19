@@ -124,9 +124,9 @@ let obj:json = {
   // JSON arrays with expressions
   // ============================================================================
 
-  test('json array with ts() expression elements', async () => {
+  test('text[] array with ts() expression elements', async () => {
     const runtime = createRuntime(`
-let arr:json = [
+let arr: text[] = [
   ts() { return "first"; },
   "literal",
   ts() { return "third"; }
@@ -136,13 +136,13 @@ let arr:json = [
     expect(runtime.getValue('arr')).toEqual(['first', 'literal', 'third']);
   });
 
-  test('json array with function call elements', async () => {
+  test('text[] array with function call elements', async () => {
     const runtime = createRuntime(`
 function item(n: number): text {
   return ts(n) { return "item-" + n; }
 }
 
-let arr:json = [item(1), item(2), item(3)]
+let arr: text[] = [item(1), item(2), item(3)]
 `);
     await runtime.run();
     expect(runtime.getValue('arr')).toEqual(['item-1', 'item-2', 'item-3']);

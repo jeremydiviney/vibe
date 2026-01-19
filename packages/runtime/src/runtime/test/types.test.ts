@@ -41,10 +41,9 @@ describe('Runtime - Type Validation', () => {
     expect(runtime.getValue('x')).toEqual({ name: 'test' });
   });
 
-  test('json type parses JSON array string', async () => {
+  test('json type rejects JSON array string (use json[] for arrays)', async () => {
     const runtime = createRuntime('let x: json = "[1, 2, 3]"');
-    await runtime.run();
-    expect(runtime.getValue('x')).toEqual([1, 2, 3]);
+    await expect(runtime.run()).rejects.toThrow('json type expects an object, not an array');
   });
 
   test('json type parses empty object', async () => {
@@ -53,10 +52,9 @@ describe('Runtime - Type Validation', () => {
     expect(runtime.getValue('x')).toEqual({});
   });
 
-  test('json type parses empty array', async () => {
+  test('json type rejects empty array string (use json[] for arrays)', async () => {
     const runtime = createRuntime('let x: json = "[]"');
-    await runtime.run();
-    expect(runtime.getValue('x')).toEqual([]);
+    await expect(runtime.run()).rejects.toThrow('json type expects an object, not an array');
   });
 
   test('json type parses nested objects', async () => {
@@ -125,19 +123,19 @@ describe('Runtime - Type Validation', () => {
   });
 
   test('json type rejects JSON primitive string (number)', async () => {
-    // "42" is valid JSON but parses to a primitive, not object/array
+    // "42" is valid JSON but parses to a primitive, not object
     const runtime = createRuntime('let x: json = "42"');
-    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
+    await expect(runtime.run()).rejects.toThrow(/expected json \(object\)/);
   });
 
   test('json type rejects JSON primitive string (boolean)', async () => {
     const runtime = createRuntime('let x: json = "true"');
-    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
+    await expect(runtime.run()).rejects.toThrow(/expected json \(object\)/);
   });
 
   test('json type rejects JSON primitive string (null)', async () => {
     const runtime = createRuntime('let x: json = "null"');
-    await expect(runtime.run()).rejects.toThrow(/expected JSON \(object or array\)/);
+    await expect(runtime.run()).rejects.toThrow(/expected json \(object\)/);
   });
 
   test('json type accepts object literal directly', async () => {
@@ -146,10 +144,15 @@ describe('Runtime - Type Validation', () => {
     expect(runtime.getValue('x')).toEqual({ key: 'value' });
   });
 
-  test('json type accepts array literal directly', async () => {
+  test('json type rejects array literal (use json[] for arrays)', async () => {
     const runtime = createRuntime('let x: json = ["a", "b"]');
+    await expect(runtime.run()).rejects.toThrow('json type expects an object, not an array');
+  });
+
+  test('json[] type accepts array literal', async () => {
+    const runtime = createRuntime('let x: json[] = [{a: 1}, {b: 2}]');
     await runtime.run();
-    expect(runtime.getValue('x')).toEqual(['a', 'b']);
+    expect(runtime.getValue('x')).toEqual([{ a: 1 }, { b: 2 }]);
   });
 
   test('reassigning json variable with invalid string throws', async () => {
@@ -687,9 +690,10 @@ let fourth = "never reached"
     expect(runtime.getValue('items')).toEqual([{ name: 'a' }, { name: 'b' }]);
   });
 
-  test('text[] type errors on non-array value', async () => {
+  test('text[] type errors on non-array string value', async () => {
     const runtime = createRuntime('let items: text[] = "not an array"');
-    await expect(runtime.run()).rejects.toThrow("expected text[] (array), got string");
+    // String that isn't valid JSON array throws invalid JSON error
+    await expect(runtime.run()).rejects.toThrow("invalid JSON array string");
   });
 
   test('text[] type errors on element type mismatch', async () => {
@@ -722,6 +726,7 @@ let fourth = "never reached"
       }
       process("not an array")
     `);
-    await expect(runtime.run()).rejects.toThrow("expected text[] (array)");
+    // String that isn't valid JSON array throws invalid JSON error
+    await expect(runtime.run()).rejects.toThrow("invalid JSON array string");
   });
 });

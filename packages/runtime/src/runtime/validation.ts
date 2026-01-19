@@ -61,12 +61,23 @@ export function validateAndCoerce(
   // Validate array types (text[], json[], boolean[], number[], prompt[])
   const elementType = ARRAY_ELEMENT_TYPES[type];
   if (elementType) {
-    if (!Array.isArray(value)) {
+    let arrayValue = value;
+
+    // If string, try to parse as JSON array
+    if (typeof value === 'string') {
+      try {
+        arrayValue = JSON.parse(value);
+      } catch {
+        throw new RuntimeError(`Variable '${varName}': invalid JSON array string`, location);
+      }
+    }
+
+    if (!Array.isArray(arrayValue)) {
       throw new RuntimeError(`Variable '${varName}': expected ${type} (array), got ${typeof value}`, location);
     }
 
     // Validate each element recursively
-    const validatedElements = value.map((elem, i) => {
+    const validatedElements = arrayValue.map((elem, i) => {
       const { value: validated } = validateAndCoerce(elem, elementType, `${varName}[${i}]`, location);
       return validated;
     });
@@ -82,7 +93,7 @@ export function validateAndCoerce(
     return { value, inferredType: 'text' };
   }
 
-  // Validate json type - must be object or array
+  // Validate json type - must be object (not array)
   if (type === 'json') {
     let result = value;
 
@@ -95,9 +106,12 @@ export function validateAndCoerce(
       }
     }
 
-    // Validate the result is an object or array (not a primitive)
+    // Validate the result is an object (not array, not primitive)
     if (typeof result !== 'object' || result === null) {
-      throw new RuntimeError(`Variable '${varName}': expected JSON (object or array), got ${typeof value}`, location);
+      throw new RuntimeError(`Variable '${varName}': expected json (object), got ${typeof value}`, location);
+    }
+    if (Array.isArray(result)) {
+      throw new RuntimeError(`Variable '${varName}': json type expects an object, not an array. Use json[] for arrays.`, location);
     }
     return { value: result, inferredType: 'json' };
   }

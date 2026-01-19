@@ -116,10 +116,9 @@ describe('Runtime - Object and Array Literals', () => {
     expect(runtime.getValue('x')).toEqual({ name: 'test' });
   });
 
-  test('json type with array literal', async () => {
+  test('json type rejects array literal (use json[])', async () => {
     const runtime = createRuntime('let x: json = ["a", "b"]');
-    await runtime.run();
-    expect(runtime.getValue('x')).toEqual(['a', 'b']);
+    await expect(runtime.run()).rejects.toThrow('json type expects an object, not an array');
   });
 
   test('json type with complex nested structure', async () => {

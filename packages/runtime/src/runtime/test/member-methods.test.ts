@@ -269,7 +269,7 @@ let result = double(arr.len())
 
   test('building arrays with push in function', async () => {
     const ast = parse(`
-function buildArray(n: number): json {
+function buildArray(n: number): number[] {
   let arr = []
   for i in n {
     arr.push(i * 10)

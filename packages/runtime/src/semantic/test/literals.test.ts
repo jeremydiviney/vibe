@@ -110,8 +110,13 @@ describe('Semantic Analyzer - Object and Array Literals', () => {
     expect(errors).toEqual([]);
   });
 
-  test('json type with array literal is valid', () => {
+  test('json type with array literal is error (use json[] for arrays)', () => {
     const errors = getErrors('let x: json = ["a", "b"]');
+    expect(errors).toContain('json type expects an object, not an array. Use json[] for arrays.');
+  });
+
+  test('json[] type with array literal is valid', () => {
+    const errors = getErrors('let x: json[] = [{ a: 1 }, { b: 2 }]');
     expect(errors).toEqual([]);
   });
 

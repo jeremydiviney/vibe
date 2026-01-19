@@ -186,6 +186,12 @@ export function validateLiteralType(
     return;
   }
 
+  // json type cannot be an array literal - use json[] for arrays
+  if (type === 'json' && expr.type === 'ArrayLiteral') {
+    ctx.error(`json type expects an object, not an array. Use json[] for arrays.`, location);
+    return;
+  }
+
   // Get the source type from the expression
   const sourceType = getExpressionType(expr);
   if (!sourceType) {
