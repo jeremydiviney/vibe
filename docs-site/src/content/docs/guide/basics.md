@@ -47,6 +47,15 @@ let s2 = 'single quoted'
 let s3 = `template with {variable} interpolation`
 ```
 
+Backticks support multi-line strings:
+
+```vibe
+let poem = `Roses are red,
+Violets are blue,
+Vibe is great,
+And so are you.`
+```
+
 All string types support `{variable}` interpolation:
 
 ```vibe
