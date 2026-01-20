@@ -209,12 +209,19 @@ export interface PromptToolCall {
   error?: string;
 }
 
+// Tool call error details
+export interface ToolCallError {
+  message: string;
+  type?: string;           // Error type if available
+}
+
 // Tool call record for VibeValue (includes timing)
 export interface ToolCallRecord {
   toolName: string;
   args: Record<string, unknown>;
   result: string | null;   // null if error
-  error: string | null;    // null if success
+  err: boolean;            // true if error, false if success
+  errDetails: ToolCallError | null;  // Error details when err is true
   duration: number;        // milliseconds
 }
 

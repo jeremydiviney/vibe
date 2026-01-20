@@ -535,13 +535,19 @@ export function getToolCalls(
     return [];
   }
 
-  return vibeValue.toolCalls.map((tc: any) => ({
-    toolName: tc.name ?? tc.toolName ?? 'unknown',
-    args: tc.args ?? tc.arguments ?? {},
-    result: tc.result,
-    error: tc.error ?? null,
-    duration: tc.duration ?? 0,
-  }));
+  return vibeValue.toolCalls.map((tc: any) => {
+    // Support both old format (error) and new format (err/errDetails)
+    const hasError = tc.err ?? (tc.error != null);
+    const errorMessage = tc.errDetails?.message ?? tc.error ?? null;
+    return {
+      toolName: tc.name ?? tc.toolName ?? 'unknown',
+      args: tc.args ?? tc.arguments ?? {},
+      result: tc.result,
+      err: hasError,
+      errDetails: hasError ? { message: errorMessage } : null,
+      duration: tc.duration ?? 0,
+    };
+  });
 }
 
 /**

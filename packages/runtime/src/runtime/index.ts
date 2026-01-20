@@ -564,13 +564,17 @@ export class Runtime {
       const vibeValue = createVibeValue(result.value, {
         source: 'ai',
         toolCalls: result.toolRounds?.flatMap((round) =>
-          round.toolCalls.map((call, i) => ({
-            toolName: call.toolName,
-            args: call.args,
-            result: round.results[i]?.error ? null : String(round.results[i]?.result ?? ''),
-            error: round.results[i]?.error ?? null,
-            duration: round.results[i]?.duration ?? 0,
-          }))
+          round.toolCalls.map((call, i) => {
+            const error = round.results[i]?.error;
+            return {
+              toolName: call.toolName,
+              args: call.args,
+              result: error ? null : String(round.results[i]?.result ?? ''),
+              err: !!error,
+              errDetails: error ? { message: error } : null,
+              duration: round.results[i]?.duration ?? 0,
+            };
+          })
         ) ?? [],
       });
 

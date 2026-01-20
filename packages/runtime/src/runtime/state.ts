@@ -147,11 +147,13 @@ export function resumeWithAIResponse(
   const toolCallRecords: ToolCallRecord[] = (toolRounds ?? []).flatMap((round) =>
     round.toolCalls.map((call, index) => {
       const result = round.results[index];
+      const error = result?.error;
       return {
         toolName: call.toolName,
         args: call.args,
-        result: result?.error ? null : String(result?.result ?? ''),
-        error: result?.error ?? null,
+        result: error ? null : String(result?.result ?? ''),
+        err: !!error,
+        errDetails: error ? { message: error } : null,
         duration: result?.duration ?? 0,
       };
     })

@@ -174,6 +174,121 @@ describe('Null Handling', () => {
     });
   });
 
+  describe('error propagation through expressions (docs example)', () => {
+    it('error propagates through a + b when a has error', () => {
+      // Matches the docs example: let sum = a + b where a might fail
+      const ast = parse(`
+        let a: number = null
+        let b = 10
+        let sum = a + b
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      // sum should have the error from a
+      const sum = state.callStack[0].locals['sum'];
+      expect(isVibeValue(sum)).toBe(true);
+      expect(sum.err).toBe(true);
+      expect(sum.errDetails?.message).toContain('null');
+    });
+
+    it('error propagates through a + b when b has error', () => {
+      const ast = parse(`
+        let a = 10
+        let b: number = null
+        let sum = a + b
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      const sum = state.callStack[0].locals['sum'];
+      expect(sum.err).toBe(true);
+    });
+
+    it('first error wins when both operands have errors', () => {
+      const ast = parse(`
+        let a: number = null
+        let b: number = null
+        let sum = a + b
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      const sum = state.callStack[0].locals['sum'];
+      expect(sum.err).toBe(true);
+      // Should contain error from left operand
+      expect(sum.errDetails?.message).toContain('null');
+    });
+
+    it('error propagates through chain of operations', () => {
+      // Docs example: errors flow through naturally
+      const ast = parse(`
+        let a: number = null
+        let b = 10
+        let sum = a + b
+        let doubled = sum * 2
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      // doubled should have the propagated error
+      const doubled = state.callStack[0].locals['doubled'];
+      expect(doubled.err).toBe(true);
+      expect(doubled.errDetails?.message).toContain('null');
+    });
+
+    it('.err can be checked on final result of chain', () => {
+      const ast = parse(`
+        let a: number = null
+        let b = 10
+        let sum = a + b
+        let doubled = sum * 2
+        let hasError = doubled.err
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      expect(state.callStack[0].locals['hasError'].value).toBe(true);
+    });
+
+    it('no error when all values are valid', () => {
+      const ast = parse(`
+        let a = 5
+        let b = 10
+        let sum = a + b
+        let doubled = sum * 2
+        let hasError = doubled.err
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      expect(state.callStack[0].locals['doubled'].value).toBe(30);
+      expect(state.callStack[0].locals['hasError'].value).toBe(false);
+    });
+
+    it('error preserved when assigned to another variable', () => {
+      const ast = parse(`
+        let a: number = null
+        let b = a + 5
+        let c = b
+        let hasError = c.err
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+
+      expect(state.status).toBe('completed');
+      const c = state.callStack[0].locals['c'];
+      expect(c.err).toBe(true);
+      expect(state.callStack[0].locals['hasError'].value).toBe(true);
+    });
+  });
+
   describe('JS interop - undefined to null normalization', () => {
     it('normalizes ts block undefined return to null', () => {
       const ast = parse(`

@@ -316,12 +316,13 @@ describe('VibeValue Error Handling', () => {
 
     it('createVibeValue with toolCalls', () => {
       const toolCalls = [
-        { toolName: 'test', args: {}, result: 'ok', error: null, duration: 100 },
+        { toolName: 'test', args: {}, result: 'ok', err: false, errDetails: null, duration: 100 },
       ];
       const vibeValue = createVibeValue('result', { toolCalls });
 
       expect(vibeValue.toolCalls).toHaveLength(1);
       expect(vibeValue.toolCalls[0].toolName).toBe('test');
+      expect(vibeValue.toolCalls[0].err).toBe(false);
     });
 
     it('isVibeValue correctly identifies VibeValue objects', () => {

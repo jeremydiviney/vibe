@@ -303,8 +303,8 @@ describe('VibeValue Debug Display', () => {
     // Manually inject a VibeValue with toolCalls into the runtime state
     const vibeValueWithToolCalls = createVibeValue('result', {
       toolCalls: [
-        { toolName: 'readFile', args: { path: '/test.txt' }, result: 'content', error: null, duration: 100 },
-        { toolName: 'writeFile', args: { path: '/out.txt' }, result: 'ok', error: null, duration: 50 },
+        { toolName: 'readFile', args: { path: '/test.txt' }, result: 'content', err: false, errDetails: null, duration: 100 },
+        { toolName: 'writeFile', args: { path: '/out.txt' }, result: 'ok', err: false, errDetails: null, duration: 50 },
       ],
     });
     runtimeState.callStack[0].locals['aiResult'] = vibeValueWithToolCalls;
@@ -335,7 +335,7 @@ describe('VibeValue Debug Display', () => {
       err: true,
       errDetails: { message: 'Partial failure', type: 'Error', location: null },
       toolCalls: [
-        { toolName: 'fetch', args: { url: 'http://example.com' }, result: null, error: 'timeout', duration: 5000 },
+        { toolName: 'fetch', args: { url: 'http://example.com' }, result: null, err: true, errDetails: { message: 'timeout' }, duration: 5000 },
       ],
       isConst: false,
       typeAnnotation: null,

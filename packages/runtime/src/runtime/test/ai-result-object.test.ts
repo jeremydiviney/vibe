@@ -68,7 +68,8 @@ describe('VibeValue AI Results', () => {
         toolName: 'fetchData',
         args: { url: 'http://api.com' },
         result: 'data from api',
-        error: null,
+        err: false,
+        errDetails: null,
         duration: 150,
       });
     });
@@ -100,7 +101,8 @@ describe('VibeValue AI Results', () => {
         toolName: 'failingTool',
         args: {},
         result: null,
-        error: 'Connection failed',
+        err: true,
+        errDetails: { message: 'Connection failed' },
         duration: 50,
       });
     });

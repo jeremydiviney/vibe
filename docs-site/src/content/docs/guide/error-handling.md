@@ -64,9 +64,8 @@ This means you don't need to check every intermediate value—errors flow throug
 ## AI Response Errors
 
 AI calls can fail for various reasons:
-- API errors (rate limits, authentication)
+- API errors (rate limits, authentication, network issues)
 - Type validation failures (AI returned wrong type)
-- Tool execution failures
 
 ```vibe
 let count: number = vibe "How many items?"
@@ -78,17 +77,18 @@ if count.err {
 }
 ```
 
-## Tool Call Errors
+## Tool Call Records
 
-When AI uses tools, individual tool calls can fail. Access the `.toolCalls` property to inspect them:
+When AI uses tools, the tool calls are recorded in the `.toolCalls` property for inspection. Tool execution errors are sent back to the AI model, which can retry or try a different approach—they don't automatically make the value have an error.
 
 ```vibe
 let result = vibe "Search for information and summarize"
 
-// Check each tool call
+// Inspect tool calls that occurred
 for call in result.toolCalls {
-  if call.error != null {
-    // This specific tool call failed
+  if call.err {
+    // This tool call failed, but AI received the error and continued
+    let message = call.errDetails.message
   }
 }
 ```
@@ -97,7 +97,8 @@ Each tool call record contains:
 - `toolName` - Name of the tool
 - `args` - Arguments passed to the tool
 - `result` - Return value (if successful)
-- `error` - Error message (if failed)
+- `err` - Boolean indicating if this call failed
+- `errDetails` - Error details when `err` is true (has `message` property)
 - `duration` - Execution time in milliseconds
 
 ## Patterns

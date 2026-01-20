@@ -357,7 +357,7 @@ export const vibeValueProperties: PropertyDef[] = [
   {
     name: 'toolCalls',
     type: 'ToolCallRecord[]',
-    documentation: '**toolCalls** (VibeValue property)\n\n`ToolCallRecord[]`\n\nArray of tool calls made during AI execution. Empty for non-AI values.\n\n```vibe\nlet result = vibe "Do something" model default\nfor call in result.toolCalls {\n  print("Tool: " + call.toolName)\n  print("Duration: " + call.duration + "ms")\n}\n```\n\nEach ToolCallRecord has:\n- `toolName: text` - Name of the tool called\n- `args: json` - Arguments passed\n- `result` - Return value\n- `error: text | null` - Error if failed\n- `duration: number` - Execution time in ms',
+    documentation: '**toolCalls** (VibeValue property)\n\n`ToolCallRecord[]`\n\nArray of tool calls made during AI execution. Empty for non-AI values. Tool errors are sent back to the AI model for retry—they don\'t make the value have an error.\n\n```vibe\nlet result = vibe "Do something" model default\nfor call in result.toolCalls {\n  print("Tool: " + call.toolName)\n  if call.err {\n    print("Failed: " + call.errDetails.message)\n  }\n}\n```\n\nEach ToolCallRecord has:\n- `toolName: text` - Name of the tool called\n- `args: json` - Arguments passed\n- `result` - Return value (null if error)\n- `err: boolean` - True if this call failed\n- `errDetails` - Error details when err is true (has `message`)\n- `duration: number` - Execution time in ms',
   },
 ];
 
