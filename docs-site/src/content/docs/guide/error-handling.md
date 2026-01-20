@@ -135,20 +135,26 @@ let name = data.name
 
 ### TypeScript Error Handling
 
-Use TypeScript blocks for complex error handling:
+Check errors in Vibe, then use TypeScript blocks for complex logic:
 
 ```vibe
 let result = vibe "Risky operation"
 
-ts {
-  if (result.err) {
-    console.error(`Operation failed: ${result.errDetails.message}`);
-    // Custom recovery logic
-    return { recovered: true };
+if result.err {
+  let msg = result.errDetails.message
+  ts(msg) {
+    console.error(`Operation failed: ${msg}`);
   }
-  return { success: true, data: result.value };
+} else {
+  let data = result
+  ts(data) {
+    // Process the successful result
+    console.log(`Got data: ${JSON.stringify(data)}`);
+  }
 }
 ```
+
+Note: TypeScript blocks receive resolved values, not VibeValues. Check `.err` in Vibe code before passing values to ts blocks.
 
 ### Parallel Operation Errors
 
@@ -201,14 +207,15 @@ if step3.err {
 
 ### Provide Context in Error Messages
 
-When re-throwing or logging errors, add context:
+When logging errors, add context:
 
 ```vibe
 let userData: json = vibe "Fetch user {userId}"
 
 if userData.err {
-  ts {
-    console.error(`Failed to fetch user ${userId}: ${userData.errDetails.message}`);
+  let msg = userData.errDetails.message
+  ts(userId, msg) {
+    console.error(`Failed to fetch user ${userId}: ${msg}`);
   }
 }
 ```
