@@ -64,7 +64,7 @@ let greeting = "Hello {name}!"  // "Hello Alice!"
 ```
 
 :::note
-In AI prompts, `{var}` behaves differently—it's kept as a reference rather than expanded. Use `!{var}` to expand values in prompts. See [AI Prompts](/docs/ai/prompts/).
+In AI prompts, `{var}` behaves differently—it's kept as a reference rather than expanded. To expand values in prompts, use&nbsp;`!{var}`. See [AI Prompts](/docs/ai/prompts/).
 :::
 
 Use backslash to escape braces:
