@@ -346,8 +346,13 @@ export interface PropertyDef {
 export const vibeValueProperties: PropertyDef[] = [
   {
     name: 'err',
+    type: 'boolean',
+    documentation: '**err** (VibeValue property)\n\n`boolean`\n\nReturns `true` if the operation failed, `false` if successful. Use in boolean conditions directly.\n\n```vibe\nlet result = do "..." model default\nif result.err {\n  print("Error: " + result.errDetails.message)\n}\n```\n\nUse `.errDetails` to access the full error information when `err` is true.',
+  },
+  {
+    name: 'errDetails',
     type: 'VibeError | null',
-    documentation: '**err** (VibeValue property)\n\n`VibeError | null`\n\nReturns the error if the operation failed, or `null` if successful.\n\n```vibe\nlet result = do "..." model default\nif result.err {\n  print("Error: " + result.err.message)\n}\n```\n\nVibeError has:\n- `message: text` - Error message\n- `type: text` - Error type (e.g., "TypeError", "ReferenceError")\n- `location` - Source location info',
+    documentation: '**errDetails** (VibeValue property)\n\n`VibeError | null`\n\nReturns the error details if `.err` is true, or `null` if successful.\n\n```vibe\nlet result = do "..." model default\nif result.err {\n  print("Error type: " + result.errDetails.type)\n  print("Error message: " + result.errDetails.message)\n}\n```\n\nVibeError has:\n- `message: text` - Error message\n- `type: text` - Error type (e.g., "TypeError", "ReferenceError")\n- `location` - Source location info',
   },
   {
     name: 'toolCalls',

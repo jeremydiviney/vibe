@@ -423,8 +423,8 @@ describe('Async Parallel Execution Timing', () => {
 
       // Bad one should have error in VibeValue
       const state = runtime.getState();
-      expect(state.callStack[0].locals['bad'].err).toBeDefined();
-      expect(state.callStack[0].locals['bad'].err?.message).toBe('Simulated failure');
+      expect(state.callStack[0].locals['bad'].err).toBe(true);  // err is now boolean
+      expect(state.callStack[0].locals['bad'].errDetails?.message).toBe('Simulated failure');
     });
   });
 

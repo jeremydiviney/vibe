@@ -425,7 +425,7 @@ describe('Nested Async Execution', () => {
 
       // The error should be captured in the VibeValue
       const state = runtime.getState();
-      expect(state.callStack[0].locals['result'].err).toBeDefined();
+      expect(state.callStack[0].locals['result'].err).toBe(true);  // err is now boolean
     });
 
     test('one failing async in parallel does not block others', async () => {
@@ -484,7 +484,7 @@ describe('Nested Async Execution', () => {
 
       // Failing one should have error
       const state = runtime.getState();
-      expect(state.callStack[0].locals['r2'].err).toBeDefined();
+      expect(state.callStack[0].locals['r2'].err).toBe(true);  // err is now boolean
     });
   });
 

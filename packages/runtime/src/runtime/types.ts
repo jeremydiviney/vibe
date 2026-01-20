@@ -38,7 +38,8 @@ export interface VibeError {
 // Replaces both Variable and AIResultObject with a unified type
 export interface VibeValue {
   value: unknown;                    // The actual primitive data
-  err: VibeError | null;             // Error if operation failed, null if success
+  err: boolean;                      // true if error, false if success (for direct boolean check: if result.err { ... })
+  errDetails: VibeError | null;      // Error details when err is true, null otherwise
   toolCalls: ToolCallRecord[];       // AI tool calls (empty array for non-AI operations)
   isConst: boolean;                  // true for const, false for let
   typeAnnotation: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
@@ -54,6 +55,7 @@ export function isVibeValue(val: unknown): val is VibeValue {
     val !== null &&
     'value' in val &&
     'err' in val &&
+    'errDetails' in val &&
     'toolCalls' in val &&
     'isConst' in val
   );
@@ -67,14 +69,16 @@ export function createVibeValue(
     typeAnnotation?: VibeType;
     source?: ValueSource;
     toolCalls?: ToolCallRecord[];
-    err?: VibeError | null;
+    err?: boolean;
+    errDetails?: VibeError | null;
     isPrivate?: boolean;
     asyncOperationId?: string;
   } = {}
 ): VibeValue {
   const result: VibeValue = {
     value,
-    err: options.err ?? null,
+    err: options.err ?? false,
+    errDetails: options.errDetails ?? null,
     toolCalls: options.toolCalls ?? [],
     isConst: options.isConst ?? false,
     typeAnnotation: options.typeAnnotation ?? null,
@@ -99,7 +103,7 @@ export function createVibeError(
   } = {}
 ): VibeValue {
   const isErrorObject = error instanceof Error;
-  const err: VibeError = {
+  const errDetails: VibeError = {
     message: typeof error === 'string' ? error : error.message,
     type: typeof error === 'string' ? 'Error' : error.constructor.name,
     location,
@@ -108,7 +112,8 @@ export function createVibeError(
   };
   return {
     value: null,
-    err,
+    err: true,
+    errDetails,
     toolCalls: [],
     isConst: options.isConst ?? false,
     typeAnnotation: options.typeAnnotation ?? null,
@@ -130,7 +135,8 @@ export function propagateError(
   if (source.err) {
     return {
       value: null,
-      err: source.err,
+      err: true,
+      errDetails: source.errDetails,
       toolCalls: [],
       isConst: options.isConst ?? false,
       typeAnnotation: options.typeAnnotation ?? null,
@@ -155,7 +161,8 @@ export function propagateErrors(
     if (src.err) {
       return {
         value: null,
-        err: src.err,
+        err: true,
+        errDetails: src.errDetails,
         toolCalls: [],
         isConst: options.isConst ?? false,
         typeAnnotation: options.typeAnnotation ?? null,

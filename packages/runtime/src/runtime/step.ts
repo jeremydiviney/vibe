@@ -352,9 +352,9 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       let items = state.lastResult;
 
       // Handle VibeValue with error - throw the error
-      if (isVibeValue(items) && items.err) {
+      if (isVibeValue(items) && items.err && items.errDetails) {
         throw new RuntimeError(
-          `${items.err.type}: ${items.err.message}`,
+          `${items.errDetails.type}: ${items.errDetails.message}`,
           instruction.location,
           ''
         );
@@ -688,10 +688,10 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
       // Error propagation: if array or index is a VibeValue with error, propagate it
       if (isVibeValue(rawArr) && rawArr.err) {
-        return { ...state, valueStack: newStack, lastResult: rawArr.err };
+        return { ...state, valueStack: newStack, lastResult: rawArr };
       }
       if (isVibeValue(rawIndex) && rawIndex.err) {
-        return { ...state, valueStack: newStack, lastResult: rawIndex.err };
+        return { ...state, valueStack: newStack, lastResult: rawIndex };
       }
 
       // Auto-unwrap VibeValue
@@ -736,13 +736,13 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
       // Error propagation: if array or indices are VibeValues with errors, propagate
       if (isVibeValue(rawArr) && rawArr.err) {
-        return { ...state, valueStack: newStack, lastResult: rawArr.err };
+        return { ...state, valueStack: newStack, lastResult: rawArr };
       }
       if (hasStart && isVibeValue(rawStart) && rawStart.err) {
-        return { ...state, valueStack: newStack, lastResult: rawStart.err };
+        return { ...state, valueStack: newStack, lastResult: rawStart };
       }
       if (hasEnd && isVibeValue(rawEnd) && rawEnd.err) {
-        return { ...state, valueStack: newStack, lastResult: rawEnd.err };
+        return { ...state, valueStack: newStack, lastResult: rawEnd };
       }
 
       // Auto-unwrap VibeValue
@@ -852,9 +852,13 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
       // Handle VibeValue reserved properties first
       if (isVibeValue(rawObject)) {
-        // Reserved property: .err - return the error info
+        // Reserved property: .err - return boolean (true if error)
         if (property === 'err') {
           return { ...state, lastResult: rawObject.err };
+        }
+        // Reserved property: .errDetails - return error details object
+        if (property === 'errDetails') {
+          return { ...state, lastResult: rawObject.errDetails };
         }
         // Reserved property: .toolCalls - return tool calls array
         if (property === 'toolCalls') {

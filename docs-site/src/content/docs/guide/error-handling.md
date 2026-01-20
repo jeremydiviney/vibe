@@ -10,34 +10,35 @@ Vibe uses a unified value system where every value can carry an error. This allo
 Every value in Vibe is wrapped in a `VibeValue` that contains:
 
 - `value` - The actual data (or `null` if there's an error)
-- `err` - Error information (or `null` if successful)
+- `err` - Boolean flag (`true` if error, `false` if successful)
+- `errDetails` - Error information (when `err` is `true`)
 - `toolCalls` - Record of AI tool calls (for AI responses)
 
 ## Checking for Errors
 
-Access the `.err` property to check if a value has an error:
+Access the `.err` property to check if a value has an error. Since `.err` is a boolean, you can use it directly in conditions:
 
 ```vibe
 let result = vibe "Do something that might fail"
 
-if result.err != null {
-  let message = result.err.message
+if result.err {
+  let message = result.errDetails.message
   // Handle the error
 }
 ```
 
 ### Error Properties
 
-When `.err` is not null, it contains:
+When `.err` is `true`, use `.errDetails` to access error information:
 
 - `message` - Human-readable error description
 - `type` - Error class name (e.g., "TypeError", "ReferenceError")
 - `location` - Source location where the error occurred (if available)
 
 ```vibe
-if result.err != null {
-  let errorType = result.err.type      // "TypeError"
-  let errorMsg = result.err.message    // "Expected number, got text"
+if result.err {
+  let errorType = result.errDetails.type      // "TypeError"
+  let errorMsg = result.errDetails.message    // "Expected number, got text"
 }
 ```
 
@@ -53,7 +54,7 @@ let b = 10
 let sum = a + b
 
 // Check at the end
-if sum.err != null {
+if sum.err {
   // Handle error
 }
 ```
@@ -70,7 +71,7 @@ AI calls can fail for various reasons:
 ```vibe
 let count: number = vibe "How many items?"
 
-if count.err != null {
+if count.err {
   // AI might have returned text instead of a number
   // Or the API call might have failed
   let fallback = 0
@@ -110,7 +111,7 @@ let count: number = vibe "How many items?"
 
 // Use default if error
 let safeCount = count
-if count.err != null {
+if count.err {
   safeCount = 0
 }
 ```
@@ -122,7 +123,7 @@ Check for errors early and handle them:
 ```vibe
 let data: json = vibe "Fetch the user data"
 
-if data.err != null {
+if data.err {
   // Log and exit early
   return null
 }
@@ -140,7 +141,7 @@ let result = vibe "Risky operation"
 
 ts {
   if (result.err) {
-    console.error(`Operation failed: ${result.err.message}`);
+    console.error(`Operation failed: ${result.errDetails.message}`);
     // Custom recovery logic
     return { recovered: true };
   }
@@ -159,10 +160,10 @@ async let c: number = vibe "Task C"
 
 // Each can succeed or fail independently
 // Check each one
-if a.err != null {
+if a.err {
   // Handle Task A failure
 }
-if b.err != null {
+if b.err {
   // Handle Task B failure
 }
 ```
@@ -176,7 +177,7 @@ Always check errors for operations that must succeed:
 ```vibe
 let config: json = vibe "Load configuration"
 
-if config.err != null {
+if config.err {
   // Can't continue without config
   return
 }
@@ -192,7 +193,7 @@ let step2 = vibe "Step 2 using {step1}"
 let step3 = vibe "Step 3 using {step2}"
 
 // Check only at the end
-if step3.err != null {
+if step3.err {
   // Something failed along the way
 }
 ```
@@ -204,9 +205,9 @@ When re-throwing or logging errors, add context:
 ```vibe
 let userData: json = vibe "Fetch user {userId}"
 
-if userData.err != null {
+if userData.err {
   ts {
-    console.error(`Failed to fetch user ${userId}: ${userData.err.message}`);
+    console.error(`Failed to fetch user ${userId}: ${userData.errDetails.message}`);
   }
 }
 ```

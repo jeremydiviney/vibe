@@ -332,7 +332,8 @@ describe('VibeValue Debug Display', () => {
     // Create a VibeValue with both error and toolCalls (edge case)
     const complexVibeValue = {
       value: 'partial result',
-      err: { message: 'Partial failure', type: 'Error', location: null },
+      err: true,
+      errDetails: { message: 'Partial failure', type: 'Error', location: null },
       toolCalls: [
         { toolName: 'fetch', args: { url: 'http://example.com' }, result: null, error: 'timeout', duration: 5000 },
       ],
@@ -358,11 +359,16 @@ describe('VibeValue Debug Display', () => {
 
     expect(expandedVars.some(v => v.name === 'value')).toBe(true);
     expect(expandedVars.some(v => v.name === 'err')).toBe(true);
+    expect(expandedVars.some(v => v.name === 'errDetails')).toBe(true);  // errDetails contains the error info
     expect(expandedVars.some(v => v.name === 'toolCalls')).toBe(true);
 
     const errVar = expandedVars.find(v => v.name === 'err');
-    expect(errVar!.hasError).toBe(true);
-    expect(errVar!.value).toContain('Partial failure');
+    expect(errVar!.value).toBe('true');  // err is now a boolean 'true' string
+    expect(errVar!.type).toBe('boolean');
+
+    const errDetailsVar = expandedVars.find(v => v.name === 'errDetails');
+    expect(errDetailsVar!.hasError).toBe(true);
+    expect(errDetailsVar!.value).toContain('Partial failure');
 
     const toolCallsVar = expandedVars.find(v => v.name === 'toolCalls');
     expect(toolCallsVar!.hasToolCalls).toBe(true);

@@ -115,8 +115,8 @@ describe('Null Handling', () => {
       expect(state.status).toBe('completed');
       const result = state.callStack[0].locals['result'];
       expect(isVibeValue(result)).toBe(true);
-      expect(result.err).not.toBe(null);
-      expect(result.err?.message).toContain('null');
+      expect(result.err).toBe(true);  // err is now boolean
+      expect(result.errDetails?.message).toContain('null');
     });
 
     it('subtraction with null creates error', () => {
@@ -129,7 +129,7 @@ describe('Null Handling', () => {
 
       expect(state.status).toBe('completed');
       const result = state.callStack[0].locals['result'];
-      expect(result.err).not.toBe(null);
+      expect(result.err).toBe(true);  // err is now boolean
     });
 
     it('multiplication with null creates error', () => {
@@ -142,7 +142,7 @@ describe('Null Handling', () => {
 
       expect(state.status).toBe('completed');
       const result = state.callStack[0].locals['result'];
-      expect(result.err).not.toBe(null);
+      expect(result.err).toBe(true);  // err is now boolean
     });
 
     it('unary minus on null creates error', () => {
@@ -155,8 +155,8 @@ describe('Null Handling', () => {
 
       expect(state.status).toBe('completed');
       const result = state.callStack[0].locals['result'];
-      expect(result.err).not.toBe(null);
-      expect(result.err?.message).toContain('null');
+      expect(result.err).toBe(true);  // err is now boolean
+      expect(result.errDetails?.message).toContain('null');
     });
 
     it('logical operators treat null as falsy', () => {

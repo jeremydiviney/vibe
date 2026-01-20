@@ -97,7 +97,7 @@ import type { RuntimeState, AIInteraction } from './types';
 import { resolveValue } from './types';
 import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult, resumeWithCompressResult, resumeWithAsyncResults } from './state';
 import type { VibeValue, PendingAsyncStart } from './types';
-import { createVibeValue } from './types';
+import { createVibeValue, isVibeValue } from './types';
 import { awaitOperations, completeAsyncOperation, failAsyncOperation, createAsyncVibeError, startAsyncOperation } from './async';
 import { step, runUntilPause } from './step';
 import { evalTsBlock, TsBlockError } from './ts-eval';
@@ -581,7 +581,7 @@ export class Runtime {
     } catch (error) {
       const vibeError = createAsyncVibeError(error);
       failAsyncOperation(this.state, operationId, vibeError);
-      return createVibeValue(null, { source: 'ai', err: vibeError });
+      return createVibeValue(null, { source: 'ai', err: true, errDetails: vibeError });
     }
   }
 
@@ -606,7 +606,7 @@ export class Runtime {
     } catch (error) {
       const vibeError = createAsyncVibeError(error, location);
       failAsyncOperation(this.state, operationId, vibeError);
-      return createVibeValue(null, { source: 'ts', err: vibeError });
+      return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
     }
   }
 
@@ -635,7 +635,7 @@ export class Runtime {
     } catch (error) {
       const vibeError = createAsyncVibeError(error, location);
       failAsyncOperation(this.state, operationId, vibeError);
-      return createVibeValue(null, { source: 'ts', err: vibeError });
+      return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
     }
   }
 
@@ -709,13 +709,21 @@ export class Runtime {
   ): Promise<VibeValue> {
     try {
       const result = await this.runVibeFuncIsolated(this.state, funcName, args, modulePath);
+
+      // If result is already a VibeValue with error (from function returning error value), preserve it
+      if (isVibeValue(result) && result.err) {
+        completeAsyncOperation(this.state, operationId, result);
+        return result;
+      }
+
+      // Otherwise wrap in a new VibeValue
       const vibeValue = createVibeValue(result, { source: 'vibe-function' });
       completeAsyncOperation(this.state, operationId, vibeValue);
       return vibeValue;
     } catch (error) {
       const vibeError = createAsyncVibeError(error);
       failAsyncOperation(this.state, operationId, vibeError);
-      return createVibeValue(null, { source: 'vibe-function', err: vibeError });
+      return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
     }
   }
 
@@ -801,6 +809,10 @@ export class Runtime {
       state = runUntilPause(state);
     }
 
+    // If lastResult is a VibeValue with error, return it as-is to preserve error info
+    if (isVibeValue(state.lastResult) && state.lastResult.err) {
+      return state.lastResult;
+    }
     return resolveValue(state.lastResult);
   }
 
@@ -834,7 +846,7 @@ export class Runtime {
           } catch (error) {
             const vibeError = createAsyncVibeError(error);
             failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'ai', err: vibeError });
+            return createVibeValue(null, { source: 'ai', err: true, errDetails: vibeError });
           }
         })();
 
@@ -852,7 +864,7 @@ export class Runtime {
           } catch (error) {
             const vibeError = createAsyncVibeError(error, location);
             failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'ts', err: vibeError });
+            return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
           }
         })();
 
@@ -874,7 +886,7 @@ export class Runtime {
           } catch (error) {
             const vibeError = createAsyncVibeError(error, location);
             failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'ts', err: vibeError });
+            return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
           }
         })();
 
@@ -892,7 +904,7 @@ export class Runtime {
           } catch (error) {
             const vibeError = createAsyncVibeError(error);
             failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'vibe-function', err: vibeError });
+            return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
           }
         })();
 

@@ -33,7 +33,8 @@ describe('VibeValue AI Results', () => {
       expect(isVibeValue(vibeValue)).toBe(true);
       expect(vibeValue.value).toBe('test response');
       expect(vibeValue.toolCalls).toEqual([]);
-      expect(vibeValue.err).toBe(null);
+      expect(vibeValue.err).toBe(false);  // err is now boolean
+      expect(vibeValue.errDetails).toBe(null);
       expect(vibeValue.source).toBe('ai');
     });
 

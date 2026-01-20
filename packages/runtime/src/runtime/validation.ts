@@ -145,8 +145,8 @@ export function validateAndCoerce(
  */
 export function requireBoolean(value: unknown, context: string): boolean {
   // Handle VibeValue with error - throw the error
-  if (isVibeValue(value) && value.err) {
-    throw new Error(`${value.err.type}: ${value.err.message}`);
+  if (isVibeValue(value) && value.err && value.errDetails) {
+    throw new Error(`${value.errDetails.type}: ${value.errDetails.message}`);
   }
 
   // Auto-unwrap VibeValue

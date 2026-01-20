@@ -24,9 +24,10 @@ describe('VibeValue Error Handling', () => {
       const vibeValue = createVibeError('Something went wrong');
 
       expect(isVibeValue(vibeValue)).toBe(true);
-      expect(vibeValue.err).not.toBe(null);
-      expect(vibeValue.err?.message).toBe('Something went wrong');
-      expect(vibeValue.err?.type).toBe('Error');
+      expect(vibeValue.err).toBe(true);  // err is now a boolean
+      expect(vibeValue.errDetails).not.toBe(null);
+      expect(vibeValue.errDetails?.message).toBe('Something went wrong');
+      expect(vibeValue.errDetails?.type).toBe('Error');
       expect(vibeValue.value).toBe(null);  // Error values have null, not undefined
     });
 
@@ -34,15 +35,16 @@ describe('VibeValue Error Handling', () => {
       const error = new TypeError('Invalid type');
       const vibeValue = createVibeError(error);
 
-      expect(vibeValue.err?.message).toBe('Invalid type');
-      expect(vibeValue.err?.type).toBe('TypeError');
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.message).toBe('Invalid type');
+      expect(vibeValue.errDetails?.type).toBe('TypeError');
     });
 
     it('preserves location in error', () => {
       const location = { line: 10, column: 5, file: 'test.vibe' };
       const vibeValue = createVibeError('Error', location);
 
-      expect(vibeValue.err?.location).toEqual(location);
+      expect(vibeValue.errDetails?.location).toEqual(location);
     });
 
     it('preserves options like isConst and typeAnnotation', () => {
@@ -63,8 +65,8 @@ describe('VibeValue Error Handling', () => {
 
       const result = propagateErrors([leftError, rightValue], 0);
 
-      expect(result.err).not.toBe(null);
-      expect(result.err?.message).toBe('Left failed');
+      expect(result.err).toBe(true);
+      expect(result.errDetails?.message).toBe('Left failed');
       expect(result.value).toBe(null);  // Error propagation uses null, not undefined
     });
 
@@ -74,8 +76,8 @@ describe('VibeValue Error Handling', () => {
 
       const result = propagateErrors([leftValue, rightError], 0);
 
-      expect(result.err).not.toBe(null);
-      expect(result.err?.message).toBe('Right failed');
+      expect(result.err).toBe(true);
+      expect(result.errDetails?.message).toBe('Right failed');
     });
 
     it('returns first error when both operands have errors', () => {
@@ -85,7 +87,8 @@ describe('VibeValue Error Handling', () => {
       const result = propagateErrors([leftError, rightError], 0);
 
       // First error wins
-      expect(result.err?.message).toBe('Left failed');
+      expect(result.err).toBe(true);
+      expect(result.errDetails?.message).toBe('Left failed');
     });
 
     it('creates successful value when no errors', () => {
@@ -94,7 +97,7 @@ describe('VibeValue Error Handling', () => {
 
       const result = propagateErrors([left, right], 30);
 
-      expect(result.err).toBe(null);
+      expect(result.err).toBe(false);
       expect(result.value).toBe(30);
     });
 
@@ -104,13 +107,13 @@ describe('VibeValue Error Handling', () => {
 
       const result = propagateErrors([vibeVal, primitive], 30);
 
-      expect(result.err).toBe(null);
+      expect(result.err).toBe(false);
       expect(result.value).toBe(30);
     });
   });
 
   describe('.err property access', () => {
-    it('.err returns null for successful AI response', () => {
+    it('.err returns false for successful AI response', () => {
       const ast = parse(`
         model m = { name: "test", apiKey: "key", url: "http://test" }
         let result = do "get something" m default
@@ -120,10 +123,10 @@ describe('VibeValue Error Handling', () => {
       state = runWithMockAI(state, 'success');
 
       expect(state.status).toBe('completed');
-      expect(state.callStack[0].locals['error'].value).toBe(null);
+      expect(state.callStack[0].locals['error'].value).toBe(false);  // err is now boolean
     });
 
-    it('.err is accessible on any VibeValue variable', () => {
+    it('.err is accessible on any VibeValue variable (returns false)', () => {
       const ast = parse(`
         let x = "hello"
         let error = x.err
@@ -132,10 +135,10 @@ describe('VibeValue Error Handling', () => {
       state = runUntilPause(state);
 
       expect(state.status).toBe('completed');
-      expect(state.callStack[0].locals['error'].value).toBe(null);
+      expect(state.callStack[0].locals['error'].value).toBe(false);  // err is now boolean
     });
 
-    it('.err is accessible on numeric VibeValue', () => {
+    it('.err is accessible on numeric VibeValue (returns false)', () => {
       const ast = parse(`
         let x = 42
         let error = x.err
@@ -144,10 +147,10 @@ describe('VibeValue Error Handling', () => {
       state = runUntilPause(state);
 
       expect(state.status).toBe('completed');
-      expect(state.callStack[0].locals['error'].value).toBe(null);
+      expect(state.callStack[0].locals['error'].value).toBe(false);  // err is now boolean
     });
 
-    it('.err is accessible on boolean VibeValue', () => {
+    it('.err is accessible on boolean VibeValue (returns false)', () => {
       const ast = parse(`
         let x = true
         let error = x.err
@@ -156,10 +159,10 @@ describe('VibeValue Error Handling', () => {
       state = runUntilPause(state);
 
       expect(state.status).toBe('completed');
-      expect(state.callStack[0].locals['error'].value).toBe(null);
+      expect(state.callStack[0].locals['error'].value).toBe(false);  // err is now boolean
     });
 
-    it('.err is accessible on object VibeValue', () => {
+    it('.err is accessible on object VibeValue (returns false)', () => {
       const ast = parse(`
         let x = { name: "test" }
         let error = x.err
@@ -168,10 +171,10 @@ describe('VibeValue Error Handling', () => {
       state = runUntilPause(state);
 
       expect(state.status).toBe('completed');
-      expect(state.callStack[0].locals['error'].value).toBe(null);
+      expect(state.callStack[0].locals['error'].value).toBe(false);  // err is now boolean
     });
 
-    it('.err is accessible on array VibeValue', () => {
+    it('.err is accessible on array VibeValue (returns false)', () => {
       const ast = parse(`
         let x = [1, 2, 3]
         let error = x.err
@@ -180,7 +183,7 @@ describe('VibeValue Error Handling', () => {
       state = runUntilPause(state);
 
       expect(state.status).toBe('completed');
-      expect(state.callStack[0].locals['error'].value).toBe(null);
+      expect(state.callStack[0].locals['error'].value).toBe(false);  // err is now boolean
     });
   });
 
@@ -221,7 +224,8 @@ describe('VibeValue Error Handling', () => {
       // When VibeValue with .err is used in binary operation, error should propagate
       const leftError: VibeValue = {
         value: null,
-        err: { message: 'Left error', type: 'Error', location: null },
+        err: true,
+        errDetails: { message: 'Left error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
@@ -229,7 +233,8 @@ describe('VibeValue Error Handling', () => {
       };
       const rightValue: VibeValue = {
         value: 5,
-        err: null,
+        err: false,
+        errDetails: null,
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
@@ -237,13 +242,15 @@ describe('VibeValue Error Handling', () => {
       };
 
       const result = propagateErrors([leftError, rightValue], null);
-      expect(result.err?.message).toBe('Left error');
+      expect(result.err).toBe(true);
+      expect(result.errDetails?.message).toBe('Left error');
     });
 
     it('subtraction propagates error from right operand', () => {
       const leftValue: VibeValue = {
         value: 10,
-        err: null,
+        err: false,
+        errDetails: null,
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
@@ -251,7 +258,8 @@ describe('VibeValue Error Handling', () => {
       };
       const rightError: VibeValue = {
         value: null,
-        err: { message: 'Right error', type: 'Error', location: null },
+        err: true,
+        errDetails: { message: 'Right error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
@@ -259,13 +267,15 @@ describe('VibeValue Error Handling', () => {
       };
 
       const result = propagateErrors([leftValue, rightError], null);
-      expect(result.err?.message).toBe('Right error');
+      expect(result.err).toBe(true);
+      expect(result.errDetails?.message).toBe('Right error');
     });
 
     it('first error wins when both operands have errors', () => {
       const leftError: VibeValue = {
         value: null,
-        err: { message: 'First error', type: 'Error', location: null },
+        err: true,
+        errDetails: { message: 'First error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
@@ -273,7 +283,8 @@ describe('VibeValue Error Handling', () => {
       };
       const rightError: VibeValue = {
         value: null,
-        err: { message: 'Second error', type: 'Error', location: null },
+        err: true,
+        errDetails: { message: 'Second error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
         typeAnnotation: null,
@@ -281,7 +292,8 @@ describe('VibeValue Error Handling', () => {
       };
 
       const result = propagateErrors([leftError, rightError], null);
-      expect(result.err?.message).toBe('First error');
+      expect(result.err).toBe(true);
+      expect(result.errDetails?.message).toBe('First error');
     });
   });
 
@@ -294,7 +306,8 @@ describe('VibeValue Error Handling', () => {
       });
 
       expect(vibeValue.value).toBe('hello');
-      expect(vibeValue.err).toBe(null);
+      expect(vibeValue.err).toBe(false);  // err is now boolean
+      expect(vibeValue.errDetails).toBe(null);
       expect(vibeValue.toolCalls).toEqual([]);
       expect(vibeValue.isConst).toBe(true);
       expect(vibeValue.typeAnnotation).toBe('text');
@@ -317,7 +330,7 @@ describe('VibeValue Error Handling', () => {
       const primitive = 'test';
 
       expect(isVibeValue(vibeValue)).toBe(true);
-      expect(isVibeValue(notVibeValue)).toBe(false);
+      expect(isVibeValue(notVibeValue)).toBe(false);  // Missing errDetails
       expect(isVibeValue(primitive)).toBe(false);
       expect(isVibeValue(null)).toBe(false);
       expect(isVibeValue(undefined)).toBe(false);
@@ -329,23 +342,26 @@ describe('VibeValue Error Handling', () => {
       const error = new TypeError('Not a function');
       const vibeValue = createVibeError(error);
 
-      expect(vibeValue.err?.type).toBe('TypeError');
-      expect(vibeValue.err?.message).toBe('Not a function');
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.type).toBe('TypeError');
+      expect(vibeValue.errDetails?.message).toBe('Not a function');
     });
 
     it('preserves ReferenceError', () => {
       const error = new ReferenceError('x is not defined');
       const vibeValue = createVibeError(error);
 
-      expect(vibeValue.err?.type).toBe('ReferenceError');
-      expect(vibeValue.err?.message).toBe('x is not defined');
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.type).toBe('ReferenceError');
+      expect(vibeValue.errDetails?.message).toBe('x is not defined');
     });
 
     it('preserves RangeError', () => {
       const error = new RangeError('Invalid array length');
       const vibeValue = createVibeError(error);
 
-      expect(vibeValue.err?.type).toBe('RangeError');
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.type).toBe('RangeError');
     });
 
     it('preserves custom error types', () => {
@@ -358,8 +374,9 @@ describe('VibeValue Error Handling', () => {
       const error = new CustomError('Custom problem');
       const vibeValue = createVibeError(error);
 
-      expect(vibeValue.err?.type).toBe('CustomError');
-      expect(vibeValue.err?.message).toBe('Custom problem');
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.type).toBe('CustomError');
+      expect(vibeValue.errDetails?.message).toBe('Custom problem');
     });
   });
 
@@ -372,7 +389,8 @@ describe('VibeValue Error Handling', () => {
       };
       const vibeValue = createVibeError('Error occurred', location);
 
-      expect(vibeValue.err?.location).toEqual({
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.location).toEqual({
         line: 42,
         column: 10,
         file: 'my-script.vibe',
@@ -382,7 +400,8 @@ describe('VibeValue Error Handling', () => {
     it('handles null location gracefully', () => {
       const vibeValue = createVibeError('Error occurred', null);
 
-      expect(vibeValue.err?.location).toBe(null);
+      expect(vibeValue.err).toBe(true);
+      expect(vibeValue.errDetails?.location).toBe(null);
     });
   });
 

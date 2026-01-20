@@ -363,10 +363,16 @@ export function getVariables(
         type: typeof vibeValue.value,
         variablesReference: 0,
       });
-      if (vibeValue.err) {
-        const errMsg = vibeValue.err.message ?? String(vibeValue.err);
+      if (vibeValue.err && vibeValue.errDetails) {
+        const errMsg = vibeValue.errDetails.message ?? 'unknown error';
         variables.push({
           name: 'err',
+          value: 'true',
+          type: 'boolean',
+          variablesReference: 0,
+        });
+        variables.push({
+          name: 'errDetails',
           value: errMsg,
           type: 'error',
           variablesReference: 0,
@@ -429,8 +435,8 @@ function createVariable(
     };
     displayType = 'VibeValue';
     hasError = !!vibeValue.err;
-    // Extract error message from VibeError object
-    errorMessage = vibeValue.err?.message ? String(vibeValue.err.message) : undefined;
+    // Extract error message from errDetails object (err is now boolean)
+    errorMessage = vibeValue.errDetails?.message ? String(vibeValue.errDetails.message) : undefined;
     hasToolCalls = vibeValue.toolCalls && vibeValue.toolCalls.length > 0;
     toolCallCount = vibeValue.toolCalls?.length;
     isPrivate = vibeValue.isPrivate === true;
@@ -486,7 +492,7 @@ function formatValue(value: unknown): string {
   if (Array.isArray(value)) return `Array(${value.length})`;
   if (isVibeValue(value)) {
     const v = value as any;
-    if (v.err) return `VibeValue(error: ${v.err.message ?? v.err})`;
+    if (v.err) return `VibeValue(error: ${v.errDetails?.message ?? 'unknown error'})`;
     return `VibeValue(${formatValue(v.value)})`;
   }
   if (typeof value === 'object') return `{...}`;

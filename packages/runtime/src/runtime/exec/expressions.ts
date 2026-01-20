@@ -57,7 +57,8 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
         const errorValue: typeof variable = {
           ...variable,
           value: null,
-          err: operation.error,
+          err: true,
+          errDetails: operation.error,
           asyncOperationId: undefined, // Clear the async marker
         };
         return { ...state, lastResult: errorValue };
@@ -340,10 +341,10 @@ export function execBuildRange(state: RuntimeState): RuntimeState {
 
   // Error propagation: if start or end is a VibeValue with error, propagate it
   if (isVibeValue(rawStart) && rawStart.err) {
-    return { ...state, valueStack: newStack, lastResult: rawStart.err };
+    return { ...state, valueStack: newStack, lastResult: rawStart };
   }
   if (isVibeValue(rawEnd) && rawEnd.err) {
-    return { ...state, valueStack: newStack, lastResult: rawEnd.err };
+    return { ...state, valueStack: newStack, lastResult: rawEnd };
   }
 
   // Auto-unwrap VibeValue and AIResultObject

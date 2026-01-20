@@ -202,7 +202,8 @@ describe('private variable visibility', () => {
         ...frame.locals,
         x: {
           value: 'secret-value',
-          err: null,
+          err: false,
+          errDetails: null,
           toolCalls: [],
           isConst: false,
           typeAnnotation: 'text' as const,
@@ -211,7 +212,8 @@ describe('private variable visibility', () => {
         },
         y: {
           value: 42,
-          err: null,
+          err: false,
+          errDetails: null,
           toolCalls: [],
           isConst: false,
           typeAnnotation: 'number' as const,
