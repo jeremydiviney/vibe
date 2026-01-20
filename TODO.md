@@ -138,13 +138,12 @@
   - Parameter description clarifies "not Python or other languages"
 
 ### Parser Error Messages
-- [ ] Improve error for missing comma in model/object declarations
-  - Missing comma between properties gives unhelpful error
-  - Example: `apiKey: env("...") url: "..."` (missing comma before `url`)
-  - Should say "Missing comma between properties" or similar
-- [ ] Allow trailing commas in object/model declarations
-  - Currently `{ a: 1, b: 2, }` is an error
-  - Should be valid like JavaScript/TypeScript
+- [x] Improve error for missing comma in model/object declarations
+  - Now says "Missing comma between properties" for objects/models
+  - Now says "Missing comma between array elements" for arrays
+- [x] Allow trailing commas in object/model declarations
+  - `{ a: 1, b: 2, }` is now valid
+  - `[1, 2, 3,]` is now valid
 
 ### Language Design
 - [x] Disallow `let x = null` without type annotation

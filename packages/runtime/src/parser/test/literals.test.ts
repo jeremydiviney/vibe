@@ -401,4 +401,33 @@ describe('Parser - For-In Statement', () => {
     const inner = outer.body.body[0];
     expect(inner.type).toBe('ForInStatement');
   });
+
+  // Trailing commas
+  test('object literal with trailing comma', () => {
+    const ast = parse('let x = { a: 1, b: 2, }');
+    const obj = (ast.body[0] as any).initializer;
+    expect(obj.type).toBe('ObjectLiteral');
+    expect(obj.properties).toHaveLength(2);
+  });
+
+  test('array literal with trailing comma', () => {
+    const ast = parse('let x = [1, 2, 3,]');
+    const arr = (ast.body[0] as any).initializer;
+    expect(arr.type).toBe('ArrayLiteral');
+    expect(arr.elements).toHaveLength(3);
+  });
+
+  test('single element object with trailing comma', () => {
+    const ast = parse('let x = { a: 1, }');
+    const obj = (ast.body[0] as any).initializer;
+    expect(obj.type).toBe('ObjectLiteral');
+    expect(obj.properties).toHaveLength(1);
+  });
+
+  test('single element array with trailing comma', () => {
+    const ast = parse('let x = [1,]');
+    const arr = (ast.body[0] as any).initializer;
+    expect(arr.type).toBe('ArrayLiteral');
+    expect(arr.elements).toHaveLength(1);
+  });
 });

@@ -110,6 +110,20 @@ model myModel = {
     expect(model.config.apiKey.value).toBe('sk-test');
     expect(model.config.url.value).toBe('https://api.openai.com');
   });
+
+  test('model with trailing comma', () => {
+    const ast = parse(`
+model myModel = {
+  name: "gpt-4",
+  apiKey: "sk-test",
+  url: "https://api.openai.com",
+}
+`);
+    expect(ast.body).toHaveLength(1);
+    const model = ast.body[0] as any;
+    expect(model.type).toBe('ModelDeclaration');
+    expect(model.config.providedFields).toEqual(['name', 'apiKey', 'url']);
+  });
 });
 
 describe('Syntax Errors - Model Declaration', () => {

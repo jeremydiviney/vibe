@@ -316,6 +316,10 @@ class VibeParser extends CstParser {
       this.CONSUME(T.Comma);
       this.SUBRULE2(this.property);
     });
+    // Allow trailing comma
+    this.OPTION(() => {
+      this.CONSUME2(T.Comma);
+    });
   });
 
   private property = this.RULE('property', () => {
@@ -781,6 +785,10 @@ class VibeParser extends CstParser {
     this.MANY(() => {
       this.CONSUME(T.Comma);
       this.SUBRULE2(this.expression);
+    });
+    // Allow trailing comma
+    this.OPTION(() => {
+      this.CONSUME2(T.Comma);
     });
   });
 }

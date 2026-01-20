@@ -17,6 +17,7 @@ export interface ParseOptions {
 function improveErrorMessage(error: IRecognitionException): string {
   const ruleStack = error.context?.ruleStack ?? [];
   const previousToken = error.previousToken;
+  const currentToken = error.token;
   const message = error.message;
 
   // Missing type annotation for function/tool parameter
@@ -27,6 +28,26 @@ function improveErrorMessage(error: IRecognitionException): string {
     previousToken?.tokenType?.name === 'Identifier'
   ) {
     return `Missing type annotation for parameter '${previousToken.image}'`;
+  }
+
+  // Missing comma between properties in object/model declaration
+  // Detected: in objectLiteral/objectLiteralExpr, expected RBrace, found Identifier
+  if (
+    (ruleStack.includes('objectLiteral') || ruleStack.includes('objectLiteralExpr')) &&
+    message.includes('RBrace') &&
+    currentToken?.tokenType?.name === 'Identifier'
+  ) {
+    return `Missing comma between properties. Add ',' after the previous property`;
+  }
+
+  // Missing comma between elements in array
+  // Detected: in arrayLiteral, expected RBracket, found something else
+  if (
+    ruleStack.includes('arrayLiteral') &&
+    message.includes('RBracket') &&
+    currentToken?.tokenType?.name !== 'RBracket'
+  ) {
+    return `Missing comma between array elements. Add ',' after the previous element`;
   }
 
   return message;

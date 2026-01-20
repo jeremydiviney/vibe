@@ -157,4 +157,29 @@ foo(
 greet("hello"
 `)).toThrow();
   });
+
+  // ============================================================================
+  // missing comma errors
+  // ============================================================================
+
+  test('object literal missing comma between properties', () => {
+    expect(() => parse(`let x = { a: 1 b: 2 }`)).toThrow(
+      "Missing comma between properties"
+    );
+  });
+
+  test('model declaration missing comma between properties', () => {
+    expect(() => parse(`
+model m = {
+  name: "test"
+  apiKey: "key"
+}
+`)).toThrow("Missing comma between properties");
+  });
+
+  test('array literal missing comma between elements', () => {
+    expect(() => parse(`let arr = [1 2 3]`)).toThrow(
+      "Missing comma between array elements"
+    );
+  });
 });

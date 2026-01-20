@@ -145,13 +145,8 @@ model myModel = {
 `)).toThrow();
   });
 
-  test('trailing comma without next property', () => {
-    expect(() => parse(`
-model myModel = {
-  name: "test",
-}
-`)).toThrow();
-  });
+  // Note: trailing comma IS now allowed (test removed)
+  // model myModel = { name: "test", } is valid
 
   // ============================================================================
   // Model keyword misuse
