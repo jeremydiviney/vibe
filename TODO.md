@@ -133,9 +133,9 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ### Tool Improvements
-- [ ] Clarify that runCode/codegen tool should only write TypeScript
-  - Tool description should specify TypeScript-only
-  - Prevents AI from generating Python, JavaScript, etc.
+- [x] Clarify that runCode/codegen tool should only write TypeScript
+  - Tool description now specifies TypeScript-only
+  - Parameter description clarifies "not Python or other languages"
 
 ### Parser Error Messages
 - [ ] Improve error for missing comma in model/object declarations

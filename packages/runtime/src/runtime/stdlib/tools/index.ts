@@ -567,12 +567,12 @@ export const runCode: VibeToolValue = {
   schema: {
     name: 'runCode',
     description:
-      'Execute TypeScript/JavaScript code in a sandboxed subprocess. ' +
+      'Execute TypeScript code in a sandboxed subprocess. IMPORTANT: Only write TypeScript code, never Python or other languages. ' +
       'All scope variables are automatically available as local variables. ' +
       'Use `return value` to pass results back. Bun APIs are available. ' +
       'Each execution creates a unique folder in .vibe-cache/ for intermediate files.',
     parameters: [
-      { name: 'code', type: { type: 'string' }, description: 'TypeScript/JavaScript code to execute', required: true },
+      { name: 'code', type: { type: 'string' }, description: 'TypeScript code to execute (not Python or other languages)', required: true },
       { name: 'scope', type: { type: 'object', additionalProperties: true }, description: 'Variables to make available in the code', required: false },
       { name: 'timeout', type: { type: 'number' }, description: 'Timeout in milliseconds (default: 30000)', required: false },
     ],
