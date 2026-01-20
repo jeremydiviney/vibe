@@ -129,6 +129,11 @@
 - [ ] Package symbol-tree as shareable plugin
 
 ### Language Design
+- [ ] Disallow `let x = null` without type annotation
+  - `let empty = null` should error: type cannot be inferred from null
+  - `let empty: text = null` is valid: type is explicitly specified
+  - Currently may allow untyped null assignments
+
 - [x] String interpolation in prompts vs text variables
   - Regular strings (`"..."`) use `{var}` syntax for interpolation
   - Template literals (`` `...` ``) use `${var}` syntax for interpolation

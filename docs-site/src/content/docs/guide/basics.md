@@ -104,6 +104,14 @@ let numbers = [1, 2, 3]
 let names = ["Alice", "Bob", "Carol"]
 ```
 
+Use `+` to concatenate arrays:
+
+```vibe
+let a = [1, 2]
+let b = [3, 4]
+let combined = a + b  // [1, 2, 3, 4]
+```
+
 ### Objects
 
 ```vibe
@@ -117,7 +125,7 @@ let config = { timeout: 5000, retries: 3 }
 
 | Operator | Description |
 |----------|-------------|
-| `+` | Addition / string concatenation |
+| `+` | Addition / string / array concatenation |
 | `-` | Subtraction |
 | `*` | Multiplication |
 | `/` | Division |
