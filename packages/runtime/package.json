@@ -1,6 +1,6 @@
 {
   "name": "@vibe-lang/runtime",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Vibe language runtime and CLI",
   "main": "src/index.ts",
   "type": "module",
