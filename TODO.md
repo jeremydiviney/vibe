@@ -132,6 +132,12 @@
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
 
+### Parser Error Messages
+- [ ] Improve error for missing comma in model/object declarations
+  - Missing comma between properties gives unhelpful error
+  - Example: `apiKey: env("...") url: "..."` (missing comma before `url`)
+  - Should say "Missing comma between properties" or similar
+
 ### Language Design
 - [x] Disallow `let x = null` without type annotation
   - `let empty = null` errors: "Cannot infer type from null"
