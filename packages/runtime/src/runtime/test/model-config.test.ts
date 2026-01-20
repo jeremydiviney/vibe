@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { Runtime, type AIProvider } from '../index';
+import { createInitialState, resumeWithAIResponse } from '../state';
+import { runUntilPause } from '../step';
 
 describe('Runtime - Model Config Value Resolution', () => {
   const mockProvider: AIProvider = {
@@ -334,5 +336,145 @@ let key = ts(testModel) {
 `);
     await runtime.run();
     expect(runtime.getValue('key')).toBe('fallback-key');
+  });
+
+  // ============================================================================
+  // Model as Function Parameter
+  // ============================================================================
+
+  test('function with model parameter - access model properties', async () => {
+    const runtime = createRuntime(`
+model myModel = {
+  name: "gpt-4",
+  apiKey: "test-key",
+  provider: "openai"
+}
+
+function getModelName(m: model): text {
+  return ts(m) { return m.name; }
+}
+
+let name = getModelName(myModel)
+`);
+    await runtime.run();
+    expect(runtime.getValue('name')).toBe('gpt-4');
+  });
+
+  test('function with multiple model parameters', async () => {
+    const runtime = createRuntime(`
+model guesserModel = {
+  name: "claude-sonnet-4-20250514",
+  apiKey: "key1",
+  provider: "anthropic"
+}
+
+model answererModel = {
+  name: "gpt-4",
+  apiKey: "key2",
+  provider: "openai"
+}
+
+function getModelNames(guesser: model, answerer: model): text {
+  let g = ts(guesser) { return guesser.name; }
+  let a = ts(answerer) { return answerer.name; }
+  return g + " vs " + a
+}
+
+let result = getModelNames(guesserModel, answererModel)
+`);
+    await runtime.run();
+    expect(runtime.getValue('result')).toBe('claude-sonnet-4-20250514 vs gpt-4');
+  });
+
+  test('function with model and other parameters', async () => {
+    const runtime = createRuntime(`
+model testModel = {
+  name: "test-model",
+  apiKey: "key",
+  provider: "test"
+}
+
+function processWithModel(m: model, data: text): text {
+  let modelName = ts(m) { return m.name; }
+  return modelName + ": " + data
+}
+
+let output = processWithModel(testModel, "hello")
+`);
+    await runtime.run();
+    expect(runtime.getValue('output')).toBe('test-model: hello');
+  });
+
+  test('function with model parameter used in do expression', () => {
+    const ast = parse(`
+model myModel = {
+  name: "gpt-4",
+  apiKey: "key",
+  provider: "openai"
+}
+
+function askQuestion(m: model, question: text): text {
+  return do question m default
+}
+
+let answer = askQuestion(myModel, "What is 2+2?")
+`);
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // Should be waiting for AI response
+    expect(state.status).toBe('awaiting_ai');
+    expect(state.pendingAI?.prompt).toBe('What is 2+2?');
+    expect(state.pendingAI?.model).toBe('m'); // Model param name inside function
+
+    // Resume with mock response
+    state = resumeWithAIResponse(state, 'The answer is 4');
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    expect(state.callStack[0].locals['answer']?.value).toBe('The answer is 4');
+  });
+
+  test('function with two model parameters used in different do expressions', () => {
+    const ast = parse(`
+model guesser = {
+  name: "claude-sonnet-4-20250514",
+  apiKey: "key1",
+  provider: "anthropic"
+}
+
+model answerer = {
+  name: "gpt-4",
+  apiKey: "key2",
+  provider: "openai"
+}
+
+function playRound(g: model, a: model, category: text): text {
+  let question = do "Ask a question about {category}" g default
+  let answer = do "Answer: {question}" a default
+  return answer
+}
+
+let result = playRound(guesser, answerer, "animals")
+`);
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    // First AI call uses guesser model (param name 'g')
+    expect(state.status).toBe('awaiting_ai');
+    expect(state.pendingAI?.model).toBe('g');
+
+    state = resumeWithAIResponse(state, 'Is a penguin a bird?');
+    state = runUntilPause(state);
+
+    // Second AI call uses answerer model (param name 'a')
+    expect(state.status).toBe('awaiting_ai');
+    expect(state.pendingAI?.model).toBe('a');
+
+    state = resumeWithAIResponse(state, 'Yes, a penguin is a bird.');
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    expect(state.callStack[0].locals['result']?.value).toBe('Yes, a penguin is a bird.');
   });
 });

@@ -4,10 +4,32 @@ import { vibeAstVisitor } from './visitor';
 import { setCurrentFile } from './visitor/helpers';
 import { ParserError } from '../errors';
 import type { Program } from '../ast';
+import type { IRecognitionException } from 'chevrotain';
 
 export interface ParseOptions {
   /** File path to include in source locations (for error reporting) */
   file?: string;
+}
+
+/**
+ * Transform Chevrotain errors into user-friendly messages
+ */
+function improveErrorMessage(error: IRecognitionException): string {
+  const ruleStack = error.context?.ruleStack ?? [];
+  const previousToken = error.previousToken;
+  const message = error.message;
+
+  // Missing type annotation for function/tool parameter
+  // Detected: in "parameter" or "toolParameter" rule, expected Colon, previous token is Identifier
+  if (
+    (ruleStack.includes('parameter') || ruleStack.includes('toolParameter')) &&
+    message.includes('Colon') &&
+    previousToken?.tokenType?.name === 'Identifier'
+  ) {
+    return `Missing type annotation for parameter '${previousToken.image}'`;
+  }
+
+  return message;
 }
 
 /**
@@ -28,7 +50,7 @@ export function parse(source: string, options?: ParseOptions): Program {
   if (vibeParser.errors.length > 0) {
     const error = vibeParser.errors[0];
     throw new ParserError(
-      error.message,
+      improveErrorMessage(error),
       error.token.image,
       { line: error.token.startLine ?? 1, column: error.token.startColumn ?? 1, file: options?.file },
       source

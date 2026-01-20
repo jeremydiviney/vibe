@@ -58,6 +58,40 @@ function foo {
 `)).toThrow();
   });
 
+  test('function parameter missing type annotation', () => {
+    expect(() => parse(`function foo(x) { }`)).toThrow(
+      "Missing type annotation for parameter 'x'"
+    );
+  });
+
+  test('function first parameter missing type annotation', () => {
+    expect(() => parse(`function foo(x, y: text) { }`)).toThrow(
+      "Missing type annotation for parameter 'x'"
+    );
+  });
+
+  test('function second parameter missing type annotation', () => {
+    expect(() => parse(`function foo(x: text, y) { }`)).toThrow(
+      "Missing type annotation for parameter 'y'"
+    );
+  });
+
+  test('export function parameter missing type annotation', () => {
+    expect(() => parse(`export function foo(guesser, answerer) { }`)).toThrow(
+      "Missing type annotation for parameter 'guesser'"
+    );
+  });
+
+  // ============================================================================
+  // tool declaration
+  // ============================================================================
+
+  test('tool parameter missing type annotation', () => {
+    expect(() => parse(`tool myTool(x) { ts() { return 1; } }`)).toThrow(
+      "Missing type annotation for parameter 'x'"
+    );
+  });
+
   // ============================================================================
   // if statement
   // ============================================================================
