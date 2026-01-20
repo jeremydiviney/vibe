@@ -92,8 +92,9 @@ let no = false
 ### Null
 
 ```vibe
-let empty = null
-let maybe: text = null  // Typed null
+let maybe: text = null  // Type annotation required
+let data: json = null   // OK - type is explicit
+// let empty = null     // Error: cannot infer type from null
 ```
 
 ### Arrays
