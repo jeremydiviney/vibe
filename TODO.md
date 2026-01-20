@@ -137,6 +137,9 @@
   - Missing comma between properties gives unhelpful error
   - Example: `apiKey: env("...") url: "..."` (missing comma before `url`)
   - Should say "Missing comma between properties" or similar
+- [ ] Allow trailing commas in object/model declarations
+  - Currently `{ a: 1, b: 2, }` is an error
+  - Should be valid like JavaScript/TypeScript
 
 ### Language Design
 - [x] Disallow `let x = null` without type annotation
