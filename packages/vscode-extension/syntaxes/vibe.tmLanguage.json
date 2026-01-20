@@ -94,7 +94,7 @@
       "patterns": [
         {
           "name": "keyword.control.vibe",
-          "match": "\\b(if|else|for|while|return|in)\\b"
+          "match": "\\b(if|else|for|while|return|in|break)\\b"
         },
         {
           "name": "keyword.declaration.vibe",
@@ -118,7 +118,7 @@
       "patterns": [
         {
           "name": "support.type.vibe",
-          "match": "\\b(text|json|prompt|boolean|number)\\b"
+          "match": "\\b(text|json|prompt|boolean|number|model)\\b"
         }
       ]
     },
