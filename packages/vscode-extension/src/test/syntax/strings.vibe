@@ -1,0 +1,26 @@
+// String interpolation syntax highlighting test file
+// Open this file in VS Code with the Vibe extension to verify highlighting
+
+// Reference interpolation {var} - inserts the variable reference
+let name = "world"
+let greeting = "Hello, {name}!"
+let message = 'Welcome {name} to the app'
+
+// Expansion interpolation !{var} - expands the variable value
+let template = "The value is: !{name}"
+let combined = 'Both {name} and !{name} in one string'
+
+// Backtick template literals with ${expr}
+let computed = `Hello, ${name}!`
+let expression = `Sum is ${1 + 2}`
+
+// Escape sequences
+let escaped = "Line 1\nLine 2\tTabbed"
+let path = 'C:\\Users\\test'
+
+// Mixed content
+let complex = "User {name} has !{count} items"
+
+// Empty and simple strings
+let empty = ""
+let simple = "no interpolation here"

@@ -22,9 +22,35 @@ describe('Async Dependency Detection', () => {
       expect(getReferencedVariables(expr)).toEqual(['myVar']);
     });
 
-    test('extracts no variables from string literal', () => {
+    test('extracts no variables from plain string literal', () => {
       const expr = parseExpr('"hello"');
       expect(getReferencedVariables(expr)).toEqual([]);
+    });
+
+    test('extracts variables from string literal with {var} interpolation', () => {
+      const expr = parseExpr('"Hello {name}!"');
+      const vars = getReferencedVariables(expr);
+      expect(vars).toContain('name');
+    });
+
+    test('extracts variables from string literal with !{var} expansion', () => {
+      const expr = parseExpr('"Process this: !{data}"');
+      const vars = getReferencedVariables(expr);
+      expect(vars).toContain('data');
+    });
+
+    test('extracts multiple variables from string literal interpolation', () => {
+      const expr = parseExpr('"Hello {greeting} {name}, your data is !{info}"');
+      const vars = getReferencedVariables(expr);
+      expect(vars).toContain('greeting');
+      expect(vars).toContain('name');
+      expect(vars).toContain('info');
+    });
+
+    test('extracts variables from single-quoted string with interpolation', () => {
+      const expr = parseExpr("'User: {user}'");
+      const vars = getReferencedVariables(expr);
+      expect(vars).toContain('user');
     });
 
     test('extracts no variables from number literal', () => {

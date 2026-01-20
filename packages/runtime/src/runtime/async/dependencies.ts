@@ -83,8 +83,15 @@ export function getReferencedVariables(expr: AST.Expression): string[] {
         }
         break;
 
-      // Literals don't reference variables
       case 'StringLiteral':
+        // Extract variables from {varName} and !{varName} interpolation in strings
+        const stringMatches = node.value.matchAll(/!?\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g);
+        for (const match of stringMatches) {
+          variables.push(match[1]);
+        }
+        break;
+
+      // These literals don't reference variables
       case 'NumberLiteral':
       case 'BooleanLiteral':
       case 'NullLiteral':

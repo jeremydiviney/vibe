@@ -119,10 +119,13 @@
     - [ ] Context visualization panel (local vs default context)
     - [ ] Show context entries with their values
     - [ ] Highlight which context is active for current scope
-- [ ] Syntax highlighting and hover for interpolated variables
-  - [ ] Highlight `{var}` in strings (reference syntax)
-  - [ ] Highlight `!{var}` in strings (expansion syntax)
-  - [ ] Mouse-over shows variable value/type
+- [x] Syntax highlighting for interpolated variables
+  - [x] Highlight `{var}` in strings (reference syntax)
+  - [x] Highlight `!{var}` in strings (expansion syntax)
+  - [x] `${expr}` in backticks already supported
+- [x] Hover support for interpolated variables
+  - [x] Mouse-over shows variable type and declaration info
+  - [x] Distinguishes between reference ({var}) and expansion (!{var})
 - [x] Publish VSCode extension to marketplace
   - [x] Create publisher account on VS Marketplace
   - [x] Package extension with `vsce package`
@@ -171,10 +174,10 @@
   - [x] 52 tests for TS type checking
 
 ### Async/Parallel Execution
-- [ ] Detect variables in prompt interpolation for async dependency awaiting
-  - Variables in `{var}` and `!{var}` should trigger implicit await
-  - Currently may not be detected during async dependency analysis
-  - Example: `async let x = do "..."; do "Result: {x}"` should await x
+- [x] Detect variables in prompt interpolation for async dependency awaiting
+  - Variables in `{var}` and `!{var}` now trigger implicit await
+  - StringLiteral now scans for interpolation patterns in dependency analysis
+  - Example: `async let x = do "..."; do "Result: {x}"` correctly awaits x
 
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)

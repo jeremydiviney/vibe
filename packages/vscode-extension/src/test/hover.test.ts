@@ -81,4 +81,75 @@ describe('Hover Provider', () => {
       expect(hover.contents.value).toContain('null');
     }
   });
+
+  // Interpolated variable hover tests
+  describe('Interpolated Variables', () => {
+    it('should show hover for {var} reference interpolation', () => {
+      const doc = createDocument('let name: text = "world"\nlet greeting = "Hello, {name}!"');
+      const hover = provideHover(doc, { line: 1, character: 26 }); // on "name" in {name}
+
+      expect(hover).not.toBeNull();
+      if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+        expect(hover.contents.value).toContain('name');
+        expect(hover.contents.value).toContain('{...}');
+        expect(hover.contents.value).toContain('interpolation');
+        expect(hover.contents.value).toContain('text');
+      }
+    });
+
+    it('should show hover for !{var} expansion interpolation', () => {
+      const doc = createDocument('let data: text = "info"\nlet msg = "Process this: !{data}"');
+      const hover = provideHover(doc, { line: 1, character: 29 }); // on "data" in !{data}
+
+      expect(hover).not.toBeNull();
+      if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+        expect(hover.contents.value).toContain('data');
+        expect(hover.contents.value).toContain('!{...}');
+        expect(hover.contents.value).toContain('Expansion');
+      }
+    });
+
+    it('should show hover for interpolated const variable', () => {
+      const doc = createDocument('const API_KEY: text = "secret"\nlet msg = "Key is {API_KEY}"');
+      const hover = provideHover(doc, { line: 1, character: 20 }); // on "API_KEY" in {API_KEY}
+
+      expect(hover).not.toBeNull();
+      if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+        expect(hover.contents.value).toContain('API_KEY');
+        expect(hover.contents.value).toContain('const');
+      }
+    });
+
+    it('should work with single quoted strings', () => {
+      const doc = createDocument("let user: text = 'guest'\nlet msg = 'Hello {user}'");
+      const hover = provideHover(doc, { line: 1, character: 18 }); // on "user" in {user}
+
+      expect(hover).not.toBeNull();
+      if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+        expect(hover.contents.value).toContain('user');
+        expect(hover.contents.value).toContain('interpolation');
+      }
+    });
+
+    it('should not trigger for {var} outside strings', () => {
+      const doc = createDocument('let x = 1');
+      const hover = provideHover(doc, { line: 0, character: 5 }); // on "x" in "let x"
+
+      // Should get normal hover, not interpolation hover
+      if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+        expect(hover.contents.value).not.toContain('interpolation');
+      }
+    });
+
+    it('should show "variable not found" for unknown interpolated var', () => {
+      const doc = createDocument('let msg = "Hello {unknown}!"');
+      const hover = provideHover(doc, { line: 0, character: 19 }); // on "unknown"
+
+      expect(hover).not.toBeNull();
+      if (hover && typeof hover.contents === 'object' && 'value' in hover.contents) {
+        expect(hover.contents.value).toContain('unknown');
+        expect(hover.contents.value).toContain('not found');
+      }
+    });
+  });
 });
