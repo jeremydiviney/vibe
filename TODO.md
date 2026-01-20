@@ -119,6 +119,10 @@
     - [ ] Context visualization panel (local vs default context)
     - [ ] Show context entries with their values
     - [ ] Highlight which context is active for current scope
+- [ ] Syntax highlighting and hover for interpolated variables
+  - [ ] Highlight `{var}` in strings (reference syntax)
+  - [ ] Highlight `!{var}` in strings (expansion syntax)
+  - [ ] Mouse-over shows variable value/type
 - [x] Publish VSCode extension to marketplace
   - [x] Create publisher account on VS Marketplace
   - [x] Package extension with `vsce package`
