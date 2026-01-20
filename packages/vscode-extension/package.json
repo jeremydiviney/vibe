@@ -124,7 +124,7 @@
   "scripts": {
     "vscode:prepublish": "bun run build",
     "build": "bun build src/extension.ts --outfile=out/extension.js --target=node --format=cjs --external=vscode && bun build src/server.ts --outfile=out/server.js --target=node --format=cjs && bun build src/debug/adapter.ts --outfile=out/debugAdapter.js --target=node --format=cjs --external=vscode",
-    "package": "bunx vsce package --no-dependencies --out ../../releases/",
+    "package": "bunx vsce package --no-dependencies --out ./releases/",
     "watch": "bun build src/extension.ts --outfile=out/extension.js --target=node --format=cjs --external=vscode --watch & bun build src/server.ts --outfile=out/server.js --target=node --format=cjs --watch",
     "compile": "tsc -p ./",
     "lint": "eslint src --ext ts",
