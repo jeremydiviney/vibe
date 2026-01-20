@@ -161,17 +161,19 @@ Note: TypeScript blocks receive resolved values, not VibeValues. Check `.err` in
 With `async let`, each parallel operation captures its own errors independently:
 
 ```vibe
-async let a: number = vibe "Task A"
-async let b: number = vibe "Task B"
-async let c: number = vibe "Task C"
+async let user: json = fetchUser(userId)
+async let posts: json[] = fetchPosts(userId)
+async let notifications: json[] = getNotifications(userId)
 
 // Each can succeed or fail independently
-// Check each one
-if a.err {
-  // Handle Task A failure
+if user.err {
+  print("Failed to load user")
 }
-if b.err {
-  // Handle Task B failure
+if posts.err {
+  print("Failed to load posts")
+}
+if notifications.err {
+  print("Notifications unavailable")
 }
 ```
 
