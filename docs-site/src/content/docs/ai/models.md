@@ -46,11 +46,6 @@ model claude = {
 }
 ```
 
-Available models:
-- `claude-opus-4-5-20251101` - Most capable
-- `claude-sonnet-4-20250514` - Balanced
-- `claude-haiku-4-5-20251001` - Fast and efficient
-
 ### OpenAI
 
 ```vibe
@@ -61,10 +56,6 @@ model gpt = {
 }
 ```
 
-Available models:
-- `gpt-5.2` - Flagship reasoning model
-- `gpt-5-mini` - Fast and cost-effective
-
 ### Google
 
 ```vibe
@@ -74,10 +65,6 @@ model gemini = {
   apiKey: env("GOOGLE_API_KEY")
 }
 ```
-
-Available models:
-- `gemini-3-flash` - Fast and capable
-- `gemini-1.5-pro` - Advanced reasoning
 
 ## Extended Thinking
 
