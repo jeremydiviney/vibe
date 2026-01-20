@@ -51,5 +51,4 @@ tmpclaude-*
 # Claude local settings
 .claude/settings.local.json
 
-# VS Code extension packages
-*.vsix
+# VS Code extension packages - kept in source for version history
