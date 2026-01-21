@@ -1,11 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { SemanticAnalyzer } from '../analyzer';
+import { join } from 'path';
 
-function analyze(source: string) {
+// Test fixtures directory
+const fixturesDir = join(__dirname, 'fixtures');
+
+function analyze(source: string, basePath?: string) {
   const ast = parse(source);
   const analyzer = new SemanticAnalyzer();
-  return analyzer.analyze(ast, source);
+  return analyzer.analyze(ast, source, basePath);
 }
 
 describe('Semantic Analysis - Import Declarations', () => {
@@ -144,5 +148,65 @@ describe('Semantic Analysis - TsBlock', () => {
       let sum = ts(x, y, z) { return x + y + z }
     `);
     expect(errors).toHaveLength(3);
+  });
+});
+
+describe('Semantic Analysis - Vibe Import Validation', () => {
+  const mainFile = join(fixturesDir, 'main.vibe');
+
+  test('valid import of exported function from vibe file', () => {
+    const errors = analyze(`
+      import { greet } from "./exports.vibe"
+      let msg = greet("world")
+    `, mainFile);
+    expect(errors).toHaveLength(0);
+  });
+
+  test('valid import of multiple exports from vibe file', () => {
+    const errors = analyze(`
+      import { greet, add, VERSION } from "./exports.vibe"
+      let msg = greet("world")
+    `, mainFile);
+    expect(errors).toHaveLength(0);
+  });
+
+  test('valid import of exported model from vibe file', () => {
+    const errors = analyze(`
+      import { testModel } from "./exports.vibe"
+      let x: text = "test"
+    `, mainFile);
+    expect(errors).toHaveLength(0);
+  });
+
+  test('error: import non-existent function from vibe file', () => {
+    const errors = analyze(`
+      import { nonExistent } from "./exports.vibe"
+    `, mainFile);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/'nonExistent' is not exported from/);
+  });
+
+  test('error: import non-exported private function from vibe file', () => {
+    const errors = analyze(`
+      import { privateHelper } from "./exports.vibe"
+    `, mainFile);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/'privateHelper' is not exported from/);
+  });
+
+  test('error: import non-exported constant from vibe file', () => {
+    const errors = analyze(`
+      import { INTERNAL_SECRET } from "./exports.vibe"
+    `, mainFile);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/'INTERNAL_SECRET' is not exported from/);
+  });
+
+  test('error: import mix of valid and invalid from vibe file', () => {
+    const errors = analyze(`
+      import { greet, fakeFunction, VERSION } from "./exports.vibe"
+    `, mainFile);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/'fakeFunction' is not exported from/);
   });
 });

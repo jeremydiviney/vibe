@@ -31,7 +31,21 @@ function() {
 function let() {
   return "hello"
 }
-`)).toThrow();
+`)).toThrow(/reserved keyword/);
+  });
+
+  test('function with type name as name', () => {
+    expect(() => parse(`
+function text(x: text, y: number): text {
+  return x + y
+}
+`)).toThrow(/reserved type name/);
+  });
+
+  test('variable with keyword as name', () => {
+    expect(() => parse(`
+let return = 5
+`)).toThrow(/reserved keyword/);
   });
 
   // ============================================================================

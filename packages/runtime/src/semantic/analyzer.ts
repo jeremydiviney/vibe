@@ -34,6 +34,7 @@ export class SemanticAnalyzer {
       inFunction: false,
       atTopLevel: true,
       loopDepth: 0,
+      currentFunctionReturnType: null,
     };
 
     // Create visitors with context

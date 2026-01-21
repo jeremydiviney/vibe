@@ -59,4 +59,31 @@ let c = undefined_var`);
     // Error should be on line 2 (0-indexed)
     expect(diagnostics[0].range.start.line).toBe(2);
   });
+
+  it('should show improved error for reserved type as identifier', () => {
+    const doc = createDocument('function text(x: number): number { return x }');
+    const diagnostics = validateDocument(doc);
+
+    expect(diagnostics.length).toBeGreaterThan(0);
+    expect(diagnostics[0].message).toContain('reserved type name');
+  });
+
+  it('should show improved error for reserved keyword as identifier', () => {
+    const doc = createDocument('let return = 5');
+    const diagnostics = validateDocument(doc);
+
+    expect(diagnostics.length).toBeGreaterThan(0);
+    expect(diagnostics[0].message).toContain('reserved keyword');
+  });
+
+  it('should show improved error for missing comma in object', () => {
+    const doc = createDocument(`let x = {
+  a: 1
+  b: 2
+}`);
+    const diagnostics = validateDocument(doc);
+
+    expect(diagnostics.length).toBeGreaterThan(0);
+    expect(diagnostics[0].message.toLowerCase()).toContain('missing comma');
+  });
 });

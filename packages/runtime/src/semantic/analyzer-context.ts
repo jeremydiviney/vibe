@@ -7,6 +7,7 @@
 import type { SourceLocation } from '../errors';
 import type { SymbolTable, SymbolKind } from './symbol-table';
 import type { TsFunctionSignature } from './ts-signatures';
+import type { VibeType } from '../ast';
 
 /**
  * Context interface passed to analyzer helper functions.
@@ -59,4 +60,5 @@ export interface AnalyzerState {
   inFunction: boolean;
   atTopLevel: boolean;
   loopDepth: number;
+  currentFunctionReturnType: VibeType;  // Track return type for prompt context validation
 }

@@ -185,13 +185,12 @@ export class Runtime {
     return resolveValue(variable?.value);
   }
 
-  // Get raw value including VibeValue wrapper if present
+  // Get raw VibeValue wrapper (for testing error state, toolCalls, etc.)
   getRawValue(name: string): unknown {
     const frame = this.state.callStack[this.state.callStack.length - 1];
     if (!frame) return undefined;
 
-    const variable = frame.locals[name];
-    return variable?.value;
+    return frame.locals[name];
   }
 
   // Get all AI interactions (for debugging)

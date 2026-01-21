@@ -276,25 +276,33 @@ import { helper } from "./utils.ts"
 // Vibe files
 import { myFunction, myModel } from "./lib.vibe"
 
-// System utilities
-import { env, print, uuid, now, sleep } from "system"
+// Utility functions
+import { uuid, now, random, jsonParse, jsonStringify } from "system/utils"
 
-// System tools (for AI)
+// AI tools
 import { readFile, writeFile, bash, glob, grep } from "system/tools"
 ```
 
-## System Functions
+## Core Functions
+
+Always available without import:
 
 | Function | Description |
 |----------|-------------|
 | `env(name, default?)` | Get environment variable |
 | `print(message)` | Print to console |
+
+## Utility Functions
+
+Import from `"system/utils"`:
+
+| Function | Description |
+|----------|-------------|
 | `uuid()` | Generate UUID v4 |
 | `now()` | Current timestamp (ms) |
-| `sleep(ms)` | Pause execution |
+| `random()` / `random(min, max)` | Random number |
 | `jsonParse(text)` | Parse JSON string |
 | `jsonStringify(value, pretty?)` | Convert to JSON |
-| `random()` / `random(min, max)` | Random number |
 
 ## System Tools
 

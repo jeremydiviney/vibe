@@ -10,6 +10,8 @@ import { isValidType } from './types';
 import { isCoreFunction } from '../runtime/stdlib/core';
 import { extractFunctionSignature } from './ts-signatures';
 import { resolve, dirname } from 'path';
+import { existsSync, readFileSync } from 'fs';
+import { parse } from '../parser/parse';
 import {
   validateModelConfig,
   validateToolDeclaration,
@@ -169,7 +171,15 @@ export function createVisitors(
         if (!state.inFunction) {
           ctx.error('return outside of function', node.location);
         }
-        if (node.value) visitExpression(node.value);
+        if (node.value) {
+          // If returning from a prompt-typed function, validate string literals as prompt context
+          const isPromptReturn = state.currentFunctionReturnType === 'prompt';
+          if (isPromptReturn && (node.value.type === 'StringLiteral' || node.value.type === 'TemplateLiteral')) {
+            validateStringInterpolation(ctx, node.value.value, true, node.value.location);
+          } else {
+            visitExpression(node.value);
+          }
+        }
         break;
 
       case 'BreakStatement':
@@ -471,9 +481,12 @@ export function createVisitors(
       return;
     }
 
+    // Check for system module imports
+    const isSystemModule = node.source === 'system/utils' || node.source === 'system/tools';
     const isToolImport = node.source === 'system/tools';
 
-    if (node.sourceType === 'ts' && ctx.basePath) {
+    // Extract TypeScript signatures for non-system TS imports
+    if (node.sourceType === 'ts' && ctx.basePath && !isSystemModule) {
       const sourcePath = resolve(dirname(ctx.basePath), node.source);
       for (const spec of node.specifiers) {
         try {
@@ -485,6 +498,12 @@ export function createVisitors(
           // Skip if can't extract signature
         }
       }
+    }
+
+    // Validate Vibe imports - check that imported symbols exist in source file
+    let exportedNames: Set<string> | null = null;
+    if (node.sourceType === 'vibe' && ctx.basePath) {
+      exportedNames = getExportedNamesFromVibeFile(ctx.basePath, node.source);
     }
 
     for (const spec of node.specifiers) {
@@ -502,6 +521,14 @@ export function createVisitors(
           );
         }
       } else {
+        // Validate that imported name exists in source file (for Vibe imports)
+        if (exportedNames !== null && !exportedNames.has(spec.imported)) {
+          ctx.error(
+            `'${spec.imported}' is not exported from '${node.source}'`,
+            node.location
+          );
+        }
+
         // Tool bundles (allTools, readonlyTools, safeTools) are imports, individual tools are 'tool' kind
         const toolBundles = ['allTools', 'readonlyTools', 'safeTools'];
         const importKind = isToolImport && !toolBundles.includes(spec.local) ? 'tool' : 'import';
@@ -510,9 +537,41 @@ export function createVisitors(
     }
   }
 
+  /**
+   * Get the set of exported names from a Vibe source file
+   * Returns null if the file cannot be read/parsed
+   */
+  function getExportedNamesFromVibeFile(basePath: string, importSource: string): Set<string> | null {
+    try {
+      const sourcePath = resolve(dirname(basePath), importSource);
+      if (!existsSync(sourcePath)) {
+        return null; // File doesn't exist - let runtime handle this error
+      }
+
+      const sourceContent = readFileSync(sourcePath, 'utf-8');
+      const sourceAst = parse(sourceContent, { file: sourcePath });
+
+      const exportedNames = new Set<string>();
+      for (const statement of sourceAst.body) {
+        if (statement.type === 'ExportDeclaration') {
+          const decl = statement.declaration;
+          if ('name' in decl) {
+            exportedNames.add(decl.name);
+          }
+        }
+      }
+
+      return exportedNames;
+    } catch {
+      return null; // Parse error or other issue - skip validation
+    }
+  }
+
   function visitFunction(node: AST.FunctionDeclaration): void {
     const wasInFunction = state.inFunction;
+    const prevReturnType = state.currentFunctionReturnType;
     state.inFunction = true;
+    state.currentFunctionReturnType = node.returnType;
     ctx.symbols.enterScope();
 
     for (const param of node.params) {
@@ -528,6 +587,7 @@ export function createVisitors(
 
     ctx.symbols.exitScope();
     state.inFunction = wasInFunction;
+    state.currentFunctionReturnType = prevReturnType;
   }
 
   return { visitStatement, visitExpression };

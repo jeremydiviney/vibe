@@ -87,6 +87,12 @@ export const keywords: KeywordDef[] = [
     documentation: 'Return a value from a function.\n\nSyntax: `return expression`',
   },
   {
+    name: 'throw',
+    kind: CompletionItemKind.Keyword,
+    detail: 'Throw an error',
+    documentation: 'Throw an error and return immediately with error value.\n\nSyntax: `throw "error message"`\n\nThe caller receives a VibeValue with `.err = true` and can check with `if result.err { ... }`',
+  },
+  {
     name: 'import',
     kind: CompletionItemKind.Keyword,
     detail: 'Import from module',
@@ -246,71 +252,102 @@ export const coreFunctions: BuiltinFunctionDef[] = [
   },
 ];
 
-// Library functions - require explicit import from "system"
-export const libraryFunctions: BuiltinFunctionDef[] = [
+// Utility functions - require explicit import from "system" or "system/utils"
+export const utilityFunctions: BuiltinFunctionDef[] = [
   {
     name: 'uuid',
     signature: 'uuid()',
     params: [],
-    documentation: 'Generate a UUID v4.\n\n*Requires: `import { uuid } from "system"`*',
-  },
-  {
-    name: 'sleep',
-    signature: 'sleep(ms: number)',
-    params: [{ name: 'ms', type: 'number', description: 'Milliseconds to sleep' }],
-    documentation: 'Pause execution for specified milliseconds.\n\n*Requires: `import { sleep } from "system"`*',
+    documentation: 'Generate a UUID v4.\n\n*Requires: `import { uuid } from "system/utils"`*\n\n',
   },
   {
     name: 'now',
     signature: 'now()',
     params: [],
-    documentation: 'Get current timestamp in milliseconds.\n\n*Requires: `import { now } from "system"`*',
+    documentation: 'Get current timestamp in milliseconds.\n\n*Requires: `import { now } from "system/utils"`*\n\n',
   },
   {
-    name: 'read',
-    signature: 'read(path: text)',
-    params: [{ name: 'path', type: 'text', description: 'File path to read' }],
-    documentation: 'Read file contents.\n\n*Requires: `import { read } from "system"`*',
-  },
-  {
-    name: 'write',
-    signature: 'write(path: text, content: text)',
+    name: 'random',
+    signature: 'random(min?: number, max?: number)',
     params: [
-      { name: 'path', type: 'text', description: 'File path' },
-      { name: 'content', type: 'text', description: 'Content to write' },
+      { name: 'min', type: 'number', description: 'Minimum value (inclusive, optional)' },
+      { name: 'max', type: 'number', description: 'Maximum value (inclusive, optional)' },
     ],
-    documentation: 'Write content to file.\n\n*Requires: `import { write } from "system"`*',
-  },
-  {
-    name: 'exec',
-    signature: 'exec(command: text)',
-    params: [{ name: 'command', type: 'text', description: 'Shell command to execute' }],
-    documentation: 'Execute shell command.\n\n*Requires: `import { exec } from "system"`*',
-  },
-  {
-    name: 'fetch',
-    signature: 'fetch(url: text)',
-    params: [{ name: 'url', type: 'text', description: 'URL to fetch' }],
-    documentation: 'HTTP GET request.\n\n*Requires: `import { fetch } from "system"`*',
-  },
-  {
-    name: 'length',
-    signature: 'length(value: text | json[])',
-    params: [{ name: 'value', type: 'text | json[]', description: 'String or array' }],
-    documentation: 'Get length of string or array.\n\n*Requires: `import { length } from "system"`*',
+    documentation: 'Generate a random number. Without args returns 0-1, with min/max returns integer in range.\n\n*Requires: `import { random } from "system/utils"`*\n\n',
   },
   {
     name: 'jsonParse',
     signature: 'jsonParse(text: text)',
     params: [{ name: 'text', type: 'text', description: 'JSON string' }],
-    documentation: 'Parse JSON string to object.\n\n*Requires: `import { jsonParse } from "system"`*',
+    documentation: 'Parse JSON string to object.\n\n*Requires: `import { jsonParse } from "system/utils"`*\n\n',
   },
   {
     name: 'jsonStringify',
-    signature: 'jsonStringify(value: json)',
-    params: [{ name: 'value', type: 'json', description: 'Object to stringify' }],
-    documentation: 'Convert object to JSON string.\n\n*Requires: `import { jsonStringify } from "system"`*',
+    signature: 'jsonStringify(value: json, pretty?: boolean)',
+    params: [
+      { name: 'value', type: 'json', description: 'Object to stringify' },
+      { name: 'pretty', type: 'boolean', description: 'Format with indentation (optional)' },
+    ],
+    documentation: 'Convert object to JSON string.\n\n*Requires: `import { jsonStringify } from "system/utils"`*\n\n',
   },
+];
+
+// AI tools - require explicit import from "system/tools"
+export const toolFunctions: BuiltinFunctionDef[] = [
+  {
+    name: 'readFile',
+    signature: 'readFile(path: text, startLine?: number, endLine?: number)',
+    params: [
+      { name: 'path', type: 'text', description: 'File path to read' },
+      { name: 'startLine', type: 'number', description: 'Start line (1-indexed, optional)' },
+      { name: 'endLine', type: 'number', description: 'End line (optional)' },
+    ],
+    documentation: 'Read file contents. AI tool.\n\n*Requires: `import { readFile } from "system/tools"`*',
+  },
+  {
+    name: 'writeFile',
+    signature: 'writeFile(path: text, content: text)',
+    params: [
+      { name: 'path', type: 'text', description: 'File path' },
+      { name: 'content', type: 'text', description: 'Content to write' },
+    ],
+    documentation: 'Write content to file. AI tool.\n\n*Requires: `import { writeFile } from "system/tools"`*',
+  },
+  {
+    name: 'bash',
+    signature: 'bash(command: text, cwd?: text, timeout?: number)',
+    params: [
+      { name: 'command', type: 'text', description: 'Shell command to execute' },
+      { name: 'cwd', type: 'text', description: 'Working directory (optional)' },
+      { name: 'timeout', type: 'number', description: 'Timeout in ms (optional)' },
+    ],
+    documentation: 'Execute shell command. AI tool.\n\n*Requires: `import { bash } from "system/tools"`*',
+  },
+  {
+    name: 'glob',
+    signature: 'glob(pattern: text, cwd?: text)',
+    params: [
+      { name: 'pattern', type: 'text', description: 'Glob pattern (e.g., "**/*.ts")' },
+      { name: 'cwd', type: 'text', description: 'Working directory (optional)' },
+    ],
+    documentation: 'Find files matching a glob pattern. AI tool.\n\n*Requires: `import { glob } from "system/tools"`*',
+  },
+  {
+    name: 'grep',
+    signature: 'grep(pattern: text, path: text, ignoreCase?: boolean)',
+    params: [
+      { name: 'pattern', type: 'text', description: 'Search pattern (regex)' },
+      { name: 'path', type: 'text', description: 'File or directory path' },
+      { name: 'ignoreCase', type: 'boolean', description: 'Case insensitive (optional)' },
+    ],
+    documentation: 'Search file contents for a pattern. AI tool.\n\n*Requires: `import { grep } from "system/tools"`*',
+  },
+];
+
+// Library functions - combined for backwards compatibility
+export const libraryFunctions: BuiltinFunctionDef[] = [
+  ...utilityFunctions,
+  ...toolFunctions,
 ];
 
 // All built-in functions (core + library)

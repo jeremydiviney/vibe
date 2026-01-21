@@ -24,6 +24,12 @@ export function validateAndCoerce(
   location?: SourceLocation,
   source?: 'ai' | 'user'
 ): { value: unknown; inferredType: VibeType } {
+  // If value is an error VibeValue, pass it through without validation
+  // Errors should propagate unchanged regardless of type annotation
+  if (isVibeValue(value) && value.err) {
+    return { value, inferredType: type };
+  }
+
   // Resolve VibeValue unless this is a direct AI result to an UNTYPED variable
   // (source === 'ai' means the value came directly from an AI call)
   // For typed variables, always resolve so type validation can work on the primitive value

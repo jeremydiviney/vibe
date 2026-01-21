@@ -177,9 +177,9 @@ let x = 1
     expect(runtime.getValue('x')).toBe(1);
   });
 
-  test('uuid function works when imported from system', async () => {
+  test('uuid function works when imported from system/utils', async () => {
     const ast = parse(`
-import { uuid } from "system"
+import { uuid } from "system/utils"
 let id = uuid()
 `);
     const runtime = new Runtime(ast, createMockProvider());
@@ -190,41 +190,41 @@ let id = uuid()
   });
 
   // ============================================================================
-  // Tools cannot be called directly - only used by AI models
+  // Utility functions can be called directly from system/utils
   // ============================================================================
 
-  test('tools cannot be called directly from vibe scripts', async () => {
+  test('now can be called directly from system/utils', async () => {
     const ast = parse(`
-import { now } from "system/tools"
+import { now } from "system/utils"
 let timestamp = now()
 `);
     const runtime = new Runtime(ast, createMockProvider());
-    await expect(runtime.run()).rejects.toThrow(
-      "Cannot call tool 'now' directly"
-    );
+    await runtime.run();
+    const timestamp = runtime.getValue('timestamp');
+    expect(typeof timestamp).toBe('number');
+    expect(timestamp).toBeGreaterThan(0);
   });
 
-  test('jsonParse tool cannot be called directly', async () => {
+  test('jsonParse can be called directly from system/utils', async () => {
     const ast = parse(`
-import { jsonParse } from "system/tools"
+import { jsonParse } from "system/utils"
 let parsed = jsonParse('{"key": "value"}')
+let val = ts(parsed) { return parsed.key }
 `);
     const runtime = new Runtime(ast, createMockProvider());
-    await expect(runtime.run()).rejects.toThrow(
-      "Cannot call tool 'jsonParse' directly"
-    );
+    await runtime.run();
+    expect(runtime.getValue('val')).toBe('value');
   });
 
-  test('jsonStringify tool cannot be called directly', async () => {
+  test('jsonStringify can be called directly from system/utils', async () => {
     const ast = parse(`
-import { jsonStringify } from "system/tools"
+import { jsonStringify } from "system/utils"
 let obj:json = {name: "test"}
 let str = jsonStringify(obj)
 `);
     const runtime = new Runtime(ast, createMockProvider());
-    await expect(runtime.run()).rejects.toThrow(
-      "Cannot call tool 'jsonStringify' directly"
-    );
+    await runtime.run();
+    expect(runtime.getValue('str')).toBe('{"name":"test"}');
   });
 
   test('allTools array can be imported from system/tools', async () => {
@@ -235,7 +235,7 @@ let toolCount = ts(allTools) { return allTools.length }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
     const toolCount = runtime.getValue('toolCount');
-    expect(toolCount).toBe(19); // File, search, directory, utility, and system tools for AI
+    expect(toolCount).toBe(13); // File, search, directory, and system tools for AI
   });
 });
 
@@ -332,9 +332,9 @@ let x = 1
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    // Verify model has all 19 tools
+    // Verify model has all 13 AI tools (utility functions now in system/utils)
     const model = runtime.getValue('m') as { tools?: unknown[] };
-    expect(model.tools).toHaveLength(19);
+    expect(model.tools).toHaveLength(13);
   });
 
   test('model without tools parameter has undefined tools', async () => {
@@ -355,7 +355,7 @@ let x = 1
 });
 
 describe('Runtime - Tool Bundles', () => {
-  test('allTools contains all 19 tools including bash and runCode', async () => {
+  test('allTools contains all 13 AI tools including bash and runCode', async () => {
     const ast = parse(`
 import { allTools } from "system/tools"
 let count = ts(allTools) { return allTools.length }
@@ -364,7 +364,7 @@ let names = ts(allTools) { return allTools.map(t => t.name).sort() }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    expect(runtime.getValue('count')).toBe(19);
+    expect(runtime.getValue('count')).toBe(13);
     const names = runtime.getValue('names') as string[];
     expect(names).toContain('bash');
     expect(names).toContain('runCode');
@@ -381,7 +381,7 @@ let names = ts(readonlyTools) { return readonlyTools.map(t => t.name).sort() }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    expect(runtime.getValue('count')).toBe(12);
+    expect(runtime.getValue('count')).toBe(6);
     const names = runtime.getValue('names') as string[];
     // Should include read-only tools
     expect(names).toContain('readFile');
@@ -409,7 +409,7 @@ let names = ts(safeTools) { return safeTools.map(t => t.name).sort() }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    expect(runtime.getValue('count')).toBe(17);
+    expect(runtime.getValue('count')).toBe(11);
     const names = runtime.getValue('names') as string[];
     // Should NOT include bash or runCode
     expect(names).not.toContain('bash');
@@ -430,7 +430,7 @@ let hasRunCode = ts(runCode) { return runCode.name === "runCode" }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    expect(runtime.getValue('readCount')).toBe(12);
+    expect(runtime.getValue('readCount')).toBe(6);
     expect(runtime.getValue('hasBash')).toBe(true);
     expect(runtime.getValue('hasRunCode')).toBe(true);
   });
@@ -445,8 +445,8 @@ let names = ts(combined) { return combined.map(t => t.name) }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    // readonlyTools (12) + [bash] (1) = 13
-    expect(runtime.getValue('count')).toBe(13);
+    // readonlyTools (6) + [bash] (1) = 7
+    expect(runtime.getValue('count')).toBe(7);
     const names = runtime.getValue('names') as string[];
     expect(names).toContain('readFile');
     expect(names).toContain('bash');
@@ -461,7 +461,7 @@ let count = ts(custom) { return custom.length }
     const runtime = new Runtime(ast, createMockProvider());
     await runtime.run();
 
-    // readonlyTools (12) + bash (1) + runCode (1) = 14
-    expect(runtime.getValue('count')).toBe(14);
+    // readonlyTools (6) + bash (1) + runCode (1) = 8
+    expect(runtime.getValue('count')).toBe(8);
   });
 });

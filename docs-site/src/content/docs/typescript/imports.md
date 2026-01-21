@@ -50,28 +50,40 @@ let bad: text = add(1, 2)  // Error: cannot assign number to text
 
 ## System Imports
 
-Vibe provides built-in utilities:
+Vibe provides built-in utilities organized into modules:
+
+### Core Functions (No Import Needed)
+
+`print` and `env` are always available:
 
 ```vibe
-import { env } from "system"
-
+// No import needed
 let apiKey = env("ANTHROPIC_API_KEY")
 let port = env("PORT", "3000")  // With default
+print("API key loaded")
 ```
-
-### Available System Functions
 
 | Function | Description |
 |----------|-------------|
 | `env(name, default?)` | Get environment variable |
 | `print(message)` | Print to console |
+
+### Utility Functions
+
+Import from `"system/utils"`:
+
+```vibe
+import { uuid, now, random, jsonParse, jsonStringify } from "system/utils"
+```
+
+| Function | Description |
+|----------|-------------|
 | `uuid()` | Generate UUID v4 |
 | `now()` | Current timestamp (ms) |
-| `sleep(ms)` | Pause execution |
-| `jsonParse(text)` | Parse JSON string |
-| `jsonStringify(value, pretty?)` | Convert to JSON string |
 | `random()` | Random number 0-1 |
 | `random(min, max)` | Random integer in range |
+| `jsonParse(text)` | Parse JSON string |
+| `jsonStringify(value, pretty?)` | Convert to JSON string |
 
 ## System Tools
 

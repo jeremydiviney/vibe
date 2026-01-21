@@ -48,9 +48,11 @@ export function getTSImportForIdentifier(
 // Declaration info returned by findDeclaration
 export interface DeclarationInfo {
   name: string;
-  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'destructured';
+  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'destructured' | 'import';
   location: { line: number; column: number };
   node: AST.Node;
+  importSource?: string;      // For imports: the source file path
+  importSourceType?: 'ts' | 'vibe';  // For imports: whether it's a TS or Vibe import
 }
 
 interface NodeInfo {
@@ -164,6 +166,10 @@ function findInStatement(
         }
       }
       break;
+
+    case 'ExportDeclaration':
+      // Delegate to the inner declaration
+      return findInStatement(statement.declaration, line, column);
   }
 
   return null;
@@ -384,6 +390,10 @@ function findIdentifierInStatement(
     case 'AsyncStatement':
       // Fire-and-forget async: async do/vibe/ts/function()
       return findIdentifierInExpression(statement.expression, line, column);
+
+    case 'ExportDeclaration':
+      // Delegate to the inner declaration
+      return findIdentifierInStatement(statement.declaration, line, column);
   }
 
   return null;
@@ -548,6 +558,63 @@ function isPositionAtDeclarationName(
 }
 
 /**
+ * Find the innermost function or tool that contains the given line
+ */
+function findEnclosingFunctionOrTool(
+  ast: AST.Program,
+  line: number
+): AST.FunctionDeclaration | AST.ToolDeclaration | null {
+  let enclosing: AST.FunctionDeclaration | AST.ToolDeclaration | null = null;
+
+  function visitFunctionOrTool(decl: AST.FunctionDeclaration | AST.ToolDeclaration): void {
+    // Check if line is after the declaration start
+    if (line >= decl.location.line) {
+      // Check if we're inside by looking at the body
+      const body = decl.body;
+      if (body.body.length > 0) {
+        const lastStmt = body.body[body.body.length - 1];
+        // If line is between start and last statement, we're inside
+        if (line <= lastStmt.location.line + 10) { // +10 for closing brace buffer
+          enclosing = decl;
+        }
+      } else if (line <= decl.location.line + 3) {
+        // Empty body, small buffer
+        enclosing = decl;
+      }
+    }
+    // Recurse into body
+    for (const s of decl.body.body) {
+      visit(s);
+    }
+  }
+
+  function visit(statement: AST.Statement): void {
+    if (statement.type === 'FunctionDeclaration' || statement.type === 'ToolDeclaration') {
+      visitFunctionOrTool(statement);
+    } else if (statement.type === 'ExportDeclaration') {
+      // Handle exported functions
+      const decl = statement.declaration;
+      if (decl.type === 'FunctionDeclaration') {
+        visitFunctionOrTool(decl);
+      }
+    } else if (statement.type === 'IfStatement') {
+      for (const s of statement.consequent.body) visit(s);
+      if (statement.alternate) {
+        for (const s of statement.alternate.body) visit(s);
+      }
+    } else if (statement.type === 'ForInStatement' || statement.type === 'WhileStatement') {
+      for (const s of statement.body.body) visit(s);
+    }
+  }
+
+  for (const statement of ast.body) {
+    visit(statement);
+  }
+
+  return enclosing;
+}
+
+/**
  * Find the declaration of a symbol by name
  * Returns the declaration info with location
  */
@@ -557,11 +624,29 @@ export function findDeclaration(
   fromLine?: number,
   fromColumn?: number
 ): DeclarationInfo | null {
-  // Collect all declarations
+  // Collect all declarations (without parameters first)
   const declarations: DeclarationInfo[] = [];
 
   for (const statement of ast.body) {
     collectDeclarations(statement, declarations);
+  }
+
+  // If we have a search position, also add parameters from enclosing function/tool
+  if (fromLine !== undefined) {
+    const enclosing = findEnclosingFunctionOrTool(ast, fromLine);
+    if (enclosing) {
+      for (const param of enclosing.params) {
+        declarations.push({
+          name: param.name,
+          kind: 'parameter',
+          location: {
+            line: enclosing.location.line,
+            column: enclosing.location.column,
+          },
+          node: enclosing,
+        });
+      }
+    }
   }
 
   // Find matching declaration
@@ -708,6 +793,28 @@ function collectDeclarations(
     case 'WhileStatement':
       for (const s of statement.body.body) {
         collectDeclarations(s, declarations);
+      }
+      break;
+
+    case 'ExportDeclaration':
+      // Delegate to the inner declaration
+      collectDeclarations(statement.declaration, declarations);
+      break;
+
+    case 'ImportDeclaration':
+      // Each imported specifier is a declaration in this file
+      for (const specifier of statement.specifiers) {
+        declarations.push({
+          name: specifier.local,
+          kind: 'import',
+          location: {
+            line: statement.location.line,
+            column: statement.location.column,
+          },
+          node: statement,
+          importSource: statement.source,
+          importSourceType: statement.sourceType,
+        });
       }
       break;
   }

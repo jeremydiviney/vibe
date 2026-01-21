@@ -1,0 +1,25 @@
+// Test fixture with exports for import validation tests
+
+export function greet(name: text): text {
+  return "Hello " + name
+}
+
+export function add(a: number, b: number): number {
+  return a + b
+}
+
+export const VERSION = "1.0.0"
+
+export model testModel = {
+  name: "gpt-4",
+  apiKey: "test-key",
+  url: "https://api.example.com"
+}
+
+// This function is NOT exported
+function privateHelper(): text {
+  return "private"
+}
+
+// This constant is NOT exported
+const INTERNAL_SECRET = "hidden"

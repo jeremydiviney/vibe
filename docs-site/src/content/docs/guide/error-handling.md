@@ -61,6 +61,77 @@ if sum.err {
 
 This means you don't need to check every intermediate value—errors flow through naturally.
 
+## Throwing Errors
+
+Use `throw` to create an error and return immediately from a function:
+
+```vibe
+function divide(a: number, b: number): number {
+  if b == 0 {
+    throw "Division by zero"
+  }
+  return a / b
+}
+
+let result = divide(10, 0)
+if result.err {
+  print(result.errDetails.message)  // "Division by zero"
+}
+```
+
+When `throw` executes:
+1. The function returns immediately (code after `throw` is not executed)
+2. The return value has `.err = true` and `.errDetails.message` set to your message
+3. The caller can check for errors like any other operation
+
+### Throw with Expressions
+
+The throw message can be any expression:
+
+```vibe
+function validateAge(age: number): number {
+  if age < 0 {
+    throw "Age cannot be negative: " + age
+  }
+  if age > 150 {
+    throw "Age seems unrealistic: " + age
+  }
+  return age
+}
+```
+
+### Errors Propagate from Throw
+
+Thrown errors propagate through expressions just like any other error:
+
+```vibe
+function inner(): number {
+  throw "Something went wrong"
+}
+
+function outer(): number {
+  let x = inner()  // x has the error
+  return x + 1     // Error propagates through addition
+}
+
+let result = outer()
+print(result.err)  // true
+print(result.errDetails.message)  // "Something went wrong"
+```
+
+### Top-Level Throw
+
+You can also throw at the top level to stop execution:
+
+```vibe
+let config = loadConfig()
+if config.err {
+  throw "Failed to load config: " + config.errDetails.message
+}
+
+// Rest of program only runs if config loaded successfully
+```
+
 ## AI Response Errors
 
 AI calls can fail for various reasons:

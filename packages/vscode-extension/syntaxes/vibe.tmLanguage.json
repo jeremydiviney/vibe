@@ -102,11 +102,36 @@
             },
             {
               "name": "meta.embedded.expression.vibe",
-              "begin": "\\$\\{",
-              "end": "\\}",
+              "begin": "(\\$\\{)",
+              "beginCaptures": {
+                "1": { "name": "punctuation.section.interpolation.begin.vibe" }
+              },
+              "end": "(\\})",
+              "endCaptures": {
+                "1": { "name": "punctuation.section.interpolation.end.vibe" }
+              },
               "patterns": [
                 { "include": "$self" }
               ]
+            },
+            {
+              "name": "meta.interpolation.expansion.vibe",
+              "match": "(!)(\\{)([a-zA-Z_][a-zA-Z0-9_]*)(\\})",
+              "captures": {
+                "1": { "name": "punctuation.definition.interpolation.vibe" },
+                "2": { "name": "punctuation.section.interpolation.begin.vibe" },
+                "3": { "name": "variable.other.interpolation.vibe" },
+                "4": { "name": "punctuation.section.interpolation.end.vibe" }
+              }
+            },
+            {
+              "name": "meta.interpolation.reference.vibe",
+              "match": "(\\{)([a-zA-Z_][a-zA-Z0-9_]*)(\\})",
+              "captures": {
+                "1": { "name": "punctuation.section.interpolation.begin.vibe" },
+                "2": { "name": "variable.other.interpolation.vibe" },
+                "3": { "name": "punctuation.section.interpolation.end.vibe" }
+              }
             }
           ]
         }

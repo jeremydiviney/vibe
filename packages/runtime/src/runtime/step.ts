@@ -10,6 +10,7 @@ import {
   execStatement,
   execStatements,
   execReturnValue,
+  execThrowError,
   execIfBranch,
   execEnterBlock,
   execExitBlock,
@@ -316,6 +317,9 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
     case 'return_value':
       return execReturnValue(state);
+
+    case 'throw_error':
+      return execThrowError(state, instruction.location);
 
     case 'enter_block':
       return execEnterBlock(state, instruction.savedKeys);

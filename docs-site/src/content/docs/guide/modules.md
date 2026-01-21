@@ -26,12 +26,18 @@ let formatted = formatDate("2025-01-15")
 
 ## System Imports
 
-Vibe provides built-in system utilities:
+Vibe provides built-in utilities. Core functions like `print` and `env` are always available without import:
 
 ```vibe
-import { env } from "system"
-
+// No import needed for core functions
 let apiKey = env("ANTHROPIC_API_KEY")
+print("Key loaded")
+```
+
+Other utilities require import:
+
+```vibe
+import { uuid, now, random } from "system/utils"
 ```
 
 ## Exporting
@@ -79,8 +85,7 @@ my-project/
 Example `config.vibe`:
 
 ```vibe
-import { env } from "system"
-
+// env() is always available - no import needed
 export model claude = {
   name: "claude-sonnet-4-20250514",
   provider: "anthropic",

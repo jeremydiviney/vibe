@@ -38,6 +38,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.toolDeclaration) },
       { ALT: () => this.SUBRULE(this.returnStatement) },
       { ALT: () => this.SUBRULE(this.breakStatement) },
+      { ALT: () => this.SUBRULE(this.throwStatement) },
       { ALT: () => this.SUBRULE(this.ifStatement) },
       { ALT: () => this.SUBRULE(this.forInStatement) },
       { ALT: () => this.SUBRULE(this.whileStatement) },
@@ -442,6 +443,11 @@ class VibeParser extends CstParser {
 
   private breakStatement = this.RULE('breakStatement', () => {
     this.CONSUME(T.Break);
+  });
+
+  private throwStatement = this.RULE('throwStatement', () => {
+    this.CONSUME(T.Throw);
+    this.SUBRULE(this.expression);  // Error message is required
   });
 
   private ifStatement = this.RULE('ifStatement', () => {

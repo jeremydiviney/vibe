@@ -3,7 +3,7 @@
 import * as AST from '../../ast';
 import type { SourceLocation } from '../../errors';
 import type { RuntimeState, VibeValue } from '../types';
-import { createVibeValue, resolveValue, isVibeValue } from '../types';
+import { createVibeValue, createVibeError, resolveValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
 import { requireBoolean, validateAndCoerce } from '../validation';
 import { execDeclareVar } from './variables';
@@ -442,6 +442,53 @@ export function execReturnValue(state: RuntimeState): RuntimeState {
 }
 
 /**
+ * Throw statement - evaluate message and throw error.
+ */
+export function execThrowStatement(state: RuntimeState, stmt: AST.ThrowStatement): RuntimeState {
+  return {
+    ...state,
+    instructionStack: [
+      { op: 'exec_expression', expr: stmt.message, location: stmt.message.location },
+      { op: 'throw_error', location: stmt.location },
+      ...state.instructionStack,
+    ],
+  };
+}
+
+/**
+ * Throw error - create error value and unwind to function boundary.
+ * Uses lastResult as the error message.
+ */
+export function execThrowError(state: RuntimeState, location: SourceLocation): RuntimeState {
+  // Get the error message from lastResult
+  const messageValue = resolveValue(state.lastResult);
+  const message = typeof messageValue === 'string' ? messageValue : String(messageValue);
+
+  // Create error VibeValue
+  const errorValue = createVibeError(message, location);
+
+  // Check if we're at top level (only main frame) or in a function
+  const isTopLevel = state.callStack.length === 1;
+
+  if (isTopLevel) {
+    // At top level - complete with error but keep the frame for variable access
+    return { ...state, status: 'completed', instructionStack: [], lastResult: errorValue };
+  }
+
+  // In a function - unwind like return: pop frame and skip to after pop_frame instruction
+  const newCallStack = state.callStack.slice(0, -1);
+
+  // Find and skip past the pop_frame instruction
+  let newInstructionStack = state.instructionStack;
+  const popFrameIndex = newInstructionStack.findIndex((i) => i.op === 'pop_frame');
+  if (popFrameIndex !== -1) {
+    newInstructionStack = newInstructionStack.slice(popFrameIndex + 1);
+  }
+
+  return { ...state, callStack: newCallStack, instructionStack: newInstructionStack, lastResult: errorValue };
+}
+
+/**
  * Execute statements at index - sequential statement execution.
  */
 export function execStatements(state: RuntimeState, stmts: AST.Statement[], index: number, location: SourceLocation): RuntimeState {
@@ -597,6 +644,9 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
 
     case 'BreakStatement':
       return execBreakStatement(state, stmt);
+
+    case 'ThrowStatement':
+      return execThrowStatement(state, stmt);
 
     default:
       throw new Error(`Unknown statement type: ${(stmt as AST.Statement).type}`);

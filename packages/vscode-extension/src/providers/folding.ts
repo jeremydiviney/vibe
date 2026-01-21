@@ -34,14 +34,14 @@ function collectFoldingRanges(
 ): void {
   switch (statement.type) {
     case 'FunctionDeclaration':
-      addBlockRange(statement.body, ranges);
+      addBlockRange(statement.body, ranges, text);
       for (const s of statement.body.body) {
         collectFoldingRanges(s, text, ranges);
       }
       break;
 
     case 'ToolDeclaration':
-      addBlockRange(statement.body, ranges);
+      addBlockRange(statement.body, ranges, text);
       for (const s of statement.body.body) {
         collectFoldingRanges(s, text, ranges);
       }
@@ -61,13 +61,26 @@ function collectFoldingRanges(
       }
       break;
 
+    case 'LetDeclaration':
+    case 'ConstDeclaration':
+      // Handle JSON objects and arrays as initializers
+      if (statement.initializer) {
+        collectExpressionFoldingRanges(statement.initializer, text, ranges);
+      }
+      break;
+
+    case 'ExportDeclaration':
+      // Handle exported declarations - delegate to the inner declaration
+      collectFoldingRanges(statement.declaration, text, ranges);
+      break;
+
     case 'IfStatement':
-      addBlockRange(statement.consequent, ranges);
+      addBlockRange(statement.consequent, ranges, text);
       for (const s of statement.consequent.body) {
         collectFoldingRanges(s, text, ranges);
       }
       if (statement.alternate) {
-        addBlockRange(statement.alternate, ranges);
+        addBlockRange(statement.alternate, ranges, text);
         for (const s of statement.alternate.body) {
           collectFoldingRanges(s, text, ranges);
         }
@@ -75,14 +88,14 @@ function collectFoldingRanges(
       break;
 
     case 'ForInStatement':
-      addBlockRange(statement.body, ranges);
+      addBlockRange(statement.body, ranges, text);
       for (const s of statement.body.body) {
         collectFoldingRanges(s, text, ranges);
       }
       break;
 
     case 'WhileStatement':
-      addBlockRange(statement.body, ranges);
+      addBlockRange(statement.body, ranges, text);
       for (const s of statement.body.body) {
         collectFoldingRanges(s, text, ranges);
       }
@@ -90,25 +103,89 @@ function collectFoldingRanges(
   }
 }
 
-function addBlockRange(block: AST.BlockStatement, ranges: FoldingRange[]): void {
+/**
+ * Collect folding ranges from expressions (JSON objects, arrays, etc.)
+ */
+function collectExpressionFoldingRanges(
+  expr: AST.Expression,
+  text: string,
+  ranges: FoldingRange[]
+): void {
+  switch (expr.type) {
+    case 'ObjectLiteral':
+      if (expr.location) {
+        const startLine = expr.location.line - 1; // Convert to 0-based
+        const endLine = findClosingBrace(text, startLine);
+        if (endLine > startLine) {
+          ranges.push({
+            startLine,
+            endLine,
+            kind: FoldingRangeKind.Region,
+          });
+        }
+        // Recurse into nested objects
+        for (const prop of expr.properties) {
+          collectExpressionFoldingRanges(prop.value, text, ranges);
+        }
+      }
+      break;
+
+    case 'ArrayLiteral':
+      if (expr.location) {
+        const startLine = expr.location.line - 1;
+        const endLine = findClosingBracket(text, startLine);
+        if (endLine > startLine) {
+          ranges.push({
+            startLine,
+            endLine,
+            kind: FoldingRangeKind.Region,
+          });
+        }
+        // Recurse into nested elements
+        for (const elem of expr.elements) {
+          collectExpressionFoldingRanges(elem, text, ranges);
+        }
+      }
+      break;
+  }
+}
+
+function findClosingBracket(text: string, startLine: number): number {
+  const lines = text.split('\n');
+  let depth = 0;
+  let started = false;
+
+  for (let i = startLine; i < lines.length; i++) {
+    const line = lines[i];
+    for (const char of line) {
+      if (char === '[') {
+        depth++;
+        started = true;
+      } else if (char === ']') {
+        depth--;
+        if (started && depth === 0) {
+          return i;
+        }
+      }
+    }
+  }
+
+  return startLine;
+}
+
+function addBlockRange(block: AST.BlockStatement, ranges: FoldingRange[], text: string): void {
   if (!block.location) return;
 
-  // Block starts at opening brace, need to find closing brace
-  // For now, use a simple heuristic: block spans from its location to last statement + 1
   const startLine = block.location.line - 1; // Convert to 0-based
+  // Find the actual closing brace instead of estimating
+  const endLine = findClosingBrace(text, startLine);
 
-  if (block.body.length > 0) {
-    const lastStatement = block.body[block.body.length - 1];
-    // Estimate end line - add 1 for the closing brace
-    const endLine = lastStatement.location.line; // Already 0-based after -1 + 1 for brace
-
-    if (endLine > startLine) {
-      ranges.push({
-        startLine,
-        endLine,
-        kind: FoldingRangeKind.Region,
-      });
-    }
+  if (endLine > startLine) {
+    ranges.push({
+      startLine,
+      endLine,
+      kind: FoldingRangeKind.Region,
+    });
   }
 }
 
@@ -124,9 +201,13 @@ function findClosingBrace(text: string, startLine: number): number {
         depth++;
         started = true;
       } else if (char === '}') {
-        depth--;
-        if (started && depth === 0) {
-          return i;
+        // Only decrement if we've started (seen at least one {)
+        // This handles cases like "} else {" where we start on a line with }
+        if (started) {
+          depth--;
+          if (depth === 0) {
+            return i;
+          }
         }
       }
     }

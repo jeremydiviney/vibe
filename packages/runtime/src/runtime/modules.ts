@@ -9,7 +9,7 @@ import { resolve, dirname, join } from 'path';
 
 // Map system module names to their implementation files
 const SYSTEM_MODULES: Record<string, string> = {
-  'system': join(__dirname, 'stdlib', 'index.ts'),
+  'system/utils': join(__dirname, 'stdlib', 'utils', 'index.ts'),
   'system/tools': join(__dirname, 'stdlib', 'tools', 'index.ts'),
 };
 

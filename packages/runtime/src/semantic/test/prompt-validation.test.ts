@@ -340,4 +340,48 @@ describe('Semantic Analyzer - Prompt Parameter Validation', () => {
       expect(errors).toEqual([]);
     });
   });
+
+  // ============================================================================
+  // Expansion syntax in prompt-returning functions
+  // ============================================================================
+
+  describe('expansion syntax in prompt-returning functions', () => {
+    test('function returning prompt can use !{} expansion', () => {
+      const errors = getErrors(`
+        function makePrompt(name: text): prompt {
+          return "Hello !{name}, how are you?"
+        }
+      `);
+      expect(errors).toEqual([]);
+    });
+
+    test('function returning prompt can use !{} in template literal', () => {
+      const errors = getErrors(`
+        function makePrompt(data: text): prompt {
+          return \`Process this: !{data}\`
+        }
+      `);
+      expect(errors).toEqual([]);
+    });
+
+    test('function returning text cannot use !{} expansion', () => {
+      const errors = getErrors(`
+        function makeText(name: text): text {
+          return "Hello !{name}"
+        }
+      `);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain('Expansion syntax');
+    });
+
+    test('function with no return type cannot use !{} expansion', () => {
+      const errors = getErrors(`
+        function noType(name: text) {
+          return "Hello !{name}"
+        }
+      `);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain('Expansion syntax');
+    });
+  });
 });

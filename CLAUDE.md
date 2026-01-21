@@ -17,6 +17,12 @@ src/
   index.ts     - Entry point
 ```
 
+## Screenshots
+
+User screenshots are located at: `C:\Users\jerem\Pictures\Screenshots\`
+
+Use `ls -lt` to find the most recent screenshot when the user references one.
+
 ## Lessons Learned
 
 Review `auto-learning.md` at the project root for past mistakes and lessons learned. Pay attention to high-priority (P7+) entries to avoid repeating previous errors.

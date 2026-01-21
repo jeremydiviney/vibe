@@ -133,7 +133,18 @@ model myModel = {
   name: "test"
   apiKey: "key"
 }
-`)).toThrow();
+`)).toThrow(/[Mm]issing comma/);
+  });
+
+  test('export model missing comma separator', () => {
+    expect(() => parse(`
+export model gemini3Flash = {
+  name: 'gemini-flash-3',
+  provider: 'google',
+  apiKey: env('GOOGLE_API_KEY')
+  url: 'https://api.google.com/v1',
+}
+`)).toThrow(/[Mm]issing comma/);
   });
 
   test('properties with double comma', () => {

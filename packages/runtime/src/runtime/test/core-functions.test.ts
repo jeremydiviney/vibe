@@ -176,22 +176,22 @@ if true {
   });
 
   describe('core functions cannot be imported', () => {
-    test('importing env from system fails', async () => {
+    test('importing env from system/utils fails (env is core function)', async () => {
       const ast = parse(`
-import { env } from "system"
+import { env } from "system/utils"
 let x = 1
 `);
       const runtime = new Runtime(ast, createMockProvider());
-      await expect(runtime.run()).rejects.toThrow("'env' is not exported from 'system'");
+      await expect(runtime.run()).rejects.toThrow("'env' is not exported from 'system/utils'");
     });
 
-    test('importing print from system fails', async () => {
+    test('importing print from system/utils fails (print is core function)', async () => {
       const ast = parse(`
-import { print } from "system"
+import { print } from "system/utils"
 let x = 1
 `);
       const runtime = new Runtime(ast, createMockProvider());
-      await expect(runtime.run()).rejects.toThrow("'print' is not exported from 'system'");
+      await expect(runtime.run()).rejects.toThrow("'print' is not exported from 'system/utils'");
     });
 
     test('importing from system/core is blocked', async () => {
@@ -202,10 +202,19 @@ let x = 1
       const runtime = new Runtime(ast, createMockProvider());
       await expect(runtime.run()).rejects.toThrow("'system/core' cannot be imported");
     });
+
+    test('importing from bare "system" fails (not a valid module)', async () => {
+      const ast = parse(`
+import { uuid } from "system"
+let x = 1
+`);
+      const runtime = new Runtime(ast, createMockProvider());
+      await expect(runtime.run()).rejects.toThrow("Unknown system module: 'system'");
+    });
   });
 
-  describe('library functions still require import', () => {
-    test('uuid requires import from system', async () => {
+  describe('utility functions require import from system/utils', () => {
+    test('uuid requires import', async () => {
       const ast = parse(`
 let id = uuid()
 `);
@@ -213,9 +222,9 @@ let id = uuid()
       await expect(runtime.run()).rejects.toThrow("'uuid' is not defined");
     });
 
-    test('uuid works when imported from system', async () => {
+    test('uuid works when imported from system/utils', async () => {
       const ast = parse(`
-import { uuid } from "system"
+import { uuid } from "system/utils"
 let id = uuid()
 `);
       const runtime = new Runtime(ast, createMockProvider());

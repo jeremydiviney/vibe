@@ -45,12 +45,12 @@ describe('Completion Provider', () => {
     expect(keywords).toContain('null');
   });
 
-  it('should return built-in tools', () => {
+  it('should return built-in functions', () => {
     const doc = createDocument('');
     const completions = provideCompletions(doc, { line: 0, character: 0 });
 
     const tools = completions.map(c => c.label);
-    expect(tools).toContain('sleep');
+    expect(tools).toContain('uuid');
     expect(tools).toContain('print');
     expect(tools).toContain('jsonParse');
   });

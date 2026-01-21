@@ -1,16 +1,12 @@
-// Standard library functions for Vibe scripts
-// Import with: import { uuid } from "system"
+// System module - re-exports utility functions for convenience
+// Prefer importing from "system/utils" directly.
 //
-// These are TypeScript functions that can be called directly from Vibe scripts.
+// Import with: import { uuid, random, now } from "system"
+// Or directly: import { uuid, random, now } from "system/utils"
+//
 // For AI tools, use: import { allTools } from "system/tools"
 //
 // NOTE: print() and env() are auto-imported core functions.
-// They are available everywhere without import and CANNOT be imported from "system".
+// They are available everywhere without import.
 
-/**
- * Generate a UUID v4.
- * @returns A new UUID string
- */
-export function uuid(): string {
-  return crypto.randomUUID();
-}
+export { uuid, now, random, jsonParse, jsonStringify } from './utils';

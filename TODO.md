@@ -131,6 +131,23 @@
   - [x] Package extension with `vsce package`
   - [x] Publish with `vsce publish`
   - [ ] Add marketplace badge to README
+- [ ] Fix code folding issues
+  - [ ] Function folding not working correctly
+  - [ ] JSON object folding not working correctly
+- [ ] Fix hover for interpolated variables not finding function parameters
+  - [ ] `{category}` in string inside function shows "variable not found" even when `category` is a parameter
+  - [ ] `findDeclaration` needs to also search function/tool parameters
+- [ ] Add hover support for function/tool parameters
+  - [ ] Hovering over `x` or `y` in `function test(x: text, y: number)` shows nothing
+  - [ ] Should show parameter name and type (e.g., "**x** (parameter)\nType: `text`")
+- [ ] Show type in hover for let/const variables
+  - [ ] Currently shows name and let/const, but not the type annotation
+  - [ ] Should show type when declared (e.g., `let x: text` → "**x** (variable)\nType: `text`")
+- [ ] Add hover support for variable references (not just declarations)
+  - [ ] `print(t)` - hovering over `t` shows nothing, should show variable info
+  - [ ] Works on declaration line but not on usages
+  - [ ] For JSON variables, ideally show full known schema
+  - [ ] Inside functions, variable references don't show hover at all
 
 ### Claude Code Plugin Distribution
 - [ ] Package symbol-tree as shareable plugin
@@ -147,6 +164,14 @@
 - [x] Allow trailing commas in object/model declarations
   - `{ a: 1, b: 2, }` is now valid
   - `[1, 2, 3,]` is now valid
+- [ ] Improve error when using reserved word as function/variable name
+  - `function text(...)` shows "Expecting Identifier but found 'text'"
+  - Should say "Invalid function name 'text' - 'text' is a reserved type"
+  - Applies to all type keywords used as identifiers: `text`, `number`, `boolean`, `json`, `prompt`, `model`
+- [ ] Missing comma error not working for `export model` declarations
+  - `export model m = { a: 1 b: 2 }` shows "Expecting RBrace but found 'b'"
+  - Should say "Missing comma between properties"
+  - Likely the rule stack doesn't include `objectLiteral` for exported models
 
 ### Language Design
 - [x] Disallow `let x = null` without type annotation

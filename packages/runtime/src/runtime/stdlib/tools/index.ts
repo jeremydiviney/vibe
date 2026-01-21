@@ -2,7 +2,7 @@
 // Import with: import { allTools, readFile, writeFile, ... } from "system/tools"
 //
 // These are tools that AI models can use via the tools parameter.
-// For direct script use, import functions from "system" instead.
+// For utility functions (uuid, random, now, etc.), use: import { ... } from "system/utils"
 
 import type { VibeToolValue, ToolContext } from '../../tools/types';
 import { validatePathInSandbox } from '../../tools/security';
@@ -387,117 +387,6 @@ export const dirExists: VibeToolValue = {
 };
 
 // =============================================================================
-// Utility Tools
-// =============================================================================
-
-export const env: VibeToolValue = {
-  __vibeTool: true,
-  name: 'env',
-  schema: {
-    name: 'env',
-    description: 'Get an environment variable.',
-    parameters: [
-      { name: 'name', type: { type: 'string' }, description: 'The environment variable name', required: true },
-      { name: 'defaultValue', type: { type: 'string' }, description: 'Default value if not set', required: false },
-    ],
-    returns: { type: 'string' },
-  },
-  executor: async (args: Record<string, unknown>) => {
-    const name = args.name as string;
-    const defaultValue = args.defaultValue as string | undefined;
-    return process.env[name] ?? defaultValue ?? '';
-  },
-};
-
-export const now: VibeToolValue = {
-  __vibeTool: true,
-  name: 'now',
-  schema: {
-    name: 'now',
-    description: 'Get the current timestamp in milliseconds.',
-    parameters: [],
-    returns: { type: 'number' },
-  },
-  executor: async () => {
-    return Date.now();
-  },
-};
-
-export const jsonParse: VibeToolValue = {
-  __vibeTool: true,
-  name: 'jsonParse',
-  schema: {
-    name: 'jsonParse',
-    description: 'Parse a JSON string into an object.',
-    parameters: [
-      { name: 'text', type: { type: 'string' }, description: 'The JSON string to parse', required: true },
-    ],
-    returns: { type: 'object', additionalProperties: true },
-  },
-  executor: async (args: Record<string, unknown>) => {
-    const text = args.text as string;
-    return JSON.parse(text);
-  },
-};
-
-export const jsonStringify: VibeToolValue = {
-  __vibeTool: true,
-  name: 'jsonStringify',
-  schema: {
-    name: 'jsonStringify',
-    description: 'Convert an object to a JSON string.',
-    parameters: [
-      { name: 'value', type: { type: 'object', additionalProperties: true }, description: 'The value to stringify', required: true },
-      { name: 'pretty', type: { type: 'boolean' }, description: 'Whether to format with indentation', required: false },
-    ],
-    returns: { type: 'string' },
-  },
-  executor: async (args: Record<string, unknown>) => {
-    const value = args.value;
-    const pretty = args.pretty as boolean | undefined;
-    return pretty ? JSON.stringify(value, null, 2) : JSON.stringify(value);
-  },
-};
-
-export const random: VibeToolValue = {
-  __vibeTool: true,
-  name: 'random',
-  schema: {
-    name: 'random',
-    description: 'Generate a random number. Without arguments, returns 0-1. With min/max, returns integer in range.',
-    parameters: [
-      { name: 'min', type: { type: 'number' }, description: 'Minimum value (inclusive)', required: false },
-      { name: 'max', type: { type: 'number' }, description: 'Maximum value (inclusive)', required: false },
-    ],
-    returns: { type: 'number' },
-  },
-  executor: async (args: Record<string, unknown>) => {
-    const min = args.min as number | undefined;
-    const max = args.max as number | undefined;
-
-    if (min !== undefined && max !== undefined) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    return Math.random();
-  },
-};
-
-export const uuid: VibeToolValue = {
-  __vibeTool: true,
-  name: 'uuid',
-  schema: {
-    name: 'uuid',
-    description: 'Generate a UUID v4.',
-    parameters: [],
-    returns: { type: 'string' },
-  },
-  executor: async () => {
-    return crypto.randomUUID();
-  },
-};
-
-// =============================================================================
 // System Tools
 // =============================================================================
 
@@ -659,8 +548,8 @@ console.log('__VIBE_RESULT__' + JSON.stringify(__result));
 // =============================================================================
 
 /**
- * All tools - the complete set of standard tools.
- * Includes all file, search, directory, utility, and system tools.
+ * All tools - the complete set of standard AI tools.
+ * Includes file, search, directory, and system tools.
  */
 export const allTools: VibeToolValue[] = [
   // File tools
@@ -669,8 +558,6 @@ export const allTools: VibeToolValue[] = [
   glob, grep,
   // Directory tools
   mkdir, dirExists,
-  // Utility tools
-  env, now, jsonParse, jsonStringify, random, uuid,
   // System tools
   bash, runCode,
 ];
@@ -686,8 +573,6 @@ export const readonlyTools: VibeToolValue[] = [
   glob, grep,
   // Directory tools (read-only)
   dirExists,
-  // Utility tools
-  env, now, jsonParse, jsonStringify, random, uuid,
 ];
 
 /**
@@ -701,7 +586,5 @@ export const safeTools: VibeToolValue[] = [
   glob, grep,
   // Directory tools
   mkdir, dirExists,
-  // Utility tools
-  env, now, jsonParse, jsonStringify, random, uuid,
 ];
 

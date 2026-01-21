@@ -64,6 +64,7 @@ export type Statement =
   | ToolDeclaration
   | ReturnStatement
   | BreakStatement
+  | ThrowStatement
   | IfStatement
   | ForInStatement
   | WhileStatement
@@ -179,6 +180,11 @@ export interface ReturnStatement extends BaseNode {
 
 export interface BreakStatement extends BaseNode {
   type: 'BreakStatement';
+}
+
+export interface ThrowStatement extends BaseNode {
+  type: 'ThrowStatement';
+  message: Expression;  // The error message expression
 }
 
 export interface IfStatement extends BaseNode {

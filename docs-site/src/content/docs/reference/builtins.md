@@ -3,13 +3,29 @@ title: Built-in Functions
 description: Standard library functions and tools
 ---
 
-## System Functions
+## Core Functions
 
-Import from `"system"`:
+These functions are always available without any import:
 
 ```vibe
-import { env, print, uuid, now, sleep } from "system"
+// No import needed - available everywhere
+print("Hello, World!")
+let apiKey = env("ANTHROPIC_API_KEY")
 ```
+
+### print
+
+Print to console:
+
+```vibe
+print("Hello, World!")
+print(someVariable)
+print({ key: "value" })
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `message` | any | Value to print |
 
 ### env
 
@@ -26,19 +42,15 @@ let port = env("PORT", "3000")  // With default value
 | `defaultValue` | text? | Default if not set |
 | **Returns** | text | Variable value |
 
-### print
+---
 
-Print to console:
+## Utility Functions
+
+Import from `"system/utils"`:
 
 ```vibe
-print("Hello, World!")
-print(someVariable)
-print({ key: "value" })
+import { uuid, now, random, jsonParse, jsonStringify } from "system/utils"
 ```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `message` | any | Value to print |
 
 ### uuid
 
@@ -60,18 +72,20 @@ let timestamp = now()  // 1705123456789
 
 | **Returns** | number | Unix timestamp (ms) |
 
-### sleep
+### random
 
-Pause execution:
+Generate random number:
 
 ```vibe
-sleep(1000)  // Sleep 1 second
+let r = random()        // 0.0 to 1.0
+let n = random(1, 10)   // 1 to 10 (integer)
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `ms` | number | Milliseconds to sleep |
-| **Returns** | boolean | Always true |
+| `min` | number? | Minimum (inclusive) |
+| `max` | number? | Maximum (inclusive) |
+| **Returns** | number | Random number |
 
 ### jsonParse
 
@@ -100,21 +114,6 @@ let pretty = jsonStringify({ name: "Alice" }, true)
 | `value` | json | Value to stringify |
 | `pretty` | boolean? | Pretty print (default: false) |
 | **Returns** | text | JSON string |
-
-### random
-
-Generate random number:
-
-```vibe
-let r = random()        // 0.0 to 1.0
-let n = random(1, 10)   // 1 to 10 (integer)
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `min` | number? | Minimum (inclusive) |
-| `max` | number? | Maximum (inclusive) |
-| **Returns** | number | Random number |
 
 ---
 

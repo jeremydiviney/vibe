@@ -148,8 +148,7 @@ GOOGLE_API_KEY=...
 Access them in your Vibe code:
 
 ```vibe
-import { env } from "system"
-
+// env() is always available - no import needed
 model claude = {
   name: "claude-sonnet-4-20250514",
   apiKey: env("ANTHROPIC_API_KEY"),

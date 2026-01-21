@@ -794,4 +794,7 @@ export type Instruction =
   | { op: 'destructure_assign'; fields: ExpectedField[]; isConst: boolean; location: SourceLocation }
 
   // Break loop - exit innermost loop with cleanup
-  | { op: 'break_loop'; savedKeys: string[]; contextMode?: ContextMode; label?: string; entryIndex: number; scopeType: 'for' | 'while'; location: SourceLocation };
+  | { op: 'break_loop'; savedKeys: string[]; contextMode?: ContextMode; label?: string; entryIndex: number; scopeType: 'for' | 'while'; location: SourceLocation }
+
+  // Throw error - unwind to function boundary and return error value
+  | { op: 'throw_error'; location: SourceLocation };

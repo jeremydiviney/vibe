@@ -18,13 +18,13 @@ describe('Signature Help Provider', () => {
       expect(result?.activeParameter).toBe(0);
     });
 
-    it('should show signature for write() with active parameter', () => {
-      const doc = createDocument(`write("file.txt", `);
+    it('should show signature for writeFile() with active parameter', () => {
+      const doc = createDocument(`writeFile("file.txt", `);
 
-      const result = provideSignatureHelp(doc, { line: 0, character: 18 });
+      const result = provideSignatureHelp(doc, { line: 0, character: 22 });
 
       expect(result).not.toBeNull();
-      expect(result?.signatures[0].label).toBe('write(path: text, content: text)');
+      expect(result?.signatures[0].label).toBe('writeFile(path: text, content: text)');
       expect(result?.activeParameter).toBe(1); // Second parameter
     });
 
@@ -94,12 +94,12 @@ sayHello(`);
     });
 
     it('should handle nested calls', () => {
-      const doc = createDocument(`print(length(`);
+      const doc = createDocument(`print(jsonParse(`);
 
-      const result = provideSignatureHelp(doc, { line: 0, character: 13 });
+      const result = provideSignatureHelp(doc, { line: 0, character: 16 });
 
       expect(result).not.toBeNull();
-      expect(result?.signatures[0].label).toBe('length(value: text | json[])');
+      expect(result?.signatures[0].label).toBe('jsonParse(text: text)');
     });
 
     it('should return null for unknown function', () => {

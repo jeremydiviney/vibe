@@ -98,18 +98,33 @@ vibe "Hello" gpt default`);
   });
 
   describe('Parameter definitions', () => {
-    // TODO: Parameters don't have location info in AST, so go-to-definition
-    // for parameters is not yet supported. This test documents the limitation.
-    it('should return null for parameter references (not yet supported)', () => {
+    it('should find function parameter definition', () => {
       const doc = createDocument(`function double(x: number): number {
   return x * 2
 }`);
 
       // Click on "x" in the return statement (line 1, column 9)
-      const def = provideDefinition(doc, { line: 1, character: 9 });
+      const def = provideDefinition(doc, { line: 1, character: 9 }) as Location;
 
-      // Parameters don't have location info, so definition lookup fails
-      expect(def).toBeNull();
+      // Parameter now found - navigates to the function declaration
+      expect(def).not.toBeNull();
+      expect(def.range.start.line).toBe(0); // function declaration is on line 0
+    });
+
+    it('should find parameter used in expression', () => {
+      const doc = createDocument(`function add(x: number, y: number): number {
+  let sum = 0
+  sum = x + y
+  return sum
+}`);
+
+      // Click on "y" in the assignment (line 2)
+      // "  sum = x + y" - 'y' is at position 12
+      const def = provideDefinition(doc, { line: 2, character: 12 }) as Location;
+
+      // Parameter 'y' found - navigates to the function declaration
+      expect(def).not.toBeNull();
+      expect(def.range.start.line).toBe(0);
     });
   });
 
