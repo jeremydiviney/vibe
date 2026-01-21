@@ -11,6 +11,13 @@ export interface TSImportInfo {
   sourcePath: string;     // Import path (e.g., "./utils.ts")
 }
 
+// Vibe import info - maps local name to import details
+export interface VibeImportInfo {
+  localName: string;      // Name used in this file
+  importedName: string;   // Name exported from Vibe file
+  sourcePath: string;     // Import path (e.g., "./utils.vibe")
+}
+
 /**
  * Find all TypeScript imports in the AST
  * Returns a map from local name to import info
@@ -34,6 +41,28 @@ export function findTSImports(ast: AST.Program): Map<string, TSImportInfo> {
 }
 
 /**
+ * Find all Vibe imports in the AST
+ * Returns a map from local name to import info
+ */
+export function findVibeImports(ast: AST.Program): Map<string, VibeImportInfo> {
+  const imports = new Map<string, VibeImportInfo>();
+
+  for (const statement of ast.body) {
+    if (statement.type === 'ImportDeclaration' && statement.sourceType === 'vibe') {
+      for (const specifier of statement.specifiers) {
+        imports.set(specifier.local, {
+          localName: specifier.local,
+          importedName: specifier.imported,
+          sourcePath: statement.source,
+        });
+      }
+    }
+  }
+
+  return imports;
+}
+
+/**
  * Check if an identifier is from a TypeScript import
  * Returns the import info if found, null otherwise
  */
@@ -42,6 +71,18 @@ export function getTSImportForIdentifier(
   identifierName: string
 ): TSImportInfo | null {
   const imports = findTSImports(ast);
+  return imports.get(identifierName) ?? null;
+}
+
+/**
+ * Check if an identifier is from a Vibe import
+ * Returns the import info if found, null otherwise
+ */
+export function getVibeImportForIdentifier(
+  ast: AST.Program,
+  identifierName: string
+): VibeImportInfo | null {
+  const imports = findVibeImports(ast);
   return imports.get(identifierName) ?? null;
 }
 
