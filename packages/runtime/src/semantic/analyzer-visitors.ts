@@ -435,8 +435,16 @@ export function createVisitors(
       }
     }
 
-    if (node.initializer.type !== 'VibeExpression') {
-      ctx.error('Destructuring assignment requires a do or vibe expression', node.location);
+    // Allow destructuring from:
+    // - VibeExpression (do/vibe AI calls)
+    // - Identifier (json variables)
+    // - CallExpression (function calls returning json)
+    const allowedTypes = ['VibeExpression', 'Identifier', 'CallExpression'];
+    if (!allowedTypes.includes(node.initializer.type)) {
+      ctx.error(
+        'Destructuring assignment requires a do/vibe expression, json variable, or function call',
+        node.location
+      );
     }
 
     if (node.isAsync) {

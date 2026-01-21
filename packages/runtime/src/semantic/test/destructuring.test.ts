@@ -97,16 +97,16 @@ const {name: number} = do "get another" m
   });
 
   // ============================================================================
-  // Invalid initializer (must be AI expression)
+  // Invalid initializer (must be AI expression, variable, or function call)
   // ============================================================================
 
   test('destructuring from string literal is invalid', () => {
     const ast = parse(`
-const {name: text} = "not an AI call"
+const {name: text} = "not valid"
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
-    expect(errors[0].message).toContain('Destructuring assignment requires a do or vibe expression');
+    expect(errors[0].message).toContain('Destructuring assignment requires a do/vibe expression, json variable, or function call');
   });
 
   test('destructuring from number is invalid', () => {
@@ -115,17 +115,42 @@ const {value: number} = 42
 `);
     const errors = analyze(ast);
     expect(errors.length).toBe(1);
-    expect(errors[0].message).toContain('Destructuring assignment requires a do or vibe expression');
+    expect(errors[0].message).toContain('Destructuring assignment requires a do/vibe expression, json variable, or function call');
   });
 
-  test('destructuring from variable is invalid', () => {
+  // ============================================================================
+  // Valid: Destructuring from json variables and function calls
+  // ============================================================================
+
+  test('destructuring from json variable is valid', () => {
+    const ast = parse(`
+let data: json = { name: "test", age: 25 }
+const {name: text, age: number} = data
+`);
+    const errors = analyze(ast);
+    expect(errors.length).toBe(0);
+  });
+
+  test('destructuring from function call is valid', () => {
+    const ast = parse(`
+function getData(): json {
+  return { name: "test" }
+}
+const {name: text} = getData()
+`);
+    const errors = analyze(ast);
+    expect(errors.length).toBe(0);
+  });
+
+  test('destructuring from identifier (any variable) is valid', () => {
+    // Even if the variable isn't typed as json, the semantic analyzer allows it
+    // Runtime will check if the value is actually an object
     const ast = parse(`
 let data = "test"
 const {name: text} = data
 `);
     const errors = analyze(ast);
-    expect(errors.length).toBe(1);
-    expect(errors[0].message).toContain('Destructuring assignment requires a do or vibe expression');
+    expect(errors.length).toBe(0);
   });
 
   // ============================================================================
