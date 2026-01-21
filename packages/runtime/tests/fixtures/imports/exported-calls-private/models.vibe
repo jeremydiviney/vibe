@@ -1,0 +1,13 @@
+// Non-exported helper function
+function getRandomModel(): number {
+  return 42
+}
+
+// Exported functions that call the non-exported helper
+export function getGuesserModel(): number {
+  return getRandomModel()
+}
+
+export function getAnswererModel(): number {
+  return getRandomModel()
+}

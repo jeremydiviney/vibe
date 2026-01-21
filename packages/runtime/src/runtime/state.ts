@@ -15,11 +15,13 @@ export function createInitialState(
   program: AST.Program,
   options?: InitialStateOptions
 ): RuntimeState {
-  // Collect function declarations
+  // Collect function declarations (including exported ones)
   const functions: Record<string, AST.FunctionDeclaration> = {};
   for (const stmt of program.body) {
     if (stmt.type === 'FunctionDeclaration') {
       functions[stmt.name] = stmt;
+    } else if (stmt.type === 'ExportDeclaration' && stmt.declaration.type === 'FunctionDeclaration') {
+      functions[stmt.declaration.name] = stmt.declaration;
     }
   }
 

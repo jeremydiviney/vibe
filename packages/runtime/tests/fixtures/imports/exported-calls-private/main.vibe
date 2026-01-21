@@ -1,0 +1,5 @@
+import { getGuesserModel, getAnswererModel } from "./models.vibe"
+
+let guesser = getGuesserModel()
+let answerer = getAnswererModel()
+let result = guesser + answerer

@@ -281,6 +281,22 @@ describe('Runtime - Module Scope Isolation', () => {
   });
 });
 
+describe('Runtime - Exported Functions Calling Non-Exported Functions', () => {
+  test('exported function can call non-exported function from same module', async () => {
+    // models.vibe has getRandomModel() (not exported) and getGuesserModel()/getAnswererModel() (exported)
+    // main.vibe imports the exported functions and calls them
+    // The exported functions internally call the non-exported getRandomModel()
+    const { state, result } = await loadAndRun('exported-calls-private/main.vibe');
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe(84); // 42 + 42
+
+    // Verify both functions were called successfully
+    expect(state.callStack[0].locals['guesser'].value).toBe(42);
+    expect(state.callStack[0].locals['answerer'].value).toBe(42);
+  });
+});
+
 describe('Runtime - TypeScript Variable Imports', () => {
   test('can import TS variable and assign to text type', async () => {
     const { state, result } = await loadAndRun('ts-variables/import-variable.vibe');

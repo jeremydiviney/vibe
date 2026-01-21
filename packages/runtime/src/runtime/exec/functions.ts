@@ -6,7 +6,7 @@ import type { RuntimeState, StackFrame } from '../types';
 import { resolveValue, createVibeValue } from '../types';
 import type { VibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
-import { getImportedVibeFunction, getImportedVibeFunctionModulePath } from '../modules';
+import { getImportedVibeFunction, getImportedVibeFunctionModulePath, getModuleFunctions } from '../modules';
 import { getCoreFunction } from '../stdlib/core';
 import { validateAndCoerce } from '../validation';
 import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
@@ -149,6 +149,24 @@ export function execCallFunction(
     }
 
     return executeVibeFunction(state, func, args, newValueStack);
+  }
+
+  // Handle module-local function (non-exported function called from within same module)
+  if (typeof callee === 'object' && callee !== null && '__vibeModuleFunction' in callee) {
+    const { name: funcName, modulePath } = callee as { __vibeModuleFunction: boolean; name: string; modulePath: string };
+    const moduleFunctions = getModuleFunctions(state, modulePath);
+    const func = moduleFunctions?.[funcName];
+
+    if (!func) {
+      throw new Error(`ReferenceError: '${funcName}' is not defined`);
+    }
+
+    // Check if we're in async context (variable, destructuring, or fire-and-forget)
+    if (isInAsyncContext(state)) {
+      return scheduleAsyncVibeFunction(state, funcName, args, newValueStack, modulePath);
+    }
+
+    return executeVibeFunction(state, func, args, newValueStack, modulePath);
   }
 
   // Handle imported TS function

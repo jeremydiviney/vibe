@@ -538,6 +538,7 @@ export interface VibeModule {
   exports: Record<string, ExportedItem>;
   program: AST.Program;
   globals: Record<string, VibeValue>;  // Module-level variables (isolated per module)
+  functions: Record<string, AST.FunctionDeclaration>;  // All functions in module (for internal calls)
 }
 
 // Exported item from a Vibe module

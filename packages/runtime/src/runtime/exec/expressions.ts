@@ -7,6 +7,7 @@ import {
   getImportedValue,
   isImportedTsFunction,
   isImportedVibeFunction,
+  getModuleFunctions,
 } from '../modules';
 import { isCoreFunction } from '../stdlib/core';
 import { lookupVariable } from './variables';
@@ -68,9 +69,26 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
     return { ...state, lastResult: variable };  // Return VibeValue, not just value
   }
 
-  // Check if it's a local function
+  // Check if it's a local function (from main module)
   if (state.functions[expr.name]) {
     return { ...state, lastResult: { __vibeFunction: true, name: expr.name } };
+  }
+
+  // Check if it's a function in the current module (for imported module internal calls)
+  const currentFrame = state.callStack[state.callStack.length - 1];
+  if (currentFrame?.modulePath) {
+    const moduleFunctions = getModuleFunctions(state, currentFrame.modulePath);
+    if (moduleFunctions?.[expr.name]) {
+      // Return as a module-local function (with module path for proper execution context)
+      return {
+        ...state,
+        lastResult: {
+          __vibeModuleFunction: true,
+          name: expr.name,
+          modulePath: currentFrame.modulePath,
+        },
+      };
+    }
   }
 
   // Check if it's an imported TS function

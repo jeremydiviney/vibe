@@ -170,7 +170,10 @@ async function loadVibeModuleRecursive(
   // Extract all module-level variables (for module scope isolation)
   const globals = extractModuleGlobals(program);
 
-  const vibeModule: VibeModule = { exports, program, globals };
+  // Extract all functions (both exported and non-exported) for internal calls
+  const functions = extractModuleFunctions(program);
+
+  const vibeModule: VibeModule = { exports, program, globals, functions };
 
   let newState: RuntimeState = {
     ...state,
@@ -238,6 +241,22 @@ function extractVibeExports(program: AST.Program): Record<string, ExportedItem> 
   }
 
   return exports;
+}
+
+// Extract all functions from a Vibe module (both exported and non-exported)
+// These are needed for internal function calls within the module
+function extractModuleFunctions(program: AST.Program): Record<string, AST.FunctionDeclaration> {
+  const functions: Record<string, AST.FunctionDeclaration> = {};
+
+  for (const stmt of program.body) {
+    if (stmt.type === 'FunctionDeclaration') {
+      functions[stmt.name] = stmt;
+    } else if (stmt.type === 'ExportDeclaration' && stmt.declaration.type === 'FunctionDeclaration') {
+      functions[stmt.declaration.name] = stmt.declaration;
+    }
+  }
+
+  return functions;
 }
 
 // Extract all module-level variables (both exported and non-exported)
@@ -449,4 +468,12 @@ export function getModuleGlobals(
   modulePath: string
 ): Record<string, VibeValue> | undefined {
   return state.vibeModules[modulePath]?.globals;
+}
+
+// Get module functions by module path
+export function getModuleFunctions(
+  state: RuntimeState,
+  modulePath: string
+): Record<string, AST.FunctionDeclaration> | undefined {
+  return state.vibeModules[modulePath]?.functions;
 }
