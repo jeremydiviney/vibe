@@ -296,6 +296,134 @@ describe('private variable visibility', () => {
     });
   });
 
+  describe('private attribute propagation', () => {
+    it('assigning private variable to new variable does NOT inherit private', () => {
+      const code = `
+        let private secret: text = "hidden"
+        let copy = secret
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      while (state.status === 'running') {
+        state = step(state);
+      }
+
+      const frame = currentFrame(state);
+
+      // Original is private
+      expect(frame.locals['secret'].isPrivate).toBe(true);
+
+      // Copy is NOT private - private applies to declaration, not value
+      expect(frame.locals['copy'].isPrivate).toBeUndefined();
+
+      // Context should show copy but not secret
+      const context = buildLocalContext(state);
+      const varNames = context
+        .filter((e) => e.kind === 'variable')
+        .map((e) => (e as { name: string }).name);
+
+      expect(varNames).toContain('copy');
+      expect(varNames).not.toContain('secret');
+    });
+
+    it('function return value from private input is NOT private', () => {
+      const code = `
+        let private secret: text = "hidden"
+
+        function passThrough(val: text): text {
+          return val
+        }
+
+        let result = passThrough(secret)
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      while (state.status === 'running') {
+        state = step(state);
+      }
+
+      const frame = currentFrame(state);
+
+      // Original is private
+      expect(frame.locals['secret'].isPrivate).toBe(true);
+
+      // Result is NOT private - function return doesn't inherit privacy
+      expect(frame.locals['result'].isPrivate).toBeUndefined();
+      expect(frame.locals['result'].value).toBe('hidden');
+
+      // Context should show result but not secret
+      const context = buildLocalContext(state);
+      const varNames = context
+        .filter((e) => e.kind === 'variable')
+        .map((e) => (e as { name: string }).name);
+
+      expect(varNames).toContain('result');
+      expect(varNames).not.toContain('secret');
+    });
+
+    it('function parameter does NOT inherit private from argument', () => {
+      const code = `
+        let private secret: text = "hidden"
+        let captured: text = ""
+
+        function capture(val: text): text {
+          captured = val
+          return val
+        }
+
+        let result = capture(secret)
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      while (state.status === 'running') {
+        state = step(state);
+      }
+
+      const frame = currentFrame(state);
+
+      // Original is private
+      expect(frame.locals['secret'].isPrivate).toBe(true);
+
+      // Captured value is NOT private
+      expect(frame.locals['captured'].isPrivate).toBeUndefined();
+      expect(frame.locals['captured'].value).toBe('hidden');
+
+      // Result is NOT private
+      expect(frame.locals['result'].isPrivate).toBeUndefined();
+    });
+
+    it('explicitly declaring copy as private makes it private', () => {
+      const code = `
+        let private secret: text = "hidden"
+        let private copy: text = secret
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      while (state.status === 'running') {
+        state = step(state);
+      }
+
+      const frame = currentFrame(state);
+
+      // Both are private when explicitly declared
+      expect(frame.locals['secret'].isPrivate).toBe(true);
+      expect(frame.locals['copy'].isPrivate).toBe(true);
+
+      // Neither appears in context
+      const context = buildLocalContext(state);
+      const varNames = context
+        .filter((e) => e.kind === 'variable')
+        .map((e) => (e as { name: string }).name);
+
+      expect(varNames).not.toContain('secret');
+      expect(varNames).not.toContain('copy');
+    });
+  });
+
   describe('formatted context text', () => {
     it('private variables do not appear in AI context text', () => {
       const code = `
