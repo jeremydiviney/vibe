@@ -248,6 +248,7 @@ export function createVisitors(
           returnType: node.returnType,
         });
         validateToolDeclaration(ctx, node);
+        visitTool(node);
         break;
 
       case 'AsyncStatement':
@@ -572,6 +573,53 @@ export function createVisitors(
     }
   }
 
+  /**
+   * Check if a statement always returns or throws on all code paths.
+   * Used to verify functions with return types exit properly.
+   *
+   * Note: In Vibe, if a function/tool body ends with an expression statement,
+   * that expression's value is implicitly returned.
+   */
+  function alwaysReturnsOrThrows(stmt: AST.Statement, isLastInBlock: boolean = false): boolean {
+    switch (stmt.type) {
+      case 'ReturnStatement':
+      case 'ThrowStatement':
+        return true;
+
+      case 'ExpressionStatement':
+        // An expression at the end of a function/tool body is an implicit return
+        return isLastInBlock;
+
+      case 'IfStatement':
+        // Must have else branch and both branches must return
+        if (!stmt.alternate) {
+          return false;
+        }
+        return alwaysReturnsOrThrows(stmt.consequent, isLastInBlock) &&
+               alwaysReturnsOrThrows(stmt.alternate, isLastInBlock);
+
+      case 'BlockStatement':
+        // Check if any statement in the block guarantees return/throw
+        // For the last statement, also consider implicit returns
+        for (let i = 0; i < stmt.body.length; i++) {
+          const s = stmt.body[i];
+          const isLast = i === stmt.body.length - 1;
+          if (alwaysReturnsOrThrows(s, isLast && isLastInBlock)) {
+            return true;
+          }
+        }
+        return false;
+
+      case 'ForInStatement':
+      case 'WhileStatement':
+        // Loops don't guarantee execution (might iterate 0 times)
+        return false;
+
+      default:
+        return false;
+    }
+  }
+
   function visitFunction(node: AST.FunctionDeclaration): void {
     const wasInFunction = state.inFunction;
     const prevReturnType = state.currentFunctionReturnType;
@@ -589,6 +637,40 @@ export function createVisitors(
     }
 
     visitStatement(node.body);
+
+    // Check that typed functions always return or throw
+    if (node.returnType && !alwaysReturnsOrThrows(node.body, true)) {
+      ctx.error(
+        `Function '${node.name}' has return type '${node.returnType}' but not all code paths return or throw`,
+        node.location
+      );
+    }
+
+    ctx.symbols.exitScope();
+    state.inFunction = wasInFunction;
+    state.currentFunctionReturnType = prevReturnType;
+  }
+
+  function visitTool(node: AST.ToolDeclaration): void {
+    const wasInFunction = state.inFunction;
+    const prevReturnType = state.currentFunctionReturnType;
+    state.inFunction = true;
+    state.currentFunctionReturnType = node.returnType;
+    ctx.symbols.enterScope();
+
+    for (const param of node.params) {
+      ctx.declare(param.name, 'parameter', node.location, { typeAnnotation: param.typeAnnotation });
+    }
+
+    visitStatement(node.body);
+
+    // Tools always have a return type - check that all code paths return or throw
+    if (!alwaysReturnsOrThrows(node.body, true)) {
+      ctx.error(
+        `Tool '${node.name}' has return type '${node.returnType}' but not all code paths return or throw`,
+        node.location
+      );
+    }
 
     ctx.symbols.exitScope();
     state.inFunction = wasInFunction;
