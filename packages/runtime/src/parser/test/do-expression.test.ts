@@ -484,3 +484,151 @@ do
 `)).toThrow();
   });
 });
+
+// ============================================================================
+// Same-line requirement for model/context
+// ============================================================================
+
+describe('Parser - Do/Vibe modifiers must be on same line', () => {
+  test('do with model followed by assignment on next line parses correctly', () => {
+    // This was previously failing with "Expecting RBrace but found '='"
+    // The parser was greedily consuming 'questionNumber' as a context variable
+    const ast = parse(`
+while true {
+  const answer: text = do guesserPrompt guesser
+  questionNumber = 1
+}
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'WhileStatement',
+      body: {
+        type: 'BlockStatement',
+        body: [
+          {
+            type: 'ConstDeclaration',
+            name: 'answer',
+            initializer: {
+              type: 'VibeExpression',
+              operationType: 'do',
+              prompt: { type: 'Identifier', name: 'guesserPrompt' },
+              model: { type: 'Identifier', name: 'guesser' },
+              context: null, // No context because next line starts a new statement
+            },
+          },
+          {
+            type: 'ExpressionStatement',
+            expression: {
+              type: 'AssignmentExpression',
+              target: { type: 'Identifier', name: 'questionNumber' },
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  test('do with model and context on same line works', () => {
+    const ast = parse(`
+const answer = do "prompt" myModel myContext
+let x = 1
+`);
+    expect(ast.body).toHaveLength(2);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ConstDeclaration',
+      initializer: {
+        type: 'VibeExpression',
+        model: { type: 'Identifier', name: 'myModel' },
+        context: { type: 'ContextSpecifier', kind: 'variable', variable: 'myContext' },
+      },
+    });
+  });
+
+  test('do with context on different line than model is not parsed as context', () => {
+    // Context on next line after model should NOT be parsed as context
+    const ast = parse(`
+let answer = do "prompt" myModel
+myContext
+`);
+    // Model is parsed, but myContext on next line is NOT parsed as context
+    expect(ast.body).toHaveLength(2);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      initializer: {
+        type: 'VibeExpression',
+        model: { type: 'Identifier', name: 'myModel' },
+        context: null, // no context because it's on a different line than model
+      },
+    });
+    // myContext becomes a separate expression statement
+    expect(ast.body[1]).toMatchObject({
+      type: 'ExpressionStatement',
+      expression: { type: 'Identifier', name: 'myContext' },
+    });
+  });
+
+  test('multiline prompt with model and context on same line works', () => {
+    // Multiline backtick prompt should work - model/context just need to be
+    // on the same line as EACH OTHER, not the do keyword
+    const ast = parse(`
+let answer = do \`This is a
+multiline
+prompt\` myModel myContext
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      initializer: {
+        type: 'VibeExpression',
+        operationType: 'do',
+        prompt: {
+          type: 'TemplateLiteral',
+          value: 'This is a\nmultiline\nprompt',
+        },
+        model: { type: 'Identifier', name: 'myModel' },
+        context: { type: 'ContextSpecifier', kind: 'variable', variable: 'myContext' },
+      },
+    });
+  });
+
+  test('multiline prompt with model on next line after prompt works', () => {
+    const ast = parse(`
+let answer = do \`multiline
+prompt\`
+myModel default
+`);
+    expect(ast.body).toHaveLength(1);
+    expect(ast.body[0]).toMatchObject({
+      type: 'LetDeclaration',
+      initializer: {
+        type: 'VibeExpression',
+        model: { type: 'Identifier', name: 'myModel' },
+        context: { type: 'ContextSpecifier', kind: 'default' },
+      },
+    });
+  });
+
+  test('model identifier followed by = is not parsed as model', () => {
+    // If identifier is followed by =, it's an assignment, not a model
+    const ast = parse(`
+do "prompt"
+myVar = 1
+`);
+    expect(ast.body).toHaveLength(2);
+    expect(ast.body[0]).toMatchObject({
+      type: 'ExpressionStatement',
+      expression: {
+        type: 'VibeExpression',
+        model: null, // myVar is NOT parsed as model because it's followed by =
+        context: null,
+      },
+    });
+    expect(ast.body[1]).toMatchObject({
+      type: 'ExpressionStatement',
+      expression: {
+        type: 'AssignmentExpression',
+        target: { type: 'Identifier', name: 'myVar' },
+      },
+    });
+  });
+});

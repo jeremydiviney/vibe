@@ -575,21 +575,43 @@ class VibeParser extends CstParser {
   //   default | local              → no model, explicit context
   //   identifier                   → explicit model, default context
   //   identifier contextSpecifier → explicit model, explicit context
+  // IMPORTANT: If both model and context are specified, they must be on the SAME LINE.
+  // This allows multiline prompts while preventing ambiguity with following statements.
   private vibeModifiers = this.RULE('vibeModifiers', () => {
     // Context keyword (default/local) without model
     this.OPTION(() => {
       this.OR([
         {
+          // Context keyword without model - can be on any line after prompt
           GATE: () => this.LA(1).tokenType === T.Default || this.LA(1).tokenType === T.Local,
           ALT: () => this.SUBRULE(this.contextSpecifier),
         },
-        // Model identifier - only if NOT followed by ( (which would be a function call)
+        // Model identifier - only if NOT followed by ( (function call) or = (assignment)
         {
-          GATE: () => this.LA(1).tokenType === T.Identifier && this.LA(2).tokenType !== T.LParen,
+          GATE: () => this.LA(1).tokenType === T.Identifier
+            && this.LA(2).tokenType !== T.LParen
+            && this.LA(2).tokenType !== T.Equals,
           ALT: () => {
-            this.CONSUME(T.Identifier);  // model
+            const modelToken = this.CONSUME(T.Identifier);  // model
+            const modelLine = modelToken.startLine ?? 0;
+            // Optional context - must be on SAME LINE as model
             this.OPTION2(() => {
-              this.SUBRULE2(this.contextSpecifier);  // optional context
+              this.OR2([
+                {
+                  GATE: () => (this.LA(1).tokenType === T.Default || this.LA(1).tokenType === T.Local)
+                    && this.LA(1).startLine === modelLine,
+                  ALT: () => this.SUBRULE2(this.contextSpecifier),
+                },
+                {
+                  // Context identifier must be on same line as model AND not followed by =
+                  GATE: () => this.LA(1).tokenType === T.Identifier
+                    && this.LA(1).startLine === modelLine
+                    && this.LA(2).tokenType !== T.Equals,
+                  ALT: () => this.SUBRULE3(this.contextSpecifier),
+                },
+                // Empty alternative when context is on a different line or is an assignment
+                { ALT: () => { /* no context */ } },
+              ]);
             });
           },
         },
