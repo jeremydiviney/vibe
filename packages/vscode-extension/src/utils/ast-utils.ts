@@ -445,6 +445,7 @@ function findIdentifierInExpression(
   line: number,
   column: number
 ): string | null {
+  if (!expr) return null;
   switch (expr.type) {
     case 'Identifier':
       if (isPositionInRange(expr.location, expr.name, line, column)) {
