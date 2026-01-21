@@ -157,7 +157,7 @@
       "patterns": [
         {
           "name": "keyword.control.vibe",
-          "match": "\\b(if|else|for|while|return|in|break)\\b"
+          "match": "\\b(if|else|for|while|return|in|break|throw)\\b"
         },
         {
           "name": "keyword.declaration.vibe",

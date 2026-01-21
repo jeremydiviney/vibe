@@ -188,6 +188,11 @@ export function createVisitors(
         }
         break;
 
+      case 'ThrowStatement':
+        // Visit the message expression for any nested checks
+        visitExpression(node.message);
+        break;
+
       case 'IfStatement':
         visitExpression(node.condition);
         validateConditionType(ctx, node.condition, 'if', getExprType);
