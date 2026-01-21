@@ -1,6 +1,6 @@
 {
   "name": "@vibe-lang/vibe-darwin-arm64",
-  "version": "0.2.4",
+  "version": "0.2.11",
   "description": "Vibe CLI binary for macOS Apple Silicon",
   "os": [
     "darwin"
