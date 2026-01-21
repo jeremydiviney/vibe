@@ -2,7 +2,7 @@ import { Hover, MarkupKind, Position } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
 import { parse } from '@vibe-lang/runtime/parser/parse';
-import { findNodeAtPosition, getNodeDescription, getTSImportForIdentifier, findDeclaration, DeclarationInfo } from '../utils/ast-utils';
+import { findNodeAtPosition, getNodeDescription, getTSImportForIdentifier, getVibeImportForIdentifier, findDeclaration, DeclarationInfo } from '../utils/ast-utils';
 import { tsService } from '../services/typescript-service';
 import { keywordDocs, typeDocs, vibeValuePropertyDocs } from '../utils/builtins';
 import type * as AST from '@vibe-lang/runtime/ast';
@@ -116,6 +116,39 @@ export function provideHover(document: TextDocument, position: Position): Hover 
       }
     }
 
+    // Check if this identifier is from a Vibe import
+    const vibeImport = getVibeImportForIdentifier(ast, word);
+    if (vibeImport) {
+      const vibeFilePath = URI.parse(document.uri).fsPath;
+      const sourceFilePath = resolve(dirname(vibeFilePath), vibeImport.sourcePath);
+
+      if (existsSync(sourceFilePath)) {
+        try {
+          const sourceText = readFileSync(sourceFilePath, 'utf-8');
+          const sourceAst = parse(sourceText, { file: sourceFilePath });
+
+          // Find the exported declaration in the source file
+          const exportedDecl = findExportedDeclaration(sourceAst, vibeImport.importedName);
+          if (exportedDecl) {
+            const declInfo = createDeclarationInfoFromNode(exportedDecl, vibeImport.importedName);
+            if (declInfo) {
+              const lines: string[] = [];
+              lines.push(formatDeclarationHover(declInfo, document.uri));
+              lines.push('', `*Imported from \`${vibeImport.sourcePath}\`*`);
+              return {
+                contents: {
+                  kind: MarkupKind.Markdown,
+                  value: lines.join('\n'),
+                },
+              };
+            }
+          }
+        } catch {
+          // Parse error in source file - fall through
+        }
+      }
+    }
+
     const nodeInfo = findNodeAtPosition(ast, position.line + 1, position.character + 1);
 
     if (nodeInfo) {
@@ -133,7 +166,7 @@ export function provideHover(document: TextDocument, position: Position): Hover 
       return {
         contents: {
           kind: MarkupKind.Markdown,
-          value: formatDeclarationHover(declaration, document.uri),
+          value: formatDeclarationHover(declaration, document.uri, ast),
         },
       };
     }
@@ -147,7 +180,7 @@ export function provideHover(document: TextDocument, position: Position): Hover 
 /**
  * Format hover content for a declaration (used for variable references)
  */
-function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: string): string {
+function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: string, ast?: AST.Program): string {
   const lines: string[] = [];
 
   switch (declaration.kind) {
@@ -156,6 +189,12 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
       lines.push(`**${letDecl.name}** (variable)`);
       if (letDecl.typeAnnotation) {
         lines.push(`\nType: \`${letDecl.typeAnnotation}\``);
+      } else if (letDecl.initializer && ast) {
+        // Try to infer type from initializer
+        const inferredType = inferTypeFromExpression(letDecl.initializer, ast, documentUri);
+        if (inferredType) {
+          lines.push(`\nType: \`${inferredType}\` *(inferred)*`);
+        }
       }
       break;
     }
@@ -164,6 +203,12 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
       lines.push(`**${constDecl.name}** (constant)`);
       if (constDecl.typeAnnotation) {
         lines.push(`\nType: \`${constDecl.typeAnnotation}\``);
+      } else if (constDecl.initializer && ast) {
+        // Try to infer type from initializer
+        const inferredType = inferTypeFromExpression(constDecl.initializer, ast, documentUri);
+        if (inferredType) {
+          lines.push(`\nType: \`${inferredType}\` *(inferred)*`);
+        }
       }
       break;
     }
@@ -613,4 +658,99 @@ function createDeclarationInfoFromNode(node: AST.Statement, name: string): Decla
     location: node.location,
     node,
   };
+}
+
+/**
+ * Try to infer the type of an expression
+ * Currently handles: function/tool calls (return type), literals
+ */
+function inferTypeFromExpression(expr: AST.Expression, ast: AST.Program, documentUri?: string): string | null {
+  switch (expr.type) {
+    case 'StringLiteral':
+    case 'TemplateLiteral':
+      return 'text';
+    case 'NumberLiteral':
+      return 'number';
+    case 'BooleanLiteral':
+      return 'boolean';
+    case 'NullLiteral':
+      return 'null';
+    case 'ArrayLiteral':
+      if (expr.elements.length > 0) {
+        const elemType = inferTypeFromExpression(expr.elements[0], ast, documentUri);
+        if (elemType) return `${elemType}[]`;
+      }
+      return null;
+    case 'ObjectLiteral':
+      return 'json';
+    case 'CallExpression': {
+      // Try to find the function/tool being called and get its return type
+      if (expr.callee.type === 'Identifier') {
+        const calleeName = expr.callee.name;
+
+        // Look for function/tool declaration in current file
+        for (const stmt of ast.body) {
+          if (stmt.type === 'FunctionDeclaration' && stmt.name === calleeName) {
+            return stmt.returnType ?? null;
+          }
+          if (stmt.type === 'ToolDeclaration' && stmt.name === calleeName) {
+            return stmt.returnType ?? null;
+          }
+          if (stmt.type === 'ExportDeclaration') {
+            const decl = stmt.declaration;
+            if (decl.type === 'FunctionDeclaration' && decl.name === calleeName) {
+              return decl.returnType ?? null;
+            }
+            if (decl.type === 'ToolDeclaration' && decl.name === calleeName) {
+              return decl.returnType ?? null;
+            }
+          }
+        }
+
+        // Check if it's an imported function from a Vibe file
+        const vibeImport = getVibeImportForIdentifier(ast, calleeName);
+        if (vibeImport && documentUri) {
+          const vibeFilePath = URI.parse(documentUri).fsPath;
+          const sourceFilePath = resolve(dirname(vibeFilePath), vibeImport.sourcePath);
+
+          if (existsSync(sourceFilePath)) {
+            try {
+              const sourceText = readFileSync(sourceFilePath, 'utf-8');
+              const sourceAst = parse(sourceText, { file: sourceFilePath });
+              const exportedDecl = findExportedDeclaration(sourceAst, vibeImport.importedName);
+
+              if (exportedDecl) {
+                if (exportedDecl.type === 'FunctionDeclaration') {
+                  return (exportedDecl as AST.FunctionDeclaration).returnType ?? null;
+                }
+                if (exportedDecl.type === 'ToolDeclaration') {
+                  return (exportedDecl as AST.ToolDeclaration).returnType ?? null;
+                }
+              }
+            } catch {
+              // Parse error - can't infer
+            }
+          }
+        }
+      }
+      return null;
+    }
+    case 'Identifier': {
+      // Look up the variable/constant and get its type
+      const decl = findDeclaration(ast, expr.name);
+      if (decl) {
+        const node = decl.node;
+        if (node.type === 'LetDeclaration' || node.type === 'ConstDeclaration') {
+          const varDecl = node as AST.LetDeclaration | AST.ConstDeclaration;
+          if (varDecl.typeAnnotation) return varDecl.typeAnnotation;
+          if (varDecl.initializer) {
+            return inferTypeFromExpression(varDecl.initializer, ast, documentUri);
+          }
+        }
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
 }
