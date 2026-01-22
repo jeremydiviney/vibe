@@ -275,7 +275,8 @@ async function main(): Promise<void> {
     }
   } catch (error) {
     if (error instanceof VibeError) {
-      console.error('Error:', error.format());
+      // VibeError.format() already includes the error type prefix (e.g., "RuntimeError:")
+      console.error(error.format());
     } else if (error instanceof Error) {
       console.error('Error:', error.message);
     } else {
