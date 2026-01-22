@@ -59,6 +59,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
     if (ctx.modelDeclaration) return this.visit(ctx.modelDeclaration);
     if (ctx.functionDeclaration) return this.visit(ctx.functionDeclaration);
     if (ctx.toolDeclaration) return this.visit(ctx.toolDeclaration);
+    if (ctx.typeDeclaration) return this.visit(ctx.typeDeclaration);
     if (ctx.returnStatement) return this.visit(ctx.returnStatement);
     if (ctx.breakStatement) return this.visit(ctx.breakStatement);
     if (ctx.throwStatement) return this.visit(ctx.throwStatement);
@@ -224,9 +225,15 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return node;
   }
 
-  typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Model?: IToken[]; LBracket?: IToken[] }): string {
-    // Get base type
-    const baseType = ctx.TextType ? 'text' : ctx.JsonType ? 'json' : ctx.PromptType ? 'prompt' : ctx.BooleanType ? 'boolean' : ctx.NumberType ? 'number' : 'model';
+  typeAnnotation(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Model?: IToken[]; Identifier?: IToken[]; LBracket?: IToken[] }): string {
+    // Get base type - can be built-in or named structural type
+    const baseType = ctx.TextType ? 'text'
+      : ctx.JsonType ? 'json'
+      : ctx.PromptType ? 'prompt'
+      : ctx.BooleanType ? 'boolean'
+      : ctx.NumberType ? 'number'
+      : ctx.Model ? 'model'
+      : ctx.Identifier![0].image;  // Named structural type
     // Count array brackets
     const bracketCount = ctx.LBracket?.length ?? 0;
     return baseType + '[]'.repeat(bracketCount);
@@ -296,6 +303,58 @@ class VibeAstVisitor extends BaseVibeVisitor {
       },
       location: tokenLocation(ctx.Model[0]),
     };
+  }
+
+  typeDeclaration(ctx: { TypeKeyword: IToken[]; Identifier: IToken[]; structuralTypeFieldList?: CstNode[] }): AST.TypeDeclaration {
+    const fields = ctx.structuralTypeFieldList
+      ? (this.visit(ctx.structuralTypeFieldList) as AST.StructuralTypeField[])
+      : [];
+    return {
+      type: 'TypeDeclaration',
+      name: ctx.Identifier[0].image,
+      structure: { fields },
+      location: tokenLocation(ctx.TypeKeyword[0]),
+    };
+  }
+
+  structuralTypeFieldList(ctx: { structuralTypeField: CstNode[] }): AST.StructuralTypeField[] {
+    return ctx.structuralTypeField.map((f) => this.visit(f));
+  }
+
+  structuralTypeField(ctx: { Identifier: IToken[]; structuralTypeFieldList?: CstNode[]; structuralFieldType?: CstNode[]; LBrace?: IToken[] }): AST.StructuralTypeField {
+    const name = ctx.Identifier[0].image;
+
+    // Inline nested object: { field: { nestedField: type } }
+    if (ctx.LBrace) {
+      const nestedFields = ctx.structuralTypeFieldList
+        ? (this.visit(ctx.structuralTypeFieldList) as AST.StructuralTypeField[])
+        : [];
+      return {
+        name,
+        type: 'object',  // Inline nested objects are typed as 'object'
+        nestedType: { fields: nestedFields },
+      };
+    }
+
+    // Named type (built-in or user-defined)
+    const fieldType = this.visit(ctx.structuralFieldType!) as string;
+    return {
+      name,
+      type: fieldType,
+    };
+  }
+
+  structuralFieldType(ctx: { TextType?: IToken[]; JsonType?: IToken[]; PromptType?: IToken[]; BooleanType?: IToken[]; NumberType?: IToken[]; Identifier?: IToken[]; LBracket?: IToken[] }): string {
+    // Get base type - can be built-in or named type reference
+    const baseType = ctx.TextType ? 'text'
+      : ctx.JsonType ? 'json'
+      : ctx.PromptType ? 'prompt'
+      : ctx.BooleanType ? 'boolean'
+      : ctx.NumberType ? 'number'
+      : ctx.Identifier![0].image;  // Named type reference (e.g., Player, GameResult)
+    // Count array brackets
+    const bracketCount = ctx.LBracket?.length ?? 0;
+    return baseType + '[]'.repeat(bracketCount);
   }
 
   objectLiteral(ctx: { LBrace: IToken[]; propertyList?: CstNode[] }): { properties: Map<string, { value: AST.Expression; location: SourceLocation }>; location: SourceLocation } {

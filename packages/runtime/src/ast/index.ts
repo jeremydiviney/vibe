@@ -41,6 +41,22 @@ export type ContextMode =
   | { compress: { arg1: CompressArg | null; arg2: CompressArg | null } }; // AI summarizes
 
 // ============================================================================
+// Structural Types
+// ============================================================================
+
+/** A single field in a structural type definition */
+export interface StructuralTypeField {
+  name: string;
+  type: string;                      // Base type or named type reference (e.g., 'text', 'MyType', 'MyType[]')
+  nestedType?: StructuralType;       // For inline nested objects: { metadata: { timestamp: number } }
+}
+
+/** A structural type definition (fields of an object type) */
+export interface StructuralType {
+  fields: StructuralTypeField[];
+}
+
+// ============================================================================
 // Program
 // ============================================================================
 
@@ -62,6 +78,7 @@ export type Statement =
   | ModelDeclaration
   | FunctionDeclaration
   | ToolDeclaration
+  | TypeDeclaration
   | ReturnStatement
   | BreakStatement
   | ThrowStatement
@@ -139,6 +156,13 @@ export interface ModelConfig extends BaseNode {
   thinkingLevel: Expression | null;     // "none" | "low" | "medium" | "high" | "max"
   tools: Expression | null;             // Array of VibeToolValue objects
   providedFields: string[];             // For semantic validation
+}
+
+/** Type declaration: type Name { field: type, ... } */
+export interface TypeDeclaration extends BaseNode {
+  type: 'TypeDeclaration';
+  name: string;
+  structure: StructuralType;
 }
 
 export interface FunctionParameter {

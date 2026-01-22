@@ -7,12 +7,14 @@
 import * as AST from '../ast';
 import { SemanticError, type SourceLocation } from '../errors';
 import { SymbolTable, type SymbolKind } from './symbol-table';
+import { TypeRegistry } from './type-registry';
 import type { TsFunctionSignature } from './ts-signatures';
 import type { AnalyzerContext, AnalyzerState } from './analyzer-context';
 import { createVisitors } from './analyzer-visitors';
 
 export class SemanticAnalyzer {
   private symbols = new SymbolTable();
+  private typeRegistry = new TypeRegistry();
   private errors: SemanticError[] = [];
   private source?: string;
   private basePath?: string;
@@ -26,6 +28,7 @@ export class SemanticAnalyzer {
     this.source = source;
     this.basePath = basePath;
     this.tsImportSignatures.clear();
+    this.typeRegistry = new TypeRegistry();  // Fresh registry for each analysis
     this.symbols.enterScope();
 
     // Create context and state for visitors
@@ -55,6 +58,7 @@ export class SemanticAnalyzer {
   private createContext(): AnalyzerContext {
     return {
       symbols: this.symbols,
+      typeRegistry: this.typeRegistry,
       tsImportSignatures: this.tsImportSignatures,
       basePath: this.basePath,
       source: this.source,
@@ -80,5 +84,12 @@ export class SemanticAnalyzer {
         }
       },
     };
+  }
+
+  /**
+   * Get the type registry (for access to structural type definitions).
+   */
+  getTypeRegistry(): TypeRegistry {
+    return this.typeRegistry;
   }
 }

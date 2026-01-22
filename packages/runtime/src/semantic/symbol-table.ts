@@ -1,6 +1,7 @@
 import type { SourceLocation } from '../errors';
+import type { StructuralType } from '../ast';
 
-export type SymbolKind = 'variable' | 'constant' | 'model' | 'function' | 'tool' | 'parameter' | 'import';
+export type SymbolKind = 'variable' | 'constant' | 'model' | 'function' | 'tool' | 'parameter' | 'import' | 'type';
 
 export interface Symbol {
   name: string;
@@ -10,6 +11,7 @@ export interface Symbol {
   paramTypes?: string[];  // Parameter types for functions
   returnType?: string | null;  // Return type for functions
   typeAnnotation?: string | null;
+  structuralType?: StructuralType;  // For 'type' kind - the structural type definition
 }
 
 interface Scope {

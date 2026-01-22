@@ -61,6 +61,7 @@ export const Export = token({ name: 'Export', pattern: /export/, longer_alt: Ide
 export const From = token({ name: 'From', pattern: /from/, longer_alt: Identifier });
 export const Private = token({ name: 'Private', pattern: /private/, longer_alt: Identifier });
 export const Async = token({ name: 'Async', pattern: /async/, longer_alt: Identifier });
+export const TypeKeyword = token({ name: 'TypeKeyword', pattern: /type/, longer_alt: Identifier });
 
 // TsBlock pattern function: Captures entire ts(params) { body }
 // Defined separately to avoid initialization issues
@@ -283,6 +284,7 @@ export const allTokens = [
   From,
   Private,
   Async,
+  TypeKeyword,  // type declarations: type Name { ... }
   TsBlock,  // Must be before Identifier - captures entire ts(...) { ... }
   TextType,
   JsonType,

@@ -36,6 +36,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.modelDeclaration) },
       { ALT: () => this.SUBRULE(this.functionDeclaration) },
       { ALT: () => this.SUBRULE(this.toolDeclaration) },
+      { ALT: () => this.SUBRULE(this.typeDeclaration) },  // type Name { ... }
       { ALT: () => this.SUBRULE(this.returnStatement) },
       { ALT: () => this.SUBRULE(this.breakStatement) },
       { ALT: () => this.SUBRULE(this.throwStatement) },
@@ -228,7 +229,7 @@ class VibeParser extends CstParser {
     ]);
   });
 
-  // Type annotation: text, json, prompt, boolean, number, model, or any of these followed by []
+  // Type annotation: text, json, prompt, boolean, number, model, Identifier (named type), or any of these followed by []
   private typeAnnotation = this.RULE('typeAnnotation', () => {
     this.OR([
       { ALT: () => this.CONSUME(T.TextType) },
@@ -237,6 +238,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.CONSUME(T.BooleanType) },
       { ALT: () => this.CONSUME(T.NumberType) },
       { ALT: () => this.CONSUME(T.Model) },  // model type for AI model parameters
+      { ALT: () => this.CONSUME(T.Identifier) },  // Named structural type (e.g., Player, GameResult)
     ]);
     // Optional array brackets: text[] or text[][]
     this.MANY(() => {
@@ -301,6 +303,78 @@ class VibeParser extends CstParser {
     this.CONSUME(T.Identifier);
     this.CONSUME(T.Equals);
     this.SUBRULE(this.objectLiteral);
+  });
+
+  // Type declaration: type Name { field: type, field: type, ... }
+  // Fields can be separated by commas, newlines, or both (flexible separator)
+  private typeDeclaration = this.RULE('typeDeclaration', () => {
+    this.CONSUME(T.TypeKeyword);
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.LBrace);
+    this.OPTION(() => {
+      this.SUBRULE(this.structuralTypeFieldList);
+    });
+    this.CONSUME(T.RBrace);
+  });
+
+  // List of structural type fields (flexible separators: commas, newlines, or both)
+  // Supports: { a: text, b: number }, { a: text\n b: number }, { a: text,\n b: number }
+  private structuralTypeFieldList = this.RULE('structuralTypeFieldList', () => {
+    this.SUBRULE(this.structuralTypeField);
+    this.MANY(() => {
+      // Optional comma between fields (newlines are skipped by lexer)
+      this.OPTION(() => {
+        this.CONSUME(T.Comma);
+      });
+      // Check if there's another field (peek ahead to avoid consuming RBrace)
+      // Also handle nested object fields which start with a type token after :
+      this.OPTION2({
+        GATE: () => {
+          const next = this.LA(1).tokenType;
+          return next === T.Identifier || next === T.Private;
+        },
+        DEF: () => this.SUBRULE2(this.structuralTypeField),
+      });
+    });
+  });
+
+  // Single structural type field: name: type or name: { nested... }
+  private structuralTypeField = this.RULE('structuralTypeField', () => {
+    this.CONSUME(T.Identifier);
+    this.CONSUME(T.Colon);
+    this.OR([
+      // Inline nested object: { field: type, ... }
+      {
+        GATE: () => this.LA(1).tokenType === T.LBrace,
+        ALT: () => {
+          this.CONSUME(T.LBrace);
+          this.OPTION(() => {
+            this.SUBRULE(this.structuralTypeFieldList);
+          });
+          this.CONSUME(T.RBrace);
+        },
+      },
+      // Named type (built-in or user-defined) with optional array brackets
+      { ALT: () => this.SUBRULE(this.structuralFieldType) },
+    ]);
+  });
+
+  // Field type in structural type: text, number, boolean, json, prompt, or Identifier (named type)
+  // Supports array notation: Type[], Type[][]
+  private structuralFieldType = this.RULE('structuralFieldType', () => {
+    this.OR([
+      { ALT: () => this.CONSUME(T.TextType) },
+      { ALT: () => this.CONSUME(T.JsonType) },
+      { ALT: () => this.CONSUME(T.PromptType) },
+      { ALT: () => this.CONSUME(T.BooleanType) },
+      { ALT: () => this.CONSUME(T.NumberType) },
+      { ALT: () => this.CONSUME(T.Identifier) },  // Named type reference (e.g., Player, GameResult)
+    ]);
+    // Optional array brackets: Type[] or Type[][]
+    this.MANY(() => {
+      this.CONSUME(T.LBracket);
+      this.CONSUME(T.RBracket);
+    });
   });
 
   private objectLiteral = this.RULE('objectLiteral', () => {

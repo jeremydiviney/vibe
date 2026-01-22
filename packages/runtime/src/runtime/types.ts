@@ -1,5 +1,5 @@
 import * as AST from '../ast';
-import type { VibeType, VibeTypeRequired, ContextMode } from '../ast';
+import type { VibeType, VibeTypeRequired, ContextMode, StructuralType } from '../ast';
 import type { SourceLocation } from '../errors';
 import type { PendingToolCall } from './tools/types';
 export type { PendingToolCall } from './tools/types';
@@ -503,6 +503,7 @@ export interface ExpectedField {
   name: string;
   type: VibeTypeRequired;
   isPrivate?: boolean;  // true if hidden from AI context
+  nestedFields?: ExpectedField[];  // For nested structures
 }
 
 // Pending compress request (for compress context mode)
@@ -628,6 +629,7 @@ export interface RuntimeState {
   // The program
   program: AST.Program;
   functions: Record<string, AST.FunctionDeclaration>;
+  typeDefinitions: Map<string, StructuralType>;  // Named structural types
 
   // Loaded modules
   tsModules: Record<string, TsModule>;      // TS modules by import path

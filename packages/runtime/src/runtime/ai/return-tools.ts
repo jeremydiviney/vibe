@@ -95,10 +95,11 @@ export function isFieldReturnResult(val: unknown): val is FieldReturnResult {
 /**
  * Collect field results from tool call results and validate types.
  * Called after AI execution completes.
+ * Handles both flat fields and nested field paths (e.g., "metadata.timestamp").
  *
  * @param toolResults - Array of results from __vibe_return_field calls
- * @param expectedFields - Expected fields and their types
- * @returns Object mapping field names to validated values
+ * @param expectedFields - Expected fields and their types (may include nested)
+ * @returns Object with nested structure matching field paths
  * @throws Error if validation fails or expected fields are missing
  */
 export function collectAndValidateFieldResults(
@@ -106,12 +107,15 @@ export function collectAndValidateFieldResults(
   expectedFields: ExpectedField[]
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  const expectedMap = new Map(expectedFields.map((f) => [f.name, f.type]));
+
+  // Build expected map with flattened paths for validation
+  const flattenedExpected = flattenExpectedFields(expectedFields);
+  const expectedMap = new Map(flattenedExpected.map((f) => [f.path, f.type]));
 
   for (const { field, value } of toolResults) {
     const expectedType = expectedMap.get(field);
     if (!expectedType) {
-      const validFields = expectedFields.map((f) => f.name).join(', ');
+      const validFields = flattenedExpected.map((f) => f.path).join(', ');
       throw new Error(
         `Unexpected field '${field}'. Expected: ${validFields || '(none)'}`
       );
@@ -119,17 +123,55 @@ export function collectAndValidateFieldResults(
 
     // Validate and coerce type (handles stringified values from some providers)
     const coercedValue = validateValueForType(value, expectedType, field);
-    result[field] = coercedValue;
+
+    // Set value at the correct nested path
+    setNestedValue(result, field, coercedValue);
   }
 
   // Check all expected fields were returned
-  for (const expected of expectedFields) {
-    if (!(expected.name in result)) {
-      throw new Error(`Missing field '${expected.name}' (${expected.type})`);
+  for (const { path, type } of flattenedExpected) {
+    if (!hasNestedValue(result, path)) {
+      throw new Error(`Missing field '${path}' (${type})`);
     }
   }
 
   return result;
+}
+
+/**
+ * Set a value at a nested path in an object.
+ * Creates intermediate objects as needed.
+ */
+function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+  const parts = path.split('.');
+  let current: Record<string, unknown> = obj;
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!(part in current) || typeof current[part] !== 'object' || current[part] === null) {
+      current[part] = {};
+    }
+    current = current[part] as Record<string, unknown>;
+  }
+
+  current[parts[parts.length - 1]] = value;
+}
+
+/**
+ * Check if a nested path exists in an object.
+ */
+function hasNestedValue(obj: Record<string, unknown>, path: string): boolean {
+  const parts = path.split('.');
+  let current: unknown = obj;
+
+  for (const part of parts) {
+    if (typeof current !== 'object' || current === null || !(part in (current as Record<string, unknown>))) {
+      return false;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+
+  return true;
 }
 
 /**
@@ -284,12 +326,14 @@ function validateValueForType(
 /**
  * Build the return instruction to append to the prompt.
  * This tells the AI which fields to return and their types.
+ * Handles nested structures by flattening them with dot notation.
  */
 export function buildReturnInstruction(expectedFields: ExpectedField[]): string {
   if (expectedFields.length === 0) return '';
 
-  const fieldList = expectedFields
-    .map((f) => `  - "${f.name}" (${f.type})`)
+  const flattenedFields = flattenExpectedFields(expectedFields);
+  const fieldList = flattenedFields
+    .map((f) => `  - "${f.path}" (${f.type})`)
     .join('\n');
 
   return `
@@ -298,4 +342,28 @@ IMPORTANT: You MUST return the following field(s) by calling __vibe_return_field
 ${fieldList}
 
 Call __vibe_return_field once per field with the field name and typed value. Do not respond with plain text.`;
+}
+
+/**
+ * Flatten nested ExpectedFields into a flat list with dot-notation paths.
+ */
+function flattenExpectedFields(
+  fields: ExpectedField[],
+  prefix: string = ''
+): Array<{ path: string; type: string }> {
+  const result: Array<{ path: string; type: string }> = [];
+
+  for (const field of fields) {
+    const path = prefix ? `${prefix}.${field.name}` : field.name;
+
+    if (field.nestedFields && field.nestedFields.length > 0) {
+      // Recurse into nested structure
+      result.push(...flattenExpectedFields(field.nestedFields, path));
+    } else {
+      // Leaf field
+      result.push({ path, type: field.type });
+    }
+  }
+
+  return result;
 }

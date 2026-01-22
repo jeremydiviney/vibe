@@ -251,6 +251,10 @@ export function createVisitors(
         visitTool(node);
         break;
 
+      case 'TypeDeclaration':
+        visitTypeDeclaration(node);
+        break;
+
       case 'AsyncStatement':
         validateAsyncExpression(ctx, node.expression, node.location);
         visitExpression(node.expression);
@@ -683,6 +687,58 @@ export function createVisitors(
     ctx.symbols.exitScope();
     state.inFunction = wasInFunction;
     state.currentFunctionReturnType = prevReturnType;
+  }
+
+  function visitTypeDeclaration(node: AST.TypeDeclaration): void {
+    // Type declarations can only be at top level
+    if (!state.atTopLevel) {
+      ctx.error('Type declarations can only be at global scope', node.location);
+    }
+
+    // Validate field types
+    validateStructuralTypeFields(node.structure.fields, node.location);
+
+    // Register in symbol table
+    ctx.declare(node.name, 'type', node.location, {
+      typeAnnotation: node.name,
+    });
+
+    // Register in type registry
+    ctx.typeRegistry.register(node.name, node.structure);
+  }
+
+  function validateStructuralTypeFields(fields: AST.StructuralTypeField[], location: SourceLocation): void {
+    const seenNames = new Set<string>();
+
+    for (const field of fields) {
+      // Check for duplicate field names
+      if (seenNames.has(field.name)) {
+        ctx.error(`Duplicate field '${field.name}' in type definition`, location);
+        continue;
+      }
+      seenNames.add(field.name);
+
+      // Validate field type (if not a nested type)
+      if (!field.nestedType) {
+        const baseType = field.type.replace(/\[\]/g, '');
+        const isBuiltIn = ['text', 'json', 'boolean', 'number', 'prompt'].includes(baseType);
+        const isKnownType = ctx.symbols.lookup(baseType) !== undefined;
+        const isInRegistry = ctx.typeRegistry.has(baseType);
+
+        // Type might be forward-referenced (declared later in file)
+        // We'll do a second pass or rely on runtime for now
+        // For MVP, just check built-in types are valid
+        if (!isBuiltIn && baseType !== 'object') {
+          // Named type reference - will be validated at use site
+          // This allows forward references within the same file
+        }
+      }
+
+      // Recursively validate nested types
+      if (field.nestedType) {
+        validateStructuralTypeFields(field.nestedType.fields, location);
+      }
+    }
   }
 
   return { visitStatement, visitExpression };

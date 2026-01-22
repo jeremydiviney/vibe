@@ -25,6 +25,14 @@ export function createInitialState(
     }
   }
 
+  // Collect type declarations
+  const typeDefinitions = new Map<string, AST.StructuralType>();
+  for (const stmt of program.body) {
+    if (stmt.type === 'TypeDeclaration') {
+      typeDefinitions.set(stmt.name, stmt.structure);
+    }
+  }
+
   // Create initial instruction stack with all top-level statements
   // We pop from the front, so first statement should be at index 0
   const instructionStack = program.body
@@ -34,6 +42,7 @@ export function createInitialState(
     status: 'running',
     program,
     functions,
+    typeDefinitions,
     tsModules: {},
     vibeModules: {},
     importedNames: {},

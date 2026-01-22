@@ -110,9 +110,11 @@ describe('Semantic Analyzer - Index Expression Type Inference', () => {
     expect(errors).toContain('Type error: cannot assign number[] to text');
   });
 
-  test('json member access returns json', () => {
+  test('json member access returns unknown type (no compile-time error)', () => {
+    // json member access returns null (unknown type) - defers to runtime validation
+    // This allows: if jsonObj.isValid { ... } without semantic error
     const errors = getErrors('let obj: json = {a: 1}\nlet x = obj.a\nlet y: number = x');
-    expect(errors).toContain('Type error: cannot assign json to number');
+    expect(errors).toEqual([]);  // No error - type unknown at compile time
   });
 });
 
@@ -125,9 +127,11 @@ describe('Semantic Analyzer - Member Expression Type Inference', () => {
     return errors.map((e) => e.message);
   }
 
-  test('json property access returns json', () => {
+  test('json property access returns unknown type (no compile-time error)', () => {
+    // json property access returns null (unknown type) - defers to runtime validation
+    // This allows dynamic JSON access without semantic errors
     const errors = getErrors('let obj: json = {name: "test"}\nlet x = obj.name\nlet y: number = x');
-    expect(errors).toContain('Type error: cannot assign json to number');
+    expect(errors).toEqual([]);  // No error - type unknown at compile time
   });
 });
 

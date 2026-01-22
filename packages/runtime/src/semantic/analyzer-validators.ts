@@ -134,11 +134,28 @@ export function validateToolDeclaration(ctx: AnalyzerContext, node: AST.ToolDecl
 
 /**
  * Validates a type annotation is valid.
+ * Accepts built-in types and named structural types from the type registry.
  */
 export function validateTypeAnnotation(ctx: AnalyzerContext, type: string, location: SourceLocation): void {
-  if (!isValidType(type)) {
-    ctx.error(`Unknown type '${getBaseType(type)}'`, location);
+  const baseType = getBaseType(type);
+
+  // Check built-in types first
+  if (isValidType(type)) {
+    return;
   }
+
+  // Check if it's a registered structural type
+  if (ctx.typeRegistry?.has(baseType)) {
+    return;
+  }
+
+  // Check if it's declared as a type in the symbol table
+  const symbol = ctx.symbols.lookup(baseType);
+  if (symbol?.kind === 'type') {
+    return;
+  }
+
+  ctx.error(`Unknown type '${baseType}'`, location);
 }
 
 /**
@@ -562,8 +579,17 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         if (property === 'len') return 'number';
       }
 
-      // JSON property access always returns json
-      if (objectType === 'json') return 'json';
+      // Plain json member access → return null (unknown type, defer to runtime)
+      // This allows: if jsonObj.isValid { ... } without semantic error
+      if (objectType === 'json') return null;
+
+      // For structural types, resolve through type registry
+      if (ctx.typeRegistry) {
+        const resolvedType = ctx.typeRegistry.resolveSingleMember(objectType, property);
+        if (resolvedType) {
+          return resolvedType;
+        }
+      }
 
       return null;
     }

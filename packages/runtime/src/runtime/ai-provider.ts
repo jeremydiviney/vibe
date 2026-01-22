@@ -52,18 +52,72 @@ function isModelValue(value: unknown): value is VibeModelValue {
 /**
  * Get target type from the pending variable declaration context.
  * Returns null if not in a variable declaration or no type annotation.
+ * Returns the type string which may be a built-in type or a structural type name.
  */
-function getTargetType(state: RuntimeState): TargetType {
+function getTargetType(state: RuntimeState): TargetType | string | null {
   // Look at the next instruction to see if we're assigning to a typed variable
   const nextInstruction = state.instructionStack[0];
   if (nextInstruction?.op === 'declare_var' && nextInstruction.type) {
-    const type = nextInstruction.type;
-    // Only return types that the AI module understands
-    if (['text', 'json', 'boolean', 'number'].includes(type) || type.endsWith('[]')) {
-      return type as TargetType;
-    }
+    return nextInstruction.type;
   }
   return null;
+}
+
+/**
+ * Check if a type is a built-in Vibe type that the AI module understands.
+ */
+function isBuiltInType(type: string | null): type is TargetType {
+  if (!type) return false;
+  return ['text', 'json', 'boolean', 'number'].includes(type) || type.endsWith('[]');
+}
+
+/**
+ * Convert a StructuralType to an array of ExpectedField.
+ * Recursively handles nested types and type references.
+ */
+function structuralTypeToExpectedFields(
+  structure: import('../ast').StructuralType,
+  typeDefinitions: Map<string, import('../ast').StructuralType>
+): ExpectedField[] {
+  return structure.fields.map((field) => {
+    // Handle inline nested objects
+    if (field.nestedType) {
+      return {
+        name: field.name,
+        type: 'json' as const,  // Nested objects are json at runtime
+        nestedFields: structuralTypeToExpectedFields(field.nestedType, typeDefinitions),
+      };
+    }
+
+    // Handle array of named types
+    if (field.type.endsWith('[]')) {
+      const baseType = field.type.slice(0, -2);
+      const referencedType = typeDefinitions.get(baseType);
+      if (referencedType) {
+        // Array of structural type - each element should match the structure
+        return {
+          name: field.name,
+          type: 'json[]' as const,
+          nestedFields: structuralTypeToExpectedFields(referencedType, typeDefinitions),
+        };
+      }
+      // Array of built-in type
+      return { name: field.name, type: field.type as ExpectedField['type'] };
+    }
+
+    // Handle named type reference
+    const referencedType = typeDefinitions.get(field.type);
+    if (referencedType) {
+      return {
+        name: field.name,
+        type: 'json' as const,
+        nestedFields: structuralTypeToExpectedFields(referencedType, typeDefinitions),
+      };
+    }
+
+    // Built-in type
+    return { name: field.name, type: field.type as ExpectedField['type'] };
+  });
 }
 
 /**
@@ -137,9 +191,20 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       if (state.pendingDestructuring) {
         // Multi-value destructuring: const {name: text, age: number} = do "..."
         expectedFields = state.pendingDestructuring.map((f) => ({ name: f.name, type: f.type }));
-      } else if (shouldUseReturnTool(targetType)) {
-        // Single-value typed return: const x: number = do "..."
-        expectedFields = [{ name: 'value', type: targetType! }];
+      } else if (targetType) {
+        // Check if it's a built-in type
+        if (isBuiltInType(targetType)) {
+          // Single-value typed return: const x: number = do "..."
+          expectedFields = [{ name: 'value', type: targetType }];
+        } else {
+          // Check if it's a structural type
+          const structuralType = state.typeDefinitions.get(targetType);
+          if (structuralType) {
+            // Structural type return: const result: MyType = do "..."
+            // Convert structure to expected fields
+            expectedFields = structuralTypeToExpectedFields(structuralType, state.typeDefinitions);
+          }
+        }
       }
 
       // Determine if this request should use tool-based return
