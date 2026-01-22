@@ -251,7 +251,8 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const execute = getProviderExecutor(model.provider!);
 
       // Execute with tool loop (handles multi-turn tool calling)
-      // 'do'/'compress' = single round (maxRounds: 1), 'vibe' = multi-turn (maxRounds: 10)
+      // 'do'/'compress' = single round (maxRounds: 1) - do is single-shot
+      // 'vibe' = multi-turn (maxRounds: 10)
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const isDo = aiType === 'do' || aiType === 'compress';
       const { response, rounds, returnFieldResults, completedViaReturnTool } = await executeWithTools(

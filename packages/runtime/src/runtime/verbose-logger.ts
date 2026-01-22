@@ -34,6 +34,12 @@ interface AICallContext {
   type: 'do' | 'vibe';
   targetType: string | null;
   messages: AILogMessage[];
+  // For complete context files (populated after AI call)
+  response?: string;
+  toolRounds?: Array<{
+    toolCalls: Array<{ id: string; toolName: string; args: Record<string, unknown> }>;
+    results: Array<{ toolCallId: string; result?: unknown; error?: string }>;
+  }>;
 }
 
 /**
@@ -118,7 +124,7 @@ export class VerboseLogger {
       `Target: ${context.targetType ?? 'text'}`,
       `Timestamp: ${new Date().toISOString()}`,
       '',
-      '=== MESSAGES ===',
+      '=== REQUEST MESSAGES ===',
       '',
     ];
 
@@ -149,7 +155,46 @@ export class VerboseLogger {
       lines.push('');
     }
 
-    lines.push('=== END MESSAGES ===');
+    lines.push('=== END REQUEST ===');
+
+    // Add response if available
+    if (context.response !== undefined) {
+      lines.push('');
+      lines.push('=== RESPONSE ===');
+      lines.push('');
+      lines.push(context.response);
+      lines.push('');
+      lines.push('=== END RESPONSE ===');
+    }
+
+    // Add tool rounds if any
+    if (context.toolRounds && context.toolRounds.length > 0) {
+      lines.push('');
+      lines.push('=== TOOL EXECUTION ===');
+      lines.push('');
+
+      for (let i = 0; i < context.toolRounds.length; i++) {
+        const round = context.toolRounds[i];
+        lines.push(`--- Round ${i + 1} ---`);
+
+        for (const call of round.toolCalls) {
+          lines.push(`Tool: ${call.toolName}`);
+          lines.push(`Args: ${JSON.stringify(call.args, null, 2)}`);
+
+          const result = round.results.find(r => r.toolCallId === call.id);
+          if (result) {
+            if (result.error) {
+              lines.push(`Error: ${result.error}`);
+            } else {
+              lines.push(`Result: ${JSON.stringify(result.result, null, 2)}`);
+            }
+          }
+          lines.push('');
+        }
+      }
+
+      lines.push('=== END TOOL EXECUTION ===');
+    }
 
     const filePath = join(this.contextDir, `${id}.txt`);
     writeFileSync(filePath, lines.join('\n'));
@@ -243,8 +288,12 @@ export class VerboseLogger {
     this.logEvent(event);
   }
 
+  // Store context for each AI call so we can complete it later
+  private aiContexts = new Map<string, AICallContext>();
+
   /**
    * Log AI call start - returns the ID for this call
+   * Note: Context file is written in aiComplete, not here, so we have the response and tool calls
    */
   aiStart(
     type: 'do' | 'vibe',
@@ -266,21 +315,29 @@ export class VerboseLogger {
 
     this.logEvent(event);
 
-    // Write full context to file
-    this.writeContextFile(id, context);
+    // Store context for later completion (context file written in aiComplete)
+    this.aiContexts.set(id, context);
 
     return id;
   }
 
   /**
-   * Log AI call completion
+   * Log AI call completion and write context file with full details
    */
   aiComplete(
     id: string,
     durationMs: number,
     usage?: TokenUsage,
     toolCallCount = 0,
-    error?: string
+    error?: string,
+    completionDetails?: {
+      messages?: AILogMessage[];
+      response?: string;
+      toolRounds?: Array<{
+        toolCalls: Array<{ id: string; toolName: string; args: Record<string, unknown> }>;
+        results: Array<{ toolCallId: string; result?: unknown; error?: string }>;
+      }>;
+    }
   ): void {
     const event: AICompleteEvent = {
       seq: ++this.seq,
@@ -294,6 +351,27 @@ export class VerboseLogger {
     };
 
     this.logEvent(event);
+
+    // Write context file with full details
+    const context = this.aiContexts.get(id);
+    if (context) {
+      // Update context with completion details
+      if (completionDetails?.messages) {
+        context.messages = completionDetails.messages;
+      }
+      if (completionDetails?.response !== undefined) {
+        context.response = completionDetails.response;
+      }
+      if (completionDetails?.toolRounds) {
+        context.toolRounds = completionDetails.toolRounds;
+      }
+
+      // Now write the full context file
+      this.writeContextFile(id, context);
+
+      // Clean up
+      this.aiContexts.delete(id);
+    }
   }
 
   /**

@@ -370,10 +370,14 @@ export class Runtime {
           throw error;
         }
 
-        // Log AI complete (verbose logger)
+        // Log AI complete (verbose logger) with full context
         if (aiId) {
           const toolCallCount = result.toolRounds?.reduce((sum, r) => sum + r.toolCalls.length, 0) ?? 0;
-          this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, result.usage, toolCallCount);
+          this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, result.usage, toolCallCount, undefined, {
+            messages: result.messages,
+            response: typeof result.value === 'string' ? result.value : JSON.stringify(result.value),
+            toolRounds: result.toolRounds,
+          });
         }
 
         // Create interaction record if logging (legacy)

@@ -407,22 +407,28 @@ describe('VerboseLogger', () => {
       expect(existsSync(contextDir)).toBe(true);
     });
 
-    test('writes AI context file', () => {
+    test('writes AI context file on aiComplete', () => {
       const logger = new VerboseLogger({
         logDir: testDir,
         printToConsole: false,
         writeToFile: true,
       });
 
-      logger.aiStart('do', 'gpt-4', 'What is 2+2?', {
+      const id = logger.aiStart('do', 'gpt-4', 'What is 2+2?', {
         model: 'gpt-4',
         modelDetails: { name: 'gpt-4', provider: 'openai' },
         type: 'do',
         targetType: 'number',
+        messages: [], // Empty at start - will be filled in aiComplete
+      });
+
+      // Context file is written in aiComplete, not aiStart
+      logger.aiComplete(id, 100, { inputTokens: 10, outputTokens: 20 }, 0, undefined, {
         messages: [
           { role: 'system', content: 'You are a helpful assistant.' },
           { role: 'user', content: 'What is 2+2?' },
         ],
+        response: '4',
       });
 
       const contextDir = logger.getContextDir();
@@ -436,6 +442,9 @@ describe('VerboseLogger', () => {
       expect(content).toContain('You are a helpful assistant.');
       expect(content).toContain('[user]');
       expect(content).toContain('What is 2+2?');
+      // Check that response is included
+      expect(content).toContain('=== RESPONSE ===');
+      expect(content).toContain('4');
     });
 
     test('writes TS block context file', () => {
