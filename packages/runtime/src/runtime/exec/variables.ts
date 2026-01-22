@@ -1,7 +1,7 @@
 // Variable handling: lookup, declare, assign
 
 import type { VibeType } from '../../ast';
-import type { SourceLocation } from '../../errors';
+import { ReferenceError, RuntimeError, TypeError, type SourceLocation } from '../../errors';
 import type { RuntimeState, VibeValue, StackFrame, ToolCallRecord } from '../types';
 import { createVibeValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
@@ -66,7 +66,7 @@ export function execDeclareVar(
   const frame = currentFrame(state);
 
   if (frame.locals[name]) {
-    throw new Error(`Variable '${name}' is already declared`);
+    throw new RuntimeError(`Variable '${name}' is already declared`, location);
   }
 
   const rawValue = initialValue !== undefined ? initialValue : state.lastResult;
@@ -143,13 +143,13 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   const found = lookupVariable(state, name);
 
   if (!found) {
-    throw new Error(`ReferenceError: '${name}' is not defined`);
+    throw new ReferenceError(name, location);
   }
 
   const { variable, frameIndex } = found;
 
   if (variable.isConst) {
-    throw new Error(`TypeError: Cannot assign to constant '${name}'`);
+    throw new TypeError(`Cannot assign to constant '${name}'`, undefined, undefined, location);
   }
 
   // Warn if modifying non-local variable in async isolation
@@ -188,12 +188,12 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     // Find which module this belongs to by checking current frame's modulePath
     const currentModulePath = getCurrentModulePath(state);
     if (!currentModulePath) {
-      throw new Error(`Internal error: module global assignment without module context`);
+      throw new RuntimeError('Internal error: module global assignment without module context', location);
     }
 
     const module = state.vibeModules[currentModulePath];
     if (!module) {
-      throw new Error(`Internal error: module not found: ${currentModulePath}`);
+      throw new RuntimeError(`Internal error: module not found: ${currentModulePath}`, location);
     }
 
     const newGlobals = {

@@ -388,8 +388,8 @@ export class VerboseLogger {
 
     this.logEvent(event);
 
-    // Write function call to context file
-    this.writeTSFunctionContextFile(id, funcName, args, location);
+    // Note: We don't write context files for TS function calls
+    // They're too frequent and not useful for debugging AI interactions
 
     return id;
   }

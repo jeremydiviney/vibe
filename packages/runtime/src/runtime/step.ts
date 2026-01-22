@@ -17,7 +17,7 @@ import {
   finalizeModelDeclaration,
 } from './exec/statements';
 import { currentFrame } from './state';
-import { RuntimeError } from '../errors';
+import { RuntimeError, VibeError } from '../errors';
 import { requireBoolean } from './validation';
 import {
   execExpression,
@@ -262,14 +262,19 @@ export function step(state: RuntimeState): RuntimeState {
   } catch (error) {
     const errorObj = error instanceof Error ? error : new Error(String(error));
 
-    // Build error message with location if available
-    let errorMessage = errorObj.message;
-    const location = instruction.location;
+    // Use format() method if it's a VibeError, otherwise build error message
+    let errorMessage: string;
+    if (error instanceof VibeError) {
+      errorMessage = error.format();
+    } else {
+      errorMessage = errorObj.message;
+      const location = instruction.location;
 
-    // If we have location info and the error doesn't already include it, add it
-    if (location && !errorMessage.includes('[')) {
-      const file = location.file ?? 'script';
-      errorMessage = `${errorMessage}\n  at ${file}:${location.line}:${location.column}`;
+      // If we have location info and the error doesn't already include it, add it
+      if (location && !errorMessage.includes('[')) {
+        const file = location.file ?? 'script';
+        errorMessage = `${errorMessage}\n  at ${file}:${location.line}:${location.column}`;
+      }
     }
 
     return {
@@ -360,7 +365,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       throw new Error('call_imported_ts should be handled in execCallFunction');
 
     case 'if_branch':
-      return execIfBranch(state, instruction.consequent, instruction.alternate);
+      return execIfBranch(state, instruction.consequent, instruction.alternate, instruction.location);
 
     case 'for_in_init': {
       const { stmt } = instruction;
@@ -476,8 +481,8 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     }
 
     case 'while_init': {
-      const { stmt, savedKeys } = instruction;
-      const condition = requireBoolean(state.lastResult, 'while condition');
+      const { stmt, savedKeys, location } = instruction;
+      const condition = requireBoolean(state.lastResult, 'while condition', location);
 
       if (!condition) {
         // Condition false - exit loop (first check, no scope entered yet)
@@ -531,7 +536,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
 
     case 'while_check': {
       const { stmt, savedKeys, contextMode, label, entryIndex, location } = instruction;
-      const condition = requireBoolean(state.lastResult, 'while condition');
+      const condition = requireBoolean(state.lastResult, 'while condition', location);
 
       if (!condition) {
         // Loop complete - add scope-exit marker and apply context mode
@@ -605,7 +610,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       return execBuildArray(state, instruction.count);
 
     case 'build_range':
-      return execBuildRange(state);
+      return execBuildRange(state, instruction.location);
 
     case 'collect_args':
       return execCollectArgs(state, instruction.count);
@@ -714,16 +719,16 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const index = resolveValue(rawIndex) as number;
 
       if (!Array.isArray(arr)) {
-        throw new Error(`Cannot index non-array: ${typeof arr}`);
+        throw new RuntimeError(`Cannot index non-array: ${typeof arr}`, instruction.location);
       }
       if (typeof index !== 'number' || !Number.isInteger(index)) {
-        throw new Error(`Array index must be an integer, got ${typeof index}`);
+        throw new RuntimeError(`Array index must be an integer, got ${typeof index}`, instruction.location);
       }
 
       // Support negative indices (Python-style: -1 = last, -2 = second to last, etc.)
       const normalizedIndex = index < 0 ? arr.length + index : index;
       if (normalizedIndex < 0 || normalizedIndex >= arr.length) {
-        throw new Error(`Array index out of bounds: ${index} (length: ${arr.length})`);
+        throw new RuntimeError(`Array index out of bounds: ${index} (length: ${arr.length})`, instruction.location);
       }
 
       return { ...state, valueStack: newStack, lastResult: arr[normalizedIndex] };
@@ -766,7 +771,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       const end = hasEnd ? resolveValue(rawEnd) as number : undefined;
 
       if (!Array.isArray(arr)) {
-        throw new Error(`Cannot slice non-array: ${typeof arr}`);
+        throw new RuntimeError(`Cannot slice non-array: ${typeof arr}`, instruction.location);
       }
 
       // Default values: start=0, end=arr.length (Python-style)
@@ -774,10 +779,10 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       let endIdx = end ?? arr.length;
 
       if (typeof startIdx !== 'number' || !Number.isInteger(startIdx)) {
-        throw new Error(`Slice start must be an integer, got ${typeof startIdx}`);
+        throw new RuntimeError(`Slice start must be an integer, got ${typeof startIdx}`, instruction.location);
       }
       if (typeof endIdx !== 'number' || !Number.isInteger(endIdx)) {
-        throw new Error(`Slice end must be an integer, got ${typeof endIdx}`);
+        throw new RuntimeError(`Slice end must be an integer, got ${typeof endIdx}`, instruction.location);
       }
 
       // Support negative indices (Python-style: -1 = last, -2 = second to last, etc.)
@@ -901,7 +906,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         if (!isNaN(index)) {
           return { ...state, lastResult: object[index] };
         }
-        throw new Error(`Unknown array property: ${property}`);
+        throw new RuntimeError(`Unknown array property: ${property}`, instruction.location);
       }
 
       // Handle built-in methods on strings
@@ -909,7 +914,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         if (property === 'len') {
           return { ...state, lastResult: { __boundMethod: true, object, method: property } };
         }
-        throw new Error(`Unknown string property: ${property}`);
+        throw new RuntimeError(`Unknown string property: ${property}`, instruction.location);
       }
 
       // Handle regular object property access
@@ -918,7 +923,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         return { ...state, lastResult: val };
       }
 
-      throw new Error(`Cannot access property '${property}' on ${typeof object}`);
+      throw new RuntimeError(`Cannot access property '${property}' on ${typeof object}`, instruction.location);
     }
 
     default:

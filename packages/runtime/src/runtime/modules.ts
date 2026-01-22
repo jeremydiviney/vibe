@@ -269,18 +269,34 @@ function extractModuleFunctions(program: AST.Program): Record<string, AST.Functi
 
 // Extract all module-level variables (both exported and non-exported)
 // These form the module's isolated global scope
+// Processes declarations in order to build up context for identifier resolution
 function extractModuleGlobals(program: AST.Program): Record<string, VibeValue> {
   const globals: Record<string, VibeValue> = {};
 
+  // Process declarations in order - each declaration can reference previous ones
   for (const stmt of program.body) {
+    // Handle model declarations (both exported and non-exported)
+    // Models need to be in globals so they can be referenced in arrays/expressions
+    if (stmt.type === 'ModelDeclaration') {
+      globals[stmt.name] = createVibeValue(
+        evaluateModelConfig(stmt.config, globals),
+        { isConst: true, typeAnnotation: 'model' }
+      );
+    } else if (stmt.type === 'ExportDeclaration' && stmt.declaration.type === 'ModelDeclaration') {
+      const decl = stmt.declaration;
+      globals[decl.name] = createVibeValue(
+        evaluateModelConfig(decl.config, globals),
+        { isConst: true, typeAnnotation: 'model' }
+      );
+    }
     // Handle direct declarations
-    if (stmt.type === 'LetDeclaration') {
-      globals[stmt.name] = createVibeValue(evaluateSimpleLiteral(stmt.initializer), {
+    else if (stmt.type === 'LetDeclaration') {
+      globals[stmt.name] = createVibeValue(evaluateModuleExpression(stmt.initializer, globals), {
         isConst: false,
         typeAnnotation: stmt.typeAnnotation,
       });
     } else if (stmt.type === 'ConstDeclaration') {
-      globals[stmt.name] = createVibeValue(evaluateSimpleLiteral(stmt.initializer), {
+      globals[stmt.name] = createVibeValue(evaluateModuleExpression(stmt.initializer, globals), {
         isConst: true,
         typeAnnotation: stmt.typeAnnotation,
       });
@@ -289,26 +305,28 @@ function extractModuleGlobals(program: AST.Program): Record<string, VibeValue> {
     else if (stmt.type === 'ExportDeclaration') {
       const decl = stmt.declaration;
       if (decl.type === 'LetDeclaration') {
-        globals[decl.name] = createVibeValue(evaluateSimpleLiteral(decl.initializer), {
+        globals[decl.name] = createVibeValue(evaluateModuleExpression(decl.initializer, globals), {
           isConst: false,
           typeAnnotation: decl.typeAnnotation,
         });
       } else if (decl.type === 'ConstDeclaration') {
-        globals[decl.name] = createVibeValue(evaluateSimpleLiteral(decl.initializer), {
+        globals[decl.name] = createVibeValue(evaluateModuleExpression(decl.initializer, globals), {
           isConst: true,
           typeAnnotation: decl.typeAnnotation,
         });
       }
     }
-    // Note: Functions and models are accessed via exports, not globals
   }
 
   return globals;
 }
 
-// Evaluate simple literal expressions for module initialization
-// Complex expressions will be null (would need full runtime evaluation)
-function evaluateSimpleLiteral(expr: AST.Expression | null): unknown {
+// Evaluate module-level expressions during initialization
+// Supports literals, identifiers (from previously declared globals), and simple expressions
+function evaluateModuleExpression(
+  expr: AST.Expression | null,
+  context: Record<string, VibeValue>
+): unknown {
   if (!expr) return null;
 
   switch (expr.type) {
@@ -321,17 +339,81 @@ function evaluateSimpleLiteral(expr: AST.Expression | null): unknown {
     case 'NullLiteral':
       return null;
     case 'ArrayLiteral':
-      return expr.elements.map(e => evaluateSimpleLiteral(e));
-    case 'ObjectLiteral':
+      return expr.elements.map(e => evaluateModuleExpression(e, context));
+    case 'ObjectLiteral': {
       const obj: Record<string, unknown> = {};
       for (const prop of expr.properties) {
-        obj[prop.key] = evaluateSimpleLiteral(prop.value);
+        obj[prop.key] = evaluateModuleExpression(prop.value, context);
       }
       return obj;
+    }
+    case 'Identifier': {
+      // Look up identifier in previously declared globals
+      const value = context[expr.name];
+      if (value !== undefined) {
+        return value.value;
+      }
+      // Unknown identifier - can't resolve at module load time
+      return null;
+    }
+    case 'IndexExpression': {
+      // Handle array indexing like availableModels[0]
+      const obj = evaluateModuleExpression(expr.object, context);
+      const index = evaluateModuleExpression(expr.index, context);
+      if (Array.isArray(obj) && typeof index === 'number') {
+        return obj[index];
+      }
+      return null;
+    }
+    case 'MemberExpression': {
+      // Handle object member access like obj.field
+      const obj = evaluateModuleExpression(expr.object, context);
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        return (obj as Record<string, unknown>)[expr.property];
+      }
+      return null;
+    }
+    case 'CallExpression': {
+      // Handle specific built-in function calls that can be evaluated at module load time
+      if (expr.callee.type === 'Identifier') {
+        const funcName = expr.callee.name;
+
+        // env() - get environment variable
+        if (funcName === 'env' && expr.arguments.length >= 1) {
+          const envName = evaluateModuleExpression(expr.arguments[0], context);
+          const defaultValue = expr.arguments[1]
+            ? evaluateModuleExpression(expr.arguments[1], context)
+            : '';
+          if (typeof envName === 'string') {
+            return process.env[envName] ?? defaultValue;
+          }
+        }
+      }
+      // Other function calls can't be evaluated at module load time
+      return null;
+    }
     default:
-      // Complex expression - can't evaluate statically
+      // Complex expression - can't evaluate at module load time
       return null;
   }
+}
+
+// Evaluate a ModelConfig AST into a VibeModelValue
+// This converts Expression nodes to their actual values
+function evaluateModelConfig(
+  config: AST.ModelConfig,
+  context: Record<string, VibeValue>
+): Record<string, unknown> {
+  return {
+    __vibeModel: true,
+    name: evaluateModuleExpression(config.modelName, context),
+    apiKey: evaluateModuleExpression(config.apiKey, context),
+    url: evaluateModuleExpression(config.url, context),
+    provider: evaluateModuleExpression(config.provider, context),
+    maxRetriesOnError: evaluateModuleExpression(config.maxRetriesOnError ?? null, context),
+    thinkingLevel: evaluateModuleExpression(config.thinkingLevel ?? null, context),
+    tools: evaluateModuleExpression(config.tools ?? null, context),
+  };
 }
 
 // Register imported names in the state for lookup
@@ -390,8 +472,14 @@ export function getImportedValue(
     } else if (exported.kind === 'variable') {
       return exported.value;
     } else if (exported.kind === 'model') {
-      // Return the model config as a value
-      return { __vibeModel: true, ...exported.declaration.config };
+      // Return the evaluated model from module globals
+      // Models are added to globals during extractModuleGlobals
+      const modelValue = module.globals[exported.declaration.name]?.value;
+      if (modelValue) {
+        return modelValue;
+      }
+      // Fallback: shouldn't happen if module was properly initialized
+      return undefined;
     }
   }
 

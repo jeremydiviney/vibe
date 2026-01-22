@@ -219,7 +219,7 @@ let x = 1
 let id = uuid()
 `);
       const runtime = new Runtime(ast, createMockProvider());
-      await expect(runtime.run()).rejects.toThrow("'uuid' is not defined");
+      await expect(runtime.run()).rejects.toThrow("Undefined variable 'uuid'");
     });
 
     test('uuid works when imported from system/utils', async () => {

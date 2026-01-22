@@ -1,7 +1,7 @@
 // Function call execution
 
 import * as AST from '../../ast';
-import type { SourceLocation } from '../../errors';
+import { ReferenceError, RuntimeError, TypeError, type SourceLocation } from '../../errors';
 import type { RuntimeState, StackFrame } from '../types';
 import { resolveValue, createVibeValue } from '../types';
 import type { VibeToolValue } from '../tools/types';
@@ -140,7 +140,7 @@ export function execCallFunction(
     const func = state.functions[funcName];
 
     if (!func) {
-      throw new Error(`ReferenceError: '${funcName}' is not defined`);
+      throw new ReferenceError(funcName, location);
     }
 
     // Check if we're in async context (variable, destructuring, or fire-and-forget)
@@ -158,7 +158,7 @@ export function execCallFunction(
     const func = moduleFunctions?.[funcName];
 
     if (!func) {
-      throw new Error(`ReferenceError: '${funcName}' is not defined`);
+      throw new ReferenceError(funcName, location);
     }
 
     // Check if we're in async context (variable, destructuring, or fire-and-forget)
@@ -216,7 +216,7 @@ export function execCallFunction(
     const func = getImportedVibeFunction(state, funcName);
 
     if (!func) {
-      throw new Error(`ReferenceError: '${funcName}' is not defined`);
+      throw new ReferenceError(funcName, location);
     }
 
     // Get the module path for scope isolation
@@ -234,8 +234,11 @@ export function execCallFunction(
   // They can only be used by AI models via the tools array
   if (typeof callee === 'object' && callee !== null && '__vibeTool' in callee) {
     const tool = callee as VibeToolValue;
-    throw new Error(
-      `TypeError: Cannot call tool '${tool.name}' directly. Tools can only be used by AI models via the tools array in model declarations.`
+    throw new TypeError(
+      `Cannot call tool '${tool.name}' directly. Tools can only be used by AI models via the tools array in model declarations.`,
+      undefined,
+      undefined,
+      location
     );
   }
 
@@ -245,7 +248,7 @@ export function execCallFunction(
     const coreFunc = getCoreFunction(funcName);
 
     if (!coreFunc) {
-      throw new Error(`ReferenceError: Core function '${funcName}' is not defined`);
+      throw new ReferenceError(funcName, location);
     }
 
     // Core functions are synchronous, execute directly
@@ -261,7 +264,7 @@ export function execCallFunction(
   // Handle bound method call on object (built-in methods)
   if (typeof callee === 'object' && callee !== null && '__boundMethod' in callee) {
     const { object, method } = callee as { __boundMethod: boolean; object: unknown; method: string };
-    const result = executeBuiltinMethod(object, method, args);
+    const result = executeBuiltinMethod(object, method, args, location);
 
     return {
       ...state,
@@ -270,13 +273,13 @@ export function execCallFunction(
     };
   }
 
-  throw new Error('TypeError: Cannot call non-function');
+  throw new TypeError('Cannot call non-function', undefined, undefined, location);
 }
 
 /**
  * Execute a built-in method on an object.
  */
-function executeBuiltinMethod(object: unknown, method: string, args: unknown[]): unknown {
+function executeBuiltinMethod(object: unknown, method: string, args: unknown[], location: SourceLocation): unknown {
   // Universal toString() method - works on any type
   if (method === 'toString') {
     if (object === null || object === undefined) {
@@ -295,17 +298,17 @@ function executeBuiltinMethod(object: unknown, method: string, args: unknown[]):
         return object.length;
       case 'push':
         if (args.length === 0) {
-          throw new Error('push() requires an argument');
+          throw new RuntimeError('push() requires an argument', location);
         }
         object.push(args[0]);
         return object;  // Return the array for chaining
       case 'pop':
         if (object.length === 0) {
-          throw new Error('Cannot pop from empty array');
+          throw new RuntimeError('Cannot pop from empty array', location);
         }
         return object.pop();  // Return the removed element
       default:
-        throw new Error(`Unknown array method: ${method}`);
+        throw new RuntimeError(`Unknown array method: ${method}`, location);
     }
   }
 
@@ -315,9 +318,9 @@ function executeBuiltinMethod(object: unknown, method: string, args: unknown[]):
       case 'len':
         return object.length;
       default:
-        throw new Error(`Unknown string method: ${method}`);
+        throw new RuntimeError(`Unknown string method: ${method}`, location);
     }
   }
 
-  throw new Error(`Cannot call method '${method}' on ${typeof object}`);
+  throw new RuntimeError(`Cannot call method '${method}' on ${typeof object}`, location);
 }

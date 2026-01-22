@@ -21,6 +21,7 @@ import {
   RETURN_FIELD_TOOL,
 } from './ai/return-tools';
 import type { ExpectedField } from './types';
+import { RuntimeError } from '../errors';
 
 /**
  * Get model value from runtime state by model name.
@@ -125,10 +126,10 @@ function structuralTypeToExpectedFields(
  */
 function buildModelConfig(modelValue: VibeModelValue): ModelConfig {
   if (!modelValue.name) {
-    throw new Error('Model name is required');
+    throw new RuntimeError('Model name is required');
   }
   if (!modelValue.apiKey) {
-    throw new Error('API key is required');
+    throw new RuntimeError('API key is required');
   }
 
   const provider: AIProviderType =
@@ -167,8 +168,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const modelValue = getModelValue(state, modelName);
       if (!modelValue) {
         const location = state.pendingAI?.location ?? state.pendingCompress?.location;
-        const locStr = location ? `\n  at ${location.file ?? 'script'}:${location.line}:${location.column}` : '';
-        throw new Error(`Model '${modelName}' not found in scope${locStr}`);
+        throw new RuntimeError(`Model '${modelName}' not found in scope`, location);
       }
 
       // Determine target type from pending variable declaration
@@ -343,8 +343,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const modelValue = getModelValue(state, modelName);
       if (!modelValue) {
         const location = state.pendingAI?.location;
-        const locStr = location ? `\n  at ${location.file ?? 'script'}:${location.line}:${location.column}` : '';
-        throw new Error(`Model '${modelName}' not found in scope${locStr}`);
+        throw new RuntimeError(`Model '${modelName}' not found in scope`, location);
       }
 
       // Build model config

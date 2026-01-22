@@ -466,17 +466,11 @@ describe('VerboseLogger', () => {
         writeToFile: true,
       });
 
-      logger.tsFunctionStart('processData', [{ items: [1, 2, 3] }, 'transform'], { file: 'test.vibe', line: 10 });
+      const id = logger.tsFunctionStart('processData', [{ items: [1, 2, 3] }, 'transform'], { file: 'test.vibe', line: 10 });
 
-      const contextDir = logger.getContextDir();
-      const contextFile = join(contextDir, 'tsf-000001.ts');
-      expect(existsSync(contextFile)).toBe(true);
-
-      const content = readFileSync(contextFile, 'utf-8');
-      expect(content).toContain('TS Function Call: tsf-000001');
-      expect(content).toContain('Function: processData');
-      expect(content).toContain('Location: test.vibe:10');
-      expect(content).toContain('"items"');
+      // TS function calls don't write context files (they're too frequent and not useful for debugging)
+      // Just verify the ID is returned
+      expect(id).toBe('tsf-000001');
     });
   });
 
@@ -652,12 +646,12 @@ describe('VerboseLogger', () => {
       // Verify all context files exist
       const contextFiles = readdirSync(contextDir);
 
-      // Should have: do-000001.txt, vibe-000001.txt, ts-000001.ts, tsf-000001.ts
+      // Should have: do-000001.txt, vibe-000001.txt, ts-000001.ts
+      // Note: tsf (TS function) context files are no longer written (too frequent, not useful)
       expect(contextFiles).toContain('do-000001.txt');
       expect(contextFiles).toContain('vibe-000001.txt');
       expect(contextFiles).toContain('ts-000001.ts');
-      expect(contextFiles).toContain('tsf-000001.ts');
-      expect(contextFiles).toHaveLength(4);
+      expect(contextFiles).toHaveLength(3);
 
       // Verify context file contents
       const doContent = readFileSync(join(contextDir, 'do-000001.txt'), 'utf-8');
@@ -675,10 +669,6 @@ describe('VerboseLogger', () => {
       expect(tsContent).toContain('TS Block: ts-000001');
       expect(tsContent).toContain('x = 42');
       expect(tsContent).toContain('return x * 2;');
-
-      const tsfContent = readFileSync(join(contextDir, 'tsf-000001.ts'), 'utf-8');
-      expect(tsfContent).toContain('TS Function Call: tsf-000001');
-      expect(tsfContent).toContain('processData');
     });
 
     test('directory names are linked by timestamp', () => {

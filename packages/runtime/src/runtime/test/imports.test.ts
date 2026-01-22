@@ -345,7 +345,7 @@ describe('Runtime - TypeScript Variable Imports', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('error');
-    expect(state.error).toMatch(/TypeError: Cannot call non-function/);
+    expect(state.error).toMatch(/TypeError:.*Cannot call non-function/);
   });
 });
 

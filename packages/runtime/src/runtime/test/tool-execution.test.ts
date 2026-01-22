@@ -151,7 +151,7 @@ let timestamp = now()
     const runtime = new Runtime(ast, createMockProvider());
 
     // This should fail because 'now' is not defined (no import)
-    await expect(runtime.run()).rejects.toThrow("'now' is not defined");
+    await expect(runtime.run()).rejects.toThrow("Undefined variable 'now'");
   });
 
   // Core functions (env, print) are auto-imported and available without explicit import
@@ -246,7 +246,7 @@ let result = undefinedTool("arg")
 `);
     const runtime = new Runtime(ast, createMockProvider());
 
-    await expect(runtime.run()).rejects.toThrow("'undefinedTool' is not defined");
+    await expect(runtime.run()).rejects.toThrow("Undefined variable 'undefinedTool'");
   });
 
   test('user-defined tool cannot be called directly', async () => {

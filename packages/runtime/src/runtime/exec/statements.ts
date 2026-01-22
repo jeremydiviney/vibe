@@ -1,7 +1,7 @@
 // Statement execution helpers: declarations, control flow
 
 import * as AST from '../../ast';
-import type { SourceLocation } from '../../errors';
+import { RuntimeError, type SourceLocation } from '../../errors';
 import type { RuntimeState, VibeValue } from '../types';
 import { createVibeValue, createVibeError, resolveValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
@@ -263,11 +263,12 @@ export function execWhileStatement(state: RuntimeState, stmt: AST.WhileStatement
 export function execIfBranch(
   state: RuntimeState,
   consequent: AST.BlockStatement,
-  alternate?: AST.Statement | null
+  alternate?: AST.Statement | null,
+  location?: SourceLocation
 ): RuntimeState {
   const condition = state.lastResult;
 
-  if (requireBoolean(condition, 'if condition')) {
+  if (requireBoolean(condition, 'if condition', location)) {
     return {
       ...state,
       instructionStack: [
@@ -519,7 +520,7 @@ export function execBreakStatement(state: RuntimeState, stmt: AST.BreakStatement
 
   if (loopIndex === -1) {
     // This shouldn't happen if semantic analysis is correct
-    throw new Error('break statement outside of loop');
+    throw new RuntimeError('break statement outside of loop', stmt.location);
   }
 
   const loopInstr = state.instructionStack[loopIndex];
@@ -653,6 +654,6 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
       return state;
 
     default:
-      throw new Error(`Unknown statement type: ${(stmt as AST.Statement).type}`);
+      throw new RuntimeError(`Unknown statement type: ${(stmt as AST.Statement).type}`, (stmt as AST.Statement).location);
   }
 }

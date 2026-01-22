@@ -6,6 +6,7 @@ import { withRetry } from './retry';
 import { executeOpenAI } from './providers/openai';
 import { executeAnthropic } from './providers/anthropic';
 import { executeGoogle } from './providers/google';
+import { RuntimeError } from '../../errors';
 
 /**
  * Detect provider from URL.
@@ -78,10 +79,10 @@ export async function executeAI(
 ): Promise<AIResponse> {
   // Validate model config
   if (!modelValue.name) {
-    throw new Error('Model name is required');
+    throw new RuntimeError('Model name is required');
   }
   if (!modelValue.apiKey) {
-    throw new Error('API key is required');
+    throw new RuntimeError('API key is required');
   }
 
   // Determine provider (explicit or auto-detect)

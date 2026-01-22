@@ -1,7 +1,7 @@
 // Type validation and coercion utilities
 
 import type { VibeType, VibeTypeRequired } from '../ast';
-import { RuntimeError, type SourceLocation } from '../errors';
+import { RuntimeError, TypeError, type SourceLocation } from '../errors';
 import { isVibeValue, resolveValue } from './types';
 
 // Map array types to their element types (type-safe alternative to string slicing)
@@ -149,10 +149,10 @@ export function validateAndCoerce(
  * Strict boolean check - no truthy coercion allowed.
  * Throws if value is not a boolean.
  */
-export function requireBoolean(value: unknown, context: string): boolean {
+export function requireBoolean(value: unknown, context: string, location?: SourceLocation): boolean {
   // Handle VibeValue with error - throw the error
   if (isVibeValue(value) && value.err && value.errDetails) {
-    throw new Error(`${value.errDetails.type}: ${value.errDetails.message}`);
+    throw new RuntimeError(`${value.errDetails.type}: ${value.errDetails.message}`, location);
   }
 
   // Auto-unwrap VibeValue
@@ -160,7 +160,7 @@ export function requireBoolean(value: unknown, context: string): boolean {
 
   if (typeof unwrapped !== 'boolean') {
     const valueType = unwrapped === null ? 'null' : typeof unwrapped;
-    throw new Error(`TypeError: ${context} must be a boolean, got ${valueType}`);
+    throw new TypeError(`${context} must be a boolean, got ${valueType}`, 'boolean', valueType, location);
   }
   return unwrapped;
 }

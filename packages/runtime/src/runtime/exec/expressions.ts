@@ -13,6 +13,7 @@ import { isCoreFunction } from '../stdlib/core';
 import { lookupVariable } from './variables';
 import { execVibeExpression } from './ai';
 import { execTsBlock } from './typescript';
+import { ReferenceError, RuntimeError } from '../../errors';
 
 /**
  * Identifier - get variable VibeValue.
@@ -112,7 +113,7 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
     return { ...state, lastResult: { __vibeCoreFunction: true, name: expr.name } };
   }
 
-  throw new Error(`ReferenceError: '${expr.name}' is not defined`);
+  throw new ReferenceError(expr.name, expr.location);
 }
 
 /**
@@ -352,7 +353,7 @@ export function execRangeExpression(state: RuntimeState, expr: AST.RangeExpressi
 /**
  * Build inclusive range array from value stack [start, end].
  */
-export function execBuildRange(state: RuntimeState): RuntimeState {
+export function execBuildRange(state: RuntimeState, location: AST.SourceLocation): RuntimeState {
   const rawEnd = state.valueStack[state.valueStack.length - 1];
   const rawStart = state.valueStack[state.valueStack.length - 2];
   const newStack = state.valueStack.slice(0, -2);
@@ -370,11 +371,11 @@ export function execBuildRange(state: RuntimeState): RuntimeState {
   const end = resolveValue(rawEnd);
 
   if (typeof start !== 'number' || typeof end !== 'number') {
-    throw new Error(`Range bounds must be numbers, got ${typeof start} and ${typeof end}`);
+    throw new RuntimeError(`Range bounds must be numbers, got ${typeof start} and ${typeof end}`, location);
   }
 
   if (!Number.isInteger(start) || !Number.isInteger(end)) {
-    throw new Error(`Range bounds must be integers, got ${start} and ${end}`);
+    throw new RuntimeError(`Range bounds must be integers, got ${start} and ${end}`, location);
   }
 
   const length = end - start + 1;
@@ -488,6 +489,6 @@ export function execExpression(state: RuntimeState, expr: AST.Expression): Runti
       return execMemberExpression(state, expr);
 
     default:
-      throw new Error(`Unknown expression type: ${(expr as AST.Expression).type}`);
+      throw new RuntimeError(`Unknown expression type: ${(expr as AST.Expression).type}`, (expr as AST.Expression).location);
   }
 }
