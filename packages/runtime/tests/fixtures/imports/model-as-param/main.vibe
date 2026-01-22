@@ -1,0 +1,13 @@
+model testModel = {
+  name: "gpt-4",
+  provider: "openai",
+  apiKey: env("OPENAI_API_KEY"),
+  url: "https://api.openai.com/v1"
+}
+
+function useModel(m: model) {
+  const result: text = do "Say hello" m
+  return result
+}
+
+let output = useModel(testModel)

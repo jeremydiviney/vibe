@@ -345,6 +345,77 @@ describe('Runtime - TypeScript Variable Imports', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('error');
-    expect(state.error).toBe('TypeError: Cannot call non-function');
+    expect(state.error).toMatch(/TypeError: Cannot call non-function/);
+  });
+});
+
+describe('Runtime - Calling Imported TS Functions from Vibe Functions', () => {
+  test('can call imported TS function from inside a Vibe function', async () => {
+    const { state, result } = await loadAndRun('ts-from-function/main.vibe');
+
+    expect(state.status).toBe('completed');
+    // result1 = getRandomNumber() = 42
+    // result2 = addNumbers(10, 20) = 30
+    // result3 = exportedFunctionCallingTs() = 42
+    // finalResult = 42 + 30 + 42 = 114
+    expect(result).toBe(114);
+  });
+
+  test('can import from same TS file twice and use in function', async () => {
+    const { state, result } = await loadAndRun('ts-from-function/main-double-import.vibe');
+
+    expect(state.status).toBe('completed');
+    // result1 = getRandomNumber() = 42
+    // result2 = addNumbers(10, 20) = 30
+    // finalResult = 42 + 30 = 72
+    expect(result).toBe(72);
+  });
+
+  test('can import from same Vibe file twice and use in function', async () => {
+    const { state, result } = await loadAndRun('vibe-double-import/main.vibe');
+
+    expect(state.status).toBe('completed');
+    // a = getFirst() = 10
+    // b = getSecond() = 20
+    // result = 10 + 20 = 30
+    expect(result).toBe(30);
+  });
+});
+
+describe('Runtime - Model as Function Parameter', () => {
+  test('can pass model as function parameter and use in do expression', async () => {
+    const { state, result } = await loadAndRun('model-as-param/main.vibe', {
+      'Say hello': 'Hello!',
+    });
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('Hello!');
+  });
+
+  test('can get model from imported function and pass to another function', async () => {
+    const { state, result } = await loadAndRun('model-from-function/main.vibe', {
+      'Say hello': 'Hello from imported model!',
+    });
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('Hello from imported model!');
+  });
+
+  test('can get model from array and pass to function', async () => {
+    const { state, result } = await loadAndRun('model-from-array/main.vibe', {
+      'Say hello': 'Hello from array model!',
+    });
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('Hello from array model!');
+  });
+
+  test('can get model from imported module with random and use in exported function', async () => {
+    const { state, result } = await loadAndRun('model-with-random/main.vibe', {
+      'Say hello': 'Hello from random model!',
+    });
+
+    expect(state.status).toBe('completed');
+    expect(result).toBe('Hello from random model!');
   });
 });

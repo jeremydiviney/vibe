@@ -1,0 +1,10 @@
+import { getFirst } from "./helpers.vibe"
+import { getSecond } from "./helpers.vibe"
+
+function useImports() {
+  const a = getFirst()
+  const b = getSecond()
+  return a + b
+}
+
+let result = useImports()

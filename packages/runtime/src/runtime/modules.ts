@@ -87,17 +87,16 @@ async function loadTsModule(
 ): Promise<RuntimeState> {
   const modulePath = resolveModulePath(importDecl.source, basePath);
 
-  // Check if already loaded
-  if (state.tsModules[modulePath]) {
-    // Register the imported names (allows shared imports across modules)
-    return registerImportedNames(state, importDecl, modulePath, 'ts');
-  }
-
   // Load the module using Bun's import()
   const module = await import(modulePath);
 
-  // Extract the requested exports
-  const exports: Record<string, unknown> = {};
+  // Get existing exports or start fresh
+  const existingModule = state.tsModules[modulePath];
+  const exports: Record<string, unknown> = existingModule?.exports
+    ? { ...existingModule.exports }
+    : {};
+
+  // Extract the requested exports (add to existing)
   for (const spec of importDecl.specifiers) {
     if (!(spec.imported in module)) {
       throw new Error(
@@ -142,6 +141,15 @@ async function loadVibeModuleRecursive(
 
   // Check if already loaded
   if (state.vibeModules[modulePath]) {
+    // Verify all requested imports exist in the already-loaded module
+    const existingModule = state.vibeModules[modulePath];
+    for (const spec of importDecl.specifiers) {
+      if (!(spec.imported in existingModule.exports)) {
+        throw new Error(
+          `Import error: '${spec.imported}' is not exported from '${importDecl.source}'`
+        );
+      }
+    }
     // Register the imported names (allows shared imports across modules)
     return registerImportedNames(state, importDecl, modulePath, 'vibe');
   }

@@ -1,0 +1,9 @@
+import { getTestModel } from "./models.vibe"
+
+function useModel(m: model) {
+  const result: text = do "Say hello" m
+  return result
+}
+
+const myModel = getTestModel()
+let output = useModel(myModel)

@@ -1,0 +1,16 @@
+export model testModel = {
+  name: "gpt-4",
+  provider: "openai",
+  apiKey: "test-key",
+  url: "https://api.openai.com/v1"
+}
+
+const availableModels = [testModel]
+
+function getRandomModel() {
+  return availableModels[0]
+}
+
+export function getTestModel() {
+  return getRandomModel()
+}

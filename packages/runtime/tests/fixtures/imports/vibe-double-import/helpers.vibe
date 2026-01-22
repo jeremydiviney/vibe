@@ -1,0 +1,7 @@
+export function getFirst() {
+  return 10
+}
+
+export function getSecond() {
+  return 20
+}

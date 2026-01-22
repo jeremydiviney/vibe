@@ -1,0 +1,30 @@
+import { random } from "system/utils"
+
+export model testModel = {
+  name: "gpt-4",
+  provider: "openai",
+  apiKey: "test-key",
+  url: "https://api.openai.com/v1"
+}
+
+export model testModel2 = {
+  name: "gpt-3.5",
+  provider: "openai",
+  apiKey: "test-key",
+  url: "https://api.openai.com/v1"
+}
+
+const availableModels = [testModel, testModel2]
+
+function getRandomModel() {
+  const index = random(0, availableModels.len() - 1)
+  return availableModels[index]
+}
+
+export function getGuesserModel() {
+  return getRandomModel()
+}
+
+export function getAnswererModel() {
+  return getRandomModel()
+}

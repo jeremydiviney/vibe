@@ -261,10 +261,21 @@ export function step(state: RuntimeState): RuntimeState {
     return executeInstruction(newState, instruction);
   } catch (error) {
     const errorObj = error instanceof Error ? error : new Error(String(error));
+
+    // Build error message with location if available
+    let errorMessage = errorObj.message;
+    const location = instruction.location;
+
+    // If we have location info and the error doesn't already include it, add it
+    if (location && !errorMessage.includes('[')) {
+      const file = location.file ?? 'script';
+      errorMessage = `${errorMessage}\n  at ${file}:${location.line}:${location.column}`;
+    }
+
     return {
       ...newState,
       status: 'error',
-      error: errorObj.message,
+      error: errorMessage,
       errorObject: errorObj,
     };
   }
@@ -340,7 +351,7 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       };
 
     case 'ai_vibe':
-      return execAIVibe(state, instruction.model, instruction.context, instruction.operationType);
+      return execAIVibe(state, instruction.model, instruction.context, instruction.operationType, instruction.location);
 
     case 'ts_eval':
       return execTsEval(state, instruction.params, instruction.body, instruction.location);

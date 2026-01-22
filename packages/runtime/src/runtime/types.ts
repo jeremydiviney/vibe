@@ -494,6 +494,8 @@ export interface PendingAI {
   context: unknown[];
   // Scope parameters for vibe code generation
   vibeScopeParams?: Array<{ name: string; type: string; value: unknown }>;
+  // Location for error reporting
+  location?: SourceLocation;
 }
 
 // Expected field for destructuring/typed returns

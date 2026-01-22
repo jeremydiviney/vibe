@@ -112,7 +112,9 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       }
       const modelValue = getModelValue(state, modelName);
       if (!modelValue) {
-        throw new Error(`Model '${modelName}' not found in scope`);
+        const location = state.pendingAI?.location ?? state.pendingCompress?.location;
+        const locStr = location ? `\n  at ${location.file ?? 'script'}:${location.line}:${location.column}` : '';
+        throw new Error(`Model '${modelName}' not found in scope${locStr}`);
       }
 
       // Determine target type from pending variable declaration
@@ -275,7 +277,9 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
 
       const modelValue = getModelValue(state, modelName);
       if (!modelValue) {
-        throw new Error(`Model '${modelName}' not found in scope`);
+        const location = state.pendingAI?.location;
+        const locStr = location ? `\n  at ${location.file ?? 'script'}:${location.line}:${location.column}` : '';
+        throw new Error(`Model '${modelName}' not found in scope${locStr}`);
       }
 
       // Build model config

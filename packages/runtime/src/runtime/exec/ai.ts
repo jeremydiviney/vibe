@@ -2,6 +2,7 @@
 
 import * as AST from '../../ast';
 import type { RuntimeState } from '../types';
+import type { SourceLocation } from '../../errors';
 import { resolveValue } from '../types';
 import { currentFrame } from '../state';
 import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
@@ -82,7 +83,7 @@ export function getContextForAI(state: RuntimeState, context: AST.ContextSpecifi
  * When currentAsyncVarName is set (async declaration), schedules the operation
  * for non-blocking execution instead of pausing.
  */
-export function execAIVibe(state: RuntimeState, model: string | null, context: AST.ContextSpecifier | null, operationType: 'do' | 'vibe'): RuntimeState {
+export function execAIVibe(state: RuntimeState, model: string | null, context: AST.ContextSpecifier | null, operationType: 'do' | 'vibe', location?: SourceLocation): RuntimeState {
   // Unwrap VibeValue if needed before converting to string
   const prompt = String(resolveValue(state.lastResult));
 
@@ -126,6 +127,7 @@ export function execAIVibe(state: RuntimeState, model: string | null, context: A
       prompt,
       model: resolvedModel,
       context: contextData,
+      location,
     },
     executionLog: [
       ...state.executionLog,

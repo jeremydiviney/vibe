@@ -1,0 +1,19 @@
+import { random } from "system/utils"
+
+export model testModel = {
+  name: "gpt-4",
+  provider: "openai",
+  apiKey: "test-key",
+  url: "https://api.openai.com/v1"
+}
+
+print("testModel:")
+print(testModel)
+
+const availableModels = [testModel]
+
+print("availableModels:")
+print(availableModels)
+
+print("availableModels[0]:")
+print(availableModels[0])

@@ -1,0 +1,11 @@
+import { getRandomNumber } from "./utils.ts"
+import { addNumbers } from "./utils.ts"
+
+function useImportedTsFunction() {
+  const num = getRandomNumber()
+  return num
+}
+
+let result1 = useImportedTsFunction()
+let result2 = addNumbers(10, 20)
+let finalResult = result1 + result2

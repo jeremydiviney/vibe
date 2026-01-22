@@ -1,0 +1,19 @@
+export model testModel = {
+  name: "gpt-4",
+  provider: "openai",
+  apiKey: "test-key",
+  url: "https://api.openai.com/v1"
+}
+
+const availableModels = [testModel]
+
+function getModel() {
+  print("Inside getModel, availableModels[0]:")
+  print(availableModels[0])
+  return availableModels[0]
+}
+
+print("Calling getModel():")
+const result = getModel()
+print("result:")
+print(result)

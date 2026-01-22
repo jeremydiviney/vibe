@@ -1,0 +1,11 @@
+import { getGuesserModel, getAnswererModel } from "./models.vibe"
+
+export function runBenchRound(guesser: model, answerer: model) {
+  const result: text = do "Say hello" guesser
+  return result
+}
+
+const guesser = getGuesserModel()
+const answerer = getAnswererModel()
+
+let output = runBenchRound(guesser, answerer)
