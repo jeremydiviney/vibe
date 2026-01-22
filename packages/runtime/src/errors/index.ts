@@ -23,11 +23,11 @@ export class VibeError extends Error {
 
   format(): string {
     if (!this.location) {
-      return this.message;
+      return `${this.name}: ${this.message}`;
     }
 
     const loc = `[${this.location.file ?? 'vibe'}:${this.location.line}:${this.location.column}]`;
-    let result = `${loc} ${this.message}`;
+    let result = `${this.name}: ${loc} ${this.message}`;
 
     // Add source context if available
     if (this.source) {
