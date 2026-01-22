@@ -648,6 +648,10 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
     case 'ThrowStatement':
       return execThrowStatement(state, stmt);
 
+    case 'TypeDeclaration':
+      // Type declarations are compile-time only - already processed during initialization
+      return state;
+
     default:
       throw new Error(`Unknown statement type: ${(stmt as AST.Statement).type}`);
   }
