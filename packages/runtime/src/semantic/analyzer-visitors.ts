@@ -524,10 +524,10 @@ export function createVisitors(
       }
     }
 
-    // Validate Vibe imports - check that imported symbols exist in source file
-    let exportedNames: Set<string> | null = null;
+    // Validate Vibe imports - check that imported symbols exist and extract types
+    let vibeExports: Map<string, VibeExportInfo> | null = null;
     if (node.sourceType === 'vibe' && ctx.basePath) {
-      exportedNames = getExportedNamesFromVibeFile(ctx.basePath, node.source);
+      vibeExports = getVibeExportInfo(ctx.basePath, node.source);
     }
 
     for (const spec of node.specifiers) {
@@ -546,7 +546,7 @@ export function createVisitors(
         }
       } else {
         // Validate that imported name exists in source file (for Vibe imports)
-        if (exportedNames !== null && !exportedNames.has(spec.imported)) {
+        if (vibeExports !== null && !vibeExports.has(spec.imported)) {
           ctx.error(
             `'${spec.imported}' is not exported from '${node.source}'`,
             node.location
@@ -556,16 +556,42 @@ export function createVisitors(
         // Tool bundles (allTools, readonlyTools, safeTools) are imports, individual tools are 'tool' kind
         const toolBundles = ['allTools', 'readonlyTools', 'safeTools'];
         const importKind = isToolImport && !toolBundles.includes(spec.local) ? 'tool' : 'import';
-        ctx.declare(spec.local, importKind, node.location);
+
+        // For Vibe function imports, register with full type info so return types flow through
+        const exportInfo = vibeExports?.get(spec.imported);
+        if (exportInfo?.kind === 'function') {
+          ctx.declare(spec.local, 'function', node.location, {
+            paramCount: exportInfo.paramCount,
+            paramTypes: exportInfo.paramTypes,
+            returnType: exportInfo.returnType,
+          });
+        } else if (exportInfo?.kind === 'model') {
+          ctx.declare(spec.local, importKind, node.location, { vibeType: 'model' });
+        } else {
+          ctx.declare(spec.local, importKind, node.location);
+        }
       }
     }
   }
 
   /**
-   * Get the set of exported names from a Vibe source file
-   * Returns null if the file cannot be read/parsed
+   * Info about an exported symbol from a Vibe file
    */
-  function getExportedNamesFromVibeFile(basePath: string, importSource: string): Set<string> | null {
+  interface VibeExportInfo {
+    kind: 'function' | 'variable' | 'model';
+    // For functions:
+    paramCount?: number;
+    paramTypes?: string[];
+    returnType?: string | null;
+    // For variables:
+    vibeType?: string | null;
+  }
+
+  /**
+   * Get export info from a Vibe source file.
+   * Returns a map of name -> export info, or null if file cannot be read.
+   */
+  function getVibeExportInfo(basePath: string, importSource: string): Map<string, VibeExportInfo> | null {
     try {
       const sourcePath = resolve(dirname(basePath), importSource);
       if (!existsSync(sourcePath)) {
@@ -575,17 +601,34 @@ export function createVisitors(
       const sourceContent = readFileSync(sourcePath, 'utf-8');
       const sourceAst = parse(sourceContent, { file: sourcePath });
 
-      const exportedNames = new Set<string>();
+      const exports = new Map<string, VibeExportInfo>();
       for (const statement of sourceAst.body) {
-        if (statement.type === 'ExportDeclaration') {
-          const decl = statement.declaration;
-          if ('name' in decl) {
-            exportedNames.add(decl.name);
-          }
+        if (statement.type !== 'ExportDeclaration') continue;
+        const decl = statement.declaration;
+
+        switch (decl.type) {
+          case 'FunctionDeclaration':
+            exports.set(decl.name, {
+              kind: 'function',
+              paramCount: decl.params.length,
+              paramTypes: decl.params.map(p => p.vibeType),
+              returnType: decl.returnType,
+            });
+            break;
+          case 'ModelDeclaration':
+            exports.set(decl.name, { kind: 'model' });
+            break;
+          case 'ConstDeclaration':
+          case 'LetDeclaration':
+            exports.set(decl.name, {
+              kind: 'variable',
+              vibeType: decl.vibeType,
+            });
+            break;
         }
       }
 
-      return exportedNames;
+      return exports;
     } catch {
       return null; // Parse error or other issue - skip validation
     }
