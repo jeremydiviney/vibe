@@ -128,7 +128,7 @@ class VibeParser extends CstParser {
           this.CONSUME(T.Identifier);
           this.OPTION2(() => {
             this.CONSUME(T.Colon);
-            this.SUBRULE(this.typeAnnotation);
+            this.SUBRULE(this.vibeType);
           });
           this.CONSUME2(T.Equals);
           this.SUBRULE2(this.asyncExpression);
@@ -159,7 +159,7 @@ class VibeParser extends CstParser {
           this.CONSUME(T.Identifier);
           this.OPTION2(() => {
             this.CONSUME(T.Colon);
-            this.SUBRULE(this.typeAnnotation);
+            this.SUBRULE(this.vibeType);
           });
           this.CONSUME2(T.Equals);
           this.SUBRULE2(this.asyncExpression);
@@ -218,7 +218,7 @@ class VibeParser extends CstParser {
           this.CONSUME(T.Identifier);
           this.OPTION2(() => {
             this.CONSUME(T.Colon);
-            this.SUBRULE(this.typeAnnotation);
+            this.SUBRULE(this.vibeType);
           });
           this.OPTION3(() => {
             this.CONSUME2(T.Equals);
@@ -230,7 +230,7 @@ class VibeParser extends CstParser {
   });
 
   // Type annotation: text, json, prompt, boolean, number, model, Identifier (named type), or any of these followed by []
-  private typeAnnotation = this.RULE('typeAnnotation', () => {
+  private vibeType = this.RULE('vibeType', () => {
     this.OR([
       { ALT: () => this.CONSUME(T.TextType) },
       { ALT: () => this.CONSUME(T.JsonType) },
@@ -268,7 +268,7 @@ class VibeParser extends CstParser {
           this.CONSUME(T.Identifier);
           this.OPTION2(() => {
             this.CONSUME(T.Colon);
-            this.SUBRULE(this.typeAnnotation);
+            this.SUBRULE(this.vibeType);
           });
           this.CONSUME2(T.Equals);
           this.SUBRULE2(this.expression);
@@ -295,7 +295,7 @@ class VibeParser extends CstParser {
     });
     this.CONSUME(T.Identifier);
     this.CONSUME(T.Colon);
-    this.SUBRULE(this.typeAnnotation);
+    this.SUBRULE(this.vibeType);
   });
 
   private modelDeclaration = this.RULE('modelDeclaration', () => {
@@ -416,7 +416,7 @@ class VibeParser extends CstParser {
     // Optional return type
     this.OPTION2(() => {
       this.CONSUME(T.Colon);
-      this.SUBRULE(this.typeAnnotation);
+      this.SUBRULE(this.vibeType);
     });
     this.SUBRULE(this.blockStatement);
   });
@@ -497,7 +497,7 @@ class VibeParser extends CstParser {
   private parameter = this.RULE('parameter', () => {
     this.CONSUME(T.Identifier);
     this.CONSUME(T.Colon);
-    this.SUBRULE(this.typeAnnotation);
+    this.SUBRULE(this.vibeType);
   });
 
   private parameterList = this.RULE('parameterList', () => {

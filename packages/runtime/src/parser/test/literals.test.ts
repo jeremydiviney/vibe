@@ -307,7 +307,7 @@ describe('Parser - Number Literals', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'number',
+      vibeType: 'number',
       initializer: {
         type: 'NumberLiteral',
         value: 42,
@@ -320,7 +320,7 @@ describe('Parser - Number Literals', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'PI',
-      typeAnnotation: 'number',
+      vibeType: 'number',
       initializer: {
         type: 'NumberLiteral',
         value: 3.14159,
@@ -342,7 +342,7 @@ describe('Parser - Number Literals', () => {
     const ast = parse('let nums: number[] = [1, 2, 3]');
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
-      typeAnnotation: 'number[]',
+      vibeType: 'number[]',
     });
   });
 });

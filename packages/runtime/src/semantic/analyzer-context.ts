@@ -49,7 +49,7 @@ export interface AnalyzerContext {
     location: SourceLocation,
     options?: {
       paramCount?: number;
-      typeAnnotation?: string | null;
+      vibeType?: string | null;
       paramTypes?: string[];
       returnType?: string | null;
     }

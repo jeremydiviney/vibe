@@ -206,7 +206,7 @@ describe('private variable visibility', () => {
           errDetails: null,
           toolCalls: [],
           isConst: false,
-          typeAnnotation: 'text' as const,
+          vibeType: 'text' as const,
           source: 'ai' as const,
           isPrivate: true,  // x is private
         },
@@ -216,7 +216,7 @@ describe('private variable visibility', () => {
           errDetails: null,
           toolCalls: [],
           isConst: false,
-          typeAnnotation: 'number' as const,
+          vibeType: 'number' as const,
           source: 'ai' as const,
           // y has no isPrivate (public)
         },

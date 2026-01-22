@@ -35,7 +35,7 @@ describe('async keyword parsing', () => {
       const decl = ast.body[0] as AST.LetDeclaration;
       expect(decl.type).toBe('LetDeclaration');
       expect(decl.name).toBe('x');
-      expect(decl.typeAnnotation).toBe('text');
+      expect(decl.vibeType).toBe('text');
       expect(decl.isAsync).toBe(true);
     });
 
@@ -91,7 +91,7 @@ describe('async keyword parsing', () => {
       const decl = ast.body[0] as AST.ConstDeclaration;
       expect(decl.type).toBe('ConstDeclaration');
       expect(decl.name).toBe('x');
-      expect(decl.typeAnnotation).toBe('number');
+      expect(decl.vibeType).toBe('number');
       expect(decl.isAsync).toBe(true);
     });
 

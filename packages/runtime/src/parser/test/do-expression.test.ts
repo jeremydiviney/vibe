@@ -388,7 +388,7 @@ const count: number = do "how many items?" myModel default
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'count',
-      typeAnnotation: 'number',
+      vibeType: 'number',
       initializer: {
         type: 'VibeExpression',
         operationType: 'do',

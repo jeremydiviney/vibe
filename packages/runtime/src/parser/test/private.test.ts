@@ -12,7 +12,7 @@ describe('private keyword parsing', () => {
       const decl = ast.body[0] as AST.LetDeclaration;
       expect(decl.type).toBe('LetDeclaration');
       expect(decl.name).toBe('apiKey');
-      expect(decl.typeAnnotation).toBe('text');
+      expect(decl.vibeType).toBe('text');
       expect(decl.isPrivate).toBe(true);
     });
 
@@ -23,7 +23,7 @@ describe('private keyword parsing', () => {
       const decl = ast.body[0] as AST.LetDeclaration;
       expect(decl.type).toBe('LetDeclaration');
       expect(decl.name).toBe('counter');
-      expect(decl.typeAnnotation).toBeNull();
+      expect(decl.vibeType).toBeNull();
       expect(decl.isPrivate).toBe(true);
     });
 
@@ -47,7 +47,7 @@ describe('private keyword parsing', () => {
       const decl = ast.body[0] as AST.ConstDeclaration;
       expect(decl.type).toBe('ConstDeclaration');
       expect(decl.name).toBe('SECRET');
-      expect(decl.typeAnnotation).toBe('text');
+      expect(decl.vibeType).toBe('text');
       expect(decl.isPrivate).toBe(true);
     });
 

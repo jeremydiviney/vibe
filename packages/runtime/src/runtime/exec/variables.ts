@@ -97,7 +97,7 @@ export function execDeclareVar(
 
   const newLocals = {
     ...frame.locals,
-    [name]: createVibeValue(validatedValue, { isConst, typeAnnotation: finalType, source, toolCalls, err, errDetails, isPrivate, asyncOperationId }),
+    [name]: createVibeValue(validatedValue, { isConst, vibeType: finalType, source, toolCalls, err, errDetails, isPrivate, asyncOperationId }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking
@@ -181,7 +181,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     innerValue = rawValue;
   }
 
-  const { value: validatedValue } = validateAndCoerce(innerValue, variable.typeAnnotation, name, location, source);
+  const { value: validatedValue } = validateAndCoerce(innerValue, variable.vibeType, name, location, source);
 
   // Handle module global assignment (frameIndex -1)
   if (frameIndex === -1) {
@@ -235,7 +235,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
       kind: 'variable' as const,
       name,
       value: validatedValue,  // Snapshot at assignment time
-      type: variable.typeAnnotation,
+      type: variable.vibeType,
       isConst: false,  // Assignments only happen to non-const variables
       source,
     },

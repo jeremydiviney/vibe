@@ -338,7 +338,7 @@ describe('VibeValue Debug Display', () => {
         { toolName: 'fetch', args: { url: 'http://example.com' }, result: null, err: true, errDetails: { message: 'timeout' }, duration: 5000 },
       ],
       isConst: false,
-      typeAnnotation: null,
+      vibeType: null,
       source: 'ai' as const,
     };
     runtimeState.callStack[0].locals['complexVar'] = complexVibeValue;

@@ -321,7 +321,7 @@ export function getVariables(
       // Get local/global variables
       // Pass the entire VibeValue so createVariable can detect .err and .toolCalls
       for (const [name, variable] of Object.entries(frame.locals)) {
-        const { debugState: ds, variable: v } = createVariable(newDebugState, name, variable, variable.typeAnnotation);
+        const { debugState: ds, variable: v } = createVariable(newDebugState, name, variable, variable.vibeType);
         newDebugState = ds;
         variables.push(v);
       }
@@ -411,11 +411,11 @@ function createVariable(
   debugState: VibeDebugState,
   name: string,
   value: unknown,
-  typeAnnotation?: string | null
+  vibeType?: string | null
 ): { debugState: VibeDebugState; variable: Variable } {
   let variablesReference = 0;
   let newDebugState = debugState;
-  let displayType = typeAnnotation ?? typeof value;
+  let displayType = vibeType ?? typeof value;
   let hasError = false;
   let errorMessage: string | undefined;
   let hasToolCalls = false;
@@ -507,7 +507,7 @@ function isVibeValue(value: unknown): boolean {
     typeof value === 'object' &&
     value !== null &&
     'value' in value &&
-    ('err' in value || 'toolCalls' in value || 'typeAnnotation' in value)
+    ('err' in value || 'toolCalls' in value || 'vibeType' in value)
   );
 }
 

@@ -34,20 +34,20 @@ export function createFunctionFrame(
 
     const { value: validatedValue } = validateAndCoerce(
       argValue,
-      param.typeAnnotation,
+      param.vibeType,
       param.name
     );
 
     newFrame.locals[param.name] = createVibeValue(validatedValue, {
       isConst: false,
-      typeAnnotation: param.typeAnnotation,
+      vibeType: param.vibeType,
     });
     // Include snapshotted value in ordered entries for context tracking
     newFrame.orderedEntries.push({
       kind: 'variable' as const,
       name: param.name,
       value: validatedValue,
-      type: param.typeAnnotation,
+      type: param.vibeType,
       isConst: false,  // Parameters are not const
     });
   }

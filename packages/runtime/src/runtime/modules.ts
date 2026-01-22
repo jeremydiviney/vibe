@@ -228,7 +228,7 @@ function extractVibeExports(program: AST.Program): Record<string, ExportedItem> 
           name: decl.name,
           value: null,  // Will be evaluated when module runs
           isConst: false,
-          typeAnnotation: decl.typeAnnotation,
+          vibeType: decl.vibeType,
         };
         break;
 
@@ -238,7 +238,7 @@ function extractVibeExports(program: AST.Program): Record<string, ExportedItem> 
           name: decl.name,
           value: null,  // Will be evaluated when module runs
           isConst: true,
-          typeAnnotation: decl.typeAnnotation,
+          vibeType: decl.vibeType,
         };
         break;
 
@@ -280,25 +280,25 @@ function extractModuleGlobals(program: AST.Program): Record<string, VibeValue> {
     if (stmt.type === 'ModelDeclaration') {
       globals[stmt.name] = createVibeValue(
         evaluateModelConfig(stmt.config, globals),
-        { isConst: true, typeAnnotation: 'model' }
+        { isConst: true, vibeType: 'model' }
       );
     } else if (stmt.type === 'ExportDeclaration' && stmt.declaration.type === 'ModelDeclaration') {
       const decl = stmt.declaration;
       globals[decl.name] = createVibeValue(
         evaluateModelConfig(decl.config, globals),
-        { isConst: true, typeAnnotation: 'model' }
+        { isConst: true, vibeType: 'model' }
       );
     }
     // Handle direct declarations
     else if (stmt.type === 'LetDeclaration') {
       globals[stmt.name] = createVibeValue(evaluateModuleExpression(stmt.initializer, globals), {
         isConst: false,
-        typeAnnotation: stmt.typeAnnotation,
+        vibeType: stmt.vibeType,
       });
     } else if (stmt.type === 'ConstDeclaration') {
       globals[stmt.name] = createVibeValue(evaluateModuleExpression(stmt.initializer, globals), {
         isConst: true,
-        typeAnnotation: stmt.typeAnnotation,
+        vibeType: stmt.vibeType,
       });
     }
     // Handle exported declarations
@@ -307,12 +307,12 @@ function extractModuleGlobals(program: AST.Program): Record<string, VibeValue> {
       if (decl.type === 'LetDeclaration') {
         globals[decl.name] = createVibeValue(evaluateModuleExpression(decl.initializer, globals), {
           isConst: false,
-          typeAnnotation: decl.typeAnnotation,
+          vibeType: decl.vibeType,
         });
       } else if (decl.type === 'ConstDeclaration') {
         globals[decl.name] = createVibeValue(evaluateModuleExpression(decl.initializer, globals), {
           isConst: true,
-          typeAnnotation: decl.typeAnnotation,
+          vibeType: decl.vibeType,
         });
       }
     }

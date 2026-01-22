@@ -161,7 +161,7 @@ export function createVisitors(
         }
         ctx.declare(node.name, 'function', node.location, {
           paramCount: node.params.length,
-          paramTypes: node.params.map(p => p.typeAnnotation),
+          paramTypes: node.params.map(p => p.vibeType),
           returnType: node.returnType,
         });
         visitFunction(node);
@@ -203,7 +203,7 @@ export function createVisitors(
       case 'ForInStatement':
         visitExpression(node.iterable);
         ctx.symbols.enterScope();
-        ctx.declare(node.variable, 'variable', node.location, { typeAnnotation: null });
+        ctx.declare(node.variable, 'variable', node.location, { vibeType: null });
         state.loopDepth++;
         visitStatement(node.body);
         state.loopDepth--;
@@ -244,7 +244,7 @@ export function createVisitors(
         }
         ctx.declare(node.name, 'tool', node.location, {
           paramCount: node.params.length,
-          paramTypes: node.params.map(p => p.typeAnnotation),
+          paramTypes: node.params.map(p => p.vibeType),
           returnType: node.returnType,
         });
         validateToolDeclaration(ctx, node);
@@ -372,14 +372,14 @@ export function createVisitors(
     if (isNullInitializer) {
       if (kind === 'constant') {
         ctx.error(`Cannot initialize const with null - const values cannot be reassigned`, node.location);
-      } else if (!node.typeAnnotation) {
+      } else if (!node.vibeType) {
         ctx.error(`Cannot infer type from null - provide a type annotation: let ${node.name}: <type> = null`, node.location);
       }
     }
 
     // Empty array requires explicit type annotation
     const isEmptyArray = node.initializer?.type === 'ArrayLiteral' && node.initializer.elements.length === 0;
-    if (isEmptyArray && !node.typeAnnotation) {
+    if (isEmptyArray && !node.vibeType) {
       ctx.error(
         `Cannot infer type from empty array - provide a type annotation: let ${node.name}: <type>[] = []`,
         node.location
@@ -390,25 +390,31 @@ export function createVisitors(
       validateAsyncExpression(ctx, node.initializer, node.location);
     }
 
-    if (node.initializer?.type === 'VibeExpression' && !node.typeAnnotation) {
+    if (node.initializer?.type === 'VibeExpression' && !node.vibeType) {
       ctx.error(
         `Type cannot be inferred from AI call, must assign to explicitly typed variable: ${kind === 'constant' ? 'const' : 'let'} ${node.name}: <type> = ...`,
         node.location
       );
     }
 
-    if (node.typeAnnotation === 'model' && kind === 'variable') {
+    if (node.vibeType === 'model' && kind === 'variable') {
       ctx.error(`Variables with type 'model' must be declared with 'const', not 'let'`, node.location);
     }
 
-    let effectiveType = node.typeAnnotation;
+    let effectiveType = node.vibeType;
     if (!effectiveType && node.initializer) {
       effectiveType = getExprType(node.initializer);
     }
 
-    ctx.declare(node.name, kind, node.location, { typeAnnotation: effectiveType });
-    if (node.typeAnnotation) {
-      validateTypeAnnotation(ctx, node.typeAnnotation, node.location);
+    // CRITICAL: Write inferred type back to AST node so runtime can use it
+    // After semantic analysis, vibeType is ALWAYS populated (except 'unknown' for json member access)
+    if (!node.vibeType && effectiveType) {
+      node.vibeType = effectiveType as AST.VibeType;
+    }
+
+    ctx.declare(node.name, kind, node.location, { vibeType: effectiveType });
+    if (node.vibeType) {
+      validateTypeAnnotation(ctx, node.vibeType, node.location);
     }
     if (node.initializer) {
       if (node.initializer.type === 'CallExpression' && node.initializer.callee.type === 'Identifier') {
@@ -420,14 +426,14 @@ export function createVisitors(
           );
         }
       }
-      const isPromptType = node.typeAnnotation === 'prompt';
+      const isPromptType = node.vibeType === 'prompt';
       if (isPromptType && (node.initializer.type === 'StringLiteral' || node.initializer.type === 'TemplateLiteral')) {
         validateStringInterpolation(ctx, node.initializer.value, true, node.initializer.location);
       } else {
         visitExpression(node.initializer);
       }
-      if (node.typeAnnotation) {
-        validateLitType(node.initializer, node.typeAnnotation, node.location);
+      if (node.vibeType) {
+        validateLitType(node.initializer, node.vibeType, node.location);
       }
     }
   }
@@ -470,7 +476,7 @@ export function createVisitors(
 
     const declarationKind = node.isConst ? 'constant' : 'variable';
     for (const field of uniqueFields) {
-      ctx.declare(field.name, declarationKind, node.location, { typeAnnotation: field.type });
+      ctx.declare(field.name, declarationKind, node.location, { vibeType: field.type });
     }
   }
 
@@ -640,8 +646,8 @@ export function createVisitors(
     ctx.symbols.enterScope();
 
     for (const param of node.params) {
-      validateTypeAnnotation(ctx, param.typeAnnotation, node.location);
-      ctx.declare(param.name, 'parameter', node.location, { typeAnnotation: param.typeAnnotation });
+      validateTypeAnnotation(ctx, param.vibeType, node.location);
+      ctx.declare(param.name, 'parameter', node.location, { vibeType: param.vibeType });
     }
 
     if (node.returnType) {
@@ -671,7 +677,7 @@ export function createVisitors(
     ctx.symbols.enterScope();
 
     for (const param of node.params) {
-      ctx.declare(param.name, 'parameter', node.location, { typeAnnotation: param.typeAnnotation });
+      ctx.declare(param.name, 'parameter', node.location, { vibeType: param.vibeType });
     }
 
     visitStatement(node.body);
@@ -700,7 +706,7 @@ export function createVisitors(
 
     // Register in symbol table
     ctx.declare(node.name, 'type', node.location, {
-      typeAnnotation: node.name,
+      vibeType: node.name,
     });
 
     // Register in type registry

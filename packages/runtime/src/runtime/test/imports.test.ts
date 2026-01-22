@@ -180,7 +180,7 @@ describe('Runtime - TypeScript Boolean Imports', () => {
 
     const enabled = state.callStack[0].locals['enabled'];
     expect(enabled.value).toBe(true);
-    expect(enabled.typeAnnotation).toBe('boolean');
+    expect(enabled.vibeType).toBe('boolean');
   });
 
   test('imported TS boolean constant is registered', async () => {
@@ -204,11 +204,11 @@ describe('Runtime - TypeScript Boolean Imports', () => {
     // Verify boolean variables were assigned correctly
     const check1 = state.callStack[0].locals['check1'];
     expect(check1.value).toBe(true);
-    expect(check1.typeAnnotation).toBe('boolean');
+    expect(check1.vibeType).toBe('boolean');
 
     const check2 = state.callStack[0].locals['check2'];
     expect(check2.value).toBe(true);
-    expect(check2.typeAnnotation).toBe('boolean');
+    expect(check2.vibeType).toBe('boolean');
 
     // Verify if conditions worked
     expect(state.callStack[0].locals['result1'].value).toBe('passed');
@@ -307,7 +307,7 @@ describe('Runtime - TypeScript Variable Imports', () => {
     // Verify the variable was assigned with correct type
     const greeting = state.callStack[0].locals['greeting'];
     expect(greeting.value).toBe('Hello from TypeScript');
-    expect(greeting.typeAnnotation).toBe('text');
+    expect(greeting.vibeType).toBe('text');
   });
 
   test('can import TS object and assign to json type', async () => {
@@ -319,7 +319,7 @@ describe('Runtime - TypeScript Variable Imports', () => {
     // Verify the variable was assigned with correct type
     const config = state.callStack[0].locals['config'];
     expect(config.value).toEqual({ name: 'test', version: '1.0' });
-    expect(config.typeAnnotation).toBe('json');
+    expect(config.vibeType).toBe('json');
   });
 
   test('throws error when assigning object to text type', async () => {

@@ -47,14 +47,14 @@ describe('VibeValue Error Handling', () => {
       expect(vibeValue.errDetails?.location).toEqual(location);
     });
 
-    it('preserves options like isConst and typeAnnotation', () => {
+    it('preserves options like isConst and vibeType', () => {
       const vibeValue = createVibeError('Error', null, {
         isConst: true,
-        typeAnnotation: 'text',
+        vibeType: 'text',
       });
 
       expect(vibeValue.isConst).toBe(true);
-      expect(vibeValue.typeAnnotation).toBe('text');
+      expect(vibeValue.vibeType).toBe('text');
     });
   });
 
@@ -228,7 +228,7 @@ describe('VibeValue Error Handling', () => {
         errDetails: { message: 'Left error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
-        typeAnnotation: null,
+        vibeType: null,
         source: null,
       };
       const rightValue: VibeValue = {
@@ -237,7 +237,7 @@ describe('VibeValue Error Handling', () => {
         errDetails: null,
         toolCalls: [],
         isConst: false,
-        typeAnnotation: null,
+        vibeType: null,
         source: null,
       };
 
@@ -253,7 +253,7 @@ describe('VibeValue Error Handling', () => {
         errDetails: null,
         toolCalls: [],
         isConst: false,
-        typeAnnotation: null,
+        vibeType: null,
         source: null,
       };
       const rightError: VibeValue = {
@@ -262,7 +262,7 @@ describe('VibeValue Error Handling', () => {
         errDetails: { message: 'Right error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
-        typeAnnotation: null,
+        vibeType: null,
         source: null,
       };
 
@@ -278,7 +278,7 @@ describe('VibeValue Error Handling', () => {
         errDetails: { message: 'First error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
-        typeAnnotation: null,
+        vibeType: null,
         source: null,
       };
       const rightError: VibeValue = {
@@ -287,7 +287,7 @@ describe('VibeValue Error Handling', () => {
         errDetails: { message: 'Second error', type: 'Error', location: null },
         toolCalls: [],
         isConst: false,
-        typeAnnotation: null,
+        vibeType: null,
         source: null,
       };
 
@@ -301,7 +301,7 @@ describe('VibeValue Error Handling', () => {
     it('createVibeValue creates proper structure', () => {
       const vibeValue = createVibeValue('hello', {
         isConst: true,
-        typeAnnotation: 'text',
+        vibeType: 'text',
         source: 'ai',
       });
 
@@ -310,7 +310,7 @@ describe('VibeValue Error Handling', () => {
       expect(vibeValue.errDetails).toBe(null);
       expect(vibeValue.toolCalls).toEqual([]);
       expect(vibeValue.isConst).toBe(true);
-      expect(vibeValue.typeAnnotation).toBe('text');
+      expect(vibeValue.vibeType).toBe('text');
       expect(vibeValue.source).toBe('ai');
     });
 

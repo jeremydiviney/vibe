@@ -41,7 +41,7 @@ tool greet(name: text): text
       type: 'ToolDeclaration',
       name: 'greet',
       params: [
-        { name: 'name', typeAnnotation: 'text' },
+        { name: 'name', vibeType: 'text' },
       ],
       returnType: 'text',
       description: 'Greet someone',
@@ -65,9 +65,9 @@ tool calculate(x: number, y: number, op: text): number
       type: 'ToolDeclaration',
       name: 'calculate',
       params: [
-        { name: 'x', typeAnnotation: 'number' },
-        { name: 'y', typeAnnotation: 'number' },
-        { name: 'op', typeAnnotation: 'text' },
+        { name: 'x', vibeType: 'number' },
+        { name: 'y', vibeType: 'number' },
+        { name: 'op', vibeType: 'text' },
       ],
       returnType: 'number',
     });
@@ -94,7 +94,7 @@ tool fetchUrl(url: text): json
       type: 'ToolDeclaration',
       name: 'fetchUrl',
       params: [
-        { name: 'url', typeAnnotation: 'text', description: 'The URL to fetch from' },
+        { name: 'url', vibeType: 'text', description: 'The URL to fetch from' },
       ],
       description: 'Fetch data from a URL',
     });
@@ -177,7 +177,7 @@ tool sum(numbers: number[]): number
     expect(ast.body[0]).toMatchObject({
       type: 'ToolDeclaration',
       params: [
-        { name: 'numbers', typeAnnotation: 'number[]' },
+        { name: 'numbers', vibeType: 'number[]' },
       ],
       returnType: 'number',
     });
@@ -207,7 +207,7 @@ tool processCustomer(info: CustomerInfo): json
       type: 'ToolDeclaration',
       name: 'processCustomer',
       params: [
-        { name: 'info', typeAnnotation: 'CustomerInfo' },
+        { name: 'info', vibeType: 'CustomerInfo' },
       ],
     });
   });
@@ -296,7 +296,7 @@ tool test(x: CustomType): text
 `);
     expect(ast.body[0]).toMatchObject({
       type: 'ToolDeclaration',
-      params: [{ name: 'x', typeAnnotation: 'CustomType' }],
+      params: [{ name: 'x', vibeType: 'CustomType' }],
     });
   });
 });

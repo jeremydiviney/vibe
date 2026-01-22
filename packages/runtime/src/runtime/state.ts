@@ -408,14 +408,14 @@ export function resumeWithAsyncResults(
   for (const [opId, result] of results) {
     const operation = state.asyncOperations.get(opId);
     if (operation?.variableName) {
-      // Preserve existing variable properties (isConst, isPrivate, typeAnnotation)
+      // Preserve existing variable properties (isConst, isPrivate, vibeType)
       // when updating with the async result
       const existingVar = newLocals[operation.variableName];
       newLocals[operation.variableName] = {
         ...result,
         isConst: existingVar?.isConst ?? result.isConst,
         isPrivate: existingVar?.isPrivate ?? result.isPrivate,
-        typeAnnotation: existingVar?.typeAnnotation ?? result.typeAnnotation,
+        vibeType: existingVar?.vibeType ?? result.vibeType,
       };
     }
     // Mark operation as no longer pending

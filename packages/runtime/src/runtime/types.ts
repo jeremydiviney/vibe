@@ -42,7 +42,7 @@ export interface VibeValue {
   errDetails: VibeError | null;      // Error details when err is true, null otherwise
   toolCalls: ToolCallRecord[];       // AI tool calls (empty array for non-AI operations)
   isConst: boolean;                  // true for const, false for let
-  typeAnnotation: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
+  vibeType: VibeType;          // 'text', 'number', 'json', 'prompt', etc. or null
   source: ValueSource;               // 'ai', 'user', or null (no source)
   isPrivate?: boolean;               // true if hidden from AI context
   asyncOperationId?: string;         // ID of pending async operation (when value is pending)
@@ -66,7 +66,7 @@ export function createVibeValue(
   value: unknown,
   options: {
     isConst?: boolean;
-    typeAnnotation?: VibeType;
+    vibeType?: VibeType;
     source?: ValueSource;
     toolCalls?: ToolCallRecord[];
     err?: boolean;
@@ -81,7 +81,7 @@ export function createVibeValue(
     errDetails: options.errDetails ?? null,
     toolCalls: options.toolCalls ?? [],
     isConst: options.isConst ?? false,
-    typeAnnotation: options.typeAnnotation ?? null,
+    vibeType: options.vibeType ?? null,
     source: options.source ?? null,
   };
   if (options.isPrivate) {
@@ -99,7 +99,7 @@ export function createVibeError(
   location: SourceLocation | null = null,
   options: {
     isConst?: boolean;
-    typeAnnotation?: VibeType;
+    vibeType?: VibeType;
   } = {}
 ): VibeValue {
   const isErrorObject = error instanceof Error;
@@ -116,7 +116,7 @@ export function createVibeError(
     errDetails,
     toolCalls: [],
     isConst: options.isConst ?? false,
-    typeAnnotation: options.typeAnnotation ?? null,
+    vibeType: options.vibeType ?? null,
     source: null,
   };
 }
@@ -128,7 +128,7 @@ export function propagateError(
   value: unknown,
   options: {
     isConst?: boolean;
-    typeAnnotation?: VibeType;
+    vibeType?: VibeType;
     source?: ValueSource;
   } = {}
 ): VibeValue {
@@ -139,7 +139,7 @@ export function propagateError(
       errDetails: source.errDetails,
       toolCalls: [],
       isConst: options.isConst ?? false,
-      typeAnnotation: options.typeAnnotation ?? null,
+      vibeType: options.vibeType ?? null,
       source: options.source ?? null,
     };
   }
@@ -153,7 +153,7 @@ export function propagateErrors(
   value: unknown,
   options: {
     isConst?: boolean;
-    typeAnnotation?: VibeType;
+    vibeType?: VibeType;
     source?: ValueSource;
   } = {}
 ): VibeValue {
@@ -165,7 +165,7 @@ export function propagateErrors(
         errDetails: src.errDetails,
         toolCalls: [],
         isConst: options.isConst ?? false,
-        typeAnnotation: options.typeAnnotation ?? null,
+        vibeType: options.vibeType ?? null,
         source: options.source ?? null,
       };
     }
@@ -182,7 +182,7 @@ export function propagateErrors(
 export interface Variable {
   value: unknown;
   isConst: boolean;
-  typeAnnotation: string | null;
+  vibeType: string | null;
   source?: ValueSource;  // Where the value came from (AI response, user input, or code)
 }
 
@@ -547,7 +547,7 @@ export interface VibeModule {
 // Exported item from a Vibe module
 export type ExportedItem =
   | { kind: 'function'; declaration: AST.FunctionDeclaration }
-  | { kind: 'variable'; name: string; value: unknown; isConst: boolean; typeAnnotation: string | null }
+  | { kind: 'variable'; name: string; value: unknown; isConst: boolean; vibeType: string | null }
   | { kind: 'model'; declaration: AST.ModelDeclaration };
 
 // ============================================================================

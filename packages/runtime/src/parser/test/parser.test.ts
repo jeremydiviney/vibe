@@ -99,7 +99,7 @@ function greet(name: text): text {
     expect(ast.body[0]).toMatchObject({
       type: 'FunctionDeclaration',
       name: 'greet',
-      params: [{ name: 'name', typeAnnotation: 'text' }],
+      params: [{ name: 'name', vibeType: 'text' }],
       returnType: 'text',
       body: {
         type: 'BlockStatement',
@@ -127,9 +127,9 @@ function add(a: text, b: text, c: text): text {
       type: 'FunctionDeclaration',
       name: 'add',
       params: [
-        { name: 'a', typeAnnotation: 'text' },
-        { name: 'b', typeAnnotation: 'text' },
-        { name: 'c', typeAnnotation: 'text' },
+        { name: 'a', vibeType: 'text' },
+        { name: 'b', vibeType: 'text' },
+        { name: 'c', vibeType: 'text' },
       ],
       returnType: 'text',
       body: {

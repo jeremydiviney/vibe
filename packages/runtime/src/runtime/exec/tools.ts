@@ -32,7 +32,7 @@ export function execToolDeclaration(
   const frame = currentFrame(state);
   const newLocals = {
     ...frame.locals,
-    [decl.name]: createVibeValue(toolValue, { isConst: true, typeAnnotation: null }),
+    [decl.name]: createVibeValue(toolValue, { isConst: true, vibeType: null }),
   };
 
   return {
@@ -70,7 +70,7 @@ function buildToolSchema(
 
   const parameters: ToolParameterSchema[] = decl.params.map((param) => ({
     name: param.name,
-    type: vibeTypeToJsonSchema(param.typeAnnotation, importedTypes),
+    type: vibeTypeToJsonSchema(param.vibeType, importedTypes),
     description: param.description,
     required: true, // All tool parameters are required for now
   }));

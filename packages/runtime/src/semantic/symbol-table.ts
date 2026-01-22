@@ -10,7 +10,7 @@ export interface Symbol {
   paramCount?: number;
   paramTypes?: string[];  // Parameter types for functions
   returnType?: string | null;  // Return type for functions
-  typeAnnotation?: string | null;
+  vibeType?: string | null;
   structuralType?: StructuralType;  // For 'type' kind - the structural type definition
 }
 

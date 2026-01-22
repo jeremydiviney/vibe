@@ -12,7 +12,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'text',
+      vibeType: 'text',
       initializer: {
         type: 'StringLiteral',
         value: 'hello',
@@ -26,7 +26,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'json',
+      vibeType: 'json',
       initializer: {
         type: 'StringLiteral',
       },
@@ -39,7 +39,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'text',
+      vibeType: 'text',
       initializer: null,
     });
   });
@@ -50,7 +50,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'json',
+      vibeType: 'json',
       initializer: null,
     });
   });
@@ -61,7 +61,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: null,
+      vibeType: null,
     });
   });
 
@@ -75,7 +75,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'x',
-      typeAnnotation: 'text',
+      vibeType: 'text',
       initializer: {
         type: 'StringLiteral',
         value: 'hello',
@@ -89,7 +89,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'x',
-      typeAnnotation: 'json',
+      vibeType: 'json',
       initializer: {
         type: 'StringLiteral',
         value: '[]',
@@ -103,7 +103,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'x',
-      typeAnnotation: null,
+      vibeType: null,
     });
   });
 
@@ -117,7 +117,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'prompt',
+      vibeType: 'prompt',
       initializer: {
         type: 'StringLiteral',
         value: 'What is your name?',
@@ -131,7 +131,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'SYSTEM_PROMPT',
-      typeAnnotation: 'prompt',
+      vibeType: 'prompt',
       initializer: {
         type: 'StringLiteral',
         value: 'You are a helpful assistant',
@@ -145,7 +145,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'x',
-      typeAnnotation: 'prompt',
+      vibeType: 'prompt',
       initializer: null,
     });
   });
@@ -160,7 +160,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'items',
-      typeAnnotation: 'text[]',
+      vibeType: 'text[]',
       initializer: {
         type: 'ArrayLiteral',
         elements: [
@@ -177,7 +177,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'flags',
-      typeAnnotation: 'boolean[]',
+      vibeType: 'boolean[]',
     });
   });
 
@@ -187,7 +187,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'LetDeclaration',
       name: 'matrix',
-      typeAnnotation: 'text[][]',
+      vibeType: 'text[][]',
     });
   });
 
@@ -197,7 +197,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'items',
-      typeAnnotation: 'json[]',
+      vibeType: 'json[]',
     });
   });
 
@@ -207,7 +207,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'FunctionDeclaration',
       name: 'process',
-      params: [{ name: 'items', typeAnnotation: 'text[]' }],
+      params: [{ name: 'items', vibeType: 'text[]' }],
     });
   });
 
@@ -237,7 +237,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'FunctionDeclaration',
       name: 'process',
-      params: [{ name: 'm', typeAnnotation: 'model' }],
+      params: [{ name: 'm', vibeType: 'model' }],
       returnType: 'text',
     });
   });
@@ -248,7 +248,7 @@ describe('Parser - Type Annotations', () => {
     expect(ast.body[0]).toMatchObject({
       type: 'ConstDeclaration',
       name: 'myModel',
-      typeAnnotation: 'model',
+      vibeType: 'model',
     });
   });
 });

@@ -99,7 +99,7 @@ export function validateToolDeclaration(ctx: AnalyzerContext, node: AST.ToolDecl
 
   // Validate parameter type annotations (allow both Vibe types and imported types)
   for (const param of node.params) {
-    const baseType = param.typeAnnotation.replace(/\[\]$/, '');
+    const baseType = param.vibeType.replace(/\[\]$/, '');
     const isVibeType = ['text', 'json', 'boolean', 'number', 'prompt'].includes(baseType);
     if (!isVibeType) {
       const symbol = ctx.symbols.lookup(baseType);
@@ -256,21 +256,21 @@ export function validateContextMode(ctx: AnalyzerContext, mode: AST.ContextMode,
     if (!sym) {
       ctx.error(`compress argument '${arg1.name}' is not declared`, location);
     } else if (arg2) {
-      const isPromptType = sym.kind === 'constant' && sym.typeAnnotation === 'prompt';
-      const isTextType = sym.typeAnnotation === 'text' || sym.typeAnnotation === 'prompt';
+      const isPromptType = sym.kind === 'constant' && sym.vibeType === 'prompt';
+      const isTextType = sym.vibeType === 'text' || sym.vibeType === 'prompt';
       if (!isPromptType && !isTextType) {
         ctx.error(
-          `compress first argument '${arg1.name}' must be prompt type when two arguments provided, got ${sym.typeAnnotation ?? sym.kind}`,
+          `compress first argument '${arg1.name}' must be prompt type when two arguments provided, got ${sym.vibeType ?? sym.kind}`,
           location
         );
       }
     } else {
-      const isModelType = sym.kind === 'model' || (sym.kind === 'constant' && sym.typeAnnotation === 'model');
-      const isPromptType = sym.kind === 'constant' && sym.typeAnnotation === 'prompt';
-      const isTextType = sym.typeAnnotation === 'text' || sym.typeAnnotation === 'prompt';
+      const isModelType = sym.kind === 'model' || (sym.kind === 'constant' && sym.vibeType === 'model');
+      const isPromptType = sym.kind === 'constant' && sym.vibeType === 'prompt';
+      const isTextType = sym.vibeType === 'text' || sym.vibeType === 'prompt';
       if (!isModelType && !isPromptType && !isTextType) {
         ctx.error(
-          `compress argument '${arg1.name}' must be prompt or model type, got ${sym.typeAnnotation ?? sym.kind}`,
+          `compress argument '${arg1.name}' must be prompt or model type, got ${sym.vibeType ?? sym.kind}`,
           location
         );
       }
@@ -282,10 +282,10 @@ export function validateContextMode(ctx: AnalyzerContext, mode: AST.ContextMode,
     if (!sym) {
       ctx.error(`compress model '${arg2.name}' is not declared`, location);
     } else {
-      const isModelType = sym.kind === 'model' || (sym.kind === 'constant' && sym.typeAnnotation === 'model');
+      const isModelType = sym.kind === 'model' || (sym.kind === 'constant' && sym.vibeType === 'model');
       if (!isModelType) {
         ctx.error(
-          `compress second argument '${arg2.name}' must be model type, got ${sym.typeAnnotation ?? sym.kind}`,
+          `compress second argument '${arg2.name}' must be model type, got ${sym.vibeType ?? sym.kind}`,
           location
         );
       }
@@ -351,7 +351,7 @@ export function validateTsBlock(ctx: AnalyzerContext, node: AST.TsBlock): void {
     }
     params.push({
       name: paramName,
-      vibeType: symbol.typeAnnotation ?? null,
+      vibeType: symbol.vibeType ?? null,
     });
   }
 
@@ -431,7 +431,7 @@ export function checkPromptType(ctx: AnalyzerContext, node: AST.Expression): voi
     ctx.error(`Cannot use model '${node.name}' as prompt`, node.location);
   } else if (sym.kind === 'function') {
     ctx.error(`Cannot use function '${node.name}' as prompt`, node.location);
-  } else if (sym.typeAnnotation === 'json') {
+  } else if (sym.vibeType === 'json') {
     ctx.error(`Cannot use json typed variable '${node.name}' as prompt`, node.location);
   }
 }
@@ -449,7 +449,7 @@ export function checkModelType(
     if (!sym) {
       ctx.error(`'${node.name}' is not defined`, node.location);
     } else if (sym.kind !== 'model') {
-      const isModelParam = sym.kind === 'parameter' && sym.typeAnnotation === 'model';
+      const isModelParam = sym.kind === 'parameter' && sym.vibeType === 'model';
       if (!isModelParam) {
         ctx.error(`Expected model, got ${sym.kind} '${node.name}'`, node.location);
       }
@@ -619,8 +619,8 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
       return 'number[]';
     case 'Identifier': {
       const symbol = ctx.symbols.lookup(expr.name);
-      if (symbol?.typeAnnotation) {
-        return symbol.typeAnnotation;
+      if (symbol?.vibeType) {
+        return symbol.vibeType;
       }
       return null;
     }
@@ -660,7 +660,7 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         const symbol = ctx.symbols.lookup(paramName);
         params.push({
           name: paramName,
-          vibeType: symbol?.typeAnnotation ?? null,
+          vibeType: symbol?.vibeType ?? null,
         });
       }
       return inferTsBlockReturnType(params, expr.body);

@@ -16,14 +16,21 @@ interface BaseNode {
 export type AIProviderType = 'anthropic' | 'openai' | 'google';
 
 // ============================================================================
-// Vibe Type Annotations
+// Vibe Types
 // ============================================================================
 
-/** Non-nullable type annotations - when type is always required */
+/** Base Vibe types - always known at compile time */
 export type VibeTypeRequired = 'text' | 'json' | 'boolean' | 'number' | 'prompt' | 'model' | 'text[]' | 'json[]' | 'boolean[]' | 'number[]' | 'prompt[]';
 
-/** Valid type annotations in Vibe - nullable when type is optional/inferred */
-export type VibeType = VibeTypeRequired | null;
+/**
+ * All Vibe types including 'unknown' for json member access.
+ * After semantic analysis, vibeType is ALWAYS populated:
+ * - Explicit annotations: use the annotation
+ * - Inferred types: semantic analyzer fills in the type
+ * - Json member access: 'unknown' (resolved at runtime when value materializes)
+ * - Null only during parsing before semantic analysis
+ */
+export type VibeType = VibeTypeRequired | 'unknown' | null;
 
 // ============================================================================
 // Context Modes
@@ -109,7 +116,7 @@ export interface ExportDeclaration extends BaseNode {
 export interface LetDeclaration extends BaseNode {
   type: 'LetDeclaration';
   name: string;
-  typeAnnotation: VibeType;
+  vibeType: VibeType;   // Always populated after semantic analysis
   initializer: Expression | null;
   isPrivate?: boolean;  // If true, variable is hidden from AI context
   isAsync?: boolean;    // If true, execute asynchronously in parallel
@@ -118,7 +125,7 @@ export interface LetDeclaration extends BaseNode {
 export interface ConstDeclaration extends BaseNode {
   type: 'ConstDeclaration';
   name: string;
-  typeAnnotation: VibeType;
+  vibeType: VibeType;   // Always populated after semantic analysis
   initializer: Expression;
   isPrivate?: boolean;  // If true, variable is hidden from AI context
   isAsync?: boolean;    // If true, execute asynchronously in parallel
@@ -167,7 +174,7 @@ export interface TypeDeclaration extends BaseNode {
 
 export interface FunctionParameter {
   name: string;
-  typeAnnotation: VibeTypeRequired;
+  vibeType: VibeTypeRequired;  // Function params always have explicit types
 }
 
 export interface FunctionDeclaration extends BaseNode {
@@ -182,7 +189,7 @@ export interface FunctionDeclaration extends BaseNode {
 // Tool parameter with optional description for AI schema
 export interface ToolParameter {
   name: string;
-  typeAnnotation: string;     // Vibe type or imported TS type name
+  vibeType: string;           // Vibe type or imported TS type name (always required for tools)
   description?: string;       // From @param decorator, for AI schema
 }
 

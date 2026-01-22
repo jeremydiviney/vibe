@@ -21,12 +21,12 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
       ...state,
       currentAsyncVarName: stmt.name,
       currentAsyncIsConst: false,
-      currentAsyncType: stmt.typeAnnotation,
+      currentAsyncType: stmt.vibeType,
       currentAsyncIsPrivate: stmt.isPrivate ?? false,
     } : state;
 
     // For prompt-typed variables, set inPromptContext for string interpolation
-    const isPromptType = stmt.typeAnnotation === 'prompt';
+    const isPromptType = stmt.vibeType === 'prompt';
     if (isPromptType) {
       baseState = { ...baseState, inPromptContext: true };
     }
@@ -39,7 +39,7 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
       instructions.push({ op: 'clear_prompt_context', location: stmt.location });
     }
     instructions.push(
-      { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
+      { op: 'declare_var', name: stmt.name, isConst: false, type: stmt.vibeType, isPrivate: stmt.isPrivate, location: stmt.location },
       ...state.instructionStack
     );
 
@@ -50,7 +50,7 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
   }
 
   // No initializer, declare with null
-  return execDeclareVar(state, stmt.name, false, stmt.typeAnnotation, null, stmt.isPrivate);
+  return execDeclareVar(state, stmt.name, false, stmt.vibeType, null, stmt.isPrivate);
 }
 
 /**
@@ -64,12 +64,12 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
     ...state,
     currentAsyncVarName: stmt.name,
     currentAsyncIsConst: true,
-    currentAsyncType: stmt.typeAnnotation,
+    currentAsyncType: stmt.vibeType,
     currentAsyncIsPrivate: stmt.isPrivate ?? false,
   } : state;
 
   // For prompt-typed variables, set inPromptContext for string interpolation
-  const isPromptType = stmt.typeAnnotation === 'prompt';
+  const isPromptType = stmt.vibeType === 'prompt';
   if (isPromptType) {
     baseState = { ...baseState, inPromptContext: true };
   }
@@ -82,7 +82,7 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
     instructions.push({ op: 'clear_prompt_context', location: stmt.location });
   }
   instructions.push(
-    { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.typeAnnotation, isPrivate: stmt.isPrivate, location: stmt.location },
+    { op: 'declare_var', name: stmt.name, isConst: true, type: stmt.vibeType, isPrivate: stmt.isPrivate, location: stmt.location },
     ...state.instructionStack
   );
 
@@ -197,7 +197,7 @@ export function finalizeModelDeclaration(
   const frame = currentFrame(state);
   const newLocals = {
     ...frame.locals,
-    [stmt.name]: createVibeValue(modelValue, { isConst: true, typeAnnotation: null }),
+    [stmt.name]: createVibeValue(modelValue, { isConst: true, vibeType: null }),
   };
 
   return {

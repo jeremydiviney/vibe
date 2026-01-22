@@ -28,7 +28,7 @@ function processScheduledAsync(s: RuntimeState, response: unknown): RuntimeState
         source: 'ai',
         isConst: existingVar?.isConst,
         isPrivate: existingVar?.isPrivate,
-        typeAnnotation: existingVar?.typeAnnotation,
+        vibeType: existingVar?.vibeType,
       });
 
       operation.status = 'completed';
