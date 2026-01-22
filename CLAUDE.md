@@ -34,6 +34,34 @@ bun run dev                # Watch mode
 bun run src/index.ts <file.vibe>  # Run a vibe program
 ```
 
+## Building Binaries and Extension
+
+### Build Runtime Binaries (vibe.exe)
+```bash
+bun run build:binaries     # Builds all platform binaries to dist/
+cp dist/vibe-windows-x64.exe dist/vibe.exe  # Copy for local use
+```
+
+This creates binaries for all platforms in `dist/`:
+- `vibe-windows-x64.exe` (Windows)
+- `vibe-darwin-x64` (macOS Intel)
+- `vibe-darwin-arm64` (macOS Apple Silicon)
+- `vibe-linux-x64` (Linux x64)
+- `vibe-linux-arm64` (Linux ARM)
+
+### Build VS Code Extension
+```bash
+bun run build:extension    # Build extension JS files
+```
+
+### Package Extension for Release
+```bash
+cd packages/vscode-extension
+bun run package            # Creates .vsix in releases/ folder
+```
+
+The packaged extension will be at `packages/vscode-extension/releases/vibe-language-X.X.X.vsix`
+
 ## Test Commands
 ```bash
 bun run test               # Unit tests only (~1s) - USE THIS
