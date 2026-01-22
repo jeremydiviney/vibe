@@ -32,3 +32,9 @@ while false {
 // <- keyword.control.vibe
 //    ^^^^^ constant.language.boolean.vibe
 }
+
+type Result { valid: boolean, message: text }
+// <- keyword.declaration.vibe
+//   ^^^^^^ variable.other.vibe
+//                   ^^^^^^^ support.type.vibe
+//                                     ^^^^ support.type.vibe

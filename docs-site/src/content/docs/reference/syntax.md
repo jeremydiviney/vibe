@@ -14,6 +14,7 @@ description: Complete syntax reference for Vibe
 | `function` | Declare function |
 | `tool` | Declare AI-callable tool |
 | `model` | Declare AI model configuration |
+| `type` | Declare structural type |
 | `export` | Export declaration |
 | `import` | Import from module |
 | `from` | Specify import source |
@@ -137,6 +138,35 @@ model name = {
   thinkingLevel: "none" | "low" | "medium" | "high" | "max",
   tools: [tool1, tool2]
 }
+```
+
+### Type Declaration
+
+```
+type TypeName {
+  field1: type1
+  field2: type2
+}
+
+type TypeName { field1: type1, field2: type2 }
+```
+
+Fields can be separated by commas, newlines, or both.
+
+Nested types:
+```
+type Outer {
+  inner: InnerType          // Reference named type
+  data: {                   // Inline nested object
+    value: number
+    label: text
+  }
+}
+```
+
+Arrays of types:
+```
+type Team { players: Player[] }
 ```
 
 ### If Statement

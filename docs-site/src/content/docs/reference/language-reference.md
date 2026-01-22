@@ -25,6 +25,27 @@ let maybe: text = null           // Null requires type annotation
 | `json` | Object/array | `{ key: "value" }`, `[1, 2]` |
 | `null` | Null value | `null` |
 | `text[]` | Array of type | `["a", "b"]` |
+| `TypeName` | Named structural type | `let x: MyType` |
+
+### Structural Types
+
+```vibe
+type Result {
+  valid: boolean
+  message: text
+}
+
+// Nested types
+type Outer {
+  inner: Inner           // Reference named type
+  metadata: {            // Inline nested object
+    timestamp: number
+  }
+}
+
+// Arrays of types
+type Team { players: Player[] }
+```
 
 ## Strings & Interpolation
 

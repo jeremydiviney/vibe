@@ -161,7 +161,7 @@
         },
         {
           "name": "keyword.declaration.vibe",
-          "match": "\\b(let|const|function|tool|model|import|export|from|async|private)\\b"
+          "match": "\\b(let|const|function|tool|model|type|import|export|from|async|private)\\b"
         },
         {
           "name": "keyword.ai.vibe",

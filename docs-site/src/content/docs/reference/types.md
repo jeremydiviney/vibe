@@ -20,6 +20,109 @@ description: Complete type reference for Vibe
 |------|-------------|
 | `model` | AI model configuration (always immutable) |
 
+## Named Structural Types
+
+Define custom types with the `type` keyword:
+
+```vibe
+type Result {
+  valid: boolean
+  message: text
+  count: number
+}
+```
+
+### Type Declaration Syntax
+
+```vibe
+type TypeName {
+  fieldName: fieldType
+  // ... more fields
+}
+```
+
+Fields can be separated by commas, newlines, or both:
+
+```vibe
+// Comma-separated
+type Point { x: number, y: number }
+
+// Newline-separated
+type Config {
+  timeout: number
+  retries: number
+}
+
+// Mixed
+type Mixed { a: text, b: number
+  c: boolean
+}
+```
+
+### Nested Types
+
+Reference other types or use inline nested objects:
+
+```vibe
+type Inner { value: number }
+
+type Outer {
+  inner: Inner           // Reference named type
+  metadata: {            // Inline nested object
+    timestamp: number
+    source: text
+  }
+}
+```
+
+### Arrays of Structural Types
+
+```vibe
+type Player { name: text, score: number }
+type Team { players: Player[] }
+
+let team: Team = do "Create a team with 3 players" model
+```
+
+### Type Usage
+
+Use named types in:
+
+```vibe
+// Variable declarations
+let result: Result = do "Validate input" model
+
+// Function parameters
+function process(data: Result): text {
+  return data.message
+}
+
+// Function return types
+function check(): Result {
+  return { valid: true, message: "OK", count: 1 }
+}
+
+// Arrays
+let results: Result[] = []
+```
+
+### Member Access Type Resolution
+
+Accessing fields on typed variables returns the field's type:
+
+```vibe
+type Status { active: boolean, count: number }
+let s: Status = do "Get status" model
+
+// s.active is boolean (can use in if conditions)
+if s.active {
+  print("Active")
+}
+
+// s.count is number
+let doubled = s.count * 2
+```
+
 ## Array Types
 
 Append `[]` to any type:

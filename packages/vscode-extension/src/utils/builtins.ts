@@ -45,6 +45,12 @@ export const keywords: KeywordDef[] = [
     documentation: 'Define an AI model configuration.\n\nSyntax: `model name = { provider: "...", modelName: "..." }`',
   },
   {
+    name: 'type',
+    kind: CompletionItemKind.Keyword,
+    detail: 'Define a named type',
+    documentation: 'Define a named structural type for object validation and member access type checking.\n\nSyntax: `type Name { field: type, ... }`\n\nExample:\n```vibe\ntype Person {\n  name: text,\n  age: number\n}\n```\n\nUse in variables:\n```vibe\nlet person: Person = do "get person" model\nif person.age > 18 {  // age is known to be number\n  print(person.name)\n}\n```\n\nSupports:\n- Nested object types: `metadata: { timestamp: number }`\n- Array of types: `friends: Person[]`\n- Flexible field separators (commas, newlines, or both)',
+  },
+  {
     name: 'vibe',
     kind: CompletionItemKind.Keyword,
     detail: 'AI expression (multi-turn)',

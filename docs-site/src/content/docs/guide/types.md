@@ -53,6 +53,86 @@ let count = 42          // Inferred as number
 let items = [1, 2, 3]   // Inferred as number[]
 ```
 
+## Structural Types
+
+Define named types with a specific structure:
+
+```vibe
+type Person {
+  name: text
+  age: number
+  active: boolean
+}
+
+// Use in variable declarations
+let user: Person = do "Create a person named Alice who is 30" model
+
+// Access fields with type safety
+print(user.name)      // text
+print(user.age)       // number
+if user.active {
+  print("User is active")
+}
+```
+
+### Nested Types
+
+Types can reference other types or have inline nested structures:
+
+```vibe
+type Address {
+  city: text
+  country: text
+}
+
+type Employee {
+  name: text
+  address: Address           // Reference another type
+  metadata: {                // Inline nested object
+    hireDate: text
+    department: text
+  }
+}
+```
+
+### Arrays of Types
+
+Use structural types in arrays:
+
+```vibe
+type Player {
+  name: text
+  score: number
+}
+
+let leaderboard: Player[] = do "Get top 5 players" model
+for player in leaderboard {
+  print("{player.name}: {player.score}")
+}
+```
+
+### Flexible Field Separators
+
+Fields can be separated by commas, newlines, or both:
+
+```vibe
+// Comma-separated (single line)
+type Point { x: number, y: number }
+
+// Newline-separated
+type Config {
+  timeout: number
+  retries: number
+  debug: boolean
+}
+
+// Mixed
+type Mixed {
+  a: text, b: number
+  c: boolean
+}
+```
+
 ## AI Return Types
 
 When using AI expressions, the return type determines how the response is parsed:
@@ -67,11 +147,15 @@ const isPrime: boolean = do "Is 17 a prime number?"
 // Returns an array of strings
 const languages: text[] = do "List 5 programming languages"
 
-// Returns a structured object
+// Returns a structured object (untyped)
 const person: json = do "Return a person with name and age fields"
+
+// Returns a structured object (typed - recommended)
+type Person { name: text, age: number }
+const typedPerson: Person = do "Return a person with name and age" model
 ```
 
-The AI's response is automatically validated and converted to the specified type.
+The AI's response is automatically validated and converted to the specified type. Structural types provide stronger validation than plain `json`.
 
 ## Null Values
 
