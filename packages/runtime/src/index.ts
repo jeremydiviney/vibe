@@ -14,6 +14,7 @@ export * from './errors';
 import { parse } from './parser/parse';
 import { analyze } from './semantic';
 import { Runtime, AIProvider, createRealAIProvider } from './runtime';
+import { VibeError } from './errors';
 import { readdirSync, rmSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 
@@ -273,7 +274,13 @@ async function main(): Promise<void> {
       }
     }
   } catch (error) {
-    console.error('Error:', error instanceof Error ? error.message : error);
+    if (error instanceof VibeError) {
+      console.error('Error:', error.format());
+    } else if (error instanceof Error) {
+      console.error('Error:', error.message);
+    } else {
+      console.error('Error:', error);
+    }
     process.exit(1);
   }
 }
