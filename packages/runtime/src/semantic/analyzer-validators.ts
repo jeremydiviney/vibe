@@ -538,6 +538,59 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
       }
       return null;
     }
+    case 'IndexExpression': {
+      // Array element access: arr[0] where arr is model[] -> model
+      const objectType = getExpressionType(ctx, expr.object);
+      if (!objectType) return null;
+      if (objectType.endsWith('[]')) return objectType.slice(0, -2);  // model[] -> model
+      if (objectType === 'json') return 'json';  // JSON property access
+      return null;
+    }
+    case 'MemberExpression': {
+      const objectType = getExpressionType(ctx, expr.object);
+      if (!objectType) return null;
+      const property = expr.property;
+
+      // Array methods/properties
+      if (objectType.endsWith('[]')) {
+        if (property === 'len') return 'number';
+        // pop returns element type, but is a method - handled in CallExpression
+      }
+
+      // String/prompt methods/properties
+      if (objectType === 'text' || objectType === 'prompt') {
+        if (property === 'len') return 'number';
+      }
+
+      // JSON property access always returns json
+      if (objectType === 'json') return 'json';
+
+      return null;
+    }
+    case 'BinaryExpression': {
+      const { operator } = expr;
+      // Comparison and logical operators return boolean
+      if (['==', '!=', '<', '>', '<=', '>=', 'and', 'or'].includes(operator)) return 'boolean';
+      // Arithmetic operators (except +) return number
+      if (['-', '*', '/', '%'].includes(operator)) return 'number';
+      // + depends on operand types
+      if (operator === '+') {
+        const leftType = getExpressionType(ctx, expr.left);
+        const rightType = getExpressionType(ctx, expr.right);
+        if (leftType === 'number' && rightType === 'number') return 'number';
+        if (leftType === 'text' || rightType === 'text') return 'text';
+        if (leftType?.endsWith('[]') && leftType === rightType) return leftType;
+        return null;
+      }
+      return null;
+    }
+    case 'UnaryExpression': {
+      if (expr.operator === 'not') return 'boolean';
+      if (expr.operator === '-') return 'number';
+      return null;
+    }
+    case 'RangeExpression':
+      return 'number[]';
     case 'Identifier': {
       const symbol = ctx.symbols.lookup(expr.name);
       if (symbol?.typeAnnotation) {
@@ -554,6 +607,23 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         const funcSymbol = ctx.symbols.lookup(expr.callee.name);
         if (funcSymbol?.kind === 'function' && funcSymbol.returnType) {
           return funcSymbol.returnType;
+        }
+      }
+      // Handle method calls (MemberExpression callee) like arr.pop(), arr.len()
+      if (expr.callee.type === 'MemberExpression') {
+        const objType = getExpressionType(ctx, expr.callee.object);
+        const method = expr.callee.property;
+
+        // Array methods
+        if (objType?.endsWith('[]')) {
+          if (method === 'len') return 'number';
+          if (method === 'pop') return objType.slice(0, -2);  // model[] -> model
+          if (method === 'push') return objType;  // push returns the array
+        }
+
+        // String/prompt methods
+        if (objType === 'text' || objType === 'prompt') {
+          if (method === 'len') return 'number';
         }
       }
       return null;

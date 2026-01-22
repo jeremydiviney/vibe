@@ -56,3 +56,12 @@ export function isValidJson(value: string): boolean {
     return false;
   }
 }
+
+/**
+ * Get the element type from an array type.
+ * e.g., "model[]" -> "model", "number[][]" -> "number[]"
+ * Returns null if the type is not an array.
+ */
+export function getArrayElementType(type: string): string | null {
+  return type.endsWith('[]') ? type.slice(0, -2) : null;
+}
