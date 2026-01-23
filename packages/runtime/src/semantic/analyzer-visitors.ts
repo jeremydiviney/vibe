@@ -6,6 +6,7 @@
 import * as AST from '../ast';
 import type { SourceLocation } from '../errors';
 import type { AnalyzerContext, AnalyzerState } from './analyzer-context';
+import type { SymbolTable } from './symbol-table';
 import { isValidType } from './types';
 import { isCoreFunction } from '../runtime/stdlib/core';
 import { extractFunctionSignature } from './ts-signatures';
@@ -527,9 +528,9 @@ export function createVisitors(
     }
 
     // Validate Vibe imports - check that imported symbols exist and extract types
-    let vibeExports: Map<string, VibeExportInfo> | null = null;
+    let vibeExportResult: { exportedNames: Set<string>, symbols: SymbolTable } | null = null;
     if (node.sourceType === 'vibe' && ctx.basePath) {
-      vibeExports = getVibeExportInfo(ctx.basePath, node.source);
+      vibeExportResult = getVibeExports(ctx.basePath, node.source);
     }
 
     for (const spec of node.specifiers) {
@@ -548,7 +549,7 @@ export function createVisitors(
         }
       } else {
         // Validate that imported name exists in source file (for Vibe imports)
-        if (vibeExports !== null && !vibeExports.has(spec.imported)) {
+        if (vibeExportResult && !vibeExportResult.exportedNames.has(spec.imported)) {
           ctx.error(
             `'${spec.imported}' is not exported from '${node.source}'`,
             node.location
@@ -559,80 +560,53 @@ export function createVisitors(
         const toolBundles = ['allTools', 'readonlyTools', 'safeTools'];
         const importKind = isToolImport && !toolBundles.includes(spec.local) ? 'tool' : 'import';
 
-        // For Vibe function imports, register with full type info so return types flow through
-        const exportInfo = vibeExports?.get(spec.imported);
-        if (exportInfo?.kind === 'function') {
+        // Look up the symbol from the imported file's analyzer - types flow naturally
+        const sym = vibeExportResult?.symbols.lookup(spec.imported);
+        if (sym?.kind === 'function') {
           ctx.declare(spec.local, 'function', node.location, {
-            paramCount: exportInfo.paramCount,
-            paramTypes: exportInfo.paramTypes,
-            returnType: exportInfo.returnType,
+            paramCount: sym.paramCount,
+            paramTypes: sym.paramTypes,
+            returnType: sym.returnType,
           });
-        } else if (exportInfo?.kind === 'model') {
+        } else if (sym?.kind === 'model') {
           ctx.declare(spec.local, importKind, node.location, { vibeType: 'model' });
         } else {
-          ctx.declare(spec.local, importKind, node.location);
+          ctx.declare(spec.local, importKind, node.location, { vibeType: sym?.vibeType });
         }
       }
     }
   }
 
   /**
-   * Info about an exported symbol from a Vibe file
+   * Analyze a Vibe source file and return its exported names + symbol table.
+   * Types flow naturally from the full semantic analysis.
    */
-  interface VibeExportInfo {
-    kind: 'function' | 'variable' | 'model';
-    // For functions:
-    paramCount?: number;
-    paramTypes?: string[];
-    returnType?: string | null;
-    // For variables:
-    vibeType?: string | null;
-  }
-
-  /**
-   * Get export info from a Vibe source file.
-   * Returns a map of name -> export info, or null if file cannot be read.
-   */
-  function getVibeExportInfo(basePath: string, importSource: string): Map<string, VibeExportInfo> | null {
+  function getVibeExports(basePath: string, importSource: string): { exportedNames: Set<string>, symbols: SymbolTable } | null {
     try {
       const sourcePath = resolve(dirname(basePath), importSource);
       if (!existsSync(sourcePath)) {
-        return null; // File doesn't exist - let runtime handle this error
+        return null;
       }
 
       const sourceContent = readFileSync(sourcePath, 'utf-8');
       const sourceAst = parse(sourceContent, { file: sourcePath });
 
-      const exports = new Map<string, VibeExportInfo>();
-      for (const statement of sourceAst.body) {
-        if (statement.type !== 'ExportDeclaration') continue;
-        const decl = statement.declaration;
+      // Run full semantic analysis so types flow naturally
+      // Lazy import to break circular dependency (analyzer.ts imports this file)
+      const { SemanticAnalyzer: Analyzer } = require('./analyzer');
+      const importAnalyzer = new Analyzer();
+      importAnalyzer.analyze(sourceAst, sourceContent, sourcePath);
 
-        switch (decl.type) {
-          case 'FunctionDeclaration':
-            exports.set(decl.name, {
-              kind: 'function',
-              paramCount: decl.params.length,
-              paramTypes: decl.params.map(p => p.vibeType),
-              returnType: decl.returnType,
-            });
-            break;
-          case 'ModelDeclaration':
-            exports.set(decl.name, { kind: 'model' });
-            break;
-          case 'ConstDeclaration':
-          case 'LetDeclaration':
-            exports.set(decl.name, {
-              kind: 'variable',
-              vibeType: decl.vibeType,
-            });
-            break;
+      const exportedNames = new Set<string>();
+      for (const stmt of sourceAst.body) {
+        if (stmt.type === 'ExportDeclaration') {
+          exportedNames.add(stmt.declaration.name);
         }
       }
 
-      return exports;
+      return { exportedNames, symbols: importAnalyzer.getSymbols() };
     } catch {
-      return null; // Parse error or other issue - skip validation
+      return null;
     }
   }
 

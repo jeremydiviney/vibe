@@ -9,6 +9,20 @@ import { getImportedValue } from '../modules';
 import { scheduleAsyncOperation, isInAsyncContext } from '../async/scheduling';
 
 /**
+ * Parse a ts block parameter string into binding name and expression.
+ * Supports "name = expr" (named) and "name" (shorthand for name = name).
+ */
+function parseTsParam(param: string): { name: string; expr: string } {
+  const eqIndex = param.indexOf('=');
+  if (eqIndex !== -1) {
+    const name = param.slice(0, eqIndex).trim();
+    const expr = param.slice(eqIndex + 1).trim();
+    return { name, expr };
+  }
+  return { name: param, expr: param };
+}
+
+/**
  * Deep freeze an object to prevent any mutation.
  * Used to enforce const semantics for objects passed to ts blocks.
  */
@@ -154,26 +168,49 @@ export function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeStat
  * for non-blocking execution instead of pausing.
  */
 export function execTsEval(state: RuntimeState, params: string[], body: string, location: SourceLocation): RuntimeState {
-  // Look up parameter values from scope or imports
-  const paramValues = params.map((name) => {
+  // Parse params: supports "name = expr" (named) and "name" (shorthand for "name = name")
+  // The expr can be a dotted path like "guesser.usage"
+  const parsed = params.map(parseTsParam);
+
+  // Resolve parameter values from expressions
+  const paramValues = parsed.map(({ expr }) => {
+    const parts = expr.split('.');
+    const baseName = parts[0];
+
     // First try regular variables
-    const found = lookupVariable(state, name);
+    const found = lookupVariable(state, baseName);
     if (found) {
-      // Resolve AIResultObject to primitive value for ts blocks
-      const value = resolveValue(found.variable.value);
+      let value: unknown = resolveValue(found.variable.value);
+      // Walk the property chain for dotted expressions
+      for (let i = 1; i < parts.length; i++) {
+        if (value === null || value === undefined) {
+          throw new Error(`TypeError: Cannot read property '${parts[i]}' of ${value}`);
+        }
+        // For model.usage, return a copy to prevent mutation
+        if (found.variable.vibeType === 'model' && parts[i] === 'usage') {
+          value = [...((value as { usage: unknown[] }).usage)];
+        } else {
+          value = (value as Record<string, unknown>)[parts[i]];
+        }
+      }
       // Freeze const objects to prevent mutation in ts blocks
       if (found.variable.isConst && value !== null && typeof value === 'object') {
         return deepFreeze(value);
       }
       return value;
     }
-    // Then try imported values
-    const imported = getImportedValue(state, name);
-    if (imported !== undefined) {
-      return imported;
+    // Then try imported values (only for simple names)
+    if (parts.length === 1) {
+      const imported = getImportedValue(state, expr);
+      if (imported !== undefined) {
+        return imported;
+      }
     }
-    throw new Error(`ReferenceError: '${name}' is not defined`);
+    throw new Error(`ReferenceError: '${baseName}' is not defined`);
   });
+
+  // Use the binding names for the generated TS function parameters
+  const tsParamNames = parsed.map(p => p.name);
 
   // Check if we're in async context (variable, destructuring, or fire-and-forget)
   if (isInAsyncContext(state)) {
@@ -183,7 +220,7 @@ export function execTsEval(state: RuntimeState, params: string[], body: string, 
       {
         type: 'ts',
         tsDetails: {
-          params,
+          params: tsParamNames,
           body,
           paramValues,
           location,
@@ -198,7 +235,7 @@ export function execTsEval(state: RuntimeState, params: string[], body: string, 
     ...state,
     status: 'awaiting_ts',
     pendingTS: {
-      params,
+      params: tsParamNames,
       body,
       paramValues,
       location,  // Include source location for error reporting

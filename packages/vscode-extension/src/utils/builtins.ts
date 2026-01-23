@@ -402,6 +402,11 @@ export const vibeValueProperties: PropertyDef[] = [
     type: 'ToolCallRecord[]',
     documentation: '**toolCalls** (VibeValue property)\n\n`ToolCallRecord[]`\n\nArray of tool calls made during AI execution. Empty for non-AI values. Tool errors are sent back to the AI model for retry—they don\'t make the value have an error.\n\n```vibe\nlet result = vibe "Do something" model default\nfor call in result.toolCalls {\n  print("Tool: " + call.toolName)\n  if call.err {\n    print("Failed: " + call.errDetails.message)\n  }\n}\n```\n\nEach ToolCallRecord has:\n- `toolName: text` - Name of the tool called\n- `args: json` - Arguments passed\n- `result` - Return value (null if error)\n- `err: boolean` - True if this call failed\n- `errDetails` - Error details when err is true (has `message`)\n- `duration: number` - Execution time in ms',
   },
+  {
+    name: 'usage',
+    type: 'ModelUsageRecord',
+    documentation: '**usage** (VibeValue / model property)\n\n`ModelUsageRecord` (on AI results) or `ModelUsageRecord[]` (on models)\n\nToken usage from an AI call. On AI result values, returns the usage for that specific request. On model variables, returns an array of all usage records accumulated across calls.\n\n```vibe\nmodel m = { name: "gpt-4", apiKey: env("KEY"), url: "..." }\nlet result = do "What is 2+2?" m\n\n// Per-request usage\nprint(result.usage.inputTokens)\nprint(result.usage.outputTokens)\n\n// Model-level accumulated usage\nprint(m.usage)  // [{requestId: 1, ...}]\n```\n\nEach ModelUsageRecord has:\n- `requestId: number` - Sequential request ID\n- `inputTokens: number` - Input tokens (includes cache creation)\n- `outputTokens: number` - Output tokens\n- `cachedInputTokens: number` - Tokens served from cache\n- `thinkingTokens: number` - Reasoning/thinking tokens',
+  },
 ];
 
 // Array/string methods

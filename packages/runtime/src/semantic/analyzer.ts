@@ -29,6 +29,7 @@ export class SemanticAnalyzer {
     this.basePath = basePath;
     this.tsImportSignatures.clear();
     this.typeRegistry = new TypeRegistry();  // Fresh registry for each analysis
+    this.symbols = new SymbolTable();  // Fresh symbol table for each analysis
     this.symbols.enterScope();
 
     // Create context and state for visitors
@@ -48,7 +49,7 @@ export class SemanticAnalyzer {
       visitors.visitStatement(stmt);
     }
 
-    this.symbols.exitScope();
+    // Note: scope intentionally left open so getSymbols() can query after analysis
     return this.errors;
   }
 
@@ -91,5 +92,12 @@ export class SemanticAnalyzer {
    */
   getTypeRegistry(): TypeRegistry {
     return this.typeRegistry;
+  }
+
+  /**
+   * Get the symbol table (for reading inferred types after analysis).
+   */
+  getSymbols(): SymbolTable {
+    return this.symbols;
   }
 }

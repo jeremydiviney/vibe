@@ -351,15 +351,24 @@ export function validateTsCall(
  */
 export function validateTsBlock(ctx: AnalyzerContext, node: AST.TsBlock): void {
   const params: Array<{ name: string; vibeType: string | null }> = [];
-  for (const paramName of node.params) {
-    const symbol = ctx.symbols.lookup(paramName);
+  for (const rawParam of node.params) {
+    // Parse "name = expr" or plain "name" syntax
+    const eqIndex = rawParam.indexOf('=');
+    const bindingName = eqIndex !== -1 ? rawParam.slice(0, eqIndex).trim() : rawParam;
+    const expr = eqIndex !== -1 ? rawParam.slice(eqIndex + 1).trim() : rawParam;
+
+    // Validate the base variable of the expression
+    const baseName = expr.split('.')[0];
+    const symbol = ctx.symbols.lookup(baseName);
     if (!symbol) {
-      ctx.error(`'${paramName}' is not defined`, node.location);
+      ctx.error(`'${baseName}' is not defined`, node.location);
       continue;
     }
+    // For expressions with dots or named params, type is unknown (defer to runtime)
+    const vibeType = expr.includes('.') ? null : (symbol.vibeType ?? null);
     params.push({
-      name: paramName,
-      vibeType: symbol.vibeType ?? null,
+      name: bindingName,
+      vibeType,
     });
   }
 

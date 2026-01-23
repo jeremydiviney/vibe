@@ -184,7 +184,6 @@ export function finalizeModelDeclaration(
   );
 
   const modelValue = {
-    __vibeModel: true,
     name: modelName as string | null,
     apiKey: apiKey as string | null,
     url: url as string | null,
@@ -192,12 +191,13 @@ export function finalizeModelDeclaration(
     maxRetriesOnError: maxRetriesOnError as number | null,
     thinkingLevel: thinkingLevel as string | null,
     tools: tools as unknown[] | undefined,
+    usage: [],
   };
 
   const frame = currentFrame(state);
   const newLocals = {
     ...frame.locals,
-    [stmt.name]: createVibeValue(modelValue, { isConst: true, vibeType: null }),
+    [stmt.name]: createVibeValue(modelValue, { isConst: true, vibeType: 'model' }),
   };
 
   return {

@@ -109,16 +109,46 @@ import { saveAIInteractions } from './ai-logger';
 import { deepCloneState } from './serialize';
 
 // Token usage from AI providers
-import type { TokenUsage } from './ai/types';
+import type { TokenUsage, ModelUsageRecord } from './ai/types';
 import type { ToolRoundResult } from './ai/tool-loop';
 import type { AILogMessage, ContextEntry, PromptToolCall, LogEvent } from './types';
 import { VerboseLogger } from './verbose-logger';
+
+// Sequential request ID counter for usage tracking
+let nextRequestId = 1;
+
+/** Create a ModelUsageRecord from provider TokenUsage */
+function createUsageRecord(usage: TokenUsage | undefined): ModelUsageRecord {
+  const requestId = nextRequestId++;
+  return {
+    requestId,
+    inputTokens: (usage?.inputTokens ?? 0) + (usage?.cacheCreationTokens ?? 0),
+    outputTokens: usage?.outputTokens ?? 0,
+    cachedInputTokens: usage?.cachedInputTokens ?? 0,
+    thinkingTokens: usage?.thinkingTokens ?? 0,
+  };
+}
+
+/** Find a model variable in the state and push a usage record onto it */
+function pushModelUsage(state: RuntimeState, modelName: string, record: ModelUsageRecord): void {
+  for (let i = state.callStack.length - 1; i >= 0; i--) {
+    const frame = state.callStack[i];
+    const variable = frame.locals[modelName];
+    if (variable?.vibeType === 'model' && variable.value) {
+      const model = variable.value as { usage: ModelUsageRecord[] };
+      model.usage.push(record);
+      return;
+    }
+  }
+}
 
 // AI execution result with optional usage and tool rounds
 export interface AIExecutionResult {
   value: unknown;
   usage?: TokenUsage;
   toolRounds?: ToolRoundResult[];  // Tool calling rounds that occurred during execution
+  retryAttempts?: Array<{ aiResponse: string; rawResponse?: string; followUpMessage: string; followUpResponse: string; rawFollowUpResponse?: string }>;  // Retries where AI didn't call tools
+  rawResponse?: string;  // Raw API response from provider (for verbose debugging)
   // Context for logging (single source of truth)
   messages?: AILogMessage[];  // Complete message sequence sent to model
   executionContext?: ContextEntry[];  // Structured execution context
@@ -370,12 +400,14 @@ export class Runtime {
           // Log AI error - include AI context if available (from RuntimeError)
           if (aiId) {
             const aiLogContext = (error instanceof RuntimeError && error.context?.__aiLogContext)
-              ? error.context.__aiLogContext as { messages?: unknown[]; response?: string; toolRounds?: unknown[] }
+              ? error.context.__aiLogContext as { messages?: unknown[]; response?: string; rawResponse?: string; toolRounds?: unknown[]; retryAttempts?: unknown[] }
               : undefined;
             this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, undefined, 0, aiError, aiLogContext ? {
               messages: aiLogContext.messages as AILogMessage[],
               response: aiLogContext.response,
+              rawResponse: aiLogContext.rawResponse,
               toolRounds: aiLogContext.toolRounds as any,
+              retryAttempts: aiLogContext.retryAttempts as any,
             } : undefined);
           }
           throw error;
@@ -388,6 +420,8 @@ export class Runtime {
             messages: result.messages,
             response: typeof result.value === 'string' ? result.value : JSON.stringify(result.value),
             toolRounds: result.toolRounds,
+            retryAttempts: result.retryAttempts,
+            rawResponse: result.rawResponse,
           });
         }
 
@@ -412,7 +446,11 @@ export class Runtime {
           };
         }
 
-        this.state = resumeWithAIResponse(this.state, result.value, interaction, result.toolRounds);
+        // Track token usage on model variable and result
+        const usageRecord = createUsageRecord(result.usage);
+        pushModelUsage(this.state, pendingAI.model, usageRecord);
+
+        this.state = resumeWithAIResponse(this.state, result.value, interaction, result.toolRounds, usageRecord);
       } else if (this.state.status === 'awaiting_tool') {
         // Handle tool calls
         if (!this.state.pendingToolCall) {
@@ -794,7 +832,9 @@ export class Runtime {
           throw new Error('State awaiting AI but no pending AI request');
         }
         const result = await this.aiProvider.execute(state.pendingAI.prompt);
-        state = resumeWithAIResponse(state, result.value);
+        const usageRecord = createUsageRecord(result.usage);
+        pushModelUsage(state, state.pendingAI.model, usageRecord);
+        state = resumeWithAIResponse(state, result.value, undefined, undefined, usageRecord);
       } else if (state.status === 'awaiting_tool') {
         if (!state.pendingToolCall) {
           throw new Error('State awaiting tool but no pending tool call');

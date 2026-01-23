@@ -2,6 +2,7 @@ import * as AST from '../ast';
 import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall, ToolCallRecord, VibeValue } from './types';
 import { createVibeValue } from './types';
 import type { ToolRoundResult } from './ai/tool-loop';
+import type { ModelUsageRecord } from './ai/types';
 
 // Options for creating initial state
 export interface InitialStateOptions {
@@ -113,7 +114,8 @@ export function resumeWithAIResponse(
   state: RuntimeState,
   response: unknown,
   interaction?: AIInteraction,
-  toolRounds?: ToolRoundResult[]
+  toolRounds?: ToolRoundResult[],
+  usageRecord?: ModelUsageRecord
 ): RuntimeState {
   if (state.status !== 'awaiting_ai' || !state.pendingAI) {
     throw new Error('Cannot resume: not awaiting AI response');
@@ -174,6 +176,7 @@ export function resumeWithAIResponse(
   const aiResultValue: VibeValue = createVibeValue(response, {
     source: 'ai',
     toolCalls: toolCallRecords,
+    usage: usageRecord,
   });
 
   // Create prompt entry with embedded tool calls (order: prompt → tools → response)

@@ -37,9 +37,17 @@ interface AICallContext {
   messages: AILogMessage[];
   // For complete context files (populated after AI call)
   response?: string;
+  rawResponse?: string;
   toolRounds?: Array<{
     toolCalls: Array<{ id: string; toolName: string; args: Record<string, unknown> }>;
     results: Array<{ toolCallId: string; result?: unknown; error?: string }>;
+  }>;
+  retryAttempts?: Array<{
+    aiResponse: string;
+    rawResponse?: string;
+    followUpMessage: string;
+    followUpResponse: string;
+    rawFollowUpResponse?: string;
   }>;
 }
 
@@ -164,9 +172,19 @@ export class VerboseLogger {
       lines.push('');
       lines.push('=== RESPONSE ===');
       lines.push('');
-      lines.push(context.response);
+      lines.push(context.response || '(empty)');
       lines.push('');
       lines.push('=== END RESPONSE ===');
+    }
+
+    // Add raw API response if available
+    if (context.rawResponse) {
+      lines.push('');
+      lines.push('=== RAW API RESPONSE ===');
+      lines.push('');
+      lines.push(context.rawResponse);
+      lines.push('');
+      lines.push('=== END RAW API RESPONSE ===');
     }
 
     // Add tool rounds if any
@@ -196,6 +214,30 @@ export class VerboseLogger {
       }
 
       lines.push('=== END TOOL EXECUTION ===');
+    }
+
+    // Add retry attempts if any (tool loop retries where AI didn't call tools)
+    if (context.retryAttempts && context.retryAttempts.length > 0) {
+      lines.push('');
+      lines.push('=== RETRY ATTEMPTS (AI did not call tools) ===');
+      lines.push('');
+
+      for (let i = 0; i < context.retryAttempts.length; i++) {
+        const attempt = context.retryAttempts[i];
+        lines.push(`--- Attempt ${i + 1} ---`);
+        lines.push(`AI Response (no tool calls): ${attempt.aiResponse || '(empty)'}`);
+        if (attempt.rawResponse) {
+          lines.push(`Raw API response:\n${attempt.rawResponse}`);
+        }
+        lines.push(`Follow-up sent: ${attempt.followUpMessage}`);
+        lines.push(`Follow-up response: ${attempt.followUpResponse || '(empty)'}`);
+        if (attempt.rawFollowUpResponse) {
+          lines.push(`Raw follow-up API response:\n${attempt.rawFollowUpResponse}`);
+        }
+        lines.push('');
+      }
+
+      lines.push('=== END RETRY ATTEMPTS ===');
     }
 
     const filePath = join(this.contextDir, `${id}.txt`);
@@ -339,6 +381,14 @@ export class VerboseLogger {
         toolCalls: Array<{ id: string; toolName: string; args: Record<string, unknown> }>;
         results: Array<{ toolCallId: string; result?: unknown; error?: string }>;
       }>;
+      retryAttempts?: Array<{
+        aiResponse: string;
+        rawResponse?: string;
+        followUpMessage: string;
+        followUpResponse: string;
+        rawFollowUpResponse?: string;
+      }>;
+      rawResponse?: string;
     }
   ): void {
     const event: AICompleteEvent = {
@@ -359,6 +409,22 @@ export class VerboseLogger {
 
     this.logEvent(event);
 
+    // Print raw API response to console for debugging
+    if (this.printToConsole && completionDetails?.rawResponse) {
+      console.log(`[${id}] Raw API response:\n${completionDetails.rawResponse}`);
+    }
+    if (this.printToConsole && completionDetails?.retryAttempts?.length) {
+      for (let i = 0; i < completionDetails.retryAttempts.length; i++) {
+        const attempt = completionDetails.retryAttempts[i];
+        if (attempt.rawResponse) {
+          console.log(`[${id}] Retry ${i + 1} - raw response (triggered retry):\n${attempt.rawResponse}`);
+        }
+        if (attempt.rawFollowUpResponse) {
+          console.log(`[${id}] Retry ${i + 1} - raw follow-up response:\n${attempt.rawFollowUpResponse}`);
+        }
+      }
+    }
+
     // Write context file with full details
     const context = this.aiContexts.get(id);
     if (context) {
@@ -371,6 +437,12 @@ export class VerboseLogger {
       }
       if (completionDetails?.toolRounds) {
         context.toolRounds = completionDetails.toolRounds;
+      }
+      if (completionDetails?.retryAttempts) {
+        context.retryAttempts = completionDetails.retryAttempts;
+      }
+      if (completionDetails?.rawResponse) {
+        context.rawResponse = completionDetails.rawResponse;
       }
 
       // Now write the full context file

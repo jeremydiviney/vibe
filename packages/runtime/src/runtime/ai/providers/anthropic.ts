@@ -190,7 +190,8 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
 
     // For text responses, parsedValue is just the content
     // For typed responses, the value comes from return tool calls (handled by tool-loop)
-    return { content, parsedValue: content, usage, toolCalls, stopReason };
+    const rawResponse = JSON.stringify(message, null, 2);
+    return { content, parsedValue: content, usage, toolCalls, stopReason, rawResponse };
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;

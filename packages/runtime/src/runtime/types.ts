@@ -4,6 +4,7 @@ import type { SourceLocation } from '../errors';
 import type { PendingToolCall } from './tools/types';
 export type { PendingToolCall } from './tools/types';
 import type { VibeModelValue } from './ai/client';
+import type { ModelUsageRecord } from './ai/types';
 
 // Runtime status
 export type RuntimeStatus =
@@ -46,6 +47,7 @@ export interface VibeValue {
   source: ValueSource;               // 'ai', 'user', or null (no source)
   isPrivate?: boolean;               // true if hidden from AI context
   asyncOperationId?: string;         // ID of pending async operation (when value is pending)
+  usage?: ModelUsageRecord;          // Token usage from the AI call that produced this value
 }
 
 // Type guard for VibeValue
@@ -73,6 +75,7 @@ export function createVibeValue(
     errDetails?: VibeError | null;
     isPrivate?: boolean;
     asyncOperationId?: string;
+    usage?: ModelUsageRecord;
   } = {}
 ): VibeValue {
   const result: VibeValue = {
@@ -89,6 +92,9 @@ export function createVibeValue(
   }
   if (options.asyncOperationId) {
     result.asyncOperationId = options.asyncOperationId;
+  }
+  if (options.usage) {
+    result.usage = options.usage;
   }
   return result;
 }

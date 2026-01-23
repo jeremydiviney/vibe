@@ -179,9 +179,8 @@ describe('Runtime Lexical Scoping', () => {
     state = runUntilPause(state);
 
     expect(state.status).toBe('completed');
-    const result = state.callStack[0].locals['result'].value as any;
-    // Model is accessible from function - just verify it's a model object
-    expect(result.__vibeModel).toBe(true);
+    // Model is accessible from function - vibeType propagates through function return
+    expect(state.callStack[0].locals['result'].vibeType).toBe('model');
   });
 
   test('cannot assign to global model from function', () => {
@@ -214,9 +213,8 @@ describe('Runtime Lexical Scoping', () => {
 
     expect(state.status).toBe('completed');
     expect(state.callStack[0].locals['result'].value).toBe('shadowed');
-    // Global model unchanged
-    const globalModel = state.callStack[0].locals['myModel'].value as any;
-    expect(globalModel.__vibeModel).toBe(true);
+    // Global model unchanged - check vibeType on VibeValue wrapper
+    expect(state.callStack[0].locals['myModel'].vibeType).toBe('model');
   });
 
   // ============================================================================

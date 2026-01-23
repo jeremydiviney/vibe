@@ -97,12 +97,12 @@ function applyContextMode(
         prompt = arg1.value;
       } else {
         // Identifier - check if it's a model or prompt variable
-        const varValue = lookupVariable(state, arg1.name);
-        if (varValue && typeof varValue === 'object' && '__vibeModel' in varValue) {
+        if (isModelVariable(state, arg1.name)) {
           // It's a model
           modelName = arg1.name;
         } else {
           // It's a prompt (text value)
+          const varValue = lookupVariable(state, arg1.name);
           prompt = String(varValue ?? '');
         }
       }
@@ -169,6 +169,19 @@ function lookupVariable(state: RuntimeState, name: string): unknown {
     }
   }
   return undefined;
+}
+
+/**
+ * Check if a variable is a model by looking at the VibeValue wrapper's vibeType.
+ */
+function isModelVariable(state: RuntimeState, name: string): boolean {
+  for (let i = state.callStack.length - 1; i >= 0; i--) {
+    const frame = state.callStack[i];
+    if (name in frame.locals) {
+      return frame.locals[name].vibeType === 'model';
+    }
+  }
+  return false;
 }
 
 // Get the next instruction that will be executed (or null if done/paused)
@@ -884,6 +897,18 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
         if (property === 'toolCalls') {
           return { ...state, lastResult: rawObject.toolCalls };
         }
+        // Reserved property: .usage - return per-request usage record (AI results)
+        // or a defensive copy of the model's accumulated usage array (models).
+        if (property === 'usage') {
+          if (rawObject.usage !== undefined) {
+            return { ...state, lastResult: rawObject.usage };
+          }
+          // For model variables, return a copy so push/pop can't mutate the original
+          if (rawObject.vibeType === 'model') {
+            const model = rawObject.value as { usage: unknown[] };
+            return { ...state, lastResult: [...model.usage] };
+          }
+        }
         // For all other properties, unwrap and continue with normal handling below
       }
 
@@ -898,6 +923,10 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
       // Handle built-in methods on arrays
       if (Array.isArray(object)) {
         if (property === 'len' || property === 'push' || property === 'pop') {
+          // Block mutating methods on const arrays
+          if ((property === 'push' || property === 'pop') && isVibeValue(rawObject) && rawObject.isConst) {
+            throw new RuntimeError(`Cannot ${property} on a constant array`, instruction.location);
+          }
           // Return bound method for calling
           return { ...state, lastResult: { __boundMethod: true, object, method: property } };
         }

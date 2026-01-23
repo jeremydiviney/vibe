@@ -1,6 +1,6 @@
 // AI Client - Main orchestration for AI API calls
 
-import type { AIProviderType, AIRequest, AIResponse, TargetType, ModelConfig, ProviderExecutor } from './types';
+import type { AIProviderType, AIRequest, AIResponse, TargetType, ModelConfig, ProviderExecutor, ModelUsageRecord } from './types';
 import type { VibeToolValue } from '../tools/types';
 import { withRetry } from './retry';
 import { executeOpenAI } from './providers/openai';
@@ -57,13 +57,13 @@ export function buildAIRequest(
 
 /** Model value as stored in runtime locals */
 export interface VibeModelValue {
-  __vibeModel: true;
   name: string | null;
   apiKey: string | null;
   url: string | null;
   provider?: AIProviderType | null;
   maxRetriesOnError?: number | null;
   tools?: VibeToolValue[];  // Tools available to this model for AI calls
+  usage: ModelUsageRecord[];  // Accumulated usage records from all AI calls
 }
 
 /**

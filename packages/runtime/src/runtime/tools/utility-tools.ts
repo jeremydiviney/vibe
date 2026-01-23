@@ -141,7 +141,12 @@ export const utilityTools = [
     executor: async (args: Record<string, unknown>) => {
       // Resolve AIResultObject to its value before printing
       const message = resolveValue(args.message);
-      console.log(message);
+      if (typeof message === 'object' && message !== null) {
+        const compact = JSON.stringify(message);
+        console.log(compact.length > 80 ? JSON.stringify(message, null, 2) : compact);
+      } else {
+        console.log(message);
+      }
       return true;
     },
   },

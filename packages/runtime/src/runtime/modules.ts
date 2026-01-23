@@ -405,7 +405,6 @@ function evaluateModelConfig(
   context: Record<string, VibeValue>
 ): Record<string, unknown> {
   return {
-    __vibeModel: true,
     name: evaluateModuleExpression(config.modelName, context),
     apiKey: evaluateModuleExpression(config.apiKey, context),
     url: evaluateModuleExpression(config.url, context),
@@ -413,6 +412,7 @@ function evaluateModelConfig(
     maxRetriesOnError: evaluateModuleExpression(config.maxRetriesOnError ?? null, context),
     thinkingLevel: evaluateModuleExpression(config.thinkingLevel ?? null, context),
     tools: evaluateModuleExpression(config.tools ?? null, context),
+    usage: [],
   };
 }
 

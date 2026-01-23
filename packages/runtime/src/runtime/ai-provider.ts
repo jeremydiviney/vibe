@@ -18,7 +18,7 @@ import {
   buildReturnInstruction,
   collectAndValidateFieldResults,
   isFieldReturnResult,
-  RETURN_FIELD_TOOL,
+  RETURN_TOOL_PREFIX,
 } from './ai/return-tools';
 import type { ExpectedField } from './types';
 import { RuntimeError } from '../errors';
@@ -31,24 +31,13 @@ function getModelValue(state: RuntimeState, modelName: string): VibeModelValue |
   for (let i = state.callStack.length - 1; i >= 0; i--) {
     const frame = state.callStack[i];
     const variable = frame.locals[modelName];
-    if (variable?.value && isModelValue(variable.value)) {
-      return variable.value;
+    if (variable?.vibeType === 'model' && variable.value) {
+      return variable.value as VibeModelValue;
     }
   }
   return null;
 }
 
-/**
- * Type guard for model values.
- */
-function isModelValue(value: unknown): value is VibeModelValue {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    '__vibeModel' in value &&
-    (value as VibeModelValue).__vibeModel === true
-  );
-}
 
 /**
  * Get target type from the pending variable declaration context.
@@ -209,7 +198,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
 
       // Determine if this request should use tool-based return
       const useToolReturn = expectedFields !== null && expectedFields.length > 0;
-      const returnToolName = useToolReturn ? RETURN_FIELD_TOOL : null;
+      const returnToolName = useToolReturn ? RETURN_TOOL_PREFIX : null;
 
       // Append return instruction to prompt if we have expected fields
       const finalPrompt = expectedFields
@@ -258,7 +247,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const isDo = aiType === 'do' || aiType === 'compress';
       const expectedFieldNames = expectedFields?.map(f => f.name);
-      const { response, rounds, returnFieldResults, completedViaReturnTool } = await executeWithTools(
+      const { response, rounds, returnFieldResults, completedViaReturnTool, retryAttempts } = await executeWithTools(
         request,
         allTools,
         state.rootDir,
@@ -290,7 +279,9 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const aiLogContext = {
         messages: aiContext.messages,
         response: response.content,
+        rawResponse: response.rawResponse,
         toolRounds: rounds.length > 0 ? rounds : undefined,
+        retryAttempts,
       };
       let finalValue: unknown;
       if (useToolReturn) {
@@ -316,7 +307,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
           }
         } else {
           // After max retries, AI still didn't call return tool
-          throw new RuntimeError(`AI failed to call ${returnToolName} after multiple attempts`, location, undefined, { __aiLogContext: aiLogContext });
+          throw new RuntimeError(`AI failed to call return tools after multiple attempts`, location, undefined, { __aiLogContext: aiLogContext });
         }
       } else {
         // Check if model used return tool anyway (even when not expected)
@@ -340,6 +331,8 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         value: finalValue,
         usage: response.usage,
         toolRounds: rounds.length > 0 ? rounds : undefined,
+        retryAttempts,
+        rawResponse: response.rawResponse,
         // Context for logging (single source of truth)
         messages: aiContext.messages,
         executionContext: aiContext.executionContext,

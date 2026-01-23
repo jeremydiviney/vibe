@@ -101,6 +101,12 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
     if (request.followUpMessage) {
       contents.push({ role: 'user', parts: [{ text: request.followUpMessage }] });
     }
+  } else if (request.followUpMessage) {
+    // No previous tool calls but has follow-up message (e.g., retry asking AI to call tools)
+    contents = [
+      { role: 'user' as const, parts: [{ text: combinedPrompt }] },
+      { role: 'user' as const, parts: [{ text: request.followUpMessage }] },
+    ];
   } else {
     // Simple single prompt
     contents = combinedPrompt;
@@ -182,7 +188,11 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
 
     // For text responses, parsedValue is just the content
     // For typed responses, the value comes from return tool calls (handled by tool-loop)
-    return { content, parsedValue: content, usage, toolCalls, stopReason };
+    const rawResponse = JSON.stringify({
+      candidates: response.candidates,
+      usageMetadata: response.usageMetadata,
+    }, null, 2);
+    return { content, parsedValue: content, usage, toolCalls, stopReason, rawResponse };
   } catch (error) {
     // Handle Google API errors
     if (error instanceof Error) {

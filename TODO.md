@@ -204,6 +204,12 @@
   - StringLiteral now scans for interpolation patterns in dependency analysis
   - Example: `async let x = do "..."; do "Result: {x}"` correctly awaits x
 
+### Runtime Refactoring
+- [ ] Replace `__vibeModel` flag with `vibeType: 'model'` on VibeValue wrapper
+  - Remove redundant type discriminator from inner model object
+  - Use VibeValue's existing `vibeType` field instead of `__vibeModel: true` on the value
+  - Update `isModelValue`, `getModelValue`, `pushModelUsage` and other model checks
+
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)
 - [ ] `?` operator for error propagation (`riskyOp()?`)

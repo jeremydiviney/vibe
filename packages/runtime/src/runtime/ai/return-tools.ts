@@ -1,12 +1,24 @@
 // Return Tools for Tool-Based Type Assignment
-// Single generic tool for ALL typed AI returns (number, boolean, text[], json, destructuring fields)
+// Type-specific tools for AI returns, ensuring correct schemas for all providers (including Google).
 
-import type { VibeToolValue } from '../tools/types';
+import type { VibeToolValue, JsonSchema } from '../tools/types';
 import type { TargetType } from './types';
 import type { ExpectedField } from '../types';
 
-// Single tool name for all return operations
-export const RETURN_FIELD_TOOL = '__vibe_return_field';
+// Tool name prefix for all return operations
+export const RETURN_TOOL_PREFIX = '__vibe_return_';
+
+// Fixed set of type-specific return tools
+const RETURN_TOOL_NAMES = {
+  text: '__vibe_return_text',
+  number: '__vibe_return_number',
+  boolean: '__vibe_return_boolean',
+  json: '__vibe_return_json',
+  text_array: '__vibe_return_text_array',
+  number_array: '__vibe_return_number_array',
+  boolean_array: '__vibe_return_boolean_array',
+  json_array: '__vibe_return_json_array',
+} as const;
 
 /**
  * Check if we should use tool-based return for this type.
@@ -18,58 +30,109 @@ export function shouldUseReturnTool(targetType: TargetType): boolean {
 }
 
 /**
- * Check if a tool call is the return field tool.
+ * Check if a tool call is a return tool (any of the type-specific tools).
  */
 export function isReturnToolCall(toolName: string): boolean {
-  return toolName === RETURN_FIELD_TOOL;
+  return toolName.startsWith(RETURN_TOOL_PREFIX);
 }
 
+/**
+ * Get the tool name for a given Vibe type.
+ */
+export function getReturnToolName(vibeType: string): string {
+  switch (vibeType) {
+    case 'text': return RETURN_TOOL_NAMES.text;
+    case 'number': return RETURN_TOOL_NAMES.number;
+    case 'boolean': return RETURN_TOOL_NAMES.boolean;
+    case 'text[]': return RETURN_TOOL_NAMES.text_array;
+    case 'number[]': return RETURN_TOOL_NAMES.number_array;
+    case 'boolean[]': return RETURN_TOOL_NAMES.boolean_array;
+    case 'json[]': return RETURN_TOOL_NAMES.json_array;
+    default: return RETURN_TOOL_NAMES.json;
+  }
+}
 
 /**
- * Create the single generic __vibe_return_field tool.
- * Works for both single-value returns (const x: number = do "...")
- * and multi-value destructuring (const {a: text, b: number} = do "...").
- *
- * The field name and type expectations are specified in the prompt.
- * Validation happens post-collection via collectAndValidateFieldResults().
+ * Create a type-specific return tool.
  */
-function createReturnFieldTool(): VibeToolValue {
+function createTypedReturnTool(
+  name: string,
+  description: string,
+  valueSchema: JsonSchema
+): VibeToolValue {
   return {
     __vibeTool: true,
-    name: RETURN_FIELD_TOOL,
+    name,
     schema: {
-      name: RETURN_FIELD_TOOL,
-      description: 'Return a typed value for a specific field. Call once per field.',
+      name,
+      description,
       parameters: [
         {
           name: 'field',
           type: { type: 'string' },
-          description: 'The field name to return (e.g., "value", "name", "age")',
+          description: 'The field name to return',
           required: true,
         },
         {
           name: 'value',
-          // Use 'object' as a permissive type - actual validation happens post-collection
-          // This allows numbers, strings, booleans, arrays, and objects to pass through
-          type: { type: 'object', additionalProperties: true },
-          description: 'The value to return for this field (any JSON-compatible type)',
+          type: valueSchema,
           required: true,
         },
       ],
     },
     executor: async (args) => {
-      // No validation here - just pass through
-      // Validation happens in collectAndValidateFieldResults()
       return { __fieldReturn: true, field: args.field, value: args.value };
     },
   };
 }
 
 /**
- * Get the return tool. Returns array for backwards compatibility.
+ * Get the fixed set of type-specific return tools.
+ * These are always included in the system context for caching.
  */
 export function getReturnTools(): VibeToolValue[] {
-  return [createReturnFieldTool()];
+  return [
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.text,
+      'Return a text (string) value for a field.',
+      { type: 'string' }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.number,
+      'Return a number value for a field.',
+      { type: 'number' }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.boolean,
+      'Return a boolean value for a field.',
+      { type: 'boolean' }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.json,
+      'Return a JSON object value for a field.',
+      { type: 'object' }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.text_array,
+      'Return an array of text (string) values for a field.',
+      { type: 'array', items: { type: 'string' } }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.number_array,
+      'Return an array of number values for a field.',
+      { type: 'array', items: { type: 'number' } }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.boolean_array,
+      'Return an array of boolean values for a field.',
+      { type: 'array', items: { type: 'boolean' } }
+    ),
+    createTypedReturnTool(
+      RETURN_TOOL_NAMES.json_array,
+      'Return an array of JSON object values for a field.',
+      { type: 'array', items: { type: 'object' } }
+    ),
+  ];
 }
 
 /**
@@ -333,12 +396,12 @@ export function buildReturnInstruction(expectedFields: ExpectedField[]): string 
 
   const flattenedFields = flattenExpectedFields(expectedFields);
   const callList = flattenedFields
-    .map((f) => `- Call __vibe_return_field for "${f.path}" (${f.type})`)
+    .map((f) => `- Call ${getReturnToolName(f.type)}(field: "${f.path}", value: <${f.type}>)`)
     .join('\n');
 
   return `
 
-IMPORTANT: You MUST call __vibe_return_field for EACH of the following fields:
+IMPORTANT: You MUST use the return tools to provide your answer. Call the appropriate typed tool for EACH field:
 ${callList}
 
 You must make exactly ${flattenedFields.length} tool call${flattenedFields.length > 1 ? 's' : ''}. Do not respond with plain text.`;

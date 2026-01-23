@@ -79,6 +79,10 @@ export function execDeclareVar(
   let errDetails: VibeValue['errDetails'] = null;
   let asyncOperationId: string | undefined;
 
+  let usage: VibeValue['usage'];
+
+  let sourceVibeType: VibeType = null;
+
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
     toolCalls = rawValue.toolCalls;
@@ -86,18 +90,20 @@ export function execDeclareVar(
     err = rawValue.err;  // Preserve error boolean from operations like null arithmetic
     errDetails = rawValue.errDetails;  // Preserve error details
     asyncOperationId = rawValue.asyncOperationId;  // Preserve async operation ID for pending async
+    usage = rawValue.usage;  // Preserve usage record from AI responses
+    sourceVibeType = rawValue.vibeType;  // Preserve type from source value
   } else {
     innerValue = rawValue;
   }
 
   const { value: validatedValue, inferredType } = validateAndCoerce(innerValue, type, name, location, source);
 
-  // Use explicit type if provided, otherwise use inferred type
-  const finalType = type ?? inferredType;
+  // Use explicit type if provided, then source type, then inferred type
+  const finalType = type ?? sourceVibeType ?? inferredType;
 
   const newLocals = {
     ...frame.locals,
-    [name]: createVibeValue(validatedValue, { isConst, vibeType: finalType, source, toolCalls, err, errDetails, isPrivate, asyncOperationId }),
+    [name]: createVibeValue(validatedValue, { isConst, vibeType: finalType, source, toolCalls, err, errDetails, isPrivate, asyncOperationId, usage }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking
@@ -170,6 +176,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   let source = state.lastResultSource;
   let err: VibeValue['err'] = false;
   let errDetails: VibeValue['errDetails'] = null;
+  let usage: VibeValue['usage'];
 
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
@@ -177,6 +184,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
     source = rawValue.source ?? source;
     err = rawValue.err;  // Preserve error boolean from operations like null arithmetic
     errDetails = rawValue.errDetails;  // Preserve error details
+    usage = rawValue.usage;  // Preserve usage record from AI responses
   } else {
     innerValue = rawValue;
   }
@@ -198,7 +206,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
     const newGlobals = {
       ...module.globals,
-      [name]: { ...variable, value: validatedValue, source, toolCalls, err, errDetails },
+      [name]: { ...variable, value: validatedValue, source, toolCalls, err, errDetails, usage },
     };
 
     return {
@@ -224,7 +232,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
-    [name]: { ...variable, value: validatedValue, source, toolCalls, err, errDetails },
+    [name]: { ...variable, value: validatedValue, source, toolCalls, err, errDetails, usage },
   };
 
   // Add assignment to ordered entries with snapshotted value for context tracking

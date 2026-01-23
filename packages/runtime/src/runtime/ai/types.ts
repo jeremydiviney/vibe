@@ -53,6 +53,15 @@ export interface TokenUsage {
   thinkingTokens?: number;
 }
 
+/** Per-request usage record tracked on model variables and AI result values */
+export interface ModelUsageRecord {
+  requestId: number;         // Sequential ID from global counter
+  inputTokens: number;      // Input tokens (includes cacheCreation tokens)
+  outputTokens: number;
+  cachedInputTokens: number; // Tokens served from cache
+  thinkingTokens: number;   // Reasoning/thinking tokens
+}
+
 /** Tool call parsed from AI response */
 export interface AIToolCall {
   /** Provider-assigned ID for the tool call */
@@ -89,6 +98,8 @@ export interface AIResponse {
   toolCalls?: AIToolCall[];
   /** Why the model stopped generating */
   stopReason?: AIStopReason;
+  /** Raw API response (for verbose debugging) */
+  rawResponse?: string;
 }
 
 /** Custom error for AI operations */

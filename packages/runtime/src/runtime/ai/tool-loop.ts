@@ -31,6 +31,20 @@ export interface ToolLoopOptions {
   expectedFieldNames?: string[];
 }
 
+/** A retry attempt where AI didn't call tools */
+export interface RetryAttempt {
+  /** The AI's response that triggered the retry (text response without tool calls) */
+  aiResponse: string;
+  /** Raw API response that triggered the retry (for debugging) */
+  rawResponse?: string;
+  /** The follow-up message sent to the AI */
+  followUpMessage: string;
+  /** The AI's response to the follow-up */
+  followUpResponse: string;
+  /** Raw API response to the follow-up (for debugging) */
+  rawFollowUpResponse?: string;
+}
+
 /** Result of the tool execution loop */
 export interface ToolLoopResult {
   /** Final AI response */
@@ -41,6 +55,8 @@ export interface ToolLoopResult {
   returnFieldResults?: unknown[];
   /** Whether execution completed via return tool */
   completedViaReturnTool?: boolean;
+  /** Retry attempts where AI didn't call tools (for debugging) */
+  retryAttempts?: RetryAttempt[];
 }
 
 /** Result of a tool execution round */
@@ -126,6 +142,7 @@ export async function executeWithTools(
   let roundCount = 0;
   let returnFieldResults: unknown[] = [];
   let completedViaReturnTool = false;
+  const retryAttempts: RetryAttempt[] = [];
 
   // Accumulate token usage across all rounds
   let totalUsage: TokenUsage = response.usage ?? { inputTokens: 0, outputTokens: 0 };
@@ -172,7 +189,7 @@ export async function executeWithTools(
         if (missingFields.length > 0) {
           // Not all fields returned - ask AI to provide the missing ones
           const missingList = missingFields.map(f => `"${f}"`).join(', ');
-          const followUpMessage = `You are missing required fields. Call ${expectedReturnTool} for each of: ${missingList}`;
+          const followUpMessage = `You are missing required fields. Use the appropriate __vibe_return_* tool for each of: ${missingList}`;
 
           request = {
             ...request,
@@ -205,8 +222,12 @@ export async function executeWithTools(
     else if (expectedReturnTool && !completedViaReturnTool) {
       roundCount++;
 
+      // Capture the AI's response that triggered this retry
+      const aiResponse = response.content ?? '';
+      const rawResponse = response.rawResponse;
+
       // Send follow-up message asking AI to use the tool
-      const followUpMessage = `You must call the ${expectedReturnTool} tool to return your answer. Do not respond with plain text.`;
+      const followUpMessage = `You must use the ${expectedReturnTool}* tools (e.g., __vibe_return_text, __vibe_return_boolean, etc.) to return your answer. Do not respond with plain text.`;
       request = {
         ...request,
         previousToolCalls: undefined,
@@ -215,6 +236,15 @@ export async function executeWithTools(
       };
       response = await executeProvider(request);
       totalUsage = accumulateUsage(totalUsage, response.usage);
+
+      // Track retry attempt for debugging
+      retryAttempts.push({
+        aiResponse,
+        rawResponse,
+        followUpMessage,
+        followUpResponse: response.content ?? '',
+        rawFollowUpResponse: response.rawResponse,
+      });
     }
     // Case 3: No tool calls and no expected return tool - we're done
     else {
@@ -239,6 +269,7 @@ export async function executeWithTools(
     rounds,
     returnFieldResults: returnFieldResults.length > 0 ? returnFieldResults : undefined,
     completedViaReturnTool,
+    retryAttempts: retryAttempts.length > 0 ? retryAttempts : undefined,
   };
 }
 

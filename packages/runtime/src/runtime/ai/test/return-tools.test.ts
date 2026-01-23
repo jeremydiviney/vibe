@@ -6,7 +6,8 @@ import {
   collectAndValidateFieldResults,
   buildReturnInstruction,
   isFieldReturnResult,
-  RETURN_FIELD_TOOL,
+  RETURN_TOOL_PREFIX,
+  getReturnToolName,
 } from '../return-tools';
 import { executeWithTools } from '../tool-loop';
 import type { AIRequest, AIResponse } from '../types';
@@ -15,8 +16,15 @@ const TEST_ROOT_DIR = process.cwd();
 
 describe('return-tools', () => {
   describe('isReturnToolCall', () => {
-    it('should return true for return field tool', () => {
-      expect(isReturnToolCall(RETURN_FIELD_TOOL)).toBe(true);
+    it('should return true for type-specific return tools', () => {
+      expect(isReturnToolCall('__vibe_return_text')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_number')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_boolean')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_json')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_text_array')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_number_array')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_boolean_array')).toBe(true);
+      expect(isReturnToolCall('__vibe_return_json_array')).toBe(true);
     });
 
     it('should return false for other tools', () => {
@@ -64,58 +72,83 @@ describe('return-tools', () => {
   });
 
   describe('getReturnTools', () => {
-    it('should return array with single return field tool', () => {
+    it('should return array with 8 type-specific return tools', () => {
       const tools = getReturnTools();
-      expect(tools).toHaveLength(1);
-      expect(tools[0].name).toBe(RETURN_FIELD_TOOL);
+      expect(tools).toHaveLength(8);
+      expect(tools.map(t => t.name)).toEqual([
+        '__vibe_return_text',
+        '__vibe_return_number',
+        '__vibe_return_boolean',
+        '__vibe_return_json',
+        '__vibe_return_text_array',
+        '__vibe_return_number_array',
+        '__vibe_return_boolean_array',
+        '__vibe_return_json_array',
+      ]);
     });
 
-    it('should return tool with valid schema', () => {
+    it('should return tools with valid schemas', () => {
       const tools = getReturnTools();
-      const tool = tools[0];
 
-      expect(tool.__vibeTool).toBe(true);
-      expect(tool.schema.name).toBe(RETURN_FIELD_TOOL);
-      expect(tool.schema.parameters).toHaveLength(2);
-      expect(tool.schema.parameters[0].name).toBe('field');
-      expect(tool.schema.parameters[0].required).toBe(true);
-      expect(tool.schema.parameters[1].name).toBe('value');
-      expect(tool.schema.parameters[1].required).toBe(true);
+      for (const tool of tools) {
+        expect(tool.__vibeTool).toBe(true);
+        expect(tool.schema.name).toBe(tool.name);
+        expect(tool.schema.parameters).toHaveLength(2);
+        expect(tool.schema.parameters[0].name).toBe('field');
+        expect(tool.schema.parameters[0].required).toBe(true);
+        expect(tool.schema.parameters[1].name).toBe('value');
+        expect(tool.schema.parameters[1].required).toBe(true);
+      }
+    });
+
+    it('should have correct value types per tool', () => {
+      const tools = getReturnTools();
+      const typeMap = new Map(tools.map(t => [t.name, t.schema.parameters[1].type]));
+
+      expect(typeMap.get('__vibe_return_text')).toEqual({ type: 'string' });
+      expect(typeMap.get('__vibe_return_number')).toEqual({ type: 'number' });
+      expect(typeMap.get('__vibe_return_boolean')).toEqual({ type: 'boolean' });
+      expect(typeMap.get('__vibe_return_json')).toEqual({ type: 'object' });
+      expect(typeMap.get('__vibe_return_text_array')).toEqual({ type: 'array', items: { type: 'string' } });
+      expect(typeMap.get('__vibe_return_number_array')).toEqual({ type: 'array', items: { type: 'number' } });
+      expect(typeMap.get('__vibe_return_boolean_array')).toEqual({ type: 'array', items: { type: 'boolean' } });
+      expect(typeMap.get('__vibe_return_json_array')).toEqual({ type: 'array', items: { type: 'object' } });
     });
   });
 
-  describe('return field tool executor', () => {
-    it('should return field return result object', async () => {
+  describe('return tool executors', () => {
+    it('should return field return result from each typed tool', async () => {
       const tools = getReturnTools();
-      const fieldTool = tools[0];
+      const toolMap = new Map(tools.map(t => [t.name, t]));
 
-      const result = await fieldTool.executor({ field: 'value', value: 42 });
-      expect(result).toEqual({ __fieldReturn: true, field: 'value', value: 42 });
-    });
+      // Text tool
+      const textResult = await toolMap.get('__vibe_return_text')!.executor({ field: 's', value: 'hello' });
+      expect(textResult).toEqual({ __fieldReturn: true, field: 's', value: 'hello' });
 
-    it('should pass through any value type', async () => {
-      const tools = getReturnTools();
-      const fieldTool = tools[0];
+      // Number tool
+      const numResult = await toolMap.get('__vibe_return_number')!.executor({ field: 'n', value: 123 });
+      expect(numResult).toEqual({ __fieldReturn: true, field: 'n', value: 123 });
 
-      // Numbers
-      const num = await fieldTool.executor({ field: 'n', value: 123 });
-      expect(num).toEqual({ __fieldReturn: true, field: 'n', value: 123 });
+      // Boolean tool
+      const boolResult = await toolMap.get('__vibe_return_boolean')!.executor({ field: 'b', value: true });
+      expect(boolResult).toEqual({ __fieldReturn: true, field: 'b', value: true });
 
-      // Strings
-      const str = await fieldTool.executor({ field: 's', value: 'hello' });
-      expect(str).toEqual({ __fieldReturn: true, field: 's', value: 'hello' });
+      // JSON tool
+      const objResult = await toolMap.get('__vibe_return_json')!.executor({ field: 'o', value: { name: 'Alice' } });
+      expect(objResult).toEqual({ __fieldReturn: true, field: 'o', value: { name: 'Alice' } });
 
-      // Booleans
-      const bool = await fieldTool.executor({ field: 'b', value: true });
-      expect(bool).toEqual({ __fieldReturn: true, field: 'b', value: true });
+      // Typed array tools
+      const textArr = await toolMap.get('__vibe_return_text_array')!.executor({ field: 'a', value: ['a', 'b'] });
+      expect(textArr).toEqual({ __fieldReturn: true, field: 'a', value: ['a', 'b'] });
 
-      // Arrays
-      const arr = await fieldTool.executor({ field: 'a', value: [1, 2, 3] });
-      expect(arr).toEqual({ __fieldReturn: true, field: 'a', value: [1, 2, 3] });
+      const numArr = await toolMap.get('__vibe_return_number_array')!.executor({ field: 'a', value: [1, 2, 3] });
+      expect(numArr).toEqual({ __fieldReturn: true, field: 'a', value: [1, 2, 3] });
 
-      // Objects
-      const obj = await fieldTool.executor({ field: 'o', value: { name: 'Alice' } });
-      expect(obj).toEqual({ __fieldReturn: true, field: 'o', value: { name: 'Alice' } });
+      const boolArr = await toolMap.get('__vibe_return_boolean_array')!.executor({ field: 'a', value: [true, false] });
+      expect(boolArr).toEqual({ __fieldReturn: true, field: 'a', value: [true, false] });
+
+      const jsonArr = await toolMap.get('__vibe_return_json_array')!.executor({ field: 'a', value: [{ x: 1 }] });
+      expect(jsonArr).toEqual({ __fieldReturn: true, field: 'a', value: [{ x: 1 }] });
     });
   });
 
@@ -378,19 +411,45 @@ describe('return-tools', () => {
       expect(buildReturnInstruction([])).toBe('');
     });
 
-    it('should build instruction for single field', () => {
+    it('should build instruction for single number field', () => {
       const instruction = buildReturnInstruction([{ name: 'value', type: 'number' }]);
-      expect(instruction).toContain('__vibe_return_field');
-      expect(instruction).toContain('"value" (number)');
+      expect(instruction).toContain('__vibe_return_number');
+      expect(instruction).toContain('"value"');
     });
 
-    it('should build instruction for multiple fields', () => {
+    it('should build instruction for multiple fields with correct tool names', () => {
       const instruction = buildReturnInstruction([
         { name: 'name', type: 'text' },
         { name: 'age', type: 'number' },
+        { name: 'active', type: 'boolean' },
       ]);
-      expect(instruction).toContain('"name" (text)');
-      expect(instruction).toContain('"age" (number)');
+      expect(instruction).toContain('__vibe_return_text');
+      expect(instruction).toContain('"name"');
+      expect(instruction).toContain('__vibe_return_number');
+      expect(instruction).toContain('"age"');
+      expect(instruction).toContain('__vibe_return_boolean');
+      expect(instruction).toContain('"active"');
+    });
+
+    it('should use typed array tools for array types', () => {
+      const numArr = buildReturnInstruction([{ name: 'nums', type: 'number[]' }]);
+      expect(numArr).toContain('__vibe_return_number_array');
+      expect(numArr).toContain('"nums"');
+
+      const textArr = buildReturnInstruction([{ name: 'names', type: 'text[]' }]);
+      expect(textArr).toContain('__vibe_return_text_array');
+
+      const boolArr = buildReturnInstruction([{ name: 'flags', type: 'boolean[]' }]);
+      expect(boolArr).toContain('__vibe_return_boolean_array');
+
+      const jsonArr = buildReturnInstruction([{ name: 'items', type: 'json[]' }]);
+      expect(jsonArr).toContain('__vibe_return_json_array');
+    });
+
+    it('should use json tool for json type', () => {
+      const instruction = buildReturnInstruction([{ name: 'data', type: 'json' }]);
+      expect(instruction).toContain('__vibe_return_json');
+      expect(instruction).toContain('"data"');
     });
   });
 });
@@ -407,11 +466,11 @@ describe('executeWithTools with return tools', () => {
       model: { name: 'test', apiKey: 'key', url: null },
     };
 
-    // AI calls return tool with correct value
+    // AI calls the number return tool with correct value
     const executeProvider = async (): Promise<AIResponse> => ({
       content: '',
       parsedValue: '',
-      toolCalls: [{ id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'value', value: 42 } }],
+      toolCalls: [{ id: 'call_1', toolName: '__vibe_return_number', args: { field: 'value', value: 42 } }],
       stopReason: 'tool_use',
     });
 
@@ -420,7 +479,7 @@ describe('executeWithTools with return tools', () => {
       tools,
       TEST_ROOT_DIR,
       executeProvider,
-      { expectedReturnTool: RETURN_FIELD_TOOL }
+      { expectedReturnTool: RETURN_TOOL_PREFIX }
     );
 
     expect(completedViaReturnTool).toBe(true);
@@ -429,7 +488,7 @@ describe('executeWithTools with return tools', () => {
     expect(rounds).toHaveLength(1);
   });
 
-  it('should collect multiple field results', async () => {
+  it('should collect multiple field results with different typed tools', async () => {
     const tools = getReturnTools();
 
     const request: AIRequest = {
@@ -440,13 +499,13 @@ describe('executeWithTools with return tools', () => {
       model: { name: 'test', apiKey: 'key', url: null },
     };
 
-    // AI calls return tool twice in one response
+    // AI calls text tool for name and number tool for age
     const executeProvider = async (): Promise<AIResponse> => ({
       content: '',
       parsedValue: '',
       toolCalls: [
-        { id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'name', value: 'Alice' } },
-        { id: 'call_2', toolName: RETURN_FIELD_TOOL, args: { field: 'age', value: 30 } },
+        { id: 'call_1', toolName: '__vibe_return_text', args: { field: 'name', value: 'Alice' } },
+        { id: 'call_2', toolName: '__vibe_return_number', args: { field: 'age', value: 30 } },
       ],
       stopReason: 'tool_use',
     });
@@ -456,7 +515,7 @@ describe('executeWithTools with return tools', () => {
       tools,
       TEST_ROOT_DIR,
       executeProvider,
-      { expectedReturnTool: RETURN_FIELD_TOOL }
+      { expectedReturnTool: RETURN_TOOL_PREFIX }
     );
 
     expect(completedViaReturnTool).toBe(true);
@@ -494,7 +553,7 @@ describe('executeWithTools with return tools', () => {
       return {
         content: '',
         parsedValue: '',
-        toolCalls: [{ id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'value', value: 42 } }],
+        toolCalls: [{ id: 'call_1', toolName: '__vibe_return_number', args: { field: 'value', value: 42 } }],
         stopReason: 'tool_use',
       };
     };
@@ -504,14 +563,14 @@ describe('executeWithTools with return tools', () => {
       tools,
       TEST_ROOT_DIR,
       executeProvider,
-      { expectedReturnTool: RETURN_FIELD_TOOL, maxRounds: 3 }
+      { expectedReturnTool: RETURN_TOOL_PREFIX, maxRounds: 3 }
     );
 
     expect(callCount).toBe(2);
     expect(completedViaReturnTool).toBe(true);
     expect(returnFieldResults).toHaveLength(1);
     // Retry sent followUpMessage to AI
-    expect(receivedFollowUp).toContain('must call');
+    expect(receivedFollowUp).toContain('must use');
     // Only the successful tool call round is recorded
     expect(rounds).toHaveLength(1);
   });
@@ -536,7 +595,7 @@ describe('executeWithTools with return tools', () => {
         return {
           content: '',
           parsedValue: '',
-          toolCalls: [{ id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'response', value: true } }],
+          toolCalls: [{ id: 'call_1', toolName: '__vibe_return_boolean', args: { field: 'response', value: true } }],
           stopReason: 'tool_use',
         };
       }
@@ -545,7 +604,7 @@ describe('executeWithTools with return tools', () => {
       return {
         content: '',
         parsedValue: '',
-        toolCalls: [{ id: 'call_2', toolName: RETURN_FIELD_TOOL, args: { field: 'correct', value: false } }],
+        toolCalls: [{ id: 'call_2', toolName: '__vibe_return_boolean', args: { field: 'correct', value: false } }],
         stopReason: 'tool_use',
       };
     };
@@ -555,7 +614,7 @@ describe('executeWithTools with return tools', () => {
       tools,
       TEST_ROOT_DIR,
       executeProvider,
-      { expectedReturnTool: RETURN_FIELD_TOOL, expectedFieldNames: ['response', 'correct'], maxRounds: 3 }
+      { expectedReturnTool: RETURN_TOOL_PREFIX, expectedFieldNames: ['response', 'correct'], maxRounds: 3 }
     );
 
     expect(callCount).toBe(2);
