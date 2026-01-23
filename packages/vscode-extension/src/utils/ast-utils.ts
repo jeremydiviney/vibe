@@ -89,7 +89,7 @@ export function getVibeImportForIdentifier(
 // Declaration info returned by findDeclaration
 export interface DeclarationInfo {
   name: string;
-  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'destructured' | 'import';
+  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'destructured' | 'import' | 'type';
   location: { line: number; column: number };
   node: AST.Node;
   importSource?: string;      // For imports: the source file path
@@ -98,7 +98,7 @@ export interface DeclarationInfo {
 
 interface NodeInfo {
   node: AST.Node;
-  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'identifier' | 'destructured';
+  kind: 'function' | 'tool' | 'model' | 'variable' | 'constant' | 'parameter' | 'identifier' | 'destructured' | 'type';
   name: string;
   type?: string;
   description?: string;
@@ -177,7 +177,7 @@ function findInStatement(
           node: statement,
           kind: 'variable',
           name: statement.name,
-          type: statement.typeAnnotation ?? undefined,
+          type: statement.vibeType ?? undefined,
         };
       }
       break;
@@ -188,7 +188,7 @@ function findInStatement(
           node: statement,
           kind: 'constant',
           name: statement.name,
-          type: statement.typeAnnotation ?? undefined,
+          type: statement.vibeType ?? undefined,
         };
       }
       break;
@@ -205,6 +205,18 @@ function findInStatement(
             description: statement.isConst ? 'const destructuring' : 'let destructuring',
           };
         }
+      }
+      break;
+
+    case 'TypeDeclaration':
+      if (isPositionAtName(statement.location, statement.name, line, column)) {
+        const fields = statement.structure.fields.map((f: AST.StructuralTypeField) => `${f.name}: ${f.type}`).join(', ');
+        return {
+          node: statement,
+          kind: 'type' as const,
+          name: statement.name,
+          type: `type { ${fields} }`,
+        };
       }
       break;
 
@@ -228,13 +240,13 @@ function isPositionAtName(
 }
 
 function formatFunctionSignature(func: AST.FunctionDeclaration): string {
-  const params = func.params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+  const params = func.params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
   const returnType = func.returnType ? `: ${func.returnType}` : '';
   return `function(${params})${returnType}`;
 }
 
 function formatToolSignature(tool: AST.ToolDeclaration): string {
-  const params = tool.params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+  const params = tool.params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
   const returnType = tool.returnType ? `: ${tool.returnType}` : '';
   return `tool(${params})${returnType}`;
 }
@@ -281,6 +293,11 @@ export function getNodeDescription(info: NodeInfo): string {
       lines.push(`**${info.name}** (destructured field)`);
       if (info.type) lines.push(`Type: \`${info.type}\``);
       if (info.description) lines.push('', info.description);
+      break;
+
+    case 'type':
+      lines.push(`**${info.name}** (type)`);
+      if (info.type) lines.push(`\`${info.type}\``);
       break;
 
     case 'identifier':
@@ -431,6 +448,12 @@ function findIdentifierInStatement(
     case 'AsyncStatement':
       // Fire-and-forget async: async do/vibe/ts/function()
       return findIdentifierInExpression(statement.expression, line, column);
+
+    case 'TypeDeclaration':
+      if (isPositionAtDeclarationName(statement.location, 'type', statement.name, line, column)) {
+        return statement.name;
+      }
+      break;
 
     case 'ExportDeclaration':
       // Delegate to the inner declaration
@@ -841,6 +864,18 @@ function collectDeclarations(
     case 'ExportDeclaration':
       // Delegate to the inner declaration
       collectDeclarations(statement.declaration, declarations);
+      break;
+
+    case 'TypeDeclaration':
+      declarations.push({
+        name: statement.name,
+        kind: 'type',
+        location: {
+          line: statement.location.line,
+          column: getDeclarationNameColumn('type', statement.location.column),
+        },
+        node: statement,
+      });
       break;
 
     case 'ImportDeclaration':

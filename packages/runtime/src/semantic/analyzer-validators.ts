@@ -227,6 +227,20 @@ export function validateLiteralType(
     return;
   }
 
+  // Object literals are compatible with structural types (user-defined types)
+  if (sourceType === 'json' && expr.type === 'ObjectLiteral' && ctx.typeRegistry?.lookup(type)) {
+    // Validate that all fields in the literal exist in the type declaration
+    const structType = ctx.typeRegistry.lookup(type)!;
+    const declaredFields = new Set(structType.fields.map(f => f.name));
+    const availableFields = structType.fields.map(f => f.name).join(', ');
+    for (const prop of expr.properties) {
+      if (!declaredFields.has(prop.key)) {
+        ctx.error(`Unknown field '${prop.key}' for type '${type}'. Available fields: ${availableFields}`, prop.location);
+      }
+    }
+    return;
+  }
+
   // Check type compatibility
   if (!typesCompatible(sourceType, type)) {
     ctx.error(`Type error: cannot assign ${sourceType} to ${type}`, location);
@@ -438,7 +452,7 @@ function resolveMemberType(baseType: string, property: string): string | null {
   }
   if (baseType === 'json') return null;  // json member access is untyped
   if (baseType === 'model') {
-    if (property === 'usage') return 'json[]';
+    if (property === 'usage') return 'ModelUsageRecord[]';
     if (property === 'name') return 'text';
     return null;
   }

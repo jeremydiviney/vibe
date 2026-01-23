@@ -26,7 +26,12 @@ export function provideDefinition(
     const parserPos = toParserPosition(position);
 
     // Find identifier at cursor position
-    const identifierName = findIdentifierAtPosition(ast, parserPos.line, parserPos.column);
+    let identifierName = findIdentifierAtPosition(ast, parserPos.line, parserPos.column);
+
+    // If no identifier found, try extracting word at cursor (handles type annotations)
+    if (!identifierName) {
+      identifierName = getWordAtPosition(text, position.line, position.character);
+    }
     if (!identifierName) return null;
 
     // Check if this identifier is from a TypeScript import
@@ -103,6 +108,27 @@ export function provideDefinition(
 }
 
 /**
+ * Extract the word at a given position (0-based line/character) from text.
+ */
+function getWordAtPosition(text: string, line: number, character: number): string | null {
+  const lines = text.split('\n');
+  if (line >= lines.length) return null;
+  const lineText = lines[line];
+  if (character >= lineText.length) return null;
+
+  // Find word boundaries around the cursor
+  let start = character;
+  let end = character;
+  while (start > 0 && /\w/.test(lineText[start - 1])) start--;
+  while (end < lineText.length && /\w/.test(lineText[end])) end++;
+
+  const word = lineText.slice(start, end);
+  if (!word || !/^[A-Za-z_]\w*$/.test(word)) return null;
+
+  return word;
+}
+
+/**
  * Find an exported declaration by name in a Vibe AST
  */
 function findExportedDeclaration(
@@ -129,6 +155,8 @@ function findExportedDeclaration(
             nameOffset = 6; // "const " = 6 chars
           } else if (decl.type === 'LetDeclaration') {
             nameOffset = 4; // "let " = 4 chars
+          } else if (decl.type === 'TypeDeclaration') {
+            nameOffset = 5; // "type " = 5 chars
           }
 
           return {

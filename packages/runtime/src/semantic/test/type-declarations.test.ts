@@ -214,3 +214,98 @@ function check(): Result { return null }`);
     expect(errors).toContain("Unknown type 'UnknownType'");
   });
 });
+
+describe('Type Declarations - Object Literal Assignment to Structural Types', () => {
+  const analyzer = new SemanticAnalyzer();
+
+  function getErrors(code: string): string[] {
+    const ast = parse(code);
+    const errors = analyzer.analyze(ast, code, '');
+    return errors.map((e) => e.message);
+  }
+
+  test('object literal assigned to structural type variable is valid', () => {
+    const errors = getErrors(`type Player { name: text, score: number }
+let p: Player = {name: "Alice", score: 100}`);
+    expect(errors).toEqual([]);
+  });
+
+  test('object literal assigned to structural type const is valid', () => {
+    const errors = getErrors(`type Result { ok: boolean, message: text }
+const r: Result = {ok: true, message: "success"}`);
+    expect(errors).toEqual([]);
+  });
+
+  test('object literal with variable references assigned to structural type is valid', () => {
+    const errors = getErrors(`type Round { roundNumber: number, questions: text }
+let num = 1
+let q = "What is it?"
+const round: Round = {roundNumber: num, questions: q}`);
+    expect(errors).toEqual([]);
+  });
+
+  test('object literal assigned to array of structural type is valid', () => {
+    const errors = getErrors(`type Item { value: number }
+let items: Item[] = [{value: 1}, {value: 2}]`);
+    expect(errors).toEqual([]);
+  });
+
+  test('number literal assigned to structural type is an error', () => {
+    const errors = getErrors(`type Player { name: text }
+let p: Player = 42`);
+    expect(errors).toContain('Type error: cannot assign number to Player');
+  });
+
+  test('string literal assigned to structural type is an error', () => {
+    const errors = getErrors(`type Player { name: text }
+let p: Player = "not a player"`);
+    expect(errors).toContain('Type error: cannot assign text to Player');
+  });
+
+  test('boolean literal assigned to structural type is an error', () => {
+    const errors = getErrors(`type Config { enabled: boolean }
+let c: Config = true`);
+    expect(errors).toContain('Type error: cannot assign boolean to Config');
+  });
+});
+
+describe('Type Declarations - Object Literal Field Validation', () => {
+  const analyzer = new SemanticAnalyzer();
+
+  function getErrors(code: string): string[] {
+    const ast = parse(code);
+    const errors = analyzer.analyze(ast, code, '');
+    return errors.map((e) => e.message);
+  }
+
+  test('unknown field in object literal is an error', () => {
+    const errors = getErrors(`type Player { name: text, score: number }
+const p: Player = {namee: "Alice", score: 100}`);
+    expect(errors).toContain("Unknown field 'namee' for type 'Player'. Available fields: name, score");
+  });
+
+  test('multiple unknown fields are all reported', () => {
+    const errors = getErrors(`type Config { host: text, port: number }
+let c: Config = {hostt: "localhost", portt: 8080}`);
+    expect(errors).toContain("Unknown field 'hostt' for type 'Config'. Available fields: host, port");
+    expect(errors).toContain("Unknown field 'portt' for type 'Config'. Available fields: host, port");
+  });
+
+  test('correct fields pass validation', () => {
+    const errors = getErrors(`type Player { name: text, score: number }
+const p: Player = {name: "Alice", score: 100}`);
+    expect(errors).toEqual([]);
+  });
+
+  test('subset of fields passes (partial initialization)', () => {
+    const errors = getErrors(`type Player { name: text, score: number, rank: number }
+const p: Player = {name: "Alice"}`);
+    expect(errors).toEqual([]);
+  });
+
+  test('unknown field in array element is an error', () => {
+    const errors = getErrors(`type Item { value: number }
+let items: Item[] = [{valuee: 1}]`);
+    expect(errors).toContain("Unknown field 'valuee' for type 'Item'. Available fields: value");
+  });
+});

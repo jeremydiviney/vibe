@@ -63,7 +63,7 @@ function statementToSymbol(statement: AST.Statement): DocumentSymbol | null {
         statement.name,
         SymbolKind.Variable,
         statement.location,
-        statement.typeAnnotation ?? 'let',
+        statement.vibeType ?? 'let',
         []
       );
 
@@ -72,7 +72,7 @@ function statementToSymbol(statement: AST.Statement): DocumentSymbol | null {
         statement.name,
         SymbolKind.Constant,
         statement.location,
-        statement.typeAnnotation ?? 'const',
+        statement.vibeType ?? 'const',
         []
       );
 
@@ -95,6 +95,15 @@ function statementToSymbol(statement: AST.Statement): DocumentSymbol | null {
         statement.location,
         statement.isConst ? 'const destructuring' : 'let destructuring',
         fieldSymbols
+      );
+
+    case 'TypeDeclaration':
+      return createSymbol(
+        statement.name,
+        SymbolKind.Struct,
+        statement.location,
+        `type { ${statement.structure.fields.map((f: { name: string; type: string }) => `${f.name}: ${f.type}`).join(', ')} }`,
+        []
       );
 
     case 'ExportDeclaration':
@@ -150,12 +159,12 @@ function createSymbol(
 
 function formatParams(params: AST.FunctionParameter[]): string {
   if (params.length === 0) return '()';
-  const paramStr = params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+  const paramStr = params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
   return `(${paramStr})`;
 }
 
 function formatToolParams(params: AST.ToolParameter[]): string {
   if (params.length === 0) return '()';
-  const paramStr = params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+  const paramStr = params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
   return `(${paramStr})`;
 }

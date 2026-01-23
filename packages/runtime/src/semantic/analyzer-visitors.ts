@@ -673,7 +673,14 @@ export function createVisitors(
       validateTypeAnnotation(ctx, node.returnType, node.location);
     }
 
-    visitStatement(node.body);
+    // Visit body statements directly (don't use visitStatement on the BlockStatement
+    // which would create a redundant nested scope - the function scope is sufficient)
+    const wasAtTopLevel = state.atTopLevel;
+    state.atTopLevel = false;
+    for (const stmt of node.body.body) {
+      visitStatement(stmt);
+    }
+    state.atTopLevel = wasAtTopLevel;
 
     // Check that typed functions always return or throw
     if (node.returnType && !alwaysReturnsOrThrows(node.body, true)) {
@@ -687,6 +694,7 @@ export function createVisitors(
     if (!node.returnType) {
       const inferredType = inferReturnTypeFromBody(node.body);
       if (inferredType) {
+        node.returnType = inferredType;
         const symbol = ctx.symbols.lookup(node.name);
         if (symbol) {
           symbol.returnType = inferredType;
@@ -735,7 +743,7 @@ export function createVisitors(
       collectReturnExpressions(stmt.consequent, out);
       if (stmt.alternate) collectReturnExpressions(stmt.alternate, out);
     }
-    if (stmt.type === 'WhileStatement' || stmt.type === 'ForStatement') {
+    if (stmt.type === 'WhileStatement' || stmt.type === 'ForInStatement') {
       collectReturnExpressions(stmt.body, out);
     }
   }

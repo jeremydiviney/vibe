@@ -2,6 +2,7 @@ import { Hover, MarkupKind, Position } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
 import { parse } from '@vibe-lang/runtime/parser/parse';
+import { analyze } from '@vibe-lang/runtime/semantic';
 import { findNodeAtPosition, getNodeDescription, getTSImportForIdentifier, getVibeImportForIdentifier, findDeclaration, DeclarationInfo } from '../utils/ast-utils';
 import { tsService } from '../services/typescript-service';
 import { keywordDocs, typeDocs, vibeValuePropertyDocs } from '../utils/builtins';
@@ -85,6 +86,8 @@ export function provideHover(document: TextDocument, position: Position): Hover 
   // Try to find the symbol in the AST
   try {
     const ast = parse(text, { file: document.uri });
+    const filePath = URI.parse(document.uri).fsPath;
+    analyze(ast, text, filePath);
 
     // Check if this identifier is from a TypeScript import
     const tsImport = getTSImportForIdentifier(ast, word);
@@ -126,6 +129,7 @@ export function provideHover(document: TextDocument, position: Position): Hover 
         try {
           const sourceText = readFileSync(sourceFilePath, 'utf-8');
           const sourceAst = parse(sourceText, { file: sourceFilePath });
+          analyze(sourceAst, sourceText, sourceFilePath);
 
           // Find the exported declaration in the source file
           const exportedDecl = findExportedDeclaration(sourceAst, vibeImport.importedName);
@@ -187,8 +191,8 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
     case 'variable': {
       const letDecl = declaration.node as AST.LetDeclaration;
       lines.push(`**${letDecl.name}** (variable)`);
-      if (letDecl.typeAnnotation) {
-        lines.push(`\nType: \`${letDecl.typeAnnotation}\``);
+      if (letDecl.vibeType) {
+        lines.push(`\nType: \`${letDecl.vibeType}\``);
       } else if (letDecl.initializer && ast) {
         // Try to infer type from initializer
         const inferredType = inferTypeFromExpression(letDecl.initializer, ast, documentUri);
@@ -201,8 +205,8 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
     case 'constant': {
       const constDecl = declaration.node as AST.ConstDeclaration;
       lines.push(`**${constDecl.name}** (constant)`);
-      if (constDecl.typeAnnotation) {
-        lines.push(`\nType: \`${constDecl.typeAnnotation}\``);
+      if (constDecl.vibeType) {
+        lines.push(`\nType: \`${constDecl.vibeType}\``);
       } else if (constDecl.initializer && ast) {
         // Try to infer type from initializer
         const inferredType = inferTypeFromExpression(constDecl.initializer, ast, documentUri);
@@ -217,7 +221,7 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
       const parentDecl = declaration.node as AST.FunctionDeclaration | AST.ToolDeclaration;
       const param = parentDecl.params.find(p => p.name === declaration.name);
       if (param) {
-        const paramType = 'typeAnnotation' in param ? param.typeAnnotation : '';
+        const paramType = 'vibeType' in param ? param.vibeType : '';
         lines.push(`**${param.name}** (parameter)`);
         if (paramType) {
           lines.push(`\nType: \`${paramType}\``);
@@ -239,7 +243,7 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
     }
     case 'function': {
       const funcDecl = declaration.node as AST.FunctionDeclaration;
-      const params = funcDecl.params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+      const params = funcDecl.params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
       const returnType = funcDecl.returnType ? `: ${funcDecl.returnType}` : '';
       lines.push(`**${funcDecl.name}** (function)`);
       lines.push(`\n\`function(${params})${returnType}\``);
@@ -247,7 +251,7 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
     }
     case 'tool': {
       const toolDecl = declaration.node as AST.ToolDeclaration;
-      const params = toolDecl.params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+      const params = toolDecl.params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
       const returnType = toolDecl.returnType ? `: ${toolDecl.returnType}` : '';
       lines.push(`**${toolDecl.name}** (tool)`);
       lines.push(`\n\`tool(${params})${returnType}\``);
@@ -260,6 +264,13 @@ function formatDeclarationHover(declaration: DeclarationInfo, documentUri?: stri
       lines.push(`**${declaration.name}** (model)`);
       lines.push('\nAI model configuration');
       break;
+    case 'type': {
+      const typeDecl = declaration.node as AST.TypeDeclaration;
+      const fields = typeDecl.structure.fields.map(f => `${f.name}: ${f.type}`).join(', ');
+      lines.push(`**${typeDecl.name}** (type)`);
+      lines.push(`\n\`type { ${fields} }\``);
+      break;
+    }
     case 'import': {
       // Try to resolve the actual declaration from the source file
       const resolvedDecl = resolveImportedDeclaration(declaration, documentUri);
@@ -519,12 +530,12 @@ function formatInterpolatedVariableHover(
   switch (declaration.kind) {
     case 'variable': {
       const letDecl = declaration.node as AST.LetDeclaration;
-      lines.push(`\n\`let ${letDecl.name}${letDecl.typeAnnotation ? `: ${letDecl.typeAnnotation}` : ''}\``);
+      lines.push(`\n\`let ${letDecl.name}${letDecl.vibeType ? `: ${letDecl.vibeType}` : ''}\``);
       break;
     }
     case 'constant': {
       const constDecl = declaration.node as AST.ConstDeclaration;
-      lines.push(`\n\`const ${constDecl.name}${constDecl.typeAnnotation ? `: ${constDecl.typeAnnotation}` : ''}\``);
+      lines.push(`\n\`const ${constDecl.name}${constDecl.vibeType ? `: ${constDecl.vibeType}` : ''}\``);
       break;
     }
     case 'parameter': {
@@ -532,7 +543,7 @@ function formatInterpolatedVariableHover(
       const parentDecl = declaration.node as AST.FunctionDeclaration | AST.ToolDeclaration;
       const param = parentDecl.params.find(p => p.name === interpolatedVar.name);
       if (param) {
-        const paramType = 'typeAnnotation' in param ? param.typeAnnotation : '';
+        const paramType = 'vibeType' in param ? param.vibeType : '';
         lines.push(`\n\`(parameter) ${param.name}: ${paramType}\``);
       } else {
         lines.push(`\n*Function parameter*`);
@@ -613,8 +624,9 @@ function resolveImportedDeclaration(declaration: DeclarationInfo, documentUri?: 
 
     const sourceContent = readFileSync(absoluteSourcePath, 'utf-8');
     const sourceAst = parse(sourceContent, { file: absoluteSourcePath });
+    analyze(sourceAst, sourceContent, absoluteSourcePath);
 
-    // Cache the parsed AST
+    // Cache the parsed+analyzed AST
     sourceFileCache.set(absoluteSourcePath, sourceAst);
 
     return findExportedDeclaration(sourceAst, importedName);
@@ -648,6 +660,7 @@ function createDeclarationInfoFromNode(node: AST.Statement, name: string): Decla
     'ConstDeclaration': 'constant',
     'ModelDeclaration': 'model',
     'ToolDeclaration': 'tool',
+    'TypeDeclaration': 'type',
   };
   const kind = kindMap[node.type];
   if (!kind) return null;
@@ -717,6 +730,7 @@ function inferTypeFromExpression(expr: AST.Expression, ast: AST.Program, documen
             try {
               const sourceText = readFileSync(sourceFilePath, 'utf-8');
               const sourceAst = parse(sourceText, { file: sourceFilePath });
+              analyze(sourceAst, sourceText, sourceFilePath);
               const exportedDecl = findExportedDeclaration(sourceAst, vibeImport.importedName);
 
               if (exportedDecl) {
@@ -742,7 +756,7 @@ function inferTypeFromExpression(expr: AST.Expression, ast: AST.Program, documen
         const node = decl.node;
         if (node.type === 'LetDeclaration' || node.type === 'ConstDeclaration') {
           const varDecl = node as AST.LetDeclaration | AST.ConstDeclaration;
-          if (varDecl.typeAnnotation) return varDecl.typeAnnotation;
+          if (varDecl.vibeType) return varDecl.vibeType;
           if (varDecl.initializer) {
             return inferTypeFromExpression(varDecl.initializer, ast, documentUri);
           }

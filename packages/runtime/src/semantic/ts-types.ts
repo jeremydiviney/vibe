@@ -26,7 +26,12 @@ export function vibeTypeToTs(vibeType: string | null): string {
     'null': 'null | undefined',
   };
 
-  return map[vibeType] ?? 'any';
+  // Known runtime types with full structure
+  const runtimeTypes: Record<string, string> = {
+    'ModelUsageRecord': '{ requestId: number; inputTokens: number; outputTokens: number; cachedInputTokens: number; thinkingTokens: number }',
+  };
+
+  return map[vibeType] ?? runtimeTypes[vibeType] ?? 'any';
 }
 
 /**

@@ -66,7 +66,7 @@ export function provideSignatureHelp(
 
     if (astFuncDef) {
       const label = formatSignature(astFuncDef);
-      const params = astFuncDef.params.map(p => `${p.name}: ${p.typeAnnotation}`);
+      const params = astFuncDef.params.map(p => `${p.name}: ${p.vibeType}`);
       const doc = astFuncDef.type === 'ToolDeclaration' ? astFuncDef.description : undefined;
       return createSignatureHelp(label, params, doc, callInfo.activeParam);
     }
@@ -207,7 +207,7 @@ function findFunctionOrTool(
 }
 
 function formatSignature(func: AST.FunctionDeclaration | AST.ToolDeclaration): string {
-  const params = func.params.map(p => `${p.name}: ${p.typeAnnotation}`).join(', ');
+  const params = func.params.map(p => `${p.name}: ${p.vibeType}`).join(', ');
   const returnType = func.returnType ? `: ${func.returnType}` : '';
   return `${func.name}(${params})${returnType}`;
 }

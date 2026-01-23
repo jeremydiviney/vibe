@@ -350,3 +350,133 @@ let y: text = x`;
     expect(errors).toContain('Type error: cannot assign number to text');
   });
 });
+
+describe('Semantic Analyzer - Inferred Function Return Type (no annotation)', () => {
+  const analyzer = new SemanticAnalyzer();
+
+  function analyzeCode(code: string) {
+    const ast = parse(code);
+    const errors = analyzer.analyze(ast, code, '');
+    return { ast, errors: errors.map(e => e.message) };
+  }
+
+  test('infers return type from local typed variable', () => {
+    const { ast, errors } = analyzeCode(`
+function buildList() {
+  let items: text[] = []
+  items.push("a")
+  return items
+}
+
+let result = buildList()
+let wrong: number = result`);
+    expect(errors).toContain('Type error: cannot assign text[] to number');
+  });
+
+  test('infers return type from local number variable', () => {
+    const { ast, errors } = analyzeCode(`
+function getCount() {
+  let count: number = 42
+  return count
+}
+
+let x = getCount()
+let y: text = x`);
+    expect(errors).toContain('Type error: cannot assign number to text');
+  });
+
+  test('infers return type from call to function with explicit type', () => {
+    const { ast, errors } = analyzeCode(`
+function helper(): model {
+  return m
+}
+
+function wrapper() {
+  return helper()
+}
+
+const x = wrapper()
+let y: text = x`);
+    expect(errors).toContain('Type error: cannot assign model to text');
+  });
+
+  test('infers return type through double chain without annotations', () => {
+    const { ast, errors } = analyzeCode(`
+function base(): text[] {
+  return ["a", "b"]
+}
+
+function middle() {
+  return base()
+}
+
+function top() {
+  return middle()
+}
+
+let result = top()
+let wrong: number = result`);
+    expect(errors).toContain('Type error: cannot assign text[] to number');
+  });
+
+  test('infers return type from private local variable', () => {
+    const { ast, errors } = analyzeCode(`
+function process(input: model) {
+  let private results: text[] = []
+  let private count: number = 0
+  results.push("done")
+  count = count + 1
+  return results
+}
+
+const r = process(m)
+let wrong: number = r`);
+    expect(errors).toContain('Type error: cannot assign text[] to number');
+  });
+
+  test('AST node returnType is populated after analysis', () => {
+    const { ast } = analyzeCode(`
+function foo() {
+  let x: number = 10
+  return x
+}`);
+    const funcDecl = ast.body[0];
+    expect(funcDecl.type).toBe('FunctionDeclaration');
+    if (funcDecl.type === 'FunctionDeclaration') {
+      expect(funcDecl.returnType).toBe('number');
+    }
+  });
+
+  test('variable vibeType populated from inferred function return', () => {
+    const { ast } = analyzeCode(`
+function makeText() {
+  let s: text = "hello"
+  return s
+}
+
+const result = makeText()`);
+    const constDecl = ast.body[1];
+    expect(constDecl.type).toBe('ConstDeclaration');
+    if (constDecl.type === 'ConstDeclaration') {
+      expect(constDecl.vibeType).toBe('text');
+    }
+  });
+
+  test('exported function return type is inferred correctly', () => {
+    const { ast } = analyzeCode(`
+export function runBench(guesser: model) {
+  let private results: text[] = []
+  results.push("test")
+  return results
+}`);
+    const exportDecl = ast.body[0];
+    expect(exportDecl.type).toBe('ExportDeclaration');
+    if (exportDecl.type === 'ExportDeclaration') {
+      const funcDecl = exportDecl.declaration;
+      expect(funcDecl.type).toBe('FunctionDeclaration');
+      if (funcDecl.type === 'FunctionDeclaration') {
+        expect(funcDecl.returnType).toBe('text[]');
+      }
+    }
+  });
+});
