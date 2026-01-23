@@ -205,10 +205,17 @@
   - Example: `async let x = do "..."; do "Result: {x}"` correctly awaits x
 
 ### Runtime Refactoring
-- [ ] Replace `__vibeModel` flag with `vibeType: 'model'` on VibeValue wrapper
-  - Remove redundant type discriminator from inner model object
+- [x] Replace `__vibeModel` flag with `vibeType: 'model'` on VibeValue wrapper
+  - Removed redundant type discriminator from inner model object
   - Use VibeValue's existing `vibeType` field instead of `__vibeModel: true` on the value
-  - Update `isModelValue`, `getModelValue`, `pushModelUsage` and other model checks
+  - Updated `isModelValue`, `getModelValue`, `pushModelUsage` and other model checks
+  - Added vibeType propagation through function returns and variable assignments
+- [ ] Propagate vibeType through ts block parameter bindings with complex expressions
+  - `ts(x=obj.field){}` — member access should resolve field type
+  - `ts(x=arr[0]){}` — index access should resolve element type
+  - `ts(x=arr[1:3]){}` — slice should preserve array type
+  - `ts(x=arr[-1]){}` — negative index should resolve element type
+  - Update semantic analyzer and runtime to pass correct types into ts blocks
 
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)
