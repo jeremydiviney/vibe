@@ -640,6 +640,8 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
       if (symbol?.vibeType) {
         return symbol.vibeType;
       }
+      // Infer type from symbol kind when vibeType isn't explicitly set
+      if (symbol?.kind === 'model') return 'model';
       return null;
     }
     case 'CallExpression': {

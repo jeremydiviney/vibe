@@ -709,9 +709,61 @@ export function createVisitors(
       );
     }
 
+    // Infer return type from return statements if not explicitly annotated
+    if (!node.returnType) {
+      const inferredType = inferReturnTypeFromBody(node.body);
+      if (inferredType) {
+        const symbol = ctx.symbols.lookup(node.name);
+        if (symbol) {
+          symbol.returnType = inferredType;
+        }
+      }
+    }
+
     ctx.symbols.exitScope();
     state.inFunction = wasInFunction;
     state.currentFunctionReturnType = prevReturnType;
+  }
+
+  /**
+   * Infer return type from a function body by examining return statements.
+   */
+  function inferReturnTypeFromBody(body: AST.Statement): string | null {
+    const returnExprs: AST.Expression[] = [];
+    collectReturnExpressions(body, returnExprs);
+    if (returnExprs.length === 0) return null;
+
+    // Use the type of the first return expression
+    const firstType = getExprType(returnExprs[0]);
+    if (!firstType) return null;
+
+    // All return expressions should have the same type
+    for (const expr of returnExprs) {
+      const t = getExprType(expr);
+      if (t && t !== firstType) return null; // Conflicting types, can't infer
+    }
+
+    return firstType;
+  }
+
+  /**
+   * Recursively collect return expressions from statements.
+   */
+  function collectReturnExpressions(stmt: AST.Statement, out: AST.Expression[]): void {
+    if (stmt.type === 'ReturnStatement' && stmt.value) {
+      out.push(stmt.value);
+      return;
+    }
+    if (stmt.type === 'BlockStatement') {
+      for (const s of stmt.body) collectReturnExpressions(s, out);
+    }
+    if (stmt.type === 'IfStatement') {
+      collectReturnExpressions(stmt.consequent, out);
+      if (stmt.alternate) collectReturnExpressions(stmt.alternate, out);
+    }
+    if (stmt.type === 'WhileStatement' || stmt.type === 'ForStatement') {
+      collectReturnExpressions(stmt.body, out);
+    }
   }
 
   function visitTool(node: AST.ToolDeclaration): void {
