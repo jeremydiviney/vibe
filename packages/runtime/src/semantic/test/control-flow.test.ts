@@ -11,7 +11,7 @@ describe('Semantic Errors - Control Flow', () => {
     const ast = parse(`
 return "hello"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('return outside of function');
   });
@@ -22,7 +22,7 @@ if true {
   return "hello"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('return outside of function');
   });
@@ -35,7 +35,7 @@ if false {
   return "hello"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('return outside of function');
   });
@@ -48,7 +48,7 @@ if true {
   }
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('return outside of function');
   });
@@ -63,7 +63,7 @@ function test() {
   return "hello"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -76,7 +76,7 @@ function test(x: boolean): text {
   return "no"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -90,7 +90,7 @@ function test(x: boolean): text {
   }
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -105,7 +105,7 @@ function test(x: boolean): text {
   return "default"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -119,7 +119,7 @@ if "test" {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('if condition must be boolean, got text');
   });
@@ -131,7 +131,7 @@ if x {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('if condition must be boolean, got text');
   });
@@ -142,7 +142,7 @@ if 5 {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('if condition must be boolean, got number');
   });
@@ -153,7 +153,7 @@ if true {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -164,7 +164,7 @@ if flag {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -174,7 +174,7 @@ function test() {
   return
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -187,7 +187,7 @@ function test() {
 return "first"
 return "second"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe('return outside of function');
     expect(errors[1].message).toBe('return outside of function');
@@ -201,7 +201,7 @@ return "second"
     const ast = parse(`
 return undefinedVar
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe('return outside of function');
     expect(errors[1].message).toBe("'undefinedVar' is not defined");
@@ -217,7 +217,7 @@ while undefinedVar {
   let x = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedVar' is not defined");
   });
@@ -229,7 +229,7 @@ while keepGoing {
   keepGoing = false
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -240,7 +240,7 @@ while true {
 }
 let x = innerVar
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'innerVar' is not defined");
   });
@@ -252,7 +252,7 @@ while outerVar {
   outerVar = false
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -268,7 +268,7 @@ while outer {
   outer = false
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -281,7 +281,7 @@ function test(): boolean {
   return false
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -291,7 +291,7 @@ while true {
   return true
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('return outside of function');
   });
@@ -302,7 +302,7 @@ while "test" {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('while condition must be boolean, got text');
   });
@@ -314,7 +314,7 @@ while x {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('while condition must be boolean, got text');
   });
@@ -325,7 +325,7 @@ while 5 {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('while condition must be boolean, got number');
   });
@@ -339,7 +339,7 @@ while x {
   let y = 1
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe('while condition must be boolean, got text');
   });

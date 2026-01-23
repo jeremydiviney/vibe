@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { parse } from '../../parser/parse';
+import { analyze } from '../../semantic';
 import { createInitialState, resumeWithAIResponse } from '../state';
 import { runUntilPause } from '../step';
 import { isVibeValue } from '../types';
@@ -414,6 +415,54 @@ describe('VibeValue AI Results', () => {
       expect(resultEntry).toBeDefined();
       // The value in context should be resolved, not VibeValue
       expect((resultEntry as { value: unknown }).value).toBe('the response');
+    });
+  });
+
+  describe('structural type results', () => {
+    it('structural type variable stores full object and supports member access', () => {
+      const ast = parse(`
+        type GameResult {
+          correct: boolean,
+          response: boolean
+        }
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        const result: GameResult = do "evaluate" m default
+        let wasCorrect = result.correct
+        let wasResponse = result.response
+      `);
+      analyze(ast, '', '');
+      let state = createInitialState(ast);
+      // AI returns the structural type as an object
+      state = runWithMockAI(state, { correct: true, response: false });
+
+      expect(state.status).toBe('completed');
+      expect(state.callStack[0].locals['wasCorrect'].value).toBe(true);
+      expect(state.callStack[0].locals['wasResponse'].value).toBe(false);
+    });
+
+    it('structural type from function return supports member access', () => {
+      const ast = parse(`
+        type AnswerResult {
+          correct: boolean,
+          guess: text
+        }
+        model m = { name: "test", apiKey: "key", url: "http://test" }
+        function getAnswer(q: text): AnswerResult {
+          const answer: AnswerResult = do "answer {q}" m default
+          return answer
+        }
+        const result = getAnswer("what is 2+2?")
+        let isCorrect = result.correct
+        let theGuess = result.guess
+      `);
+      analyze(ast, '', '');
+      let state = createInitialState(ast);
+      // AI returns the structural type as an object
+      state = runWithMockAI(state, { correct: true, guess: 'four' });
+
+      expect(state.status).toBe('completed');
+      expect(state.callStack[0].locals['isCorrect'].value).toBe(true);
+      expect(state.callStack[0].locals['theGuess'].value).toBe('four');
     });
   });
 });

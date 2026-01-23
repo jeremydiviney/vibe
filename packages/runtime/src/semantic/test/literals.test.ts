@@ -7,7 +7,7 @@ describe('Semantic Analyzer - Object and Array Literals', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 

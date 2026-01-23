@@ -11,7 +11,7 @@ describe('Semantic Errors - Undefined Variables', () => {
     const ast = parse(`
 let x = undefinedVar
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedVar' is not defined");
   });
@@ -20,7 +20,7 @@ let x = undefinedVar
     const ast = parse(`
 let x = unknownFunc()
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'unknownFunc' is not defined");
   });
@@ -32,7 +32,7 @@ function greet(name: text): text {
 }
 let x = greet(unknownArg)
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'unknownArg' is not defined");
   });
@@ -46,7 +46,7 @@ let x = greet(unknownArg)
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let x: text = vibe undefinedPrompt myModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedPrompt' is not defined");
   });
@@ -55,7 +55,7 @@ let x: text = vibe undefinedPrompt myModel default
     const ast = parse(`
 let x: text = vibe "prompt" undefinedModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedModel' is not defined");
   });
@@ -65,7 +65,7 @@ let x: text = vibe "prompt" undefinedModel default
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let x: text = vibe "prompt" myModel undefinedContext
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedContext' is not defined");
   });
@@ -80,7 +80,7 @@ if undefinedCond {
   let x = "yes"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedCond' is not defined");
   });
@@ -95,7 +95,7 @@ function test() {
   return undefinedReturn
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedReturn' is not defined");
   });
@@ -109,7 +109,7 @@ function test() {
 let a = undefined1
 let b = undefined2
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("'undefined1' is not defined");
     expect(errors[1].message).toBe("'undefined2' is not defined");
@@ -124,7 +124,7 @@ let b = undefined2
 let x = y
 let y = "hello"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'y' is not defined");
   });
@@ -138,7 +138,7 @@ let y = "hello"
 let x = "hello"
 let y = x
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -148,7 +148,7 @@ function greet(name: text): text {
   return name
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -157,7 +157,7 @@ function greet(name: text): text {
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let x: text = vibe "prompt" myModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 });

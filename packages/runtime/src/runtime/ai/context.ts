@@ -8,10 +8,10 @@
 //        ↓                      ↓
 //   Provider API call      Human-readable log
 
-import type { RuntimeState, ContextEntry } from '../types';
+import type { ContextEntry } from '../types';
 import type { ToolSchema } from '../tools/types';
 import type { TargetType, ModelConfig } from './types';
-import { buildGlobalContext, formatContextForAI } from '../context';
+import { formatContextForAI } from '../context';
 // Import formatters for consistent message building
 import {
   buildSystemMessage as buildSystemMessageImpl,
@@ -67,11 +67,13 @@ export interface AIContext {
 }
 
 /**
- * Build the complete AI context from runtime state.
+ * Build the complete AI context from pre-built context entries.
  * This is the SINGLE SOURCE OF TRUTH for what gets sent to the model.
+ * Context entries should be built with buildLocalContext (function scope only).
  */
 export function buildAIContext(
-  state: RuntimeState,
+  contextEntries: ContextEntry[],
+  operationType: 'do' | 'vibe',
   model: ModelConfig,
   prompt: string,
   targetType: TargetType,
@@ -79,10 +81,8 @@ export function buildAIContext(
   previousToolCalls?: Array<{ id: string; toolName: string; args: Record<string, unknown> }>,
   toolResults?: Array<{ toolCallId: string; result?: unknown; error?: string }>
 ): AIContext {
-  const operationType = state.pendingAI?.type ?? 'do';
-
-  // Build structured execution context from state
-  const executionContext = buildGlobalContext(state);
+  // Format the provided context entries
+  const executionContext = contextEntries;
   const formattedContext = formatContextForAI(executionContext);
 
   // Build the message sequence

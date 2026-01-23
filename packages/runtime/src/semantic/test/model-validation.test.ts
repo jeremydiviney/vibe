@@ -16,7 +16,7 @@ model myModel = {
 }
 myModel = "something"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot reassign model 'myModel'");
   });
@@ -33,7 +33,7 @@ model myModel = {
   url: "https://api.openai.com"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -44,7 +44,7 @@ model myModel = {
   url: "https://api.openai.com"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Model 'myModel' is missing required field 'name'");
   });
@@ -56,7 +56,7 @@ model myModel = {
   url: "https://api.openai.com"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Model 'myModel' is missing required field 'apiKey'");
   });
@@ -68,7 +68,7 @@ model myModel = {
   apiKey: "sk-test"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Model 'myModel' is missing required field 'url'");
   });
@@ -77,7 +77,7 @@ model myModel = {
     const ast = parse(`
 model myModel = {}
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(3);
     expect(errors.map(e => e.message)).toContain("Model 'myModel' is missing required field 'name'");
     expect(errors.map(e => e.message)).toContain("Model 'myModel' is missing required field 'apiKey'");
@@ -97,7 +97,7 @@ model myModel = {
   streaming: true
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Model 'myModel' has unknown field 'streaming'");
   });
@@ -112,7 +112,7 @@ model myModel = {
   temperature: "0.7"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors.map(e => e.message)).toContain("Model 'myModel' has unknown field 'streaming'");
     expect(errors.map(e => e.message)).toContain("Model 'myModel' has unknown field 'temperature'");
@@ -131,7 +131,7 @@ model myModel = {
   url: "https://api.openai.com"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -143,7 +143,7 @@ model myModel = {
   url: "https://api.openai.com"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'undefinedKey' is not defined");
   });
@@ -157,7 +157,7 @@ model myModel = {
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let m: model = myModel
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Variables with type 'model' must be declared with 'const', not 'let'");
   });
@@ -167,13 +167,13 @@ let m: model = myModel
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 const m: model = myModel
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
   test('function parameter with model type is allowed', () => {
     const ast = parse(`function process(m: model): text { return "done" }`);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 });

@@ -371,13 +371,29 @@ export function execExitBlock(state: RuntimeState, savedKeys: string[], location
  */
 export function execReturnStatement(state: RuntimeState, stmt: AST.ReturnStatement): RuntimeState {
   if (stmt.value) {
+    // Check if the current function has a prompt return type
+    const currentFrameRef = state.callStack[state.callStack.length - 1];
+    const funcName = currentFrameRef?.name;
+    const func = funcName && funcName !== 'main'
+      ? (state.functions[funcName] ?? getImportedVibeFunction(state, funcName))
+      : null;
+    const isPromptReturn = func?.returnType === 'prompt';
+
+    const instructions: RuntimeState['instructionStack'] = [
+      { op: 'exec_expression', expr: stmt.value, location: stmt.value.location },
+    ];
+    if (isPromptReturn) {
+      instructions.push({ op: 'clear_prompt_context', location: stmt.location });
+    }
+    instructions.push(
+      { op: 'return_value', location: stmt.location },
+      ...state.instructionStack
+    );
+
     return {
       ...state,
-      instructionStack: [
-        { op: 'exec_expression', expr: stmt.value, location: stmt.value.location },
-        { op: 'return_value', location: stmt.location },
-        ...state.instructionStack,
-      ],
+      ...(isPromptReturn ? { inPromptContext: true } : {}),
+      instructionStack: instructions,
     };
   }
 

@@ -14,7 +14,7 @@ if true {
 }
 let y = x
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'x' is not defined");
   });
@@ -28,7 +28,7 @@ if false {
 }
 let x = b
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'b' is not defined");
   });
@@ -42,7 +42,7 @@ if true {
   let x = deep
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'deep' is not defined");
   });
@@ -59,7 +59,7 @@ function test() {
 }
 let y = x
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'x' is not defined");
   });
@@ -71,7 +71,7 @@ function greet(name: text): text {
 }
 let x = name
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'name' is not defined");
   });
@@ -87,7 +87,7 @@ if true {
   let y = x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -98,7 +98,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -113,7 +113,7 @@ if true {
   }
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -127,7 +127,7 @@ function add(a: text): text {
   return a
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -138,7 +138,7 @@ function greet(first: text, last: text): text {
   return last
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -151,7 +151,7 @@ function test(x: text, flag: boolean): text {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -164,7 +164,7 @@ function test(x: text, flag: boolean): text {
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let x: text = vibe "prompt" myModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -176,7 +176,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -187,7 +187,7 @@ if true {
   let x: text = vibe "prompt" myModel default
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -204,7 +204,7 @@ if true {
   let x = "second"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -217,7 +217,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -232,7 +232,7 @@ function second() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -249,7 +249,7 @@ if true {
   }
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Functions can only be declared at global scope');
   });
@@ -263,7 +263,7 @@ function outer() {
   return inner()
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Functions can only be declared at global scope');
   });
@@ -278,7 +278,7 @@ if false {
   }
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Functions can only be declared at global scope');
   });
@@ -294,7 +294,7 @@ function outer() {
   return "outer"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Functions can only be declared at global scope');
   });
@@ -306,7 +306,7 @@ function topLevel(): text {
 }
 let result = topLevel()
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 });

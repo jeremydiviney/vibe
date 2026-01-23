@@ -435,7 +435,7 @@ export interface AICompleteEvent extends LogEventBase {
   event: 'ai_complete';
   id: string;
   durationMs: number;
-  tokens?: { in: number; out: number };
+  tokens?: { in: number; out: number; thinking?: number; cachedIn?: number };
   toolCalls: number;     // Count of tool calls made
   error?: string;
 }

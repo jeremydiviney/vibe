@@ -342,7 +342,7 @@ describe('Semantic Analyzer - ts() Block Type Checking', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -411,7 +411,7 @@ describe('Return Type Inference - ts() Blocks', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 

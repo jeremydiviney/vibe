@@ -85,6 +85,9 @@ function executeVibeFunction(
       ...state.instructionStack,
     ],
     lastResult: null,
+    // Reset prompt context - function bodies should not inherit caller's prompt context.
+    // Each function manages its own prompt context via return type.
+    inPromptContext: false,
   };
 }
 

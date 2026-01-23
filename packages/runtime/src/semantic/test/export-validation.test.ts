@@ -11,7 +11,7 @@ describe('Semantic Errors - Export Validation', () => {
     const ast = parse(`
 export let x = "hello"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot export mutable variable 'x'. Only constants can be exported.");
   });
@@ -20,7 +20,7 @@ export let x = "hello"
     const ast = parse(`
 export let count: number = 42
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot export mutable variable 'count'. Only constants can be exported.");
   });
@@ -33,7 +33,7 @@ export let count: number = 42
     const ast = parse(`
 export const X = "hello"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -41,7 +41,7 @@ export const X = "hello"
     const ast = parse(`
 export const COUNT: number = 42
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -51,7 +51,7 @@ export function greet(name: text): text {
   return "Hello " + name
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -64,7 +64,7 @@ export model myModel = {
   url: "https://api.openai.com"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -77,7 +77,7 @@ export model myModel = {
 export let a = 1
 export let b = 2
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("Cannot export mutable variable 'a'. Only constants can be exported.");
     expect(errors[1].message).toBe("Cannot export mutable variable 'b'. Only constants can be exported.");
@@ -91,7 +91,7 @@ export function alsoValid(): text {
   return "ok"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot export mutable variable 'invalid'. Only constants can be exported.");
   });
@@ -105,7 +105,7 @@ export function alsoValid(): text {
 let x = "hello"
 export const Y = x
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 });

@@ -575,15 +575,14 @@ describe('VerboseLogger', () => {
       const contextDir = logger.getContextDir();
 
       expect(mainLogPath).toContain(testDir);
-      expect(mainLogPath).toMatch(/run-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.jsonl$/);
+      // Log file is inside the run directory: run-{timestamp}/run.jsonl
+      expect(mainLogPath).toMatch(/run-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}[/\\]run\.jsonl$/);
 
       expect(contextDir).toContain(testDir);
       expect(contextDir).toMatch(/run-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/);
 
-      // Both should share the same timestamp
-      const logTimestamp = mainLogPath.match(/run-(.+)\.jsonl/)?.[1];
-      const dirTimestamp = contextDir.match(/run-(.+)$/)?.[1];
-      expect(logTimestamp).toBe(dirTimestamp);
+      // Log file should be inside the context dir
+      expect(mainLogPath.startsWith(contextDir)).toBe(true);
     });
   });
 
@@ -655,12 +654,13 @@ describe('VerboseLogger', () => {
       // Verify all context files exist
       const contextFiles = readdirSync(contextDir);
 
-      // Should have: do-000001.txt, vibe-000001.txt, ts-000001.ts
+      // Should have: run.jsonl, do-000001.txt, vibe-000001.txt, ts-000001.ts
       // Note: tsf (TS function) context files are no longer written (too frequent, not useful)
+      expect(contextFiles).toContain('run.jsonl');
       expect(contextFiles).toContain('do-000001.txt');
       expect(contextFiles).toContain('vibe-000001.txt');
       expect(contextFiles).toContain('ts-000001.ts');
-      expect(contextFiles).toHaveLength(3);
+      expect(contextFiles).toHaveLength(4);
 
       // Verify context file contents
       const doContent = readFileSync(join(contextDir, 'do-000001.txt'), 'utf-8');
@@ -693,17 +693,17 @@ describe('VerboseLogger', () => {
       const mainLogPath = logger.getMainLogPath();
       const contextDir = logger.getContextDir();
 
-      // Extract timestamps from paths
+      // Log file is run.jsonl inside the run directory
       const logFilename = mainLogPath.split(/[/\\]/).pop() ?? '';
+      expect(logFilename).toBe('run.jsonl');
+
+      // Context dir name has the timestamp
       const contextDirname = contextDir.split(/[/\\]/).pop() ?? '';
-
-      // Log file: run-2024-01-11T15-30-00.jsonl
-      // Context dir: run-2024-01-11T15-30-00
-      const logTimestamp = logFilename.replace('run-', '').replace('.jsonl', '');
       const dirTimestamp = contextDirname.replace('run-', '');
+      expect(dirTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/);
 
-      expect(logTimestamp).toBe(dirTimestamp);
-      expect(logTimestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/);
+      // Log file should be inside the context dir
+      expect(mainLogPath.startsWith(contextDir)).toBe(true);
     });
   });
 });

@@ -92,6 +92,7 @@ export type { LogEvent, AILogMessage, TokenUsage } from './types';
 // Legacy imports for backward compatibility
 import * as AST from '../ast';
 import { dirname } from 'path';
+import { RuntimeError } from '../errors';
 import type { SourceLocation } from '../errors';
 import type { RuntimeState, AIInteraction } from './types';
 import { resolveValue } from './types';
@@ -343,6 +344,8 @@ export class Runtime {
         }
 
         // Log AI start (verbose logger)
+        // Context mode: "local" when inside a function, "default" at entry level
+        const contextMode = this.state.callStack.length > 1 ? 'local' as const : 'default' as const;
         const aiId = this.verboseLogger?.aiStart(
           pendingAI.type,
           pendingAI.model,
@@ -352,6 +355,7 @@ export class Runtime {
             modelDetails,
             type: pendingAI.type,
             targetType,
+            contextMode,
             messages: [], // Will be updated after execution
           }
         );
@@ -363,9 +367,16 @@ export class Runtime {
           result = await this.aiProvider.execute(pendingAI.prompt);
         } catch (error) {
           aiError = error instanceof Error ? error.message : String(error);
-          // Log AI error
+          // Log AI error - include AI context if available (from RuntimeError)
           if (aiId) {
-            this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, undefined, 0, aiError);
+            const aiLogContext = (error instanceof RuntimeError && error.context?.__aiLogContext)
+              ? error.context.__aiLogContext as { messages?: unknown[]; response?: string; toolRounds?: unknown[] }
+              : undefined;
+            this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, undefined, 0, aiError, aiLogContext ? {
+              messages: aiLogContext.messages as AILogMessage[],
+              response: aiLogContext.response,
+              toolRounds: aiLogContext.toolRounds as any,
+            } : undefined);
           }
           throw error;
         }

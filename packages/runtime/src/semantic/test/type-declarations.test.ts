@@ -88,7 +88,7 @@ describe('Type Declarations - Semantic Analysis', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -135,7 +135,7 @@ describe('Type Declarations - Member Access Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -158,12 +158,12 @@ if s.active {
     expect(errors).toEqual([]);  // s.active is boolean, valid in if condition
   });
 
-  test('member access on unknown field returns null (no error)', () => {
+  test('member access on unknown field reports error', () => {
     const code = `type Result { value: number }
 let r: Result = null
 let x = r.unknown`;
     const errors = getErrors(code);
-    expect(errors).toEqual([]);  // Unknown field access returns null, no error
+    expect(errors).toContain("Property 'unknown' does not exist on type 'Result'. Available fields: value");
   });
 
   test('chained member access through nested type returns named type', () => {
@@ -183,7 +183,7 @@ describe('Type Declarations - Type Annotation Validation', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 

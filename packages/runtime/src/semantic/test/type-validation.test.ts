@@ -7,7 +7,7 @@ describe('Semantic Analyzer - Type Validation', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -410,9 +410,9 @@ while x { let y = 1 }
     expect(errors).toEqual([]);
   });
 
-  test('cannot assign void function result to variable', () => {
+  test('assigning function without return type to variable is allowed (runtime handles null result)', () => {
     const errors = getErrors('function logIt() { let x = "hi" }\nlet y = logIt()');
-    expect(errors).toContain("Cannot assign result of 'logIt()' to a variable - function has no return type");
+    expect(errors).toEqual([]);
   });
 
   test('can assign function with return type to variable', () => {

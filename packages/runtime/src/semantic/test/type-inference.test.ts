@@ -7,7 +7,7 @@ describe('Semantic Analyzer - Type Inference from Literals', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -91,7 +91,7 @@ describe('Semantic Analyzer - Index Expression Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -123,7 +123,7 @@ describe('Semantic Analyzer - Member Expression Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -140,7 +140,7 @@ describe('Semantic Analyzer - Binary Expression Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -210,7 +210,7 @@ describe('Semantic Analyzer - Unary Expression Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -230,7 +230,7 @@ describe('Semantic Analyzer - Range Expression Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -250,7 +250,7 @@ describe('Semantic Analyzer - Method Call Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 
@@ -280,7 +280,7 @@ describe('Semantic Analyzer - Recursive Function Call Type Inference', () => {
 
   function getErrors(code: string): string[] {
     const ast = parse(code);
-    const errors = analyzer.analyze(ast, code);
+    const errors = analyzer.analyze(ast, code, '');
     return errors.map((e) => e.message);
   }
 

@@ -332,16 +332,16 @@ export function buildReturnInstruction(expectedFields: ExpectedField[]): string 
   if (expectedFields.length === 0) return '';
 
   const flattenedFields = flattenExpectedFields(expectedFields);
-  const fieldList = flattenedFields
-    .map((f) => `  - "${f.path}" (${f.type})`)
+  const callList = flattenedFields
+    .map((f) => `- Call __vibe_return_field for "${f.path}" (${f.type})`)
     .join('\n');
 
   return `
 
-IMPORTANT: You MUST return the following field(s) by calling __vibe_return_field for each:
-${fieldList}
+IMPORTANT: You MUST call __vibe_return_field for EACH of the following fields:
+${callList}
 
-Call __vibe_return_field once per field with the field name and typed value. Do not respond with plain text.`;
+You must make exactly ${flattenedFields.length} tool call${flattenedFields.length > 1 ? 's' : ''}. Do not respond with plain text.`;
 }
 
 /**

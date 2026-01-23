@@ -199,6 +199,14 @@ export function validateLiteralType(
       for (const element of expr.elements) {
         validateLiteralType(ctx, element, elementType, element.location, getExpressionType);
       }
+    } else {
+      // Non-literal expression: check if source type is compatible array type
+      const sourceType = getExpressionType(expr);
+      if (sourceType && !sourceType.endsWith('[]')) {
+        ctx.error(`Type error: cannot assign ${sourceType} to ${type}`, location);
+      } else if (sourceType && sourceType !== type) {
+        ctx.error(`Type error: cannot assign ${sourceType} to ${type}`, location);
+      }
     }
     return;
   }
@@ -588,6 +596,16 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         const resolvedType = ctx.typeRegistry.resolveSingleMember(objectType, property);
         if (resolvedType) {
           return resolvedType;
+        }
+        // If the type is a known structural type but field doesn't exist, report error
+        const structType = ctx.typeRegistry.lookup(objectType);
+        if (structType) {
+          const validFields = structType.fields.map(f => f.name);
+          ctx.error(
+            `Property '${property}' does not exist on type '${objectType}'. Available fields: ${validFields.join(', ')}`,
+            expr.location
+          );
+          return null;
         }
       }
 

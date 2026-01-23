@@ -8,7 +8,7 @@ import { analyze } from '../index';
 
 function getErrors(code: string) {
   const ast = parse(code);
-  return analyze(ast);
+  return analyze(ast, '', '');
 }
 
 describe('Semantic Analysis - Function Return Type Checking', () => {

@@ -276,6 +276,101 @@ describe('return-tools', () => {
         expect(() => collectAndValidateFieldResults(results, expected)).toThrow(/Unexpected field 'extra'/);
       });
     });
+
+    describe('structural type return value extraction', () => {
+      it('structural type with multiple fields returns full object (not validated["value"])', () => {
+        // This tests the case: const result: AnswererResult = do "..." model
+        // where AnswererResult { response: boolean, correct: boolean }
+        const results = [
+          { __fieldReturn: true as const, field: 'response', value: true },
+          { __fieldReturn: true as const, field: 'correct', value: false },
+        ];
+        const expectedFields = [
+          { name: 'response', type: 'boolean' },
+          { name: 'correct', type: 'boolean' },
+        ];
+
+        const validated = collectAndValidateFieldResults(results, expectedFields);
+
+        // The full object should be the final value (not validated['value'] which would be undefined)
+        expect(validated).toEqual({ response: true, correct: false });
+        expect(validated['response']).toBe(true);
+        expect(validated['correct']).toBe(false);
+        // 'value' key should NOT exist (this was the bug - code was doing validated['value'])
+        expect(validated['value']).toBeUndefined();
+
+        // Verify the isSingleValueReturn logic:
+        // This is NOT a single-value return (multiple fields, none named 'value')
+        const isSingleValueReturn = expectedFields.length === 1 && expectedFields[0].name === 'value';
+        expect(isSingleValueReturn).toBe(false);
+        // So the final value should be the full validated object
+        const finalValue = isSingleValueReturn ? validated['value'] : validated;
+        expect(finalValue).toEqual({ response: true, correct: false });
+      });
+
+      it('single-value typed return extracts the value field', () => {
+        // This tests the case: const x: number = do "..." model
+        // expectedFields = [{name: 'value', type: 'number'}]
+        const results = [
+          { __fieldReturn: true as const, field: 'value', value: 42 },
+        ];
+        const expectedFields = [
+          { name: 'value', type: 'number' },
+        ];
+
+        const validated = collectAndValidateFieldResults(results, expectedFields);
+        expect(validated).toEqual({ value: 42 });
+
+        // This IS a single-value return
+        const isSingleValueReturn = expectedFields.length === 1 && expectedFields[0].name === 'value';
+        expect(isSingleValueReturn).toBe(true);
+        // So the final value should be extracted
+        const finalValue = isSingleValueReturn ? validated['value'] : validated;
+        expect(finalValue).toBe(42);
+      });
+
+      it('structural type with nested fields returns full object', () => {
+        // Tests a more complex structural type with nested objects
+        const results = [
+          { __fieldReturn: true as const, field: 'name', value: 'Alice' },
+          { __fieldReturn: true as const, field: 'score', value: 95 },
+          { __fieldReturn: true as const, field: 'passed', value: true },
+        ];
+        const expectedFields = [
+          { name: 'name', type: 'text' },
+          { name: 'score', type: 'number' },
+          { name: 'passed', type: 'boolean' },
+        ];
+
+        const validated = collectAndValidateFieldResults(results, expectedFields);
+        expect(validated).toEqual({ name: 'Alice', score: 95, passed: true });
+
+        // Multi-field: full object is the final value
+        const isSingleValueReturn = expectedFields.length === 1 && expectedFields[0].name === 'value';
+        expect(isSingleValueReturn).toBe(false);
+        const finalValue = isSingleValueReturn ? validated['value'] : validated;
+        expect(finalValue).toEqual({ name: 'Alice', score: 95, passed: true });
+      });
+
+      it('single field NOT named value returns full object (structural type with one field)', () => {
+        // Edge case: type Result { success: boolean } - one field but not named 'value'
+        const results = [
+          { __fieldReturn: true as const, field: 'success', value: true },
+        ];
+        const expectedFields = [
+          { name: 'success', type: 'boolean' },
+        ];
+
+        const validated = collectAndValidateFieldResults(results, expectedFields);
+        expect(validated).toEqual({ success: true });
+
+        // Single field but NOT named 'value' - still a structural type
+        const isSingleValueReturn = expectedFields.length === 1 && expectedFields[0].name === 'value';
+        expect(isSingleValueReturn).toBe(false);
+        const finalValue = isSingleValueReturn ? validated['value'] : validated;
+        expect(finalValue).toEqual({ success: true });
+      });
+    });
   });
 
   describe('buildReturnInstruction', () => {
@@ -382,7 +477,8 @@ describe('executeWithTools with return tools', () => {
     };
 
     let callCount = 0;
-    const executeProvider = async (): Promise<AIResponse> => {
+    let receivedFollowUp: string | undefined;
+    const executeProvider = async (req: AIRequest): Promise<AIResponse> => {
       callCount++;
       if (callCount === 1) {
         // First call: AI responds with text (wrong)
@@ -392,7 +488,9 @@ describe('executeWithTools with return tools', () => {
           stopReason: 'end',
         };
       }
-      // Second call: AI calls return tool correctly
+      // Second call: should have followUpMessage asking to use tool
+      receivedFollowUp = req.followUpMessage;
+      // AI calls return tool correctly
       return {
         content: '',
         parsedValue: '',
@@ -412,9 +510,60 @@ describe('executeWithTools with return tools', () => {
     expect(callCount).toBe(2);
     expect(completedViaReturnTool).toBe(true);
     expect(returnFieldResults).toHaveLength(1);
-    // First round has synthesized error, second round has successful tool call
-    expect(rounds).toHaveLength(2);
-    expect(rounds[0].results[0].error).toContain('must call');
+    // Retry sent followUpMessage to AI
+    expect(receivedFollowUp).toContain('must call');
+    // Only the successful tool call round is recorded
+    expect(rounds).toHaveLength(1);
+  });
+
+  it('should retry when AI only returns some of the expected fields', async () => {
+    const tools = getReturnTools();
+
+    const request: AIRequest = {
+      operationType: 'do',
+      prompt: 'Return response and correct',
+      contextText: '',
+      targetType: null,
+      model: { name: 'test', apiKey: 'key', url: null },
+    };
+
+    let callCount = 0;
+    let receivedFollowUp: string | undefined;
+    const executeProvider = async (req: AIRequest): Promise<AIResponse> => {
+      callCount++;
+      if (callCount === 1) {
+        // First call: AI only returns 'response' field, missing 'correct'
+        return {
+          content: '',
+          parsedValue: '',
+          toolCalls: [{ id: 'call_1', toolName: RETURN_FIELD_TOOL, args: { field: 'response', value: true } }],
+          stopReason: 'tool_use',
+        };
+      }
+      // Second call: should have followUpMessage about missing 'correct'
+      receivedFollowUp = req.followUpMessage;
+      return {
+        content: '',
+        parsedValue: '',
+        toolCalls: [{ id: 'call_2', toolName: RETURN_FIELD_TOOL, args: { field: 'correct', value: false } }],
+        stopReason: 'tool_use',
+      };
+    };
+
+    const { returnFieldResults, completedViaReturnTool } = await executeWithTools(
+      request,
+      tools,
+      TEST_ROOT_DIR,
+      executeProvider,
+      { expectedReturnTool: RETURN_FIELD_TOOL, expectedFieldNames: ['response', 'correct'], maxRounds: 3 }
+    );
+
+    expect(callCount).toBe(2);
+    expect(completedViaReturnTool).toBe(true);
+    expect(returnFieldResults).toHaveLength(2);
+    // Retry asked for the missing 'correct' field
+    expect(receivedFollowUp).toContain('"correct"');
+    expect(receivedFollowUp).toContain('missing required fields');
   });
 
   it('should not complete via return tool when not expected', async () => {

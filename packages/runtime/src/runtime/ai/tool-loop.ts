@@ -1,9 +1,23 @@
 // Tool Execution Loop for AI-Initiated Tool Calling
 // Handles multi-turn conversations where AI calls tools
 
-import type { AIRequest, AIResponse, AIToolCall, AIToolResult } from './types';
+import type { AIRequest, AIResponse, AIToolCall, AIToolResult, TokenUsage } from './types';
 import type { VibeToolValue } from '../tools/types';
 import { isReturnToolCall } from './return-tools';
+
+/**
+ * Accumulate token usage from multiple API responses.
+ */
+function accumulateUsage(total: TokenUsage, next?: TokenUsage): TokenUsage {
+  if (!next) return total;
+  return {
+    inputTokens: total.inputTokens + next.inputTokens,
+    outputTokens: total.outputTokens + next.outputTokens,
+    thinkingTokens: (total.thinkingTokens ?? 0) + (next.thinkingTokens ?? 0) || undefined,
+    cachedInputTokens: (total.cachedInputTokens ?? 0) + (next.cachedInputTokens ?? 0) || undefined,
+    cacheCreationTokens: (total.cacheCreationTokens ?? 0) + (next.cacheCreationTokens ?? 0) || undefined,
+  };
+}
 
 /** Options for the tool execution loop */
 export interface ToolLoopOptions {
@@ -13,6 +27,8 @@ export interface ToolLoopOptions {
   onToolCall?: (call: AIToolCall, result: unknown, error?: string) => void;
   /** Expected return tool name (if set, AI must call this tool to return a value) */
   expectedReturnTool?: string;
+  /** Expected field names that must ALL be returned via the return tool */
+  expectedFieldNames?: string[];
 }
 
 /** Result of the tool execution loop */
@@ -102,7 +118,7 @@ export async function executeWithTools(
   executeProvider: (request: AIRequest) => Promise<AIResponse>,
   options: ToolLoopOptions = {}
 ): Promise<ToolLoopResult> {
-  const { maxRounds = 10, onToolCall, expectedReturnTool } = options;
+  const { maxRounds = 10, onToolCall, expectedReturnTool, expectedFieldNames } = options;
   const rounds: ToolRoundResult[] = [];
 
   let request = initialRequest;
@@ -110,6 +126,12 @@ export async function executeWithTools(
   let roundCount = 0;
   let returnFieldResults: unknown[] = [];
   let completedViaReturnTool = false;
+
+  // Accumulate token usage across all rounds
+  let totalUsage: TokenUsage = response.usage ?? { inputTokens: 0, outputTokens: 0 };
+
+  // Track which expected fields have been collected
+  const collectedFields = new Set<string>();
 
   // Continue while there are tool calls to execute (or we need to retry for missing return tool)
   while (roundCount < maxRounds) {
@@ -134,12 +156,37 @@ export async function executeWithTools(
             // Return tool succeeded - collect result
             returnFieldResults.push(result.result);
             completedViaReturnTool = true;
+            // Track which field was returned
+            const fieldName = call.args?.field;
+            if (typeof fieldName === 'string') {
+              collectedFields.add(fieldName);
+            }
           }
           // If return tool errored, error flows back to AI for retry
         }
       }
 
-      // If we got return tool results, we're done (AI returns all fields in one round)
+      // Check if all expected fields have been collected
+      if (completedViaReturnTool && expectedFieldNames?.length) {
+        const missingFields = expectedFieldNames.filter(f => !collectedFields.has(f));
+        if (missingFields.length > 0) {
+          // Not all fields returned - ask AI to provide the missing ones
+          const missingList = missingFields.map(f => `"${f}"`).join(', ');
+          const followUpMessage = `You are missing required fields. Call ${expectedReturnTool} for each of: ${missingList}`;
+
+          request = {
+            ...request,
+            previousToolCalls: response.toolCalls,
+            toolResults: results,
+            followUpMessage,
+          };
+          response = await executeProvider(request);
+          totalUsage = accumulateUsage(totalUsage, response.usage);
+          continue;
+        }
+      }
+
+      // All expected fields collected (or no specific fields expected) - we're done
       if (completedViaReturnTool) {
         break;
       }
@@ -149,28 +196,25 @@ export async function executeWithTools(
         ...request,
         previousToolCalls: response.toolCalls,
         toolResults: results,
+        followUpMessage: undefined,
       };
       response = await executeProvider(request);
+      totalUsage = accumulateUsage(totalUsage, response.usage);
     }
     // Case 2: AI didn't call any tools but we expected a return tool
     else if (expectedReturnTool && !completedViaReturnTool) {
       roundCount++;
 
-      // Synthesize error to send back to AI
-      const errorResult: AIToolResult = {
-        toolCallId: 'missing-return-tool',
-        error: `You must call the ${expectedReturnTool} tool to return your answer. Do not respond with plain text.`,
-        duration: 0,
-      };
-      rounds.push({ toolCalls: [], results: [errorResult] });
-
-      // Make follow-up request with error
+      // Send follow-up message asking AI to use the tool
+      const followUpMessage = `You must call the ${expectedReturnTool} tool to return your answer. Do not respond with plain text.`;
       request = {
         ...request,
-        previousToolCalls: [],
-        toolResults: [errorResult],
+        previousToolCalls: undefined,
+        toolResults: undefined,
+        followUpMessage,
       };
       response = await executeProvider(request);
+      totalUsage = accumulateUsage(totalUsage, response.usage);
     }
     // Case 3: No tool calls and no expected return tool - we're done
     else {
@@ -186,6 +230,9 @@ export async function executeWithTools(
   } else if (roundCount >= maxRounds && response.toolCalls?.length) {
     console.warn(`Tool loop hit max rounds (${maxRounds}), stopping with pending tool calls`);
   }
+
+  // Set aggregated usage on the response (includes all rounds)
+  response.usage = totalUsage.inputTokens > 0 ? totalUsage : undefined;
 
   return {
     response,

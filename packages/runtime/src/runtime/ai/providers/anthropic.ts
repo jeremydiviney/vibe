@@ -75,20 +75,28 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
       input: call.args,
     }));
 
-    // Add user message with tool_result blocks
-    const toolResultContent = toolResults.map(result => ({
-      type: 'tool_result' as const,
-      tool_use_id: result.toolCallId,
-      content: result.error
-        ? `Error: ${result.error}`
-        : (typeof result.result === 'string' ? result.result : JSON.stringify(result.result)),
-    }));
+    // Add user message with tool_result blocks (only for matching tool calls)
+    const validToolCallIds = new Set(previousToolCalls.map(c => c.id));
+    const toolResultContent = toolResults
+      .filter(result => validToolCallIds.has(result.toolCallId))
+      .map(result => ({
+        type: 'tool_result' as const,
+        tool_use_id: result.toolCallId,
+        content: result.error
+          ? `Error: ${result.error}`
+          : (typeof result.result === 'string' ? result.result : JSON.stringify(result.result)),
+      }));
 
     allMessages = [
       ...initialUserMessages,
       { role: 'assistant' as const, content: assistantContent },
       { role: 'user' as const, content: toolResultContent },
     ];
+  }
+
+  // Add follow-up message if present (e.g., error about missing return fields)
+  if (request.followUpMessage) {
+    allMessages = [...allMessages, { role: 'user' as const, content: request.followUpMessage }];
   }
 
   try {
@@ -229,12 +237,15 @@ async function executeWithOverrideMessages(
     );
     const content = textBlock?.text ?? '';
 
-    // Extract usage
+    // Extract usage including cache and thinking tokens
     const rawUsage = response.usage as unknown as Record<string, unknown> | undefined;
     const usage = rawUsage
       ? {
           inputTokens: Number(rawUsage.input_tokens ?? 0),
           outputTokens: Number(rawUsage.output_tokens ?? 0),
+          cachedInputTokens: rawUsage.cache_read_input_tokens ? Number(rawUsage.cache_read_input_tokens) : undefined,
+          cacheCreationTokens: rawUsage.cache_creation_input_tokens ? Number(rawUsage.cache_creation_input_tokens) : undefined,
+          thinkingTokens: rawUsage.thinking_tokens ? Number(rawUsage.thinking_tokens) : undefined,
         }
       : undefined;
 

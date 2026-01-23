@@ -59,10 +59,10 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     };
     messages.push(assistantMessage);
 
-    // Add tool result messages
-    for (let i = 0; i < toolResults.length; i++) {
-      const result = toolResults[i];
-      const call = previousToolCalls[i];
+    // Add tool result messages (only for calls that have matching previousToolCalls)
+    for (const result of toolResults) {
+      const call = previousToolCalls.find(c => c.id === result.toolCallId);
+      if (!call) continue;
       const toolMessage: ChatMessage = {
         role: 'tool',
         tool_call_id: call.id,
@@ -74,6 +74,11 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       };
       messages.push(toolMessage);
     }
+  }
+
+  // Add follow-up message if present (e.g., error about missing return fields)
+  if (request.followUpMessage) {
+    messages.push({ role: 'user', content: request.followUpMessage });
   }
 
   try {
@@ -106,12 +111,15 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     const rawUsage = completion.usage as unknown as Record<string, unknown> | undefined;
     const promptDetails = rawUsage?.prompt_tokens_details as Record<string, unknown> | undefined;
     const completionDetails = rawUsage?.completion_tokens_details as Record<string, unknown> | undefined;
+    const thinkingTokens = completionDetails?.reasoning_tokens ? Number(completionDetails.reasoning_tokens) : 0;
+    const totalCompletionTokens = Number(rawUsage?.completion_tokens ?? 0);
     const usage = rawUsage
       ? {
           inputTokens: Number(rawUsage.prompt_tokens ?? 0),
-          outputTokens: Number(rawUsage.completion_tokens ?? 0),
+          // OpenAI includes reasoning tokens in completion_tokens, subtract to avoid double-counting
+          outputTokens: totalCompletionTokens - thinkingTokens,
           cachedInputTokens: promptDetails?.cached_tokens ? Number(promptDetails.cached_tokens) : undefined,
-          thinkingTokens: completionDetails?.reasoning_tokens ? Number(completionDetails.reasoning_tokens) : undefined,
+          thinkingTokens: thinkingTokens || undefined,
         }
       : undefined;
 

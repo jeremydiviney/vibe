@@ -12,7 +12,7 @@ describe('Semantic Errors - Duplicate Declarations', () => {
 let x = "hello"
 let x = "world"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'x' is already declared");
   });
@@ -22,7 +22,7 @@ let x = "world"
 const x = "hello"
 const x = "world"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'x' is already declared");
   });
@@ -32,7 +32,7 @@ const x = "world"
 let x = "hello"
 const x = "world"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'x' is already declared");
   });
@@ -46,7 +46,7 @@ function greet(x: text): text {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'greet' is already declared");
   });
@@ -56,7 +56,7 @@ function greet(x: text): text {
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 model myModel = { name: "test2", apiKey: "key2", url: "http://test2" }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'myModel' is already declared");
   });
@@ -72,7 +72,7 @@ function greet(name: text): text {
   return name
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'greet' is already declared");
   });
@@ -82,7 +82,7 @@ function greet(name: text): text {
 let myModel = "test"
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'myModel' is already declared");
   });
@@ -94,7 +94,7 @@ function myModel() {
 }
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'myModel' is already declared");
   });
@@ -110,7 +110,7 @@ if true {
   let x = "inner"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -122,7 +122,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -133,7 +133,7 @@ function greet(name: text): text {
   return name
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -147,7 +147,7 @@ let x = "first"
 let x = "second"
 let x = "third"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("'x' is already declared");
     expect(errors[1].message).toBe("'x' is already declared");
@@ -160,7 +160,7 @@ let y = "first"
 let x = "second"
 let y = "second"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("'x' is already declared");
     expect(errors[1].message).toBe("'y' is already declared");

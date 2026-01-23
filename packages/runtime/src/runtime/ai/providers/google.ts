@@ -78,21 +78,29 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       parts: modelParts,
     };
 
-    // 3. User message with function responses
-    const responseParts: ContentPart[] = toolResults.map((result, i) => ({
-      functionResponse: {
-        name: previousToolCalls[i].toolName,
-        response: result.error
-          ? { error: result.error }
-          : { result: result.result },
-      },
-    }));
+    // 3. User message with function responses (only for matching tool calls)
+    const toolCallMap = new Map(previousToolCalls.map(c => [c.id, c]));
+    const responseParts: ContentPart[] = toolResults
+      .filter(result => toolCallMap.has(result.toolCallId))
+      .map(result => ({
+        functionResponse: {
+          name: toolCallMap.get(result.toolCallId)!.toolName,
+          response: result.error
+            ? { error: result.error }
+            : { result: result.result },
+        },
+      }));
     const responseMessage: Content = {
       role: 'user',
       parts: responseParts,
     };
 
     contents = [userMessage, modelMessage, responseMessage];
+
+    // Add follow-up message if present (e.g., error about missing return fields)
+    if (request.followUpMessage) {
+      contents.push({ role: 'user', parts: [{ text: request.followUpMessage }] });
+    }
   } else {
     // Simple single prompt
     contents = combinedPrompt;

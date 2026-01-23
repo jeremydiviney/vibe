@@ -12,7 +12,7 @@ describe('Semantic Validation - Async Declarations', () => {
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async let x: text = do "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -21,7 +21,7 @@ async let x: text = do "prompt" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async let x: text = vibe "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -29,7 +29,7 @@ async let x: text = vibe "prompt" m
     const ast = parse(`
 async let x = ts() { return fetchData(); }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -38,7 +38,7 @@ async let x = ts() { return fetchData(); }
 function getData(): text { return "data" }
 async let x = getData()
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -51,7 +51,7 @@ async let x = getData()
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async const x: text = do "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -60,7 +60,7 @@ async const x: text = do "prompt" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async const x: text = vibe "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -68,7 +68,7 @@ async const x: text = vibe "prompt" m
     const ast = parse(`
 async const x = ts() { return fetchData(); }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -77,7 +77,7 @@ async const x = ts() { return fetchData(); }
 function getData(): text { return "data" }
 async const x = getData()
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -90,7 +90,7 @@ async const x = getData()
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async let {name: text, age: number} = do "get info" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -99,7 +99,7 @@ async let {name: text, age: number} = do "get info" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async const {name: text, age: number} = do "get info" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -112,7 +112,7 @@ async const {name: text, age: number} = do "get info" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async do "log something" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -121,7 +121,7 @@ async do "log something" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async vibe "process data" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -129,7 +129,7 @@ async vibe "process data" m
     const ast = parse(`
 async ts() { console.log("fire and forget"); }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -138,7 +138,7 @@ async ts() { console.log("fire and forget"); }
 function logEvent(msg: text): text { return msg }
 async logEvent("event")
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -161,7 +161,7 @@ async logEvent("event")
 let data = "test"
 async let x = data
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('async declarations require a single do, vibe, ts block, or function call');
   });
@@ -171,7 +171,7 @@ async let x = data
 model m = { name: "test", apiKey: "key", url: "http://test" }
 let x = do "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Type cannot be inferred from AI call');
   });
@@ -181,7 +181,7 @@ let x = do "prompt" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 let x = vibe "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Type cannot be inferred from AI call');
   });
@@ -199,7 +199,7 @@ let x = vibe "prompt" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async let x: text = do "prompt" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -208,7 +208,7 @@ async let x: text = do "prompt" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async const x: number = do "give number" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -221,7 +221,7 @@ async const x: number = do "give number" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 async let private secret: text = do "get secret" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -230,7 +230,7 @@ async let private secret: text = do "get secret" m
 function getKey(): text { return "key" }
 async const private API_KEY = getKey()
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -245,7 +245,7 @@ async let a: text = do "1" m
 async let b: text = do "2" m
 async let c: text = do "3" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -257,7 +257,7 @@ async let async1: text = do "prompt" m
 const sync2 = 42
 async const async2 = ts() { return fetchData(); }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -270,7 +270,7 @@ async const async2 = ts() { return fetchData(); }
 let api = "api"
 async api.sendNotification("done")
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -285,7 +285,7 @@ async let x: text = do "1" m
 async let y: text = do "2" m
 let result = x + y
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -295,7 +295,7 @@ model m = { name: "test", apiKey: "key", url: "http://test" }
 async let x: text = do "get data" m
 async let y: text = do "use {x}" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 });

@@ -17,7 +17,7 @@ tool greet(name: text): text
   ts(name) { return "Hello, " + name }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -32,7 +32,7 @@ tool calculate(x: number, y: number, op: text): number
   ts(x, y, op) { return x + y }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -45,7 +45,7 @@ tool greet(name: text): text
   ts(name) { return "Hello, " + name }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("@param 'nonexistent' does not match any parameter");
       expect(errors[0].message).toContain("Valid parameters: name");
@@ -61,7 +61,7 @@ tool sendEmail(to: text, subject: text): boolean
   ts(to, subject) { return true }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("@param 'body' does not match any parameter");
       expect(errors[0].message).toContain("Valid parameters: to, subject");
@@ -76,7 +76,7 @@ tool getCurrentTime(): text
   ts() { return new Date().toISOString() }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("@param 'time' does not match any parameter");
       expect(errors[0].message).toContain("Valid parameters: (none)");
@@ -92,7 +92,7 @@ tool greet(name: text): text
   ts(name) { return "Hello" }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(2);
       expect(errors[0].message).toContain("@param 'foo'");
       expect(errors[1].message).toContain("@param 'bar'");
@@ -109,7 +109,7 @@ tool search(query: text, limit: number): json
   ts(query, limit) { return [] }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("@param 'typo'");
     });
@@ -128,7 +128,7 @@ tool test(a: text, b: number, c: boolean, d: json): text
   ts(a, b, c, d) { return a }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -140,7 +140,7 @@ tool test(items: text[], numbers: number[]): json[]
   ts(items, numbers) { return [] }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -152,7 +152,7 @@ tool test(data: UnknownType): text
   ts(data) { return "" }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("Unknown type 'UnknownType'");
     });
@@ -165,7 +165,7 @@ tool test(name: text): UnknownReturn
   ts(name) { return {} }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("Unknown return type 'UnknownReturn'");
     });
@@ -180,7 +180,7 @@ tool processCustomer(info: CustomerInfo): json
   ts(info) { return {} }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
   });
@@ -198,7 +198,7 @@ tool greet(name: text): text
   ts(name) { return "Hello" }
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -222,7 +222,7 @@ tool greet(name: text): text
 
 let result = greet("World")
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("Cannot call tool 'greet' directly");
       expect(errors[0].message).toContain("Tools can only be used by AI models");
@@ -233,7 +233,7 @@ let result = greet("World")
 import { now } from "system/tools"
 let timestamp = now()
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("Cannot call tool 'now' directly");
     });
@@ -244,7 +244,7 @@ import { readFile, writeFile } from "system/tools"
 let content = readFile("test.txt")
 let _ = writeFile("out.txt", "data")
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(2);
       expect(errors[0].message).toContain("Cannot call tool 'readFile' directly");
       expect(errors[1].message).toContain("Cannot call tool 'writeFile' directly");
@@ -265,7 +265,7 @@ model m = {
   tools: [greet]
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -280,7 +280,7 @@ model m = {
   tools: allTools
 }
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(0);
     });
 
@@ -298,7 +298,7 @@ let toolRef = double
 // But calling it is not allowed
 let result = double(21)
 `);
-      const errors = analyze(ast);
+      const errors = analyze(ast, '', '');
       expect(errors).toHaveLength(1);
       expect(errors[0].message).toContain("Cannot call tool 'double' directly");
     });

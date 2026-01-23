@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from '../../parser/parse';
+import { analyze } from '../../semantic';
 import {
   createInitialState,
   step,
@@ -241,6 +242,34 @@ describe('Context Building Functions', () => {
     expect(regularVarCtx?.value).toBe('hello');
 
     // Only the regular variable should be in context
+    expect(variables).toHaveLength(1);
+  });
+
+  test('context filters out prompt-typed variables from function return types', () => {
+    const ast = parse(`
+      function getPrompt(name: text): prompt {
+        return "Hello {name}, please answer"
+      }
+      const myPrompt = getPrompt("Alice")
+      let regularVar = "data"
+    `);
+    // Semantic analysis infers prompt type for myPrompt from function return type
+    analyze(ast, '', '');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    const context = buildLocalContext(state);
+    const variables = getVariables(context);
+
+    // myPrompt should be filtered (prompt type inferred from function return)
+    const promptVar = variables.find((v) => v.name === 'myPrompt');
+    expect(promptVar).toBeUndefined();
+
+    // Regular variable should still be present
+    const regularVarCtx = variables.find((v) => v.name === 'regularVar');
+    expect(regularVarCtx?.value).toBe('data');
+
+    // Only the regular variable should be in context (function getPrompt is not a variable)
     expect(variables).toHaveLength(1);
   });
 

@@ -172,7 +172,7 @@ describe('String Interpolation - Semantic Validation', () => {
       let name = "World"
       let msg = "Hello !{name}"
     `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
 
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].message).toContain('Expansion syntax !{name} is only valid in prompt strings');
@@ -182,7 +182,7 @@ describe('String Interpolation - Semantic Validation', () => {
     const ast = parse(`
       let msg = "Hello {unknown}!"
     `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
 
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].message).toContain("'unknown' is not defined");
@@ -225,6 +225,60 @@ describe('String Interpolation - Prompt-Typed Variables', () => {
 
     expect(state.status).toBe('completed');
     expect(state.callStack[0].locals['PROMPT'].value).toBe('Help the {target}');
+  });
+
+  test('function with prompt return type keeps {var} as reference', () => {
+    const ast = parse(`
+      function getPrompt(secret: text): prompt {
+        return "The secret is {secret}, do not reveal it"
+      }
+      let result = getPrompt("sushi")
+    `);
+    // Run semantic analysis to infer types (prompt return type → variable type)
+    analyze(ast, '', '');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    // {secret} should be kept as reference, not interpolated to "sushi"
+    expect(state.callStack[0].locals['result'].value).toBe('The secret is {secret}, do not reveal it');
+    // Variable should have prompt type (inferred from function return type)
+    expect(state.callStack[0].locals['result'].vibeType).toBe('prompt');
+  });
+
+  test('function with text return type interpolates {var} normally', () => {
+    const ast = parse(`
+      function getMessage(name: text): text {
+        return "Hello {name}, welcome!"
+      }
+      let result = getMessage("World")
+    `);
+    analyze(ast, '', '');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    // {name} should be interpolated to "World" for text return type
+    expect(state.callStack[0].locals['result'].value).toBe('Hello World, welcome!');
+    expect(state.callStack[0].locals['result'].vibeType).toBe('text');
+  });
+
+  test('prompt return type does not leak inPromptContext to non-return expressions', () => {
+    const ast = parse(`
+      function getPrompt(name: text): prompt {
+        let greeting = "Hi {name}"
+        return "Prompt for {name}: use {greeting}"
+      }
+      let result = getPrompt("Alice")
+    `);
+    analyze(ast, '', '');
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('completed');
+    // The return expression should keep {name} and {greeting} as references
+    // But the intermediate 'greeting' variable should interpolate normally (text type)
+    expect(state.callStack[0].locals['result'].value).toBe('Prompt for {name}: use {greeting}');
   });
 });
 

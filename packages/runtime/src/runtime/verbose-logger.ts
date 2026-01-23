@@ -33,6 +33,7 @@ interface AICallContext {
   modelDetails?: { name: string; provider: string; url?: string };
   type: 'do' | 'vibe';
   targetType: string | null;
+  contextMode?: 'default' | 'local';
   messages: AILogMessage[];
   // For complete context files (populated after AI call)
   response?: string;
@@ -65,8 +66,8 @@ export class VerboseLogger {
 
     // Generate timestamp for this run
     this.runTimestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    this.mainLogPath = join(this.logDir, `run-${this.runTimestamp}.jsonl`);
     this.contextDir = join(this.logDir, `run-${this.runTimestamp}`);
+    this.mainLogPath = join(this.contextDir, 'run.jsonl');
   }
 
   /**
@@ -122,6 +123,7 @@ export class VerboseLogger {
       `Model: ${context.modelDetails?.name ?? context.model} (${context.modelDetails?.provider ?? 'unknown'})`,
       `Type: ${context.type}`,
       `Target: ${context.targetType ?? 'text'}`,
+      `Context: ${context.contextMode ?? 'default'}`,
       `Timestamp: ${new Date().toISOString()}`,
       '',
       '=== REQUEST MESSAGES ===',
@@ -345,7 +347,12 @@ export class VerboseLogger {
       event: 'ai_complete',
       id,
       durationMs,
-      ...(usage && { tokens: { in: usage.inputTokens, out: usage.outputTokens } }),
+      ...(usage && { tokens: {
+        in: usage.inputTokens,
+        out: usage.outputTokens,
+        ...(usage.thinkingTokens && { thinking: usage.thinkingTokens }),
+        ...(usage.cachedInputTokens && { cachedIn: usage.cachedInputTokens }),
+      } }),
       toolCalls: toolCallCount,
       ...(error && { error }),
     };

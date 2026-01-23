@@ -12,7 +12,7 @@ describe('Semantic Validation - Destructuring Declarations', () => {
 model m = { name: "test", apiKey: "key", url: "http://test" }
 const {name: text, age: number} = do "get info" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -21,7 +21,7 @@ const {name: text, age: number} = do "get info" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 let {valid: boolean, reason: text} = do "validate" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -30,7 +30,7 @@ let {valid: boolean, reason: text} = do "validate" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 const {items: text[], counts: number[]} = do "get lists" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -43,7 +43,7 @@ const {items: text[], counts: number[]} = do "get lists" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 const {name: text, name: number} = do "get info" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain("Duplicate field 'name'");
   });
@@ -53,7 +53,7 @@ const {name: text, name: number} = do "get info" m
 model m = { name: "test", apiKey: "key", url: "http://test" }
 const {x: number, y: number, x: text, y: text} = do "get" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toContain("Duplicate field 'x'");
     expect(errors[1].message).toContain("Duplicate field 'y'");
@@ -69,7 +69,7 @@ model m = { name: "test", apiKey: "key", url: "http://test" }
 let name = "existing"
 const {name: text, age: number} = do "get info" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'name' is already declared");
   });
@@ -80,7 +80,7 @@ model m = { name: "test", apiKey: "key", url: "http://test" }
 function greet() { return "hi" }
 const {greet: text} = do "get" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'greet' is already declared");
   });
@@ -91,7 +91,7 @@ model m = { name: "test", apiKey: "key", url: "http://test" }
 const {name: text} = do "get name" m
 const {name: number} = do "get another" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("'name' is already declared");
   });
@@ -104,7 +104,7 @@ const {name: number} = do "get another" m
     const ast = parse(`
 const {name: text} = "not valid"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Destructuring assignment requires a do/vibe expression, json variable, or function call');
   });
@@ -113,7 +113,7 @@ const {name: text} = "not valid"
     const ast = parse(`
 const {value: number} = 42
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain('Destructuring assignment requires a do/vibe expression, json variable, or function call');
   });
@@ -127,7 +127,7 @@ const {value: number} = 42
 let data: json = { name: "test", age: 25 }
 const {name: text, age: number} = data
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -138,7 +138,7 @@ function getData(): json {
 }
 const {name: text} = getData()
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -149,7 +149,7 @@ const {name: text} = getData()
 let data = "test"
 const {name: text} = data
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -165,7 +165,7 @@ if true {
   const {name: text} = do "get" m
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -178,7 +178,7 @@ function test() {
   return name
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -193,7 +193,7 @@ const {name: text, age: number} = do "get" m
 let greeting = name
 let years = age
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -203,7 +203,7 @@ model m = { name: "test", apiKey: "key", url: "http://test" }
 let x = name
 const {name: text} = do "get" m
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toContain("'name' is not defined");
   });

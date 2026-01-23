@@ -12,7 +12,7 @@ describe('Semantic Errors - Const Reassignment', () => {
 const x = "hello"
 x = "world"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot reassign constant 'x'");
   });
@@ -22,7 +22,7 @@ x = "world"
 let x = "hello"
 x = "world"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -37,7 +37,7 @@ if true {
   x = "world"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot reassign constant 'x'");
   });
@@ -50,7 +50,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Cannot reassign constant 'x'");
   });
@@ -66,7 +66,7 @@ if true {
   let x = "inner"
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -78,7 +78,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -92,7 +92,7 @@ const x = "hello"
 x = "world"
 x = "again"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("Cannot reassign constant 'x'");
     expect(errors[1].message).toBe("Cannot reassign constant 'x'");
@@ -105,7 +105,7 @@ const y = "world"
 x = "new x"
 y = "new y"
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
   });
 });

@@ -5,6 +5,7 @@ import {
   runUntilPause,
   resumeWithAIResponse,
   buildLocalContext,
+  buildGlobalContext,
   type ContextVariable,
 } from '../index';
 import { formatContextForAI } from '../context';
@@ -281,6 +282,50 @@ describe('AI Context Tests', () => {
       { kind: 'variable', name: 'input', value: 'my input', type: 'text', isConst: false, frameName: 'process', frameDepth: 1, source: null },
       { kind: 'variable', name: 'localVar', value: 'local value', type: 'text', isConst: false, frameName: 'process', frameDepth: 1, source: null },
     ]);
+  });
+
+  test('do call inside function sends only local context to AI (not outer scope)', () => {
+    // This test verifies that ai-provider.ts uses buildLocalContext (not buildGlobalContext)
+    // for the context text sent to the AI model. A do call inside a function should
+    // only see the function's own parameters and locals, not outer scope variables.
+    const ast = parse(`
+      const OUTER_DATA = "should not be in AI context"
+      let outerVar = "also should not be in AI context"
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+
+      function evaluateResponse(question: text, answer: text): text {
+        let evaluation = "pending"
+        return do "Evaluate if {answer} correctly answers {question}" m
+      }
+
+      let result = evaluateResponse("What is 2+2?", "4")
+    `);
+
+    let state = createInitialState(ast);
+    state = runUntilPause(state);
+
+    expect(state.status).toBe('awaiting_ai');
+
+    // buildLocalContext: only function params and locals (what ai-provider uses)
+    const localContext = buildLocalContext(state);
+    const localFormatted = formatContextForAI(localContext, { includeInstructions: false });
+
+    // Should only contain evaluateResponse's params and locals
+    expect(localFormatted.text).not.toContain('OUTER_DATA');
+    expect(localFormatted.text).not.toContain('outerVar');
+    expect(localFormatted.text).not.toContain('should not be in AI context');
+    expect(localFormatted.text).toContain('question');
+    expect(localFormatted.text).toContain('answer');
+    expect(localFormatted.text).toContain('evaluation');
+
+    // buildGlobalContext: includes outer scope (would leak data if used by ai-provider)
+    const globalContext = buildGlobalContext(state);
+    const globalFormatted = formatContextForAI(globalContext, { includeInstructions: false });
+
+    // Global WOULD contain outer variables (confirming local is a subset)
+    expect(globalFormatted.text).toContain('OUTER_DATA');
+    expect(globalFormatted.text).toContain('outerVar');
+    expect(globalFormatted.text).toContain('should not be in AI context');
   });
 
   // ============================================================================

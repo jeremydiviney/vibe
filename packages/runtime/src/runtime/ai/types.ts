@@ -35,6 +35,8 @@ export interface AIRequest {
   previousToolCalls?: AIToolCall[];
   /** Tool results from previous call (for multi-turn) */
   toolResults?: AIToolResult[];
+  /** Follow-up user message after tool results (e.g., error about missing fields) */
+  followUpMessage?: string;
   /** Override messages (used by vibe for custom system prompt) */
   messages?: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
 }

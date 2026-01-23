@@ -8,7 +8,7 @@ import type { VibeToolValue, ToolSchema } from './tools/types';
 import { detectProvider, getProviderExecutor, buildAIRequest } from './ai';
 import { withRetry } from './ai/retry';
 import { executeWithTools, type ToolRoundResult } from './ai/tool-loop';
-import { buildGlobalContext, formatContextForAI } from './context';
+import { buildLocalContext, formatContextForAI } from './context';
 import { buildAIContext } from './ai/context';
 import { buildVibeMessages, type VibeScopeParam } from './ai/formatters';
 import {
@@ -216,10 +216,16 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         ? prompt + buildReturnInstruction(expectedFields)
         : prompt;
 
-      // Build unified AI context (single source of truth)
-      // Use finalPrompt so the log shows what was actually sent
+      // Build context from local frame (current function's params/variables only)
+      const context = buildLocalContext(state);
+
+      // For compress, treat as single-round 'do' type
+      const requestType = aiType === 'compress' ? 'do' : aiType;
+
+      // Build unified AI context (single source of truth for messages and logging)
       const aiContext = buildAIContext(
-        state,
+        context,
+        requestType,
         model,
         finalPrompt,
         // For tool-based returns, pass null to disable structured output
@@ -227,13 +233,8 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
         toolSchemas.length > 0 ? toolSchemas : undefined
       );
 
-      // Build context from global context for the request
-      const context = buildGlobalContext(state);
+      // Format context for the request
       const formattedContext = formatContextForAI(context);
-
-      // Build the request with tools
-      // For compress, treat as single-round 'do' type
-      const requestType = aiType === 'compress' ? 'do' : aiType;
 
       const request: AIRequest = {
         ...buildAIRequest(
@@ -251,26 +252,27 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       const execute = getProviderExecutor(model.provider!);
 
       // Execute with tool loop (handles multi-turn tool calling)
-      // 'do'/'compress' = single round (maxRounds: 1) - do is single-shot
+      // 'do' with return tool = allow retries for missing fields (maxRounds: 3)
+      // 'do' without return tool = single round (maxRounds: 1)
       // 'vibe' = multi-turn (maxRounds: 10)
       const maxRetries = modelValue.maxRetriesOnError ?? 3;
       const isDo = aiType === 'do' || aiType === 'compress';
+      const expectedFieldNames = expectedFields?.map(f => f.name);
       const { response, rounds, returnFieldResults, completedViaReturnTool } = await executeWithTools(
         request,
         allTools,
         state.rootDir,
         (req) => withRetry(() => execute(req), { maxRetries }),
         {
-          maxRounds: isDo ? 1 : 10,
+          maxRounds: isDo ? (useToolReturn ? 3 : 1) : 10,
           expectedReturnTool: returnToolName ?? undefined,
+          expectedFieldNames,
         }
       );
 
       // Convert tool rounds to PromptToolCall format for logging
-      // Filter out return tools - they're internal and shouldn't appear in context
       const interactionToolCalls: PromptToolCall[] = rounds.flatMap((round) =>
         round.toolCalls
-          .filter((call) => !isReturnToolCall(call.toolName))
           .map((call) => {
             const result = round.results.find((r) => r.toolCallId === call.id);
             return {
@@ -283,22 +285,38 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       );
 
       // Determine final value
+      const location = state.pendingAI?.location ?? state.pendingCompress?.location;
+      // Build AI log context for error reporting (so context files have content even on failure)
+      const aiLogContext = {
+        messages: aiContext.messages,
+        response: response.content,
+        toolRounds: rounds.length > 0 ? rounds : undefined,
+      };
       let finalValue: unknown;
       if (useToolReturn) {
         if (completedViaReturnTool && returnFieldResults) {
           // Filter and validate field return results
           const fieldResults = returnFieldResults.filter(isFieldReturnResult);
           if (fieldResults.length === 0) {
-            throw new Error('No valid field return results from AI');
+            throw new RuntimeError('No valid field return results from AI', location, undefined, { __aiLogContext: aiLogContext });
           }
           // Validate and collect all fields
-          const validated = collectAndValidateFieldResults(fieldResults, expectedFields!);
-          // For single-value returns, extract the 'value' field
-          // For multi-value destructuring, keep the whole object
-          finalValue = state.pendingDestructuring ? validated : validated['value'];
+          try {
+            const validated = collectAndValidateFieldResults(fieldResults, expectedFields!);
+            // For single-value returns (e.g., `const x: number = do "..."`),
+            // expectedFields is [{name: 'value', type: 'number'}] - extract the value.
+            // For structural types or destructuring, keep the full object.
+            const isSingleValueReturn = !state.pendingDestructuring
+              && expectedFields!.length === 1
+              && expectedFields![0].name === 'value';
+            finalValue = isSingleValueReturn ? validated['value'] : validated;
+          } catch (e) {
+            // Wrap validation errors with source location
+            throw new RuntimeError(e instanceof Error ? e.message : String(e), location, undefined, { __aiLogContext: aiLogContext });
+          }
         } else {
           // After max retries, AI still didn't call return tool
-          throw new Error(`AI failed to call ${returnToolName} after multiple attempts`);
+          throw new RuntimeError(`AI failed to call ${returnToolName} after multiple attempts`, location, undefined, { __aiLogContext: aiLogContext });
         }
       } else {
         // Check if model used return tool anyway (even when not expected)

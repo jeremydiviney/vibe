@@ -308,6 +308,17 @@ export function createVisitors(
         node.arguments.forEach((arg) => visitExpression(arg));
         checkCallArguments(ctx, node, getExprType, validateLitType);
         checkToolCall(ctx, node);
+        // Validate push argument matches array element type
+        if (node.callee.type === 'MemberExpression' && node.callee.property === 'push' && node.arguments.length === 1) {
+          const arrType = getExprType(node.callee.object);
+          if (arrType?.endsWith('[]')) {
+            const elementType = arrType.slice(0, -2);
+            const argType = getExprType(node.arguments[0]);
+            if (argType && elementType && argType !== elementType) {
+              ctx.error(`Cannot push ${argType} to ${arrType}`, node.arguments[0].location);
+            }
+          }
+        }
         break;
 
       case 'TsBlock':
@@ -417,15 +428,6 @@ export function createVisitors(
       validateTypeAnnotation(ctx, node.vibeType, node.location);
     }
     if (node.initializer) {
-      if (node.initializer.type === 'CallExpression' && node.initializer.callee.type === 'Identifier') {
-        const funcSymbol = ctx.symbols.lookup(node.initializer.callee.name);
-        if (funcSymbol?.kind === 'function' && !funcSymbol.returnType) {
-          ctx.error(
-            `Cannot assign result of '${node.initializer.callee.name}()' to a variable - function has no return type`,
-            node.location
-          );
-        }
-      }
       const isPromptType = node.vibeType === 'prompt';
       if (isPromptType && (node.initializer.type === 'StringLiteral' || node.initializer.type === 'TemplateLiteral')) {
         validateStringInterpolation(ctx, node.initializer.value, true, node.initializer.location);

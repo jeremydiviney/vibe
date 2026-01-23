@@ -5,7 +5,7 @@ import { SemanticAnalyzer } from '../analyzer';
 function getErrors(source: string): string[] {
   const ast = parse(source);
   const analyzer = new SemanticAnalyzer();
-  return analyzer.analyze(ast, source).map((e) => e.message);
+  return analyzer.analyze(ast, source, '').map((e) => e.message);
 }
 
 describe('Compress Context Mode Validation', () => {

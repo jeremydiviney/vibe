@@ -81,7 +81,7 @@ export async function runVibe(source: string, options?: RunVibeOptions): Promise
   const ast = parse(source, { file: options?.file });
 
   // 2. Semantic analysis
-  const errors = analyze(ast, source);
+  const errors = analyze(ast, source, options?.file ?? '');
   if (errors.length > 0) {
     throw errors[0];
   }
@@ -234,7 +234,7 @@ async function main(): Promise<void> {
   try {
     // Parse and analyze
     const ast = parse(source, { file: filePath });
-    const errors = analyze(ast, source);
+    const errors = analyze(ast, source, filePath);
     if (errors.length > 0) {
       throw errors[0];
     }
@@ -259,13 +259,9 @@ async function main(): Promise<void> {
 
       // Show log paths if verbose logging was enabled
       if (verbose) {
-        const mainLogPath = runtime.getMainLogPath();
         const contextDir = runtime.getContextDir();
-        if (mainLogPath) {
-          console.error(`[Verbose] Logs written to: ${mainLogPath}`);
-        }
         if (contextDir) {
-          console.error(`[Verbose] Context files in: ${contextDir}`);
+          console.error(`[Verbose] Logs written to: ${contextDir}`);
         }
       }
 

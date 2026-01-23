@@ -12,7 +12,7 @@ describe('Semantic Errors - Type Constraints', () => {
 let notAModel = "test"
 let x: text = vibe "prompt" notAModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got variable 'notAModel'");
   });
@@ -22,7 +22,7 @@ let x: text = vibe "prompt" notAModel default
 const notAModel = "test"
 let x: text = vibe "prompt" notAModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got constant 'notAModel'");
   });
@@ -34,7 +34,7 @@ function notAModel() {
 }
 let x: text = vibe "prompt" notAModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got function 'notAModel'");
   });
@@ -47,7 +47,7 @@ function test(notAModel: text): text {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
     expect(errors[0].message).toBe("Expected model, got parameter 'notAModel'");
   });
@@ -61,7 +61,7 @@ function test(notAModel: text): text {
 model myModel = { name: "test", apiKey: "key", url: "http://test" }
 let x: text = vibe "prompt" myModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -73,7 +73,7 @@ function test() {
   return x
 }
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
   });
 
@@ -87,7 +87,7 @@ let notAModel = "test"
 let x: text = vibe "prompt1" notAModel default
 let y: text = vibe "prompt2" notAModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("Expected model, got variable 'notAModel'");
     expect(errors[1].message).toBe("Expected model, got variable 'notAModel'");
@@ -103,7 +103,7 @@ let notAModel = "test"
 let x: text = vibe "prompt1" undefinedModel default
 let y: text = vibe "prompt2" notAModel default
 `);
-    const errors = analyze(ast);
+    const errors = analyze(ast, '', '');
     expect(errors.length).toBe(2);
     expect(errors[0].message).toBe("'undefinedModel' is not defined");
     expect(errors[1].message).toBe("Expected model, got variable 'notAModel'");
