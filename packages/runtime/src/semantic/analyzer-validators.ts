@@ -357,15 +357,17 @@ export function validateTsBlock(ctx: AnalyzerContext, node: AST.TsBlock): void {
     const bindingName = eqIndex !== -1 ? rawParam.slice(0, eqIndex).trim() : rawParam;
     const expr = eqIndex !== -1 ? rawParam.slice(eqIndex + 1).trim() : rawParam;
 
-    // Validate the base variable of the expression
-    const baseName = expr.split('.')[0];
+    // Validate the base variable exists
+    const segments = parseTsParamExpr(expr);
+    const baseName = segments ? segments[0].value as string : expr;
     const symbol = ctx.symbols.lookup(baseName);
     if (!symbol) {
       ctx.error(`'${baseName}' is not defined`, node.location);
       continue;
     }
-    // For expressions with dots or named params, type is unknown (defer to runtime)
-    const vibeType = expr.includes('.') ? null : (symbol.vibeType ?? null);
+
+    // Resolve the type of the full expression (handles member, index, slice)
+    const vibeType = resolveTsParamExprType(ctx, expr, node.location);
     params.push({
       name: bindingName,
       vibeType,
@@ -376,6 +378,135 @@ export function validateTsBlock(ctx: AnalyzerContext, node: AST.TsBlock): void {
   for (const err of tsErrors) {
     ctx.error(err.message, err.location);
   }
+}
+
+/**
+ * Resolve the vibeType of a ts block parameter expression string.
+ * Handles dotted member access, index access, and slice expressions.
+ * Examples: "varName", "obj.field", "arr[0]", "arr[-1]", "arr[1:3]", "obj.list[0].name"
+ */
+function resolveTsParamExprType(ctx: AnalyzerContext, expr: string, location: SourceLocation): string | null {
+  const segments = parseTsParamExpr(expr);
+  if (!segments) return null;
+
+  // Look up the base variable
+  const baseName = segments[0].value as string;
+  const symbol = ctx.symbols.lookup(baseName);
+  if (!symbol) return null;
+
+  let currentType: string | null = symbol.vibeType ?? (symbol.kind === 'model' ? 'model' : null);
+
+  // Walk the access chain to resolve the final type
+  for (let i = 1; i < segments.length; i++) {
+    if (!currentType) return null;
+    const seg = segments[i];
+
+    switch (seg.type) {
+      case 'member':
+        currentType = resolveMemberType(currentType, seg.value as string);
+        break;
+      case 'index':
+        if (currentType.endsWith('[]')) {
+          currentType = currentType.slice(0, -2);  // T[] -> T
+        } else if (currentType === 'json') {
+          currentType = 'json';
+        } else {
+          currentType = null;
+        }
+        break;
+      case 'slice':
+        // Slice preserves the array type: T[] -> T[]
+        if (!currentType.endsWith('[]')) {
+          currentType = null;
+        }
+        break;
+    }
+  }
+
+  return currentType;
+}
+
+/** Resolve the type of a member access on a given base type. */
+function resolveMemberType(baseType: string, property: string): string | null {
+  if (baseType.endsWith('[]')) {
+    if (property === 'len') return 'number';
+    return null;
+  }
+  if (baseType === 'text' || baseType === 'prompt') {
+    if (property === 'len') return 'number';
+    return null;
+  }
+  if (baseType === 'json') return null;  // json member access is untyped
+  if (baseType === 'model') {
+    if (property === 'usage') return 'json[]';
+    if (property === 'name') return 'text';
+    return null;
+  }
+  return null;
+}
+
+type TsParamSegment =
+  | { type: 'base'; value: string }
+  | { type: 'member'; value: string }
+  | { type: 'index'; value: number }
+  | { type: 'slice'; start: number | null; end: number | null };
+
+/**
+ * Parse a ts param expression string into access segments.
+ * Returns null if the expression is malformed.
+ */
+function parseTsParamExpr(expr: string): TsParamSegment[] | null {
+  const segments: TsParamSegment[] = [];
+  let i = 0;
+
+  // Parse base identifier
+  let base = '';
+  while (i < expr.length && expr[i] !== '.' && expr[i] !== '[') {
+    base += expr[i];
+    i++;
+  }
+  if (!base) return null;
+  segments.push({ type: 'base', value: base });
+
+  // Parse chain of .field, [index], [start:end]
+  while (i < expr.length) {
+    if (expr[i] === '.') {
+      i++; // skip dot
+      let field = '';
+      while (i < expr.length && expr[i] !== '.' && expr[i] !== '[') {
+        field += expr[i];
+        i++;
+      }
+      if (!field) return null;
+      segments.push({ type: 'member', value: field });
+    } else if (expr[i] === '[') {
+      i++; // skip [
+      let content = '';
+      while (i < expr.length && expr[i] !== ']') {
+        content += expr[i];
+        i++;
+      }
+      if (i >= expr.length) return null; // no closing ]
+      i++; // skip ]
+
+      if (content.includes(':')) {
+        // Slice: [start:end]
+        const [startStr, endStr] = content.split(':');
+        const start = startStr.trim() ? parseInt(startStr.trim(), 10) : null;
+        const end = endStr.trim() ? parseInt(endStr.trim(), 10) : null;
+        segments.push({ type: 'slice', start, end });
+      } else {
+        // Index: [n]
+        const idx = parseInt(content.trim(), 10);
+        if (isNaN(idx)) return null;
+        segments.push({ type: 'index', value: idx });
+      }
+    } else {
+      return null; // unexpected character
+    }
+  }
+
+  return segments;
 }
 
 // ============================================================================
@@ -685,11 +816,14 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
     }
     case 'TsBlock': {
       const params: Array<{ name: string; vibeType: string | null }> = [];
-      for (const paramName of expr.params) {
-        const symbol = ctx.symbols.lookup(paramName);
+      for (const rawParam of expr.params) {
+        const eqIndex = rawParam.indexOf('=');
+        const bindingName = eqIndex !== -1 ? rawParam.slice(0, eqIndex).trim() : rawParam;
+        const paramExpr = eqIndex !== -1 ? rawParam.slice(eqIndex + 1).trim() : rawParam;
+        const vibeType = resolveTsParamExprType(ctx, paramExpr, expr.location);
         params.push({
-          name: paramName,
-          vibeType: symbol?.vibeType ?? null,
+          name: bindingName,
+          vibeType,
         });
       }
       return inferTsBlockReturnType(params, expr.body);

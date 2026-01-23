@@ -22,6 +22,62 @@ function parseTsParam(param: string): { name: string; expr: string } {
   return { name: param, expr: param };
 }
 
+type TsParamSegment =
+  | { type: 'base'; value: string }
+  | { type: 'member'; value: string }
+  | { type: 'index'; value: number }
+  | { type: 'slice'; start: number | null; end: number | null };
+
+/**
+ * Parse a ts param expression into access segments.
+ * Handles: "var", "obj.field", "arr[0]", "arr[-1]", "arr[1:3]", "obj.list[0].name"
+ */
+function parseTsParamExprSegments(expr: string): TsParamSegment[] {
+  const segments: TsParamSegment[] = [];
+  let i = 0;
+
+  // Parse base identifier
+  let base = '';
+  while (i < expr.length && expr[i] !== '.' && expr[i] !== '[') {
+    base += expr[i];
+    i++;
+  }
+  segments.push({ type: 'base', value: base });
+
+  // Parse chain of .field, [index], [start:end]
+  while (i < expr.length) {
+    if (expr[i] === '.') {
+      i++;
+      let field = '';
+      while (i < expr.length && expr[i] !== '.' && expr[i] !== '[') {
+        field += expr[i];
+        i++;
+      }
+      segments.push({ type: 'member', value: field });
+    } else if (expr[i] === '[') {
+      i++;
+      let content = '';
+      while (i < expr.length && expr[i] !== ']') {
+        content += expr[i];
+        i++;
+      }
+      i++; // skip ]
+      if (content.includes(':')) {
+        const [startStr, endStr] = content.split(':');
+        const start = startStr.trim() ? parseInt(startStr.trim(), 10) : null;
+        const end = endStr.trim() ? parseInt(endStr.trim(), 10) : null;
+        segments.push({ type: 'slice', start, end });
+      } else {
+        segments.push({ type: 'index', value: parseInt(content.trim(), 10) });
+      }
+    } else {
+      break;
+    }
+  }
+
+  return segments;
+}
+
 /**
  * Deep freeze an object to prevent any mutation.
  * Used to enforce const semantics for objects passed to ts blocks.
@@ -174,23 +230,47 @@ export function execTsEval(state: RuntimeState, params: string[], body: string, 
 
   // Resolve parameter values from expressions
   const paramValues = parsed.map(({ expr }) => {
-    const parts = expr.split('.');
-    const baseName = parts[0];
+    const segments = parseTsParamExprSegments(expr);
+    const baseName = segments[0].value as string;
 
     // First try regular variables
     const found = lookupVariable(state, baseName);
     if (found) {
       let value: unknown = resolveValue(found.variable.value);
-      // Walk the property chain for dotted expressions
-      for (let i = 1; i < parts.length; i++) {
+      // Walk the access chain
+      for (let i = 1; i < segments.length; i++) {
+        const seg = segments[i];
         if (value === null || value === undefined) {
-          throw new Error(`TypeError: Cannot read property '${parts[i]}' of ${value}`);
+          const accessStr = seg.type === 'member' ? `.${seg.value}` : `[${seg.value}]`;
+          throw new Error(`TypeError: Cannot read property '${accessStr}' of ${value}`);
         }
-        // For model.usage, return a copy to prevent mutation
-        if (found.variable.vibeType === 'model' && parts[i] === 'usage') {
-          value = [...((value as { usage: unknown[] }).usage)];
-        } else {
-          value = (value as Record<string, unknown>)[parts[i]];
+        switch (seg.type) {
+          case 'member': {
+            const prop = seg.value as string;
+            // For model.usage, return a copy to prevent mutation
+            if (found.variable.vibeType === 'model' && prop === 'usage') {
+              value = [...((value as { usage: unknown[] }).usage)];
+            } else {
+              value = (value as Record<string, unknown>)[prop];
+            }
+            break;
+          }
+          case 'index': {
+            const arr = value as unknown[];
+            const idx = seg.value as number;
+            value = idx < 0 ? arr[arr.length + idx] : arr[idx];
+            break;
+          }
+          case 'slice': {
+            const arr = value as unknown[];
+            const start = seg.start ?? 0;
+            const end = seg.end ?? arr.length;
+            value = arr.slice(
+              start < 0 ? arr.length + start : start,
+              end < 0 ? arr.length + end : end
+            );
+            break;
+          }
         }
       }
       // Freeze const objects to prevent mutation in ts blocks
@@ -200,7 +280,7 @@ export function execTsEval(state: RuntimeState, params: string[], body: string, 
       return value;
     }
     // Then try imported values (only for simple names)
-    if (parts.length === 1) {
+    if (segments.length === 1) {
       const imported = getImportedValue(state, expr);
       if (imported !== undefined) {
         return imported;

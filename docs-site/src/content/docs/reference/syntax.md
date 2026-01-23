@@ -246,6 +246,8 @@ vibe "prompt" model context
 ```
 ts() { code }
 ts(var1, var2) { code }
+ts(alias=expr) { code }
+ts(x=arr[0], y=obj.field, z=arr[1:3]) { code }
 ```
 
 ### Range Expression

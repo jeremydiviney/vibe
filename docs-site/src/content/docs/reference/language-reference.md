@@ -234,6 +234,12 @@ let result = ts(x, y) {
   return x + y;
 }
 
+// Named bindings with expressions (member, index, slice)
+let items = [10, 20, 30, 40]
+let first = ts(x=items[0]) { return x * 2; }
+let last = ts(x=items[-1]) { return x + 1; }
+let sub = ts(arr=items[1:3]) { return arr.length; }
+
 // Complex operations
 let parsed = ts(jsonString) {
   return JSON.parse(jsonString);

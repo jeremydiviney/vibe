@@ -149,6 +149,60 @@ describe('Semantic Analysis - TsBlock', () => {
     `);
     expect(errors).toHaveLength(3);
   });
+
+  test('ts block with member access param resolves type', () => {
+    const errors = analyze(`
+      model m = { name: "gpt-4", apiKey: "key", url: "http://test" }
+      let n = ts(name=m.name) { return name.length }
+    `);
+    // m.name resolves to 'text' -> string, .length is valid
+    expect(errors).toHaveLength(0);
+  });
+
+  test('ts block with array index param resolves element type', () => {
+    const errors = analyze(`
+      let items: number[] = [1, 2, 3]
+      let first = ts(x=items[0]) { return x * 2 }
+    `);
+    // items[0] resolves to 'number', x * 2 is valid
+    expect(errors).toHaveLength(0);
+  });
+
+  test('ts block with negative index param resolves element type', () => {
+    const errors = analyze(`
+      let items: number[] = [10, 20, 30]
+      let last = ts(x=items[-1]) { return x + 1 }
+    `);
+    // items[-1] resolves to 'number', x + 1 is valid
+    expect(errors).toHaveLength(0);
+  });
+
+  test('ts block with slice param resolves array type', () => {
+    const errors = analyze(`
+      let items: number[] = [1, 2, 3, 4]
+      let sub = ts(arr=items[1:3]) { return arr.length }
+    `);
+    // items[1:3] resolves to 'number[]', .length is valid
+    expect(errors).toHaveLength(0);
+  });
+
+  test('ts block with chained member and index access', () => {
+    const errors = analyze(`
+      model m = { name: "gpt-4", apiKey: "key", url: "http://test" }
+      let u = ts(usage=m.usage) { return usage.length }
+    `);
+    // m.usage resolves to 'json[]', .length is valid
+    expect(errors).toHaveLength(0);
+  });
+
+  test('ts block type error for invalid operation on resolved type', () => {
+    const errors = analyze(`
+      let items: text[] = ["a", "b", "c"]
+      let bad = ts(x=items[0]) { return x * 2 }
+    `);
+    // items[0] resolves to 'text' (string), x * 2 is a type error
+    expect(errors.length).toBeGreaterThan(0);
+  });
 });
 
 describe('Semantic Analysis - Vibe Import Validation', () => {

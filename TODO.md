@@ -210,12 +210,12 @@
   - Use VibeValue's existing `vibeType` field instead of `__vibeModel: true` on the value
   - Updated `isModelValue`, `getModelValue`, `pushModelUsage` and other model checks
   - Added vibeType propagation through function returns and variable assignments
-- [ ] Propagate vibeType through ts block parameter bindings with complex expressions
-  - `ts(x=obj.field){}` — member access should resolve field type
-  - `ts(x=arr[0]){}` — index access should resolve element type
-  - `ts(x=arr[1:3]){}` — slice should preserve array type
-  - `ts(x=arr[-1]){}` — negative index should resolve element type
-  - Update semantic analyzer and runtime to pass correct types into ts blocks
+- [x] Propagate vibeType through ts block parameter bindings with complex expressions
+  - `ts(x=obj.field){}` — member access resolves field type
+  - `ts(x=arr[0]){}` — index access resolves element type
+  - `ts(x=arr[1:3]){}` — slice preserves array type
+  - `ts(x=arr[-1]){}` — negative index resolves element type
+  - Updated semantic analyzer and runtime to parse/resolve complex expressions
 
 ### Error Handling Enhancements
 - [ ] `??` operator for default values on error (`result ?? "fallback"`)

@@ -28,6 +28,54 @@ let sum = ts(x, y) {
 
 Variables are passed by name and available inside the block.
 
+### Named Bindings
+
+Use `name=expr` to alias a variable or access a sub-expression:
+
+```vibe
+let longVariableName = "hello"
+
+let result = ts(s=longVariableName) {
+  return s.toUpperCase();
+}
+```
+
+### Expression Bindings
+
+You can pass member access, array index, and slice expressions as parameters:
+
+```vibe
+// Member access
+let obj: json = { name: "Alice", scores: [95, 87, 92] }
+let name = ts(n=obj.name) {
+  return n.toUpperCase();
+}
+
+// Array index access
+let items = [10, 20, 30, 40, 50]
+let first = ts(x=items[0]) { return x * 2; }
+let last = ts(x=items[-1]) { return x + 1; }
+
+// Slice access
+let middle = ts(sub=items[1:4]) {
+  return sub.reduce((a, b) => a + b, 0);
+}
+
+// Chained access
+let score = ts(s=obj.scores[0]) { return s; }
+let tail = ts(rest=obj.scores[1:]) {
+  return rest.length;
+}
+```
+
+Supported expression patterns:
+- `var.field` — object member access
+- `var[n]` — array index (supports negative indices)
+- `var[start:end]` — array slice (start/end are optional)
+- `var.field[n].other` — chained access
+
+Types are automatically resolved through the access chain, enabling full type checking inside the ts block.
+
 ## Type Checking
 
 Vibe performs compile-time type checking on ts() blocks. The types of Vibe variables are mapped to TypeScript types:
