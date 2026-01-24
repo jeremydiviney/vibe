@@ -282,6 +282,8 @@ export class Runtime {
       state.status === 'awaiting_compress' ||
       state.status === 'awaiting_async'
     ) {
+      // Sync this.state so the AI provider's getState() sees current state
+      this.state = state;
       state = await this.handlePause(state, options);
       state = runUntilPause(state);
       state = await this.startAsyncOperations(state);
