@@ -116,7 +116,7 @@ export function execTsBlock(state: RuntimeState, expr: AST.TsBlock): RuntimeStat
 
 /**
  * TypeScript eval - pause for async evaluation.
- * When currentAsyncVarName is set (async declaration), schedules the operation
+ * When asyncContext is set (async declaration), schedules the operation
  * for non-blocking execution instead of pausing.
  */
 export function execTsEval(state: RuntimeState, params: string[], body: string, location: SourceLocation): RuntimeState {

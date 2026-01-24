@@ -585,6 +585,16 @@ export interface AsyncWave {
   endTime?: number;
 }
 
+// Async declaration context - set when evaluating an async let/const/destructuring/fire-and-forget
+export interface AsyncContext {
+  varName: string | null;       // Variable being assigned (null for destructuring/fire-and-forget)
+  isConst: boolean;             // Whether it's a const declaration
+  type: VibeType;               // Type annotation for the variable
+  isPrivate: boolean;           // Whether it's a private declaration
+  isDestructure: boolean;       // True if async destructuring
+  isFireAndForget: boolean;     // True for fire-and-forget async (no variable assigned)
+}
+
 // The complete runtime state (fully serializable)
 export interface RuntimeState {
   status: RuntimeStatus;
@@ -649,13 +659,8 @@ export interface RuntimeState {
   nextAsyncId: number;                           // Counter for generating unique IDs
   awaitingAsyncIds: string[];                    // Operation IDs we're currently awaiting (when status is awaiting_async)
 
-  // Async declaration context - set when inside async let/const to enable non-blocking mode
-  currentAsyncVarName: string | null;            // Variable being assigned (null = not in async context)
-  currentAsyncIsConst: boolean;                  // Whether it's a const declaration
-  currentAsyncType: VibeType;                    // Type annotation for the variable
-  currentAsyncIsPrivate: boolean;                // Whether it's a private declaration
-  currentAsyncIsDestructure: boolean;            // True if async destructuring (variables created by destructure_assign)
-  currentAsyncIsFireAndForget: boolean;          // True for fire-and-forget async (no variable assigned)
+  // Async declaration context - non-null when inside async let/const to enable non-blocking mode
+  asyncContext: AsyncContext | null;
 
   // Async function isolation tracking
   isInAsyncIsolation: boolean;                   // True when running in isolated state (async Vibe function)

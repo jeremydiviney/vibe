@@ -19,10 +19,14 @@ export function execLetDeclaration(state: RuntimeState, stmt: AST.LetDeclaration
     // For async declarations, set context flag before evaluating
     let baseState = stmt.isAsync ? {
       ...state,
-      currentAsyncVarName: stmt.name,
-      currentAsyncIsConst: false,
-      currentAsyncType: stmt.vibeType,
-      currentAsyncIsPrivate: stmt.isPrivate ?? false,
+      asyncContext: {
+        varName: stmt.name,
+        isConst: false,
+        type: stmt.vibeType,
+        isPrivate: stmt.isPrivate ?? false,
+        isDestructure: false,
+        isFireAndForget: false,
+      },
     } : state;
 
     // For prompt-typed variables, set inPromptContext for string interpolation
@@ -62,10 +66,14 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
   // For async declarations, set context flag before evaluating
   let baseState = stmt.isAsync ? {
     ...state,
-    currentAsyncVarName: stmt.name,
-    currentAsyncIsConst: true,
-    currentAsyncType: stmt.vibeType,
-    currentAsyncIsPrivate: stmt.isPrivate ?? false,
+    asyncContext: {
+      varName: stmt.name,
+      isConst: true,
+      type: stmt.vibeType,
+      isPrivate: stmt.isPrivate ?? false,
+      isDestructure: false,
+      isFireAndForget: false,
+    },
   } : state;
 
   // For prompt-typed variables, set inPromptContext for string interpolation
@@ -96,7 +104,7 @@ export function execConstDeclaration(state: RuntimeState, stmt: AST.ConstDeclara
  * Destructuring declaration - evaluate initializer (AI expression) and assign fields.
  * const {name: text, age: number} = do "..." model default
  * For async declarations, sets context flag so AI/TS handlers use non-blocking mode.
- * For destructuring, currentAsyncIsDestructure=true tells the async system to NOT update
+ * For destructuring, asyncContext.isDestructure=true tells the async system to NOT update
  * any variable on completion - the actual variables are created by destructure_assign.
  */
 export function execDestructuringDeclaration(
@@ -114,11 +122,14 @@ export function execDestructuringDeclaration(
   // variableName stays null - destructure_assign creates the actual variables
   const baseState = stmt.isAsync ? {
     ...state,
-    currentAsyncVarName: null,  // No single variable - destructure_assign handles it
-    currentAsyncIsConst: stmt.isConst,
-    currentAsyncType: null, // Destructuring doesn't have single type
-    currentAsyncIsPrivate: false,
-    currentAsyncIsDestructure: true,  // Signals async path without variable tracking
+    asyncContext: {
+      varName: null,  // No single variable - destructure_assign handles it
+      isConst: stmt.isConst,
+      type: null,  // Destructuring doesn't have single type
+      isPrivate: false,
+      isDestructure: true,  // Signals async path without variable tracking
+      isFireAndForget: false,
+    },
   } : state;
 
   return {
@@ -651,7 +662,10 @@ export function execStatement(state: RuntimeState, stmt: AST.Statement): Runtime
       // Fire-and-forget async - set flag so handlers schedule async execution
       return {
         ...state,
-        currentAsyncIsFireAndForget: true,
+        asyncContext: {
+          varName: null, isConst: false, type: null,
+          isPrivate: false, isDestructure: false, isFireAndForget: true,
+        },
         instructionStack: [
           { op: 'exec_expression', expr: stmt.expression, location: stmt.expression.location },
           { op: 'clear_async_context', location: stmt.location },

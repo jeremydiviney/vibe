@@ -80,7 +80,7 @@ export function getContextForAI(state: RuntimeState, context: AST.ContextSpecifi
  * If model is null, uses lastUsedModel from state.
  * If context is null, defaults to 'default' (full execution history).
  *
- * When currentAsyncVarName is set (async declaration), schedules the operation
+ * When asyncContext is set (async declaration), schedules the operation
  * for non-blocking execution instead of pausing.
  */
 export function execAIVibe(state: RuntimeState, model: string | null, context: AST.ContextSpecifier | null, operationType: 'do' | 'vibe', location?: SourceLocation): RuntimeState {

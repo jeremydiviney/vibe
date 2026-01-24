@@ -80,13 +80,8 @@ export function createInitialState(
     nextAsyncId: 1,
     awaitingAsyncIds: [],
 
-    // Async declaration context (set when inside async let/const)
-    currentAsyncVarName: null,
-    currentAsyncIsConst: false,
-    currentAsyncType: null,
-    currentAsyncIsPrivate: false,
-    currentAsyncIsDestructure: false,
-    currentAsyncIsFireAndForget: false,
+    // Async declaration context (null when not in async declaration)
+    asyncContext: null,
 
     // Async function isolation
     isInAsyncIsolation: false,

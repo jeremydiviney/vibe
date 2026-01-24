@@ -37,9 +37,10 @@ export function scheduleAsyncOperation(
   const operationId = generateAsyncId(state);
 
   // Determine variable name (null for destructuring or fire-and-forget)
-  const variableName = state.currentAsyncIsDestructure || state.currentAsyncIsFireAndForget
+  const ctx = state.asyncContext!;
+  const variableName = ctx.isDestructure || ctx.isFireAndForget
     ? null
-    : state.currentAsyncVarName;
+    : ctx.varName;
 
   // Create async operation record
   const asyncOp: AsyncOperation = {
@@ -107,23 +108,14 @@ export function scheduleAsyncOperation(
  * Used when exiting async scheduling mode.
  */
 export function clearAsyncContext(): Partial<RuntimeState> {
-  return {
-    currentAsyncVarName: null,
-    currentAsyncIsConst: false,
-    currentAsyncType: null,
-    currentAsyncIsPrivate: false,
-    currentAsyncIsDestructure: false,
-    currentAsyncIsFireAndForget: false,
-  };
+  return { asyncContext: null };
 }
 
 /**
  * Checks if we're currently in an async context.
  */
 export function isInAsyncContext(state: RuntimeState): boolean {
-  return state.currentAsyncVarName !== null ||
-         state.currentAsyncIsDestructure ||
-         state.currentAsyncIsFireAndForget;
+  return state.asyncContext !== null;
 }
 
 /**
