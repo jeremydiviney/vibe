@@ -6,7 +6,7 @@ export { VibeLexer, tokenize, allTokens } from './lexer';
 export { vibeParser } from './parser';
 export { parse } from './parser/parse';
 export { analyze } from './semantic';
-export { Runtime, RuntimeStatus } from './runtime';
+export { Runtime } from './runtime';
 export type { RuntimeState, AIProvider } from './runtime';
 export * as AST from './ast';
 export * from './errors';

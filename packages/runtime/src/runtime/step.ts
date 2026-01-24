@@ -268,9 +268,6 @@ function executeInstruction(state: RuntimeState, instruction: Instruction): Runt
     case 'clear_prompt_context':
       return execClearPromptContext(state);
 
-    case 'interpolate_template':
-      return execInterpolateRegularString(state, instruction.template, instruction.location);
-
     case 'binary_op':
       return execBinaryOp(state, instruction);
 

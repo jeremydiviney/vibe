@@ -1,8 +1,6 @@
-// Re-export types (RuntimeStatus exported as enum below for backward compatibility)
 export type {
   RuntimeState,
   StackFrame,
-  Variable,
   ContextVariable,
   ContextEntry,
   AIOperation,
@@ -89,7 +87,7 @@ export { formatAIInteractions, dumpAIInteractions, saveAIInteractions } from './
 export { VerboseLogger, type VerboseLoggerOptions } from './verbose-logger';
 export type { LogEvent, AILogMessage, TokenUsage } from './types';
 
-// Legacy imports for backward compatibility
+// Imports used by the Runtime class
 import * as AST from '../ast';
 import { dirname } from 'path';
 import { RuntimeError } from '../errors';
@@ -174,7 +172,7 @@ export interface RuntimeOptions {
   maxParallel?: number;        // Max concurrent async operations (default: 4)
 }
 
-// Legacy Runtime class - convenience wrapper around functional API
+// Runtime class - convenience wrapper around functional API
 export class Runtime {
   private state: RuntimeState;
   private aiProvider: AIProvider;
@@ -993,18 +991,6 @@ export class Runtime {
   getContextDir(): string | null {
     return this.verboseLogger?.getContextDir() ?? null;
   }
-}
-
-// Legacy enum for backward compatibility
-export enum RuntimeStatus {
-  RUNNING = 'running',
-  AWAITING_AI_RESPONSE = 'awaiting_ai',
-  AWAITING_COMPRESS = 'awaiting_compress',
-  AWAITING_USER_INPUT = 'awaiting_user',
-  AWAITING_TS = 'awaiting_ts',
-  AWAITING_TOOL = 'awaiting_tool',
-  COMPLETED = 'completed',
-  ERROR = 'error',
 }
 
 // Re-export tool system

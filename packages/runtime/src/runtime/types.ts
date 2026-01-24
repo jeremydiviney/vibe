@@ -179,19 +179,6 @@ export function propagateErrors(
   return createVibeValue(value, options);
 }
 
-// ============================================================================
-// Legacy Variable type (being replaced by VibeValue)
-// ============================================================================
-
-// Variable entry with mutability flag and optional type
-// @deprecated Use VibeValue instead
-export interface Variable {
-  value: unknown;
-  isConst: boolean;
-  vibeType: string | null;
-  source?: ValueSource;  // Where the value came from (AI response, user input, or code)
-}
-
 // Variable in context (for AI calls)
 // Note: Models are filtered out - they are config, not data for AI context
 export interface ContextVariable {
@@ -742,9 +729,6 @@ export type Instruction =
 
   // Clear prompt context flag after evaluating prompt expression
   | { op: 'clear_prompt_context'; location: SourceLocation }
-
-  // Template literal interpolation (${var} syntax) - DEPRECATED, use interpolate_string
-  | { op: 'interpolate_template'; template: string; location: SourceLocation }
 
   // Binary operators
   | { op: 'binary_op'; operator: string; location: SourceLocation }
