@@ -5,10 +5,10 @@
 // 2. Prompt strings (do/vibe): {var} is a reference (left as-is), !{var} expands
 
 import type { SourceLocation } from '../../errors';
-import type { RuntimeState, VibeValue } from '../types';
+import type { RuntimeState } from '../types';
 import { resolveValue, isVibeValue } from '../types';
 import { lookupVariable } from './variables';
-import { ESCAPED_LBRACE, ESCAPED_RBRACE, ESCAPED_BANG_LBRACE, unescapeBraces } from '../../parser/visitor/helpers';
+import { unescapeBraces } from '../../parser/visitor/helpers';
 
 // Pattern for interpolation: {var}, {obj.prop}, {arr[0]}, {arr[1:3]}, !{...}
 // Captures: [1] = optional !, [2] = path (var.prop[0] etc.)
@@ -212,93 +212,71 @@ function resolveInterpolationToString(state: RuntimeState, ref: InterpolationRef
 }
 
 /**
- * Regular string interpolation - {var} expands to value.
- * Supports: {var}, {obj.prop}, {arr[0]}, {arr[1:3]}
- * !{var} is an ERROR in regular strings (caught by semantic analyzer).
+ * Core interpolation logic shared between regular and prompt string contexts.
+ *
+ * Regular strings: all {var} patterns expand to their value.
+ * Prompt strings: {var} is left as-is (reference for AI), only !{var} expands.
  */
-export function execInterpolateRegularString(
+function interpolateString(
   state: RuntimeState,
   template: string,
+  isPromptContext: boolean,
   location?: SourceLocation
 ): RuntimeState {
   // Check for pending async variables
   const pendingAsyncIds = getPendingAsyncIds(state, template);
 
   if (pendingAsyncIds.length > 0) {
+    const retryOp = isPromptContext ? 'interpolate_prompt_string' as const : 'interpolate_string' as const;
     return {
       ...state,
       status: 'awaiting_async',
       awaitingAsyncIds: pendingAsyncIds,
       instructionStack: [
-        { op: 'interpolate_string', template, location: location ?? { line: 0, column: 0 } },
-        ...state.instructionStack,
-      ],
-    };
-  }
-
-  // Perform interpolation - expand all {var} patterns
-  const result = template.replace(INTERPOLATION_PATTERN, (fullMatch, bang, path) => {
-    const { varName, accessPath } = parseAccessPath(path);
-    const ref: InterpolationRef = { varName, accessPath, expand: true, fullMatch };
-    return resolveInterpolationToString(state, ref);
-  });
-
-  // Convert escape placeholders back to literal characters
-  const finalResult = unescapeBraces(result);
-
-  return { ...state, lastResult: finalResult };
-}
-
-/**
- * Prompt string interpolation - {var} is reference (left as-is), !{var} expands.
- * Supports: {var}, {obj.prop}, {arr[0]}, {arr[1:3]}, !{var}, !{obj.prop}, etc.
- *
- * Even for {var} references, we wait for async variables to resolve because:
- * 1. The context system needs the resolved value to show the AI
- * 2. The variable must be valid and resolved for the prompt to be meaningful
- */
-export function execInterpolatePromptString(
-  state: RuntimeState,
-  template: string,
-  location?: SourceLocation
-): RuntimeState {
-  // Check for pending async variables in ALL interpolations (both {} and !{})
-  // For {var} references, we still need the value resolved for context
-  const pendingAsyncIds = getPendingAsyncIds(state, template);
-
-  if (pendingAsyncIds.length > 0) {
-    return {
-      ...state,
-      status: 'awaiting_async',
-      awaitingAsyncIds: pendingAsyncIds,
-      instructionStack: [
-        { op: 'interpolate_prompt_string', template, location: location ?? { line: 0, column: 0 } },
+        { op: retryOp, template, location: location ?? { line: 0, column: 0 } },
         ...state.instructionStack,
       ],
     };
   }
 
   // Perform interpolation
-  // - {var} references: leave as-is (AI will see the literal {var})
-  // - !{var} expansions: replace with value
   const result = template.replace(INTERPOLATION_PATTERN, (fullMatch, bang, path) => {
     const isExpansion = bang === '!';
 
-    if (!isExpansion) {
-      // {var} reference - leave as-is for AI to see
+    // In prompt context, non-expansion refs are left as-is for the AI
+    if (isPromptContext && !isExpansion) {
       return fullMatch;
     }
 
-    // !{var} expansion - replace with value
+    // Expand: resolve variable and convert to string
     const { varName, accessPath } = parseAccessPath(path);
     const ref: InterpolationRef = { varName, accessPath, expand: true, fullMatch };
     return resolveInterpolationToString(state, ref);
   });
 
-  // Convert escape placeholders back to literal characters
-  const finalResult = unescapeBraces(result);
+  return { ...state, lastResult: unescapeBraces(result) };
+}
 
-  return { ...state, lastResult: finalResult };
+/**
+ * Regular string interpolation - {var} expands to value.
+ */
+export function execInterpolateRegularString(
+  state: RuntimeState,
+  template: string,
+  location?: SourceLocation
+): RuntimeState {
+  return interpolateString(state, template, false, location);
+}
+
+/**
+ * Prompt string interpolation - {var} is reference (left as-is), !{var} expands.
+ */
+export function execInterpolatePromptString(
+  state: RuntimeState,
+  template: string,
+  location?: SourceLocation
+): RuntimeState {
+  return interpolateString(state, template, true, location);
 }
 
 /**
