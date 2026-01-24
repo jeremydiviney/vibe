@@ -667,99 +667,82 @@ export interface RuntimeState {
   inPromptContext: boolean;
 }
 
-// Instructions - what to execute next
+// ============================================================================
+// Instruction types - grouped by category
 // All instructions have a location for error reporting
-export type Instruction =
-  // Execute AST nodes
+// ============================================================================
+
+// Execute AST nodes and literals
+export type ExecutionInstruction =
   | { op: 'exec_statement'; stmt: AST.Statement; location: SourceLocation }
   | { op: 'exec_expression'; expr: AST.Expression; location: SourceLocation }
   | { op: 'exec_statements'; stmts: AST.Statement[]; index: number; location: SourceLocation }
+  | { op: 'literal'; value: unknown; location: SourceLocation };
 
-  // Variable operations (use lastResult)
+// Variable lifecycle
+export type VariableInstruction =
   | { op: 'declare_var'; name: string; isConst: boolean; type: VibeType; isPrivate?: boolean; location: SourceLocation }
   | { op: 'assign_var'; name: string; location: SourceLocation }
+  | { op: 'destructure_assign'; fields: ExpectedField[]; isConst: boolean; location: SourceLocation };
 
-  // Function calls (functions always forget context - no context mode support)
-  | { op: 'call_function'; funcName: string; argCount: number; location: SourceLocation }
-  | { op: 'push_frame'; name: string; location: SourceLocation }
-  | { op: 'pop_frame'; location: SourceLocation }
-  | { op: 'return_value'; location: SourceLocation }
-
-  // Block scoping
-  | { op: 'enter_block'; savedKeys: string[]; location: SourceLocation }
-  | { op: 'exit_block'; savedKeys: string[]; location: SourceLocation }
-  | { op: 'clear_async_context'; location: SourceLocation }
-
-  // AI operations (pause points)
-  | { op: 'ai_vibe'; model: string | null; context: AST.ContextSpecifier | null; operationType: 'do' | 'vibe'; location: SourceLocation }
-
-  // TypeScript evaluation (pause point)
-  | { op: 'ts_eval'; params: string[]; body: string; location: SourceLocation }
-
-  // Imported TS function call (pause point)
-  | { op: 'call_imported_ts'; funcName: string; argCount: number; location: SourceLocation }
-
-  // Control flow
+// Branching, loops, and early exit
+export type ControlFlowInstruction =
   | { op: 'if_branch'; consequent: AST.BlockStatement; alternate?: AST.Statement | null; location: SourceLocation }
-
-  // For-in loop
   | { op: 'for_in_init'; stmt: AST.ForInStatement; location: SourceLocation }
   | { op: 'for_in_iterate'; variable: string; items: unknown[]; index: number; body: AST.BlockStatement; savedKeys: string[]; contextMode?: AST.ContextMode; label: string; entryIndex: number; location: SourceLocation }
-
-  // While loop
   | { op: 'while_init'; stmt: AST.WhileStatement; savedKeys: string[]; location: SourceLocation }
   | { op: 'while_iterate'; stmt: AST.WhileStatement; savedKeys: string[]; contextMode?: AST.ContextMode; label?: string; entryIndex: number; location: SourceLocation }
   | { op: 'while_check'; stmt: AST.WhileStatement; savedKeys: string[]; contextMode?: AST.ContextMode; label?: string; entryIndex: number; location: SourceLocation }
+  | { op: 'break_loop'; savedKeys: string[]; contextMode?: ContextMode; label?: string; entryIndex: number; scopeType: 'for' | 'while'; location: SourceLocation }
+  | { op: 'return_value'; location: SourceLocation }
+  | { op: 'throw_error'; location: SourceLocation };
 
-  // Value building (for objects, arrays, function args)
+// Call stack and scope management
+export type FrameInstruction =
+  | { op: 'call_function'; funcName: string; argCount: number; location: SourceLocation }
+  | { op: 'call_imported_ts'; funcName: string; argCount: number; location: SourceLocation }
+  | { op: 'push_frame'; name: string; location: SourceLocation }
+  | { op: 'pop_frame'; location: SourceLocation }
+  | { op: 'enter_block'; savedKeys: string[]; location: SourceLocation }
+  | { op: 'exit_block'; savedKeys: string[]; location: SourceLocation }
+  | { op: 'clear_async_context'; location: SourceLocation };
+
+// Building composite values on the value stack
+export type ValueInstruction =
   | { op: 'push_value'; location: SourceLocation }
   | { op: 'build_object'; keys: string[]; location: SourceLocation }
   | { op: 'build_array'; count: number; location: SourceLocation }
   | { op: 'build_range'; location: SourceLocation }
-  | { op: 'collect_args'; count: number; location: SourceLocation }
+  | { op: 'collect_args'; count: number; location: SourceLocation };
 
-  // Literals
-  | { op: 'literal'; value: unknown; location: SourceLocation }
-
-  // String interpolation (regular strings - expands {var} to value)
-  | { op: 'interpolate_string'; template: string; location: SourceLocation }
-
-  // Prompt string interpolation ({var} = reference, !{var} = expand)
-  | { op: 'interpolate_prompt_string'; template: string; location: SourceLocation }
-
-  // Clear prompt context flag after evaluating prompt expression
-  | { op: 'clear_prompt_context'; location: SourceLocation }
-
-  // Binary operators
+// Operators and property/index access
+export type OperatorInstruction =
   | { op: 'binary_op'; operator: string; location: SourceLocation }
-
-  // Unary operators
   | { op: 'unary_op'; operator: string; location: SourceLocation }
-
-  // Array access
   | { op: 'index_access'; location: SourceLocation }
   | { op: 'slice_access'; hasStart: boolean; hasEnd: boolean; location: SourceLocation }
+  | { op: 'member_access'; property: string; location: SourceLocation };
 
-  // Method call on object (built-in methods)
-  | { op: 'method_call'; method: string; argCount: number; location: SourceLocation }
+// String interpolation
+export type StringInstruction =
+  | { op: 'interpolate_string'; template: string; location: SourceLocation }
+  | { op: 'interpolate_prompt_string'; template: string; location: SourceLocation }
+  | { op: 'clear_prompt_context'; location: SourceLocation };
 
-  // Member/property access (handles VibeValue.toolCalls, VibeValue.err, regular properties, and bound methods)
-  | { op: 'member_access'; property: string; location: SourceLocation }
-
-  // Tool operations
+// Operations involving external systems (AI, TypeScript, tools)
+export type ExternalInstruction =
+  | { op: 'ai_vibe'; model: string | null; context: AST.ContextSpecifier | null; operationType: 'do' | 'vibe'; location: SourceLocation }
+  | { op: 'ts_eval'; params: string[]; body: string; location: SourceLocation }
   | { op: 'exec_tool_declaration'; decl: AST.ToolDeclaration; location: SourceLocation }
+  | { op: 'declare_model'; stmt: AST.ModelDeclaration; location: SourceLocation };
 
-  // Model declaration with tools (uses lastResult as tools array)
-  | { op: 'declare_model'; stmt: AST.ModelDeclaration; location: SourceLocation }
-
-  // AI tool call result (for context building)
-  | { op: 'ai_tool_call_result'; toolName: string; args: unknown; result: unknown; error?: string; location: SourceLocation }
-
-  // Destructuring assignment (assign multiple fields from AI result)
-  | { op: 'destructure_assign'; fields: ExpectedField[]; isConst: boolean; location: SourceLocation }
-
-  // Break loop - exit innermost loop with cleanup
-  | { op: 'break_loop'; savedKeys: string[]; contextMode?: ContextMode; label?: string; entryIndex: number; scopeType: 'for' | 'while'; location: SourceLocation }
-
-  // Throw error - unwind to function boundary and return error value
-  | { op: 'throw_error'; location: SourceLocation };
+// Combined instruction type
+export type Instruction =
+  | ExecutionInstruction
+  | VariableInstruction
+  | ControlFlowInstruction
+  | FrameInstruction
+  | ValueInstruction
+  | OperatorInstruction
+  | StringInstruction
+  | ExternalInstruction;
