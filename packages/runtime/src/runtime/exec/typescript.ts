@@ -299,12 +299,10 @@ export function execTsEval(state: RuntimeState, params: string[], body: string, 
       state,
       {
         type: 'ts',
-        tsDetails: {
-          params: tsParamNames,
-          body,
-          paramValues,
-          location,
-        },
+        params: tsParamNames,
+        body,
+        paramValues,
+        location,
       },
       'async_ts_scheduled'
     );

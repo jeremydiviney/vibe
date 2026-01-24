@@ -107,11 +107,9 @@ function scheduleAsyncVibeFunction(
     state,
     {
       type: 'vibe-function',
-      vibeFuncDetails: {
-        funcName,
-        args,
-        modulePath,
-      },
+      funcName,
+      args,
+      modulePath,
     },
     'async_vibe_function_scheduled'
   );
@@ -185,11 +183,9 @@ export function execCallFunction(
         state,
         {
           type: 'ts-function',
-          tsFuncDetails: {
-            funcName,
-            args: resolvedArgs,
-            location,
-          },
+          funcName,
+          args: resolvedArgs,
+          location,
         },
         'async_ts_function_scheduled'
       );

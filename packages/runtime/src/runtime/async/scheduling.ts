@@ -3,18 +3,18 @@
  * Consolidates the common pattern of scheduling async operations.
  */
 
-import type { RuntimeState, AsyncOperation, PendingAsyncStart, VibeValue, VibeError } from '../types';
+import type { RuntimeState, AsyncOperation, PendingAsyncStart, VibeValue, VibeError, SourceLocation } from '../types';
 import { createVibeValue } from '../types';
 import { generateAsyncId } from './executor';
 
 /**
- * Details for different async operation types.
+ * Details for different async operation types (without operationId/variableName which are added by scheduleAsyncOperation).
  */
 export type AsyncOperationDetails =
-  | { type: 'do' | 'vibe'; aiDetails: NonNullable<PendingAsyncStart['aiDetails']> }
-  | { type: 'ts'; tsDetails: NonNullable<PendingAsyncStart['tsDetails']> }
-  | { type: 'ts-function'; tsFuncDetails: NonNullable<PendingAsyncStart['tsFuncDetails']> }
-  | { type: 'vibe-function'; vibeFuncDetails: NonNullable<PendingAsyncStart['vibeFuncDetails']> };
+  | { type: 'do' | 'vibe'; prompt: string; model: string; context: unknown[]; operationType: 'do' | 'vibe' }
+  | { type: 'ts'; params: string[]; body: string; paramValues: unknown[]; location: SourceLocation }
+  | { type: 'ts-function'; funcName: string; args: unknown[]; location: SourceLocation }
+  | { type: 'vibe-function'; funcName: string; args: unknown[]; modulePath?: string };
 
 /**
  * Source type for VibeValue based on operation type.
@@ -52,23 +52,12 @@ export function scheduleAsyncOperation(
     waveId: state.currentWaveId,
   };
 
-  // Create pending start record with appropriate details
+  // Create pending start record by combining common fields with operation-specific details
   const pendingStart: PendingAsyncStart = {
+    ...details,
     operationId,
-    type: details.type,
     variableName,
   };
-
-  // Add the specific details based on operation type
-  if (details.type === 'do' || details.type === 'vibe') {
-    pendingStart.aiDetails = details.aiDetails;
-  } else if (details.type === 'ts') {
-    pendingStart.tsDetails = details.tsDetails;
-  } else if (details.type === 'ts-function') {
-    pendingStart.tsFuncDetails = details.tsFuncDetails;
-  } else if (details.type === 'vibe-function') {
-    pendingStart.vibeFuncDetails = details.vibeFuncDetails;
-  }
 
   // Create pending marker for variable
   const pendingMarker: VibeValue = createVibeValue(null, {

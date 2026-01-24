@@ -103,12 +103,10 @@ export function execAIVibe(state: RuntimeState, model: string | null, context: A
       state,
       {
         type: operationType,
-        aiDetails: {
-          prompt,
-          model: resolvedModel,
-          context: contextData,
-          operationType,
-        },
+        prompt,
+        model: resolvedModel,
+        context: contextData,
+        operationType,
       },
       `async_${operationType}_scheduled`
     );

@@ -567,41 +567,11 @@ export type AsyncOperationStatus = 'pending' | 'running' | 'completed' | 'failed
 export type AsyncOperationType = 'do' | 'vibe' | 'ts' | 'ts-function' | 'vibe-function';
 
 /** Scheduled async operation waiting to be started by Runtime.run() */
-export interface PendingAsyncStart {
-  operationId: string;                        // ID in asyncOperations map
-  type: AsyncOperationType;                   // What kind of operation
-  variableName: string | null;                // Variable to store result (null for fire-and-forget)
-
-  // AI operation details (when type is 'do' or 'vibe')
-  aiDetails?: {
-    prompt: string;
-    model: string;
-    context: unknown[];
-    operationType: 'do' | 'vibe';
-  };
-
-  // TS operation details (when type is 'ts')
-  tsDetails?: {
-    params: string[];
-    body: string;
-    paramValues: unknown[];
-    location: SourceLocation;
-  };
-
-  // Imported TS function details (when type is 'ts-function')
-  tsFuncDetails?: {
-    funcName: string;
-    args: unknown[];
-    location: SourceLocation;
-  };
-
-  // Vibe function details (when type is 'vibe-function')
-  vibeFuncDetails?: {
-    funcName: string;
-    args: unknown[];
-    modulePath?: string;  // For imported Vibe functions (scope isolation)
-  };
-}
+export type PendingAsyncStart =
+  | { type: 'do' | 'vibe'; operationId: string; variableName: string | null; prompt: string; model: string; context: unknown[]; operationType: 'do' | 'vibe' }
+  | { type: 'ts'; operationId: string; variableName: string | null; params: string[]; body: string; paramValues: unknown[]; location: SourceLocation }
+  | { type: 'ts-function'; operationId: string; variableName: string | null; funcName: string; args: unknown[]; location: SourceLocation }
+  | { type: 'vibe-function'; operationId: string; variableName: string | null; funcName: string; args: unknown[]; modulePath?: string };
 
 /** Individual async operation being tracked */
 export interface AsyncOperation {

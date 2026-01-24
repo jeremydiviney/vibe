@@ -567,39 +567,28 @@ export class Runtime {
       const operation = this.state.asyncOperations.get(start.operationId);
       if (!operation) continue;
 
-      if (start.aiDetails) {
-        // Start AI operation
-        const { prompt } = start.aiDetails;
-
-        // Create the Promise for this AI call
-        const promise = this.executeAIAsync(start.operationId, prompt);
-
-        // Store the promise in the operation (so awaiting_async can wait on it)
-        startAsyncOperation(operation, promise);
-      } else if (start.tsDetails) {
-        // Start TS block operation
-        const { params, body, paramValues, location } = start.tsDetails;
-
-        // Create the Promise for this TS eval
-        const promise = this.executeTsAsync(start.operationId, params, body, paramValues, location);
-
-        startAsyncOperation(operation, promise);
-      } else if (start.tsFuncDetails) {
-        // Start imported TS function operation
-        const { funcName, args, location } = start.tsFuncDetails;
-
-        // Create the Promise for this TS function call
-        const promise = this.executeTsFuncAsync(start.operationId, funcName, args, location);
-
-        startAsyncOperation(operation, promise);
-      } else if (start.vibeFuncDetails) {
-        // Start Vibe function operation
-        const { funcName, args, modulePath } = start.vibeFuncDetails;
-
-        // Create the Promise for this Vibe function call
-        const promise = this.executeVibeFuncAsync(start.operationId, funcName, args, modulePath);
-
-        startAsyncOperation(operation, promise);
+      switch (start.type) {
+        case 'do':
+        case 'vibe': {
+          const promise = this.executeAIAsync(start.operationId, start.prompt);
+          startAsyncOperation(operation, promise);
+          break;
+        }
+        case 'ts': {
+          const promise = this.executeTsAsync(start.operationId, start.params, start.body, start.paramValues, start.location);
+          startAsyncOperation(operation, promise);
+          break;
+        }
+        case 'ts-function': {
+          const promise = this.executeTsFuncAsync(start.operationId, start.funcName, start.args, start.location);
+          startAsyncOperation(operation, promise);
+          break;
+        }
+        case 'vibe-function': {
+          const promise = this.executeVibeFuncAsync(start.operationId, start.funcName, start.args, start.modulePath);
+          startAsyncOperation(operation, promise);
+          break;
+        }
       }
     }
   }
@@ -890,83 +879,76 @@ export class Runtime {
       const operation = state.asyncOperations.get(start.operationId);
       if (!operation) continue;
 
-      if (start.aiDetails) {
-        // Start AI operation
-        const { prompt } = start.aiDetails;
-
-        // Create the Promise for this AI call (simpler version for isolated state)
-        const promise = (async () => {
-          try {
-            const result = await this.aiProvider.execute(prompt);
-            const vibeValue = createVibeValue(result.value, { source: 'ai' });
-            completeAsyncOperation(state, start.operationId, vibeValue);
-            return vibeValue;
-          } catch (error) {
-            const vibeError = createAsyncVibeError(error);
-            failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'ai', err: true, errDetails: vibeError });
-          }
-        })();
-
-        startAsyncOperation(operation, promise);
-      } else if (start.tsDetails) {
-        // Start TS block operation
-        const { params, body, paramValues, location } = start.tsDetails;
-
-        const promise = (async () => {
-          try {
-            const result = await evalTsBlock(params, body, paramValues, location);
-            const vibeValue = createVibeValue(result, { source: 'ts' });
-            completeAsyncOperation(state, start.operationId, vibeValue);
-            return vibeValue;
-          } catch (error) {
-            const vibeError = createAsyncVibeError(error, location);
-            failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
-          }
-        })();
-
-        startAsyncOperation(operation, promise);
-      } else if (start.tsFuncDetails) {
-        // Start imported TS function operation
-        const { funcName, args, location } = start.tsFuncDetails;
-
-        const promise = (async () => {
-          try {
-            const fn = getImportedTsFunction(state, funcName);
-            if (!fn) {
-              throw new Error(`Import error: Function '${funcName}' not found`);
+      switch (start.type) {
+        case 'do':
+        case 'vibe': {
+          const promise = (async () => {
+            try {
+              const result = await this.aiProvider.execute(start.prompt);
+              const vibeValue = createVibeValue(result.value, { source: 'ai' });
+              completeAsyncOperation(state, start.operationId, vibeValue);
+              return vibeValue;
+            } catch (error) {
+              const vibeError = createAsyncVibeError(error);
+              failAsyncOperation(state, start.operationId, vibeError);
+              return createVibeValue(null, { source: 'ai', err: true, errDetails: vibeError });
             }
-            const result = await fn(...args);
-            const vibeValue = createVibeValue(result, { source: 'ts' });
-            completeAsyncOperation(state, start.operationId, vibeValue);
-            return vibeValue;
-          } catch (error) {
-            const vibeError = createAsyncVibeError(error, location);
-            failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
-          }
-        })();
-
-        startAsyncOperation(operation, promise);
-      } else if (start.vibeFuncDetails) {
-        // Nested Vibe function call - reuse shared helper
-        const { funcName, args, modulePath } = start.vibeFuncDetails;
-
-        const promise = (async () => {
-          try {
-            const result = await this.runVibeFuncIsolated(state, funcName, args, modulePath);
-            const vibeValue = createVibeValue(result, { source: 'vibe-function' });
-            completeAsyncOperation(state, start.operationId, vibeValue);
-            return vibeValue;
-          } catch (error) {
-            const vibeError = createAsyncVibeError(error);
-            failAsyncOperation(state, start.operationId, vibeError);
-            return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
-          }
-        })();
-
-        startAsyncOperation(operation, promise);
+          })();
+          startAsyncOperation(operation, promise);
+          break;
+        }
+        case 'ts': {
+          const promise = (async () => {
+            try {
+              const result = await evalTsBlock(start.params, start.body, start.paramValues, start.location);
+              const vibeValue = createVibeValue(result, { source: 'ts' });
+              completeAsyncOperation(state, start.operationId, vibeValue);
+              return vibeValue;
+            } catch (error) {
+              const vibeError = createAsyncVibeError(error, start.location);
+              failAsyncOperation(state, start.operationId, vibeError);
+              return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
+            }
+          })();
+          startAsyncOperation(operation, promise);
+          break;
+        }
+        case 'ts-function': {
+          const promise = (async () => {
+            try {
+              const fn = getImportedTsFunction(state, start.funcName);
+              if (!fn) {
+                throw new Error(`Import error: Function '${start.funcName}' not found`);
+              }
+              const result = await fn(...start.args);
+              const vibeValue = createVibeValue(result, { source: 'ts' });
+              completeAsyncOperation(state, start.operationId, vibeValue);
+              return vibeValue;
+            } catch (error) {
+              const vibeError = createAsyncVibeError(error, start.location);
+              failAsyncOperation(state, start.operationId, vibeError);
+              return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
+            }
+          })();
+          startAsyncOperation(operation, promise);
+          break;
+        }
+        case 'vibe-function': {
+          const promise = (async () => {
+            try {
+              const result = await this.runVibeFuncIsolated(state, start.funcName, start.args, start.modulePath);
+              const vibeValue = createVibeValue(result, { source: 'vibe-function' });
+              completeAsyncOperation(state, start.operationId, vibeValue);
+              return vibeValue;
+            } catch (error) {
+              const vibeError = createAsyncVibeError(error);
+              failAsyncOperation(state, start.operationId, vibeError);
+              return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
+            }
+          })();
+          startAsyncOperation(operation, promise);
+          break;
+        }
       }
     }
 
