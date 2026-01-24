@@ -46,7 +46,7 @@ export function execMemberAccess(state: RuntimeState, instruction: MemberAccessI
 
   // Handle toString() method on any type
   if (property === 'toString') {
-    return { ...state, lastResult: { __boundMethod: true, object, method: 'toString' } };
+    return { ...state, lastResult: { kind: 'bound-method', object, method: 'toString' } };
   }
 
   // Handle built-in methods on arrays
@@ -57,7 +57,7 @@ export function execMemberAccess(state: RuntimeState, instruction: MemberAccessI
         throw new RuntimeError(`Cannot ${property} on a constant array`, instruction.location);
       }
       // Return bound method for calling
-      return { ...state, lastResult: { __boundMethod: true, object, method: property } };
+      return { ...state, lastResult: { kind: 'bound-method', object, method: property } };
     }
     // For numeric properties, do index access
     const index = Number(property);
@@ -70,7 +70,7 @@ export function execMemberAccess(state: RuntimeState, instruction: MemberAccessI
   // Handle built-in methods on strings
   if (typeof object === 'string') {
     if (property === 'len') {
-      return { ...state, lastResult: { __boundMethod: true, object, method: property } };
+      return { ...state, lastResult: { kind: 'bound-method', object, method: property } };
     }
     throw new RuntimeError(`Unknown string property: ${property}`, instruction.location);
   }

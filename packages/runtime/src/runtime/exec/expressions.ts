@@ -72,7 +72,7 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
 
   // Check if it's a local function (from main module)
   if (state.functions[expr.name]) {
-    return { ...state, lastResult: { __vibeFunction: true, name: expr.name } };
+    return { ...state, lastResult: { kind: 'vibe-function', name: expr.name } };
   }
 
   // Check if it's a function in the current module (for imported module internal calls)
@@ -80,26 +80,21 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
   if (currentFrame?.modulePath) {
     const moduleFunctions = getModuleFunctions(state, currentFrame.modulePath);
     if (moduleFunctions?.[expr.name]) {
-      // Return as a module-local function (with module path for proper execution context)
       return {
         ...state,
-        lastResult: {
-          __vibeModuleFunction: true,
-          name: expr.name,
-          modulePath: currentFrame.modulePath,
-        },
+        lastResult: { kind: 'vibe-module-function', name: expr.name, modulePath: currentFrame.modulePath },
       };
     }
   }
 
   // Check if it's an imported TS function
   if (isImportedTsFunction(state, expr.name)) {
-    return { ...state, lastResult: { __vibeImportedTsFunction: true, name: expr.name } };
+    return { ...state, lastResult: { kind: 'imported-ts-function', name: expr.name } };
   }
 
   // Check if it's an imported Vibe function
   if (isImportedVibeFunction(state, expr.name)) {
-    return { ...state, lastResult: { __vibeImportedVibeFunction: true, name: expr.name } };
+    return { ...state, lastResult: { kind: 'imported-vibe-function', name: expr.name } };
   }
 
   // Check if it's any other imported value
@@ -110,7 +105,7 @@ export function execIdentifier(state: RuntimeState, expr: AST.Identifier): Runti
 
   // Check if it's a core function (auto-imported, available everywhere)
   if (isCoreFunction(expr.name)) {
-    return { ...state, lastResult: { __vibeCoreFunction: true, name: expr.name } };
+    return { ...state, lastResult: { kind: 'core-function', name: expr.name } };
   }
 
   throw new ReferenceError(expr.name, expr.location);

@@ -227,6 +227,26 @@ export function resolveValue(val: unknown): unknown {
   return val;
 }
 
+// Callee value — discriminated union for callable references on the value stack.
+// Created by execIdentifier/execMemberAccess, consumed by execCallFunction.
+export type CalleeValue =
+  | { kind: 'vibe-function'; name: string }
+  | { kind: 'vibe-module-function'; name: string; modulePath: string }
+  | { kind: 'imported-ts-function'; name: string }
+  | { kind: 'imported-vibe-function'; name: string }
+  | { kind: 'core-function'; name: string }
+  | { kind: 'bound-method'; object: unknown; method: string };
+
+const CALLEE_KINDS = new Set([
+  'vibe-function', 'vibe-module-function', 'imported-ts-function',
+  'imported-vibe-function', 'core-function', 'bound-method',
+]);
+
+export function isCalleeValue(val: unknown): val is CalleeValue {
+  return typeof val === 'object' && val !== null && 'kind' in val &&
+    CALLEE_KINDS.has((val as CalleeValue).kind);
+}
+
 // Prompt in context (when AI function is called)
 export interface ContextPrompt {
   kind: 'prompt';

@@ -2,9 +2,9 @@
 
 import * as AST from '../../ast';
 import { ReferenceError, RuntimeError, TypeError, type SourceLocation } from '../../errors';
-import type { RuntimeState, StackFrame } from '../types';
-import { resolveValue, createVibeValue } from '../types';
-import type { VibeToolValue } from '../tools/types';
+import type { RuntimeState, StackFrame, CalleeValue } from '../types';
+import { resolveValue, createVibeValue, isCalleeValue } from '../types';
+import { isVibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction, getImportedVibeFunctionModulePath, getModuleFunctions } from '../modules';
 import { getCoreFunction } from '../stdlib/core';
@@ -135,144 +135,84 @@ export function execCallFunction(
   const callee = resolveValue(rawCallee);
   const args = rawArgs.map(arg => resolveValue(arg));
 
-  // Handle local Vibe function
-  if (typeof callee === 'object' && callee !== null && '__vibeFunction' in callee) {
-    const funcName = (callee as { __vibeFunction: boolean; name: string }).name;
-    const func = state.functions[funcName];
-
-    if (!func) {
-      throw new ReferenceError(funcName, location);
-    }
-
-    // Check if we're in async context (variable, destructuring, or fire-and-forget)
-    if (isInAsyncContext(state)) {
-      return scheduleAsyncVibeFunction(state, funcName, args, newValueStack);
-    }
-
-    return executeVibeFunction(state, func, args, newValueStack);
-  }
-
-  // Handle module-local function (non-exported function called from within same module)
-  if (typeof callee === 'object' && callee !== null && '__vibeModuleFunction' in callee) {
-    const { name: funcName, modulePath } = callee as { __vibeModuleFunction: boolean; name: string; modulePath: string };
-    const moduleFunctions = getModuleFunctions(state, modulePath);
-    const func = moduleFunctions?.[funcName];
-
-    if (!func) {
-      throw new ReferenceError(funcName, location);
-    }
-
-    // Check if we're in async context (variable, destructuring, or fire-and-forget)
-    if (isInAsyncContext(state)) {
-      return scheduleAsyncVibeFunction(state, funcName, args, newValueStack, modulePath);
-    }
-
-    return executeVibeFunction(state, func, args, newValueStack, modulePath);
-  }
-
-  // Handle imported TS function
-  if (typeof callee === 'object' && callee !== null && '__vibeImportedTsFunction' in callee) {
-    const funcName = (callee as { __vibeImportedTsFunction: boolean; name: string }).name;
-    // Resolve AIResultObject values to primitives for TS functions
-    const resolvedArgs = args.map(arg => resolveValue(arg));
-
-    // Check if we're in async context (variable, destructuring, or fire-and-forget)
-    if (isInAsyncContext(state)) {
-      // Schedule for non-blocking execution using shared helper
-      const newState = scheduleAsyncOperation(
-        state,
-        {
-          type: 'ts-function',
-          funcName,
-          args: resolvedArgs,
-          location,
-        },
-        'async_ts_function_scheduled'
-      );
-      return { ...newState, valueStack: newValueStack };
-    }
-
-    // Normal blocking execution
-    return {
-      ...state,
-      valueStack: newValueStack,
-      status: 'awaiting_ts',
-      pendingImportedTsCall: { funcName, args: resolvedArgs, location },
-      executionLog: [
-        ...state.executionLog,
-        {
-          timestamp: Date.now(),
-          instructionType: 'imported_ts_call_request',
-          details: { funcName, argCount },
-        },
-      ],
-    };
-  }
-
-  // Handle imported Vibe function
-  if (typeof callee === 'object' && callee !== null && '__vibeImportedVibeFunction' in callee) {
-    const funcName = (callee as { __vibeImportedVibeFunction: boolean; name: string }).name;
-    const func = getImportedVibeFunction(state, funcName);
-
-    if (!func) {
-      throw new ReferenceError(funcName, location);
-    }
-
-    // Get the module path for scope isolation
-    const modulePath = getImportedVibeFunctionModulePath(state, funcName);
-
-    // Check if we're in async context (variable, destructuring, or fire-and-forget)
-    if (isInAsyncContext(state)) {
-      return scheduleAsyncVibeFunction(state, funcName, args, newValueStack, modulePath);
-    }
-
-    return executeVibeFunction(state, func, args, newValueStack, modulePath);
-  }
-
-  // Handle tool call - tools cannot be called directly from vibe scripts
-  // They can only be used by AI models via the tools array
-  if (typeof callee === 'object' && callee !== null && '__vibeTool' in callee) {
-    const tool = callee as VibeToolValue;
+  // Tool values have their own type guard (they're persistent stored values, not transient callees)
+  if (isVibeToolValue(callee)) {
     throw new TypeError(
-      `Cannot call tool '${tool.name}' directly. Tools can only be used by AI models via the tools array in model declarations.`,
+      `Cannot call tool '${callee.name}' directly. Tools can only be used by AI models via the tools array in model declarations.`,
       undefined,
       undefined,
       location
     );
   }
 
-  // Handle core function (auto-imported, available everywhere without import)
-  if (typeof callee === 'object' && callee !== null && '__vibeCoreFunction' in callee) {
-    const funcName = (callee as { __vibeCoreFunction: boolean; name: string }).name;
-    const coreFunc = getCoreFunction(funcName);
+  // All other callable types use the CalleeValue discriminated union
+  if (!isCalleeValue(callee)) {
+    throw new TypeError('Cannot call non-function', undefined, undefined, location);
+  }
 
-    if (!coreFunc) {
-      throw new ReferenceError(funcName, location);
+  switch (callee.kind) {
+    case 'vibe-function': {
+      const func = state.functions[callee.name];
+      if (!func) throw new ReferenceError(callee.name, location);
+      if (isInAsyncContext(state)) {
+        return scheduleAsyncVibeFunction(state, callee.name, args, newValueStack);
+      }
+      return executeVibeFunction(state, func, args, newValueStack);
     }
 
-    // Core functions are synchronous, execute directly
-    const result = coreFunc(...args);
+    case 'vibe-module-function': {
+      const moduleFunctions = getModuleFunctions(state, callee.modulePath);
+      const func = moduleFunctions?.[callee.name];
+      if (!func) throw new ReferenceError(callee.name, location);
+      if (isInAsyncContext(state)) {
+        return scheduleAsyncVibeFunction(state, callee.name, args, newValueStack, callee.modulePath);
+      }
+      return executeVibeFunction(state, func, args, newValueStack, callee.modulePath);
+    }
 
-    return {
-      ...state,
-      valueStack: newValueStack,
-      lastResult: result,
-    };
+    case 'imported-ts-function': {
+      const resolvedArgs = args.map(arg => resolveValue(arg));
+      if (isInAsyncContext(state)) {
+        const newState = scheduleAsyncOperation(
+          state,
+          { type: 'ts-function', funcName: callee.name, args: resolvedArgs, location },
+          'async_ts_function_scheduled'
+        );
+        return { ...newState, valueStack: newValueStack };
+      }
+      return {
+        ...state,
+        valueStack: newValueStack,
+        status: 'awaiting_ts',
+        pendingImportedTsCall: { funcName: callee.name, args: resolvedArgs, location },
+        executionLog: [
+          ...state.executionLog,
+          { timestamp: Date.now(), instructionType: 'imported_ts_call_request', details: { funcName: callee.name, argCount } },
+        ],
+      };
+    }
+
+    case 'imported-vibe-function': {
+      const func = getImportedVibeFunction(state, callee.name);
+      if (!func) throw new ReferenceError(callee.name, location);
+      const modulePath = getImportedVibeFunctionModulePath(state, callee.name);
+      if (isInAsyncContext(state)) {
+        return scheduleAsyncVibeFunction(state, callee.name, args, newValueStack, modulePath);
+      }
+      return executeVibeFunction(state, func, args, newValueStack, modulePath);
+    }
+
+    case 'core-function': {
+      const coreFunc = getCoreFunction(callee.name);
+      if (!coreFunc) throw new ReferenceError(callee.name, location);
+      return { ...state, valueStack: newValueStack, lastResult: coreFunc(...args) };
+    }
+
+    case 'bound-method': {
+      const result = executeBuiltinMethod(callee.object, callee.method, args, location);
+      return { ...state, valueStack: newValueStack, lastResult: result };
+    }
   }
-
-  // Handle bound method call on object (built-in methods)
-  if (typeof callee === 'object' && callee !== null && '__boundMethod' in callee) {
-    const { object, method } = callee as { __boundMethod: boolean; object: unknown; method: string };
-    const result = executeBuiltinMethod(object, method, args, location);
-
-    return {
-      ...state,
-      valueStack: newValueStack,
-      lastResult: result,
-    };
-  }
-
-  throw new TypeError('Cannot call non-function', undefined, undefined, location);
 }
 
 /**

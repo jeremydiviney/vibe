@@ -491,7 +491,7 @@ export function getVariable(state: RuntimeState, name: string): unknown {
 
   // Check if it's a function
   if (state.functions[name]) {
-    return { __vibeFunction: true, name };
+    return { kind: 'vibe-function', name };
   }
 
   throw new Error(`ReferenceError: '${name}' is not defined`);
