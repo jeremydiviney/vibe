@@ -7,11 +7,10 @@
 import * as AST from '../ast';
 import type { SourceLocation } from '../errors';
 import type { AnalyzerContext } from './analyzer-context';
-import { isValidType, typesCompatible, isValidJson, getBaseType } from './types';
+import { isValidType, typesCompatible, isValidJson, getBaseType, tsTypeToVibe, isVibeTypeCompatibleWithTs } from '../type-system';
 import { ESCAPED_LBRACE, ESCAPED_RBRACE, ESCAPED_BANG_LBRACE } from '../parser/visitor/helpers';
 import { isCoreFunction } from '../runtime/stdlib/core';
 import { checkTsBlockTypes, inferTsBlockReturnType } from './ts-block-checker';
-import { tsTypeToVibe, isVibeTypeCompatibleWithTs } from './ts-types';
 import type { TsFunctionSignature } from './ts-signatures';
 
 // ============================================================================

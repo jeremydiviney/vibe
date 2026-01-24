@@ -1,17 +1,9 @@
 // Type validation and coercion utilities
 
-import type { VibeType, VibeTypeRequired } from '../ast';
+import type { VibeType } from '../ast';
 import { RuntimeError, TypeError, type SourceLocation } from '../errors';
 import { isVibeValue, resolveValue } from './types';
-
-// Map array types to their element types (type-safe alternative to string slicing)
-const ARRAY_ELEMENT_TYPES: Record<string, VibeTypeRequired> = {
-  'text[]': 'text',
-  'json[]': 'json',
-  'boolean[]': 'boolean',
-  'number[]': 'number',
-  'prompt[]': 'prompt',
-};
+import { validateValue, inferTypeFromValue } from '../type-system';
 
 /**
  * Validates a value against a type annotation and coerces if necessary.
@@ -45,104 +37,18 @@ export function validateAndCoerce(
 
   // If no type annotation, infer from JavaScript type
   if (!type) {
-    // For VibeValue, infer type from the underlying value, not the wrapper
     const valueToInfer = resolveValue(value);
-
-    if (typeof valueToInfer === 'string') {
-      return { value, inferredType: 'text' };
-    }
-    if (typeof valueToInfer === 'boolean') {
-      return { value, inferredType: 'boolean' };
-    }
-    if (typeof valueToInfer === 'number') {
-      return { value, inferredType: 'number' };
-    }
-    if (typeof valueToInfer === 'object' && valueToInfer !== null) {
-      return { value, inferredType: 'json' };
-    }
-    // For other types (null, undefined), no type inference
-    return { value, inferredType: null };
+    const inferred = inferTypeFromValue(valueToInfer);
+    return { value, inferredType: inferred as VibeType };
   }
 
-  // Validate array types (text[], json[], boolean[], number[], prompt[])
-  const elementType = ARRAY_ELEMENT_TYPES[type];
-  if (elementType) {
-    let arrayValue = value;
-
-    // If string, try to parse as JSON array
-    if (typeof value === 'string') {
-      try {
-        arrayValue = JSON.parse(value);
-      } catch {
-        throw new RuntimeError(`Variable '${varName}': invalid JSON array string`, location);
-      }
-    }
-
-    if (!Array.isArray(arrayValue)) {
-      throw new RuntimeError(`Variable '${varName}': expected ${type} (array), got ${typeof value}`, location);
-    }
-
-    // Validate each element recursively
-    const validatedElements = arrayValue.map((elem, i) => {
-      const { value: validated } = validateAndCoerce(elem, elementType, `${varName}[${i}]`, location);
-      return validated;
-    });
-
-    return { value: validatedElements, inferredType: type };
+  // Delegate to type-system validation (handles arrays, coercion, and type checks)
+  const result = validateValue(value, type, varName);
+  if (result.error) {
+    throw new RuntimeError(`Variable '${varName}': ${result.error}`, location);
   }
 
-  // Validate text type - must be a string
-  if (type === 'text') {
-    if (typeof value !== 'string') {
-      throw new RuntimeError(`Variable '${varName}': expected text (string), got ${typeof value}`, location);
-    }
-    return { value, inferredType: 'text' };
-  }
-
-  // Validate json type - must be object (not array)
-  if (type === 'json') {
-    let result = value;
-
-    // If string, try to parse as JSON
-    if (typeof value === 'string') {
-      try {
-        result = JSON.parse(value);
-      } catch {
-        throw new RuntimeError(`Variable '${varName}': invalid JSON string`, location);
-      }
-    }
-
-    // Validate the result is an object (not array, not primitive)
-    if (typeof result !== 'object' || result === null) {
-      throw new RuntimeError(`Variable '${varName}': expected json (object), got ${typeof value}`, location);
-    }
-    if (Array.isArray(result)) {
-      throw new RuntimeError(`Variable '${varName}': json type expects an object, not an array. Use json[] for arrays.`, location);
-    }
-    return { value: result, inferredType: 'json' };
-  }
-
-  // Validate boolean type - must be a boolean
-  if (type === 'boolean') {
-    if (typeof value !== 'boolean') {
-      throw new RuntimeError(`Variable '${varName}': expected boolean, got ${typeof value}`, location);
-    }
-    return { value, inferredType: 'boolean' };
-  }
-
-  // Validate number type - must be a finite number
-  if (type === 'number') {
-    if (typeof value !== 'number') {
-      throw new RuntimeError(`Variable '${varName}': expected number, got ${typeof value}`, location);
-    }
-    if (!Number.isFinite(value)) {
-      throw new RuntimeError(`Variable '${varName}': number must be finite, got ${value}`, location);
-    }
-    return { value, inferredType: 'number' };
-  }
-
-  // For prompt type, accept string values as-is
-  return { value, inferredType: type };
+  return { value: result.value, inferredType: type };
 }
 
 /**

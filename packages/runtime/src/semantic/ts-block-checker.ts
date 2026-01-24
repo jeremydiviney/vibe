@@ -6,7 +6,7 @@
  */
 import ts from 'typescript';
 import type { SourceLocation } from '../errors';
-import { vibeTypeToTs, tsTypeToVibe } from './ts-types';
+import { vibeTypeToTs, tsTypeToVibe } from '../type-system';
 
 export interface TsBlockError {
   message: string;

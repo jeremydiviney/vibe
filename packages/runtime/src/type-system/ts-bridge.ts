@@ -1,7 +1,7 @@
 /**
- * TypeScript Type Mapping Utilities
+ * TypeScript Type Bridge
  *
- * Shared utilities for converting between Vibe types and TypeScript types.
+ * Utilities for converting between Vibe types and TypeScript types.
  * Used by both the ts-block-checker and semantic analyzer.
  */
 
