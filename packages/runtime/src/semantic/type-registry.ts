@@ -107,9 +107,14 @@ export class TypeRegistry {
   resolveSingleMember(baseType: string, memberName: string): string | null {
     // Handle array types
     if (baseType.endsWith('[]')) {
-      // Array built-in property
       if (memberName === 'len') return 'number';
-      return null;  // Arrays don't have other properties at compile time
+      return null;
+    }
+
+    // Handle string/prompt types
+    if (baseType === 'text' || baseType === 'prompt') {
+      if (memberName === 'len') return 'number';
+      return null;
     }
 
     // Look up the structural type
@@ -123,6 +128,31 @@ export class TypeRegistry {
     if (field.nestedType) return 'object';
 
     return field.type;
+  }
+
+  /**
+   * Resolve the return type of a method call on a given base type.
+   *
+   * @param baseType - The type the method is called on
+   * @param methodName - The method being called
+   * @returns The return type of the method, or null if unknown
+   */
+  resolveMethodReturnType(baseType: string, methodName: string): string | null {
+    // Array methods
+    if (baseType.endsWith('[]')) {
+      if (methodName === 'len') return 'number';
+      if (methodName === 'pop') return baseType.slice(0, -2);  // element type
+      if (methodName === 'push') return baseType;  // returns the array
+      return null;
+    }
+
+    // String/prompt methods
+    if (baseType === 'text' || baseType === 'prompt') {
+      if (methodName === 'len') return 'number';
+      return null;
+    }
+
+    return null;
   }
 
   /**

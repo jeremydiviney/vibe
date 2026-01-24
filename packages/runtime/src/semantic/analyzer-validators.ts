@@ -729,22 +729,10 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
       if (!objectType) return null;
       const property = expr.property;
 
-      // Array methods/properties
-      if (objectType.endsWith('[]')) {
-        if (property === 'len') return 'number';
-        // pop returns element type, but is a method - handled in CallExpression
-      }
-
-      // String/prompt methods/properties
-      if (objectType === 'text' || objectType === 'prompt') {
-        if (property === 'len') return 'number';
-      }
-
       // Plain json member access → return null (unknown type, defer to runtime)
-      // This allows: if jsonObj.isValid { ... } without semantic error
       if (objectType === 'json') return null;
 
-      // For structural types, resolve through type registry
+      // Delegate to type registry for built-in and structural type members
       if (ctx.typeRegistry) {
         const resolvedType = ctx.typeRegistry.resolveSingleMember(objectType, property);
         if (resolvedType) {
@@ -809,20 +797,11 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         }
       }
       // Handle method calls (MemberExpression callee) like arr.pop(), arr.len()
-      if (expr.callee.type === 'MemberExpression') {
+      if (expr.callee.type === 'MemberExpression' && ctx.typeRegistry) {
         const objType = getExpressionType(ctx, expr.callee.object);
-        const method = expr.callee.property;
-
-        // Array methods
-        if (objType?.endsWith('[]')) {
-          if (method === 'len') return 'number';
-          if (method === 'pop') return objType.slice(0, -2);  // model[] -> model
-          if (method === 'push') return objType;  // push returns the array
-        }
-
-        // String/prompt methods
-        if (objType === 'text' || objType === 'prompt') {
-          if (method === 'len') return 'number';
+        if (objType) {
+          const returnType = ctx.typeRegistry.resolveMethodReturnType(objType, expr.callee.property);
+          if (returnType) return returnType;
         }
       }
       return null;
