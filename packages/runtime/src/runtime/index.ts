@@ -91,7 +91,6 @@ export type { LogEvent, AILogMessage, TokenUsage } from './types';
 import * as AST from '../ast';
 import { dirname } from 'path';
 import { RuntimeError } from '../errors';
-import type { SourceLocation } from '../errors';
 import type { RuntimeState, AIInteraction } from './types';
 import { resolveValue } from './types';
 import { createInitialState, resumeWithAIResponse, resumeWithUserInput, resumeWithTsResult, resumeWithImportedTsResult, resumeWithToolResult, resumeWithCompressResult, resumeWithAsyncResults } from './state';
@@ -102,7 +101,7 @@ import { step, runUntilPause } from './step';
 import { evalTsBlock, TsBlockError } from './ts-eval';
 import { loadImports, getImportedTsFunction, getImportedVibeFunction } from './modules';
 import { createFunctionFrame } from './exec/functions';
-import { buildLocalContext, buildGlobalContext, formatContextForAI, formatEntriesForSummarization } from './context';
+import { buildLocalContext, formatContextForAI } from './context';
 import { saveAIInteractions } from './ai-logger';
 import { deepCloneState } from './serialize';
 
@@ -172,6 +171,12 @@ export interface RuntimeOptions {
   maxParallel?: number;        // Max concurrent async operations (default: 4)
 }
 
+// Options for the unified execution loop
+interface ExecuteLoopOptions {
+  logger?: VerboseLogger | null;
+  logInteractions?: boolean;
+}
+
 // Runtime class - convenience wrapper around functional API
 export class Runtime {
   private state: RuntimeState;
@@ -229,7 +234,6 @@ export class Runtime {
 
   // Run the program to completion, handling AI calls and TS evaluation
   async run(): Promise<unknown> {
-    // Log run start
     this.verboseLogger?.start(this.basePath);
 
     // Load imports if not already loaded
@@ -238,309 +242,19 @@ export class Runtime {
       this.importsLoaded = true;
     }
 
-    // Run until pause or complete
-    this.state = runUntilPause(this.state);
-
-    // Start any scheduled async operations (non-blocking)
-    await this.startScheduledAsyncOps();
-
-    // Handle AI calls, TS evaluation, tool calls, compress, and async in a loop
-    while (
-      this.state.status === 'awaiting_ai' ||
-      this.state.status === 'awaiting_user' ||
-      this.state.status === 'awaiting_ts' ||
-      this.state.status === 'awaiting_tool' ||
-      this.state.status === 'awaiting_compress' ||
-      this.state.status === 'awaiting_async'
-    ) {
-      // Handle awaiting_async - wait for pending async operations
-      if (this.state.status === 'awaiting_async') {
-        // IMPORTANT: Start scheduled async ops BEFORE awaiting them
-        // Operations are scheduled (in pendingAsyncStarts) but their promises
-        // are only created when started
-        await this.startScheduledAsyncOps();
-
-        const results = await awaitOperations(
-          this.state.awaitingAsyncIds,
-          this.state.asyncOperations
-        );
-        this.state = resumeWithAsyncResults(this.state, results);
-        this.state = runUntilPause(this.state);
-        await this.startScheduledAsyncOps();
-        continue;
-      }
-      if (this.state.status === 'awaiting_ts') {
-        if (this.state.pendingTS) {
-          // Handle inline ts block evaluation
-          const { params, body, paramValues, location } = this.state.pendingTS;
-
-          // Log TS block start
-          const tsId = this.verboseLogger?.tsBlockStart(
-            params,
-            paramValues,
-            body,
-            { file: location.file ?? this.basePath, line: location.line }
-          );
-          const tsStartTime = Date.now();
-
-          try {
-            const result = await evalTsBlock(params, body, paramValues, location);
-            this.state = resumeWithTsResult(this.state, result);
-
-            // Log TS block complete
-            if (tsId) {
-              this.verboseLogger?.tsBlockComplete(tsId, Date.now() - tsStartTime);
-            }
-          } catch (error) {
-            // Log TS block error
-            if (tsId) {
-              const errMsg = error instanceof Error ? error.message : String(error);
-              this.verboseLogger?.tsBlockComplete(tsId, Date.now() - tsStartTime, errMsg);
-            }
-            throw error;
-          }
-        } else if (this.state.pendingImportedTsCall) {
-          // Handle imported TS function call
-          const { funcName, args, location } = this.state.pendingImportedTsCall;
-          const fn = getImportedTsFunction(this.state, funcName);
-          if (!fn) {
-            throw new Error(`Import error: Function '${funcName}' not found`);
-          }
-
-          // Log TS function start
-          const tsfId = this.verboseLogger?.tsFunctionStart(
-            funcName,
-            args,
-            { file: location.file ?? this.basePath, line: location.line }
-          );
-          const tsfStartTime = Date.now();
-
-          try {
-            const result = await fn(...args);
-            this.state = resumeWithImportedTsResult(this.state, result);
-
-            // Log TS function complete
-            if (tsfId) {
-              this.verboseLogger?.tsFunctionComplete(tsfId, Date.now() - tsfStartTime);
-            }
-          } catch (error) {
-            // Log TS function error
-            if (tsfId) {
-              const errMsg = error instanceof Error ? error.message : String(error);
-              this.verboseLogger?.tsFunctionComplete(tsfId, Date.now() - tsfStartTime, errMsg);
-            }
-            // Wrap imported TS function error with Vibe location info
-            const originalError = error instanceof Error ? error : new Error(String(error));
-            throw new TsBlockError(
-              `Error in imported function '${funcName}': ${originalError.message}`,
-              [], // no params for imported functions
-              `/* imported function: ${funcName} */`,
-              originalError,
-              location
-            );
-          }
-        } else {
-          throw new Error('State awaiting TS but no pending TS request');
-        }
-      } else if (this.state.status === 'awaiting_ai') {
-        // Handle AI calls
-        if (!this.state.pendingAI) {
-          throw new Error('State awaiting AI but no pending AI request');
-        }
-
-        const startTime = Date.now();
-        const pendingAI = this.state.pendingAI;
-
-        // Get target type from next instruction
-        let targetType: string | null = null;
-        const nextInstruction = this.state.instructionStack[0];
-        if (nextInstruction?.op === 'declare_var' && nextInstruction.type) {
-          targetType = nextInstruction.type;
-        }
-
-        // Get model details from state for logging
-        let modelDetails: AIInteraction['modelDetails'];
-        const modelVar = this.state.callStack[0]?.locals?.[pendingAI.model];
-        if (modelVar?.value && typeof modelVar.value === 'object') {
-          const mv = modelVar.value as Record<string, unknown>;
-          modelDetails = {
-            name: String(mv.name ?? ''),
-            provider: String(mv.provider ?? ''),
-            url: mv.url ? String(mv.url) : undefined,
-            thinkingLevel: mv.thinkingLevel ? String(mv.thinkingLevel) : undefined,
-          };
-        }
-
-        // Log AI start (verbose logger)
-        // Context mode: "local" when inside a function, "default" at entry level
-        const contextMode = this.state.callStack.length > 1 ? 'local' as const : 'default' as const;
-        const aiId = this.verboseLogger?.aiStart(
-          pendingAI.type,
-          pendingAI.model,
-          pendingAI.prompt,
-          {
-            model: pendingAI.model,
-            modelDetails,
-            type: pendingAI.type,
-            targetType,
-            contextMode,
-            messages: [], // Will be updated after execution
-          }
-        );
-
-        // vibe is the only AI expression type now
-        let result: AIExecutionResult;
-        let aiError: string | undefined;
-        try {
-          result = await this.aiProvider.execute(pendingAI.prompt);
-        } catch (error) {
-          aiError = error instanceof Error ? error.message : String(error);
-          // Log AI error - include AI context if available (from RuntimeError)
-          if (aiId) {
-            const aiLogContext = (error instanceof RuntimeError && error.context?.__aiLogContext)
-              ? error.context.__aiLogContext as { messages?: unknown[]; response?: string; rawResponse?: string; toolRounds?: unknown[]; retryAttempts?: unknown[] }
-              : undefined;
-            this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, undefined, 0, aiError, aiLogContext ? {
-              messages: aiLogContext.messages as AILogMessage[],
-              response: aiLogContext.response,
-              rawResponse: aiLogContext.rawResponse,
-              toolRounds: aiLogContext.toolRounds as any,
-              retryAttempts: aiLogContext.retryAttempts as any,
-            } : undefined);
-          }
-          throw error;
-        }
-
-        // Log AI complete (verbose logger) with full context
-        if (aiId) {
-          const toolCallCount = result.toolRounds?.reduce((sum, r) => sum + r.toolCalls.length, 0) ?? 0;
-          this.verboseLogger?.aiComplete(aiId, Date.now() - startTime, result.usage, toolCallCount, undefined, {
-            messages: result.messages,
-            response: typeof result.value === 'string' ? result.value : JSON.stringify(result.value),
-            toolRounds: result.toolRounds,
-            retryAttempts: result.retryAttempts,
-            rawResponse: result.rawResponse,
-          });
-        }
-
-        // Create interaction record if logging (legacy)
-        // Uses context from result (single source of truth from ai-provider)
-        let interaction: AIInteraction | undefined;
-        if (this.logAiInteractions) {
-          interaction = {
-            type: pendingAI.type,
-            prompt: pendingAI.prompt,
-            response: result.value,
-            timestamp: startTime,
-            model: pendingAI.model,
-            modelDetails,
-            targetType,
-            usage: result.usage,
-            durationMs: Date.now() - startTime,
-            // Context from ai-provider (single source of truth)
-            messages: result.messages ?? [],
-            executionContext: result.executionContext ?? [],
-            interactionToolCalls: result.interactionToolCalls,
-          };
-        }
-
-        // Track token usage on model variable and result
-        const usageRecord = createUsageRecord(result.usage);
-        pushModelUsage(this.state, pendingAI.model, usageRecord);
-
-        this.state = resumeWithAIResponse(this.state, result.value, interaction, result.toolRounds, usageRecord);
-      } else if (this.state.status === 'awaiting_tool') {
-        // Handle tool calls
-        if (!this.state.pendingToolCall) {
-          throw new Error('State awaiting tool but no pending tool call');
-        }
-
-        const { toolName, args, executor } = this.state.pendingToolCall;
-
-        // Log tool start (we don't have a parent AI ID here, use empty string)
-        this.verboseLogger?.toolStart('', toolName ?? 'unknown', args as Record<string, unknown>);
-        const toolStartTime = Date.now();
-
-        try {
-          // Execute the tool with context - let errors propagate
-          const context = { rootDir: this.state.rootDir };
-          const result = await executor(args, context);
-          this.state = resumeWithToolResult(this.state, result);
-
-          // Log tool complete
-          this.verboseLogger?.toolComplete('', toolName ?? 'unknown', Date.now() - toolStartTime, true);
-        } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error);
-          this.verboseLogger?.toolComplete('', toolName ?? 'unknown', Date.now() - toolStartTime, false, errMsg);
-          throw error;
-        }
-      } else if (this.state.status === 'awaiting_compress') {
-        // Handle compress AI summarization
-        if (!this.state.pendingCompress) {
-          throw new Error('State awaiting compress but no pending compress request');
-        }
-
-        const { prompt, scopeType } = this.state.pendingCompress;
-
-        // Build local context at end of loop (before we discard entries)
-        const localContext = buildLocalContext(this.state);
-        const contextFormatted = formatContextForAI(localContext, { includeInstructions: false });
-
-        // Build summarization prompt
-        const defaultPrompt = `Provide a concise summary of the most recent ${scopeType} loop execution. Focus on key results, state changes, and outcomes.`;
-        const summaryPrompt = `${prompt ?? defaultPrompt}\n\n${contextFormatted.text}`;
-
-        // Execute AI call for summarization (uses pendingCompress.model)
-        const result = await this.aiProvider.execute(summaryPrompt);
-        const summary = typeof result.value === 'string' ? result.value : String(result.value);
-
-        this.state = resumeWithCompressResult(this.state, summary);
-      } else {
-        // Handle user input
-        if (!this.state.pendingAI) {
-          throw new Error('State awaiting user but no pending AI request');
-        }
-        const response = await this.aiProvider.askUser(this.state.pendingAI.prompt);
-        this.state = resumeWithUserInput(this.state, response);
-      }
-
-      // Continue running
-      this.state = runUntilPause(this.state);
-
-      // Start any newly scheduled async operations
-      await this.startScheduledAsyncOps();
-    }
+    this.state = await this.executeLoop(this.state, {
+      logger: this.verboseLogger,
+      logInteractions: this.logAiInteractions,
+    });
 
     if (this.state.status === 'error') {
-      // Log run error
       this.verboseLogger?.complete('error', this.state.error ?? 'Unknown error');
-
-      // Save logs even on error if logging enabled
       this.saveLogsIfEnabled();
-      // Throw the original error object to preserve location info
       throw this.state.errorObject ?? new Error(this.state.error ?? 'Unknown runtime error');
     }
 
-    // At program completion, await any remaining pending async operations
-    // This implements "await at block boundary" for the main program
-    if (this.state.pendingAsyncIds.size > 0) {
-      const pendingIds = Array.from(this.state.pendingAsyncIds);
-      const results = await awaitOperations(pendingIds, this.state.asyncOperations);
-      this.state = resumeWithAsyncResults(
-        { ...this.state, status: 'awaiting_async', awaitingAsyncIds: pendingIds },
-        results
-      );
-      // resumeWithAsyncResults sets status to 'running', so run until completion again
-      this.state = runUntilPause(this.state);
-    }
-
-    // Log run complete
     this.verboseLogger?.complete('completed');
-
-    // Save logs on successful completion
     this.saveLogsIfEnabled();
-
-    // Resolve VibeValue to its value for the final return
     return resolveValue(this.state.lastResult);
   }
 
@@ -552,54 +266,294 @@ export class Runtime {
     }
   }
 
-  // Start scheduled async operations as background Promises
-  private async startScheduledAsyncOps(): Promise<void> {
-    const pending = this.state.pendingAsyncStarts;
-    if (pending.length === 0) return;
+  /**
+   * Core execution loop - runs state to completion, handling all pause types.
+   * Used by both run() (with logging) and runIsolatedState() (without).
+   */
+  private async executeLoop(state: RuntimeState, options?: ExecuteLoopOptions): Promise<RuntimeState> {
+    state = runUntilPause(state);
+    state = await this.startAsyncOperations(state);
 
-    // Clear pending starts
-    this.state = { ...this.state, pendingAsyncStarts: [] };
+    while (
+      state.status === 'awaiting_ai' ||
+      state.status === 'awaiting_user' ||
+      state.status === 'awaiting_ts' ||
+      state.status === 'awaiting_tool' ||
+      state.status === 'awaiting_compress' ||
+      state.status === 'awaiting_async'
+    ) {
+      state = await this.handlePause(state, options);
+      state = runUntilPause(state);
+      state = await this.startAsyncOperations(state);
+    }
 
-    // Start each operation as a Promise (non-blocking)
-    for (const start of pending) {
-      const operation = this.state.asyncOperations.get(start.operationId);
-      if (!operation) continue;
+    // Await remaining pending async operations at boundary
+    if (state.pendingAsyncIds.size > 0) {
+      const pendingIds = Array.from(state.pendingAsyncIds);
+      const results = await awaitOperations(pendingIds, state.asyncOperations);
+      state = resumeWithAsyncResults(
+        { ...state, status: 'awaiting_async', awaitingAsyncIds: pendingIds },
+        results
+      );
+      state = runUntilPause(state);
+    }
 
-      switch (start.type) {
-        case 'do':
-        case 'vibe': {
-          const promise = this.executeAIAsync(start.operationId, start.prompt);
-          startAsyncOperation(operation, promise);
-          break;
-        }
-        case 'ts': {
-          const promise = this.executeTsAsync(start.operationId, start.params, start.body, start.paramValues, start.location);
-          startAsyncOperation(operation, promise);
-          break;
-        }
-        case 'ts-function': {
-          const promise = this.executeTsFuncAsync(start.operationId, start.funcName, start.args, start.location);
-          startAsyncOperation(operation, promise);
-          break;
-        }
-        case 'vibe-function': {
-          const promise = this.executeVibeFuncAsync(start.operationId, start.funcName, start.args, start.modulePath);
-          startAsyncOperation(operation, promise);
-          break;
-        }
-      }
+    return state;
+  }
+
+  /** Dispatch a single pause state to its handler. */
+  private async handlePause(state: RuntimeState, options?: ExecuteLoopOptions): Promise<RuntimeState> {
+    const logger = options?.logger;
+
+    switch (state.status) {
+      case 'awaiting_async':
+        return this.handleAwaitingAsync(state);
+      case 'awaiting_ts':
+        return this.handleAwaitingTs(state, logger);
+      case 'awaiting_ai':
+        return this.handleAwaitingAi(state, options);
+      case 'awaiting_tool':
+        return this.handleAwaitingTool(state, logger);
+      case 'awaiting_compress':
+        return this.handleAwaitingCompress(state);
+      case 'awaiting_user':
+        return this.handleAwaitingUser(state);
+      default:
+        return state;
     }
   }
 
-  // Execute an AI call asynchronously (returns Promise that resolves to VibeValue)
-  private async executeAIAsync(
-    operationId: string,
-    prompt: string
-  ): Promise<VibeValue> {
-    try {
-      const result = await this.aiProvider.execute(prompt);
+  private async handleAwaitingAsync(state: RuntimeState): Promise<RuntimeState> {
+    // Start scheduled async ops BEFORE awaiting them
+    state = await this.startAsyncOperations(state);
+    const results = await awaitOperations(state.awaitingAsyncIds, state.asyncOperations);
+    state = resumeWithAsyncResults(state, results);
+    state = runUntilPause(state);
+    state = await this.startAsyncOperations(state);
+    return state;
+  }
 
-      // Create VibeValue with the result
+  private async handleAwaitingTs(state: RuntimeState, logger?: VerboseLogger | null): Promise<RuntimeState> {
+    if (state.pendingTS) {
+      const { params, body, paramValues, location } = state.pendingTS;
+      const tsId = logger?.tsBlockStart(params, paramValues, body, { file: location.file ?? this.basePath, line: location.line });
+      const startTime = Date.now();
+      try {
+        const result = await evalTsBlock(params, body, paramValues, location);
+        if (tsId) logger?.tsBlockComplete(tsId, Date.now() - startTime);
+        return resumeWithTsResult(state, result);
+      } catch (error) {
+        if (tsId) logger?.tsBlockComplete(tsId, Date.now() - startTime, error instanceof Error ? error.message : String(error));
+        throw error;
+      }
+    }
+
+    if (state.pendingImportedTsCall) {
+      const { funcName, args, location } = state.pendingImportedTsCall;
+      const fn = getImportedTsFunction(state, funcName);
+      if (!fn) {
+        throw new Error(`Import error: Function '${funcName}' not found`);
+      }
+      const tsfId = logger?.tsFunctionStart(funcName, args, { file: location.file ?? this.basePath, line: location.line });
+      const startTime = Date.now();
+      try {
+        const result = await fn(...args);
+        if (tsfId) logger?.tsFunctionComplete(tsfId, Date.now() - startTime);
+        return resumeWithImportedTsResult(state, result);
+      } catch (error) {
+        if (tsfId) logger?.tsFunctionComplete(tsfId, Date.now() - startTime, error instanceof Error ? error.message : String(error));
+        const originalError = error instanceof Error ? error : new Error(String(error));
+        throw new TsBlockError(
+          `Error in imported function '${funcName}': ${originalError.message}`,
+          [],
+          `/* imported function: ${funcName} */`,
+          originalError,
+          location
+        );
+      }
+    }
+
+    throw new Error('State awaiting TS but no pending TS request');
+  }
+
+  private async handleAwaitingAi(state: RuntimeState, options?: ExecuteLoopOptions): Promise<RuntimeState> {
+    if (!state.pendingAI) {
+      throw new Error('State awaiting AI but no pending AI request');
+    }
+
+    const logger = options?.logger;
+    const startTime = Date.now();
+    const pendingAI = state.pendingAI;
+
+    // Get target type from next instruction
+    let targetType: string | null = null;
+    const nextInstruction = state.instructionStack[0];
+    if (nextInstruction?.op === 'declare_var' && nextInstruction.type) {
+      targetType = nextInstruction.type;
+    }
+
+    // Get model details from state for logging
+    let modelDetails: AIInteraction['modelDetails'];
+    const modelVar = state.callStack[0]?.locals?.[pendingAI.model];
+    if (modelVar?.value && typeof modelVar.value === 'object') {
+      const mv = modelVar.value as Record<string, unknown>;
+      modelDetails = {
+        name: String(mv.name ?? ''),
+        provider: String(mv.provider ?? ''),
+        url: mv.url ? String(mv.url) : undefined,
+        thinkingLevel: mv.thinkingLevel ? String(mv.thinkingLevel) : undefined,
+      };
+    }
+
+    // Log AI start
+    const contextMode = state.callStack.length > 1 ? 'local' as const : 'default' as const;
+    const aiId = logger?.aiStart(pendingAI.type, pendingAI.model, pendingAI.prompt, {
+      model: pendingAI.model,
+      modelDetails,
+      type: pendingAI.type,
+      targetType,
+      contextMode,
+      messages: [],
+    });
+
+    let result: AIExecutionResult;
+    try {
+      result = await this.aiProvider.execute(pendingAI.prompt);
+    } catch (error) {
+      if (aiId) {
+        const aiError = error instanceof Error ? error.message : String(error);
+        const aiLogContext = (error instanceof RuntimeError && error.context?.__aiLogContext)
+          ? error.context.__aiLogContext as { messages?: unknown[]; response?: string; rawResponse?: string; toolRounds?: unknown[]; retryAttempts?: unknown[] }
+          : undefined;
+        logger?.aiComplete(aiId, Date.now() - startTime, undefined, 0, aiError, aiLogContext ? {
+          messages: aiLogContext.messages as AILogMessage[],
+          response: aiLogContext.response,
+          rawResponse: aiLogContext.rawResponse,
+          toolRounds: aiLogContext.toolRounds as any,
+          retryAttempts: aiLogContext.retryAttempts as any,
+        } : undefined);
+      }
+      throw error;
+    }
+
+    // Log AI complete
+    if (aiId) {
+      const toolCallCount = result.toolRounds?.reduce((sum, r) => sum + r.toolCalls.length, 0) ?? 0;
+      logger?.aiComplete(aiId, Date.now() - startTime, result.usage, toolCallCount, undefined, {
+        messages: result.messages,
+        response: typeof result.value === 'string' ? result.value : JSON.stringify(result.value),
+        toolRounds: result.toolRounds,
+        retryAttempts: result.retryAttempts,
+        rawResponse: result.rawResponse,
+      });
+    }
+
+    // Create interaction record if logging enabled
+    let interaction: AIInteraction | undefined;
+    if (options?.logInteractions) {
+      interaction = {
+        type: pendingAI.type,
+        prompt: pendingAI.prompt,
+        response: result.value,
+        timestamp: startTime,
+        model: pendingAI.model,
+        modelDetails,
+        targetType,
+        usage: result.usage,
+        durationMs: Date.now() - startTime,
+        messages: result.messages ?? [],
+        executionContext: result.executionContext ?? [],
+        interactionToolCalls: result.interactionToolCalls,
+      };
+    }
+
+    // Track token usage on model variable
+    const usageRecord = createUsageRecord(result.usage);
+    pushModelUsage(state, pendingAI.model, usageRecord);
+
+    return resumeWithAIResponse(state, result.value, interaction, result.toolRounds, usageRecord);
+  }
+
+  private async handleAwaitingTool(state: RuntimeState, logger?: VerboseLogger | null): Promise<RuntimeState> {
+    if (!state.pendingToolCall) {
+      throw new Error('State awaiting tool but no pending tool call');
+    }
+
+    const { toolName, args, executor } = state.pendingToolCall;
+    logger?.toolStart('', toolName ?? 'unknown', args as Record<string, unknown>);
+    const startTime = Date.now();
+
+    try {
+      const context = { rootDir: state.rootDir };
+      const result = await executor(args, context);
+      logger?.toolComplete('', toolName ?? 'unknown', Date.now() - startTime, true);
+      return resumeWithToolResult(state, result);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      logger?.toolComplete('', toolName ?? 'unknown', Date.now() - startTime, false, errMsg);
+      throw error;
+    }
+  }
+
+  private async handleAwaitingCompress(state: RuntimeState): Promise<RuntimeState> {
+    if (!state.pendingCompress) {
+      throw new Error('State awaiting compress but no pending compress request');
+    }
+
+    const { prompt, scopeType } = state.pendingCompress;
+    const localContext = buildLocalContext(state);
+    const contextFormatted = formatContextForAI(localContext, { includeInstructions: false });
+    const defaultPrompt = `Provide a concise summary of the most recent ${scopeType} loop execution. Focus on key results, state changes, and outcomes.`;
+    const summaryPrompt = `${prompt ?? defaultPrompt}\n\n${contextFormatted.text}`;
+    const result = await this.aiProvider.execute(summaryPrompt);
+    const summary = typeof result.value === 'string' ? result.value : String(result.value);
+    return resumeWithCompressResult(state, summary);
+  }
+
+  private async handleAwaitingUser(state: RuntimeState): Promise<RuntimeState> {
+    if (!state.pendingAI) {
+      throw new Error('State awaiting user but no pending AI request');
+    }
+    const response = await this.aiProvider.askUser(state.pendingAI.prompt);
+    return resumeWithUserInput(state, response);
+  }
+
+  /** Start pending async operations as background Promises. */
+  private async startAsyncOperations(state: RuntimeState): Promise<RuntimeState> {
+    const pending = state.pendingAsyncStarts;
+    if (pending.length === 0) return state;
+
+    state = { ...state, pendingAsyncStarts: [] };
+
+    for (const start of pending) {
+      const operation = state.asyncOperations.get(start.operationId);
+      if (!operation) continue;
+
+      let promise: Promise<VibeValue>;
+      switch (start.type) {
+        case 'do':
+        case 'vibe':
+          promise = this.executeAsyncAI(state, start);
+          break;
+        case 'ts':
+          promise = this.executeAsyncTs(state, start);
+          break;
+        case 'ts-function':
+          promise = this.executeAsyncTsFunc(state, start);
+          break;
+        case 'vibe-function':
+          promise = this.executeAsyncVibeFunc(state, start);
+          break;
+      }
+      startAsyncOperation(operation, promise);
+    }
+
+    return state;
+  }
+
+  private async executeAsyncAI(state: RuntimeState, start: PendingAsyncStart & { type: 'do' | 'vibe' }): Promise<VibeValue> {
+    try {
+      const result = await this.aiProvider.execute(start.prompt);
       const vibeValue = createVibeValue(result.value, {
         source: 'ai',
         toolCalls: result.toolRounds?.flatMap((round) =>
@@ -616,75 +570,64 @@ export class Runtime {
           })
         ) ?? [],
       });
-
-      // Mark operation as complete
-      completeAsyncOperation(this.state, operationId, vibeValue);
-
+      completeAsyncOperation(state, start.operationId, vibeValue);
       return vibeValue;
     } catch (error) {
       const vibeError = createAsyncVibeError(error);
-      failAsyncOperation(this.state, operationId, vibeError);
+      failAsyncOperation(state, start.operationId, vibeError);
       return createVibeValue(null, { source: 'ai', err: true, errDetails: vibeError });
     }
   }
 
-  // Execute a TS block asynchronously (returns Promise that resolves to VibeValue)
-  private async executeTsAsync(
-    operationId: string,
-    params: string[],
-    body: string,
-    paramValues: unknown[],
-    location: SourceLocation
-  ): Promise<VibeValue> {
+  private async executeAsyncTs(state: RuntimeState, start: PendingAsyncStart & { type: 'ts' }): Promise<VibeValue> {
     try {
-      const result = await evalTsBlock(params, body, paramValues, location);
-
-      // Create VibeValue with the result
+      const result = await evalTsBlock(start.params, start.body, start.paramValues, start.location);
       const vibeValue = createVibeValue(result, { source: 'ts' });
-
-      // Mark operation as complete
-      completeAsyncOperation(this.state, operationId, vibeValue);
-
+      completeAsyncOperation(state, start.operationId, vibeValue);
       return vibeValue;
     } catch (error) {
-      const vibeError = createAsyncVibeError(error, location);
-      failAsyncOperation(this.state, operationId, vibeError);
+      const vibeError = createAsyncVibeError(error, start.location);
+      failAsyncOperation(state, start.operationId, vibeError);
       return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
     }
   }
 
-  // Execute an imported TS function asynchronously (returns Promise that resolves to VibeValue)
-  private async executeTsFuncAsync(
-    operationId: string,
-    funcName: string,
-    args: unknown[],
-    location: SourceLocation
-  ): Promise<VibeValue> {
+  private async executeAsyncTsFunc(state: RuntimeState, start: PendingAsyncStart & { type: 'ts-function' }): Promise<VibeValue> {
     try {
-      const fn = getImportedTsFunction(this.state, funcName);
+      const fn = getImportedTsFunction(state, start.funcName);
       if (!fn) {
-        throw new Error(`Import error: Function '${funcName}' not found`);
+        throw new Error(`Import error: Function '${start.funcName}' not found`);
       }
-
-      const result = await fn(...args);
-
-      // Create VibeValue with the result
+      const result = await fn(...start.args);
       const vibeValue = createVibeValue(result, { source: 'ts' });
-
-      // Mark operation as complete
-      completeAsyncOperation(this.state, operationId, vibeValue);
-
+      completeAsyncOperation(state, start.operationId, vibeValue);
       return vibeValue;
     } catch (error) {
-      const vibeError = createAsyncVibeError(error, location);
-      failAsyncOperation(this.state, operationId, vibeError);
+      const vibeError = createAsyncVibeError(error, start.location);
+      failAsyncOperation(state, start.operationId, vibeError);
       return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
+    }
+  }
+
+  private async executeAsyncVibeFunc(state: RuntimeState, start: PendingAsyncStart & { type: 'vibe-function' }): Promise<VibeValue> {
+    try {
+      const result = await this.runVibeFuncIsolated(state, start.funcName, start.args, start.modulePath);
+      if (isVibeValue(result) && result.err) {
+        completeAsyncOperation(state, start.operationId, result);
+        return result;
+      }
+      const vibeValue = createVibeValue(result, { source: 'vibe-function' });
+      completeAsyncOperation(state, start.operationId, vibeValue);
+      return vibeValue;
+    } catch (error) {
+      const vibeError = createAsyncVibeError(error);
+      failAsyncOperation(state, start.operationId, vibeError);
+      return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
     }
   }
 
   /**
-   * Core helper to run a Vibe function in isolated state.
-   * Used by both top-level async calls and nested calls within isolated execution.
+   * Run a Vibe function in isolated state.
    * The function runs to completion in isolation - only the return value persists.
    */
   private async runVibeFuncIsolated(
@@ -693,7 +636,6 @@ export class Runtime {
     args: unknown[],
     modulePath?: string
   ): Promise<unknown> {
-    // Get the function declaration
     let func: AST.FunctionDeclaration | undefined;
     if (modulePath) {
       func = getImportedVibeFunction(sourceState, funcName);
@@ -705,20 +647,14 @@ export class Runtime {
       throw new Error(`ReferenceError: '${funcName}' is not defined`);
     }
 
-    // Deep clone the state for isolated execution
     let isolatedState = deepCloneState(sourceState);
-
-    // Reset async-related state for the isolated execution
     isolatedState.asyncOperations = new Map();
     isolatedState.pendingAsyncIds = new Set();
     isolatedState.asyncVarToOpId = new Map();
     isolatedState.pendingAsyncStarts = [];
     isolatedState.awaitingAsyncIds = [];
 
-    // Create the function frame
     const newFrame = createFunctionFrame(funcName, func.params, args, modulePath);
-
-    // Set up the function call
     const bodyInstructions = func.body.body.map((s) => ({
       op: 'exec_statement' as const,
       stmt: s,
@@ -737,220 +673,21 @@ export class Runtime {
       isInAsyncIsolation: true,
     };
 
-    // Run the isolated state to completion
     return this.runIsolatedState(isolatedState);
   }
 
-  /**
-   * Execute a Vibe function asynchronously from main state.
-   */
-  private async executeVibeFuncAsync(
-    operationId: string,
-    funcName: string,
-    args: unknown[],
-    modulePath?: string
-  ): Promise<VibeValue> {
-    try {
-      const result = await this.runVibeFuncIsolated(this.state, funcName, args, modulePath);
-
-      // If result is already a VibeValue with error (from function returning error value), preserve it
-      if (isVibeValue(result) && result.err) {
-        completeAsyncOperation(this.state, operationId, result);
-        return result;
-      }
-
-      // Otherwise wrap in a new VibeValue
-      const vibeValue = createVibeValue(result, { source: 'vibe-function' });
-      completeAsyncOperation(this.state, operationId, vibeValue);
-      return vibeValue;
-    } catch (error) {
-      const vibeError = createAsyncVibeError(error);
-      failAsyncOperation(this.state, operationId, vibeError);
-      return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
-    }
-  }
-
-  /**
-   * Run an isolated state to completion, handling AI calls, TS blocks, etc.
-   * Returns the final lastResult value.
-   */
+  /** Run an isolated state to completion without logging. */
   private async runIsolatedState(state: RuntimeState): Promise<unknown> {
-    // Run until pause or complete
-    state = runUntilPause(state);
-
-    // Start any scheduled async operations in the isolated state
-    state = await this.startIsolatedAsyncOps(state);
-
-    // Handle AI calls, TS evaluation, async awaits, etc. in a loop
-    while (
-      state.status === 'awaiting_ai' ||
-      state.status === 'awaiting_ts' ||
-      state.status === 'awaiting_tool' ||
-      state.status === 'awaiting_async'
-    ) {
-      if (state.status === 'awaiting_async') {
-        // Wait for pending async operations in isolated state
-        const results = await awaitOperations(
-          state.awaitingAsyncIds,
-          state.asyncOperations
-        );
-        state = resumeWithAsyncResults(state, results);
-        state = runUntilPause(state);
-        state = await this.startIsolatedAsyncOps(state);
-        continue;
-      }
-
-      if (state.status === 'awaiting_ts') {
-        if (state.pendingTS) {
-          const { params, body, paramValues, location } = state.pendingTS;
-          const result = await evalTsBlock(params, body, paramValues, location);
-          state = resumeWithTsResult(state, result);
-        } else if (state.pendingImportedTsCall) {
-          const { funcName, args } = state.pendingImportedTsCall;
-          const fn = getImportedTsFunction(state, funcName);
-          if (!fn) {
-            throw new Error(`Import error: Function '${funcName}' not found`);
-          }
-          const result = await fn(...args);
-          state = resumeWithImportedTsResult(state, result);
-        }
-      } else if (state.status === 'awaiting_ai') {
-        if (!state.pendingAI) {
-          throw new Error('State awaiting AI but no pending AI request');
-        }
-        const result = await this.aiProvider.execute(state.pendingAI.prompt);
-        const usageRecord = createUsageRecord(result.usage);
-        pushModelUsage(state, state.pendingAI.model, usageRecord);
-        state = resumeWithAIResponse(state, result.value, undefined, undefined, usageRecord);
-      } else if (state.status === 'awaiting_tool') {
-        if (!state.pendingToolCall) {
-          throw new Error('State awaiting tool but no pending tool call');
-        }
-        const { args, executor } = state.pendingToolCall;
-        const context = { rootDir: state.rootDir };
-        const result = await executor(args, context);
-        state = resumeWithToolResult(state, result);
-      }
-
-      // Continue running
-      state = runUntilPause(state);
-
-      // Start any newly scheduled async operations
-      state = await this.startIsolatedAsyncOps(state);
-    }
+    state = await this.executeLoop(state);
 
     if (state.status === 'error') {
       throw state.errorObject ?? new Error(state.error ?? 'Unknown runtime error');
     }
 
-    // Await any remaining pending async operations at function exit
-    if (state.pendingAsyncIds.size > 0) {
-      const pendingIds = Array.from(state.pendingAsyncIds);
-      const results = await awaitOperations(pendingIds, state.asyncOperations);
-      state = resumeWithAsyncResults(
-        { ...state, status: 'awaiting_async', awaitingAsyncIds: pendingIds },
-        results
-      );
-      state = runUntilPause(state);
-    }
-
-    // If lastResult is a VibeValue with error, return it as-is to preserve error info
     if (isVibeValue(state.lastResult) && state.lastResult.err) {
       return state.lastResult;
     }
     return resolveValue(state.lastResult);
-  }
-
-  /**
-   * Start scheduled async operations in an isolated state.
-   * Similar to startScheduledAsyncOps but operates on passed state.
-   */
-  private async startIsolatedAsyncOps(state: RuntimeState): Promise<RuntimeState> {
-    const pending = state.pendingAsyncStarts;
-    if (pending.length === 0) return state;
-
-    // Clear pending starts
-    state = { ...state, pendingAsyncStarts: [] };
-
-    // Start each operation as a Promise
-    for (const start of pending) {
-      const operation = state.asyncOperations.get(start.operationId);
-      if (!operation) continue;
-
-      switch (start.type) {
-        case 'do':
-        case 'vibe': {
-          const promise = (async () => {
-            try {
-              const result = await this.aiProvider.execute(start.prompt);
-              const vibeValue = createVibeValue(result.value, { source: 'ai' });
-              completeAsyncOperation(state, start.operationId, vibeValue);
-              return vibeValue;
-            } catch (error) {
-              const vibeError = createAsyncVibeError(error);
-              failAsyncOperation(state, start.operationId, vibeError);
-              return createVibeValue(null, { source: 'ai', err: true, errDetails: vibeError });
-            }
-          })();
-          startAsyncOperation(operation, promise);
-          break;
-        }
-        case 'ts': {
-          const promise = (async () => {
-            try {
-              const result = await evalTsBlock(start.params, start.body, start.paramValues, start.location);
-              const vibeValue = createVibeValue(result, { source: 'ts' });
-              completeAsyncOperation(state, start.operationId, vibeValue);
-              return vibeValue;
-            } catch (error) {
-              const vibeError = createAsyncVibeError(error, start.location);
-              failAsyncOperation(state, start.operationId, vibeError);
-              return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
-            }
-          })();
-          startAsyncOperation(operation, promise);
-          break;
-        }
-        case 'ts-function': {
-          const promise = (async () => {
-            try {
-              const fn = getImportedTsFunction(state, start.funcName);
-              if (!fn) {
-                throw new Error(`Import error: Function '${start.funcName}' not found`);
-              }
-              const result = await fn(...start.args);
-              const vibeValue = createVibeValue(result, { source: 'ts' });
-              completeAsyncOperation(state, start.operationId, vibeValue);
-              return vibeValue;
-            } catch (error) {
-              const vibeError = createAsyncVibeError(error, start.location);
-              failAsyncOperation(state, start.operationId, vibeError);
-              return createVibeValue(null, { source: 'ts', err: true, errDetails: vibeError });
-            }
-          })();
-          startAsyncOperation(operation, promise);
-          break;
-        }
-        case 'vibe-function': {
-          const promise = (async () => {
-            try {
-              const result = await this.runVibeFuncIsolated(state, start.funcName, start.args, start.modulePath);
-              const vibeValue = createVibeValue(result, { source: 'vibe-function' });
-              completeAsyncOperation(state, start.operationId, vibeValue);
-              return vibeValue;
-            } catch (error) {
-              const vibeError = createAsyncVibeError(error);
-              failAsyncOperation(state, start.operationId, vibeError);
-              return createVibeValue(null, { source: 'vibe-function', err: true, errDetails: vibeError });
-            }
-          })();
-          startAsyncOperation(operation, promise);
-          break;
-        }
-      }
-    }
-
-    return state;
   }
 
   // Step through one instruction at a time
