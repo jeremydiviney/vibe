@@ -2,7 +2,7 @@
 
 import type { VibeType } from '../../ast';
 import { ReferenceError, RuntimeError, TypeError, type SourceLocation } from '../../errors';
-import type { RuntimeState, VibeValue, StackFrame, ToolCallRecord } from '../types';
+import type { RuntimeState, Instruction, VibeValue, StackFrame, ToolCallRecord } from '../types';
 import { createVibeValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
 import { validateAndCoerce } from '../validation';
@@ -284,4 +284,71 @@ function getCurrentModulePath(state: RuntimeState): string | undefined {
     frameIndex = frame.parentFrameIndex;
   }
   return undefined;
+}
+
+type DestructureAssignInstruction = Extract<Instruction, { op: 'destructure_assign' }>;
+
+/**
+ * Destructure an object result into individual variable declarations.
+ * Handles pending async operations by triggering await if needed.
+ */
+export function execDestructureAssign(state: RuntimeState, instruction: DestructureAssignInstruction): RuntimeState {
+  const { fields, isConst } = instruction;
+
+  // Get the result value (should be Record<string, unknown> from AI return)
+  let rawResult = state.lastResult;
+
+  // Check if this is a pending async operation - if so, await it
+  if (isVibeValue(rawResult) && rawResult.asyncOperationId) {
+    const opId = rawResult.asyncOperationId;
+    const operation = state.asyncOperations.get(opId);
+
+    // If operation is still pending or running, trigger await
+    if (operation && (operation.status === 'pending' || operation.status === 'running')) {
+      return {
+        ...state,
+        status: 'awaiting_async',
+        awaitingAsyncIds: [opId],
+        // Re-add current instruction to retry after await
+        instructionStack: [instruction, ...state.instructionStack],
+      };
+    }
+
+    // If operation completed, use the result
+    if (operation && operation.status === 'completed' && operation.result) {
+      rawResult = operation.result;
+    }
+  }
+
+  // Unwrap VibeValue if present
+  if (isVibeValue(rawResult)) {
+    rawResult = rawResult.value;
+  }
+
+  let fieldValues: Record<string, unknown>;
+  if (typeof rawResult === 'object' && rawResult !== null) {
+    fieldValues = rawResult as Record<string, unknown>;
+  } else {
+    throw new RuntimeError(
+      `Destructuring requires an object, got ${typeof rawResult}`,
+      instruction.location,
+      ''
+    );
+  }
+
+  // Declare each field as a variable
+  let newState: RuntimeState = { ...state, pendingDestructuring: null };
+  for (const field of fields) {
+    const value = fieldValues[field.name];
+    if (value === undefined) {
+      throw new RuntimeError(
+        `Missing field '${field.name}' in destructuring result`,
+        instruction.location,
+        ''
+      );
+    }
+    newState = execDeclareVar(newState, field.name, isConst, field.type, value, field.isPrivate);
+  }
+
+  return newState;
 }

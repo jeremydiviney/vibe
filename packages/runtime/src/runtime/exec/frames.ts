@@ -24,3 +24,18 @@ export function execPopFrame(state: RuntimeState): RuntimeState {
     callStack: state.callStack.slice(0, -1),
   };
 }
+
+/**
+ * Clear all async context flags (used after fire-and-forget async statements).
+ */
+export function execClearAsyncContext(state: RuntimeState): RuntimeState {
+  return {
+    ...state,
+    currentAsyncVarName: null,
+    currentAsyncIsConst: false,
+    currentAsyncType: null,
+    currentAsyncIsPrivate: false,
+    currentAsyncIsDestructure: false,
+    currentAsyncIsFireAndForget: false,
+  };
+}
