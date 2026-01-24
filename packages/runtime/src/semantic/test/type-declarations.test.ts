@@ -309,3 +309,79 @@ let items: Item[] = [{valuee: 1}]`);
     expect(errors).toContain("Unknown field 'valuee' for type 'Item'. Available fields: value");
   });
 });
+
+describe('Type Declarations - Structural Types in Destructuring', () => {
+  const analyzer = new SemanticAnalyzer();
+
+  function getErrors(code: string): string[] {
+    const ast = parse(code);
+    const errors = analyzer.analyze(ast, code, '');
+    return errors.map((e) => e.message);
+  }
+
+  test('structural type array in destructuring field is valid', () => {
+    const errors = getErrors(`type RoundResult { roundNumber: number, questions: text }
+function getData(): json { return null }
+const {results: RoundResult[], runId: text} = getData()`);
+    expect(errors).toEqual([]);
+  });
+
+  test('structural type in destructuring field is valid', () => {
+    const errors = getErrors(`type Player { name: text }
+function getData(): json { return null }
+const {player: Player, score: number} = getData()`);
+    expect(errors).toEqual([]);
+  });
+
+  test('unknown type in destructuring field is an error', () => {
+    const errors = getErrors(`function getData(): json { return null }
+const {items: UnknownType[]} = getData()`);
+    expect(errors).toContain("Unknown type 'UnknownType'");
+  });
+
+  test('function returning ad-hoc object with nested structural types, destructured with member access', () => {
+    const errors = getErrors(`type RoundResult { roundNumber: number, questions: text }
+
+function runBench() {
+  let private results: RoundResult[] = []
+  const private runId: text = "abc"
+  return {results: results, runId: runId}
+}
+
+const {results: RoundResult[], runId: text} = runBench()
+let count: number = results.len()
+let wrong: text = results`);
+    // results is RoundResult[] so assigning to text should error
+    expect(errors).toContain('Type error: cannot assign RoundResult[] to text');
+  });
+
+  test('destructured structural type array element access infers type', () => {
+    const errors = getErrors(`type Item { value: number, label: text }
+
+function getItems() {
+  let private items: Item[] = []
+  return {items: items, total: 0}
+}
+
+const {items: Item[], total: number} = getItems()
+let first = items[0]
+let wrong: boolean = first`);
+    // items[0] is Item, assigning to boolean should error
+    expect(errors).toContain('Type error: cannot assign Item to boolean');
+  });
+
+  test('mixed built-in and structural types in destructuring', () => {
+    const errors = getErrors(`type Score { points: number, grade: text }
+
+function analyze() {
+  let private s: Score = null
+  let private name: text = "test"
+  let private count: number = 5
+  return {score: s, name: name, count: count}
+}
+
+const {score: Score, name: text, count: number} = analyze()
+let wrong: number = name`);
+    expect(errors).toContain('Type error: cannot assign text to number');
+  });
+});

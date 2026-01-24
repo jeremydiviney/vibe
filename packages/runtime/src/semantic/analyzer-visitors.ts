@@ -7,7 +7,6 @@ import * as AST from '../ast';
 import type { SourceLocation } from '../errors';
 import type { AnalyzerContext, AnalyzerState } from './analyzer-context';
 import type { SymbolTable } from './symbol-table';
-import { isValidType } from './types';
 import { isCoreFunction } from '../runtime/stdlib/core';
 import { extractFunctionSignature } from './ts-signatures';
 import { resolve, dirname } from 'path';
@@ -443,9 +442,7 @@ export function createVisitors(
 
   function visitDestructuringDeclaration(node: AST.DestructuringDeclaration): void {
     for (const field of node.fields) {
-      if (!isValidType(field.type)) {
-        ctx.error(`Invalid type '${field.type}' for field '${field.name}'`, node.location);
-      }
+      validateTypeAnnotation(ctx, field.type, node.location);
     }
 
     // Allow destructuring from:
