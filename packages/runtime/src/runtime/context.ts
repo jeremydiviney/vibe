@@ -1,5 +1,10 @@
+import { inspect } from 'util';
 import type { RuntimeState, ContextEntry, ContextVariable, ContextPrompt, ContextToolCall, FrameEntry } from './types';
 import { resolveValue } from './types';
+
+// Format objects as JS literal style (no quotes on keys, readable structure)
+const formatValue = (value: unknown): string =>
+  inspect(value, { depth: null, colors: false, compact: true, breakLength: 80 });
 
 // Types that are filtered from context (config/instructions, not data for AI)
 const FILTERED_TYPES = ['model', 'prompt'];
@@ -246,7 +251,7 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
       if (entry.kind === 'variable') {
         const typeStr = entry.type ? ` (${entry.type})` : '';
         const valueStr =
-          typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value);
+          typeof entry.value === 'object' ? formatValue(entry.value) : String(entry.value);
         // Use <-- for AI/user responses, - for regular variables
         const prefix = entry.source === 'ai' || entry.source === 'user' ? '<--' : '-';
         lines.push(`${indent}  ${prefix} ${entry.name}${typeStr}: ${valueStr}`);
@@ -254,15 +259,20 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
         // Prompt entry: AI call → tool calls → response
         lines.push(`${indent}  --> ${entry.aiType}: "${entry.prompt}"`);
         // Format tool calls in order (between prompt and response)
+        // Skip __vibe_return_* tools - they're internal plumbing and their results
+        // already appear in the variable assignment that follows
         if (entry.toolCalls && entry.toolCalls.length > 0) {
           for (const toolCall of entry.toolCalls) {
-            const argsStr = JSON.stringify(toolCall.args);
+            if (toolCall.toolName.startsWith('__vibe_return_')) {
+              continue;
+            }
+            const argsStr = formatValue(toolCall.args);
             lines.push(`${indent}  [tool] ${toolCall.toolName}(${argsStr})`);
             if (toolCall.error) {
               lines.push(`${indent}  [error] ${toolCall.error}`);
             } else if (toolCall.result !== undefined) {
               const resultStr =
-                typeof toolCall.result === 'object' ? JSON.stringify(toolCall.result) : String(toolCall.result);
+                typeof toolCall.result === 'object' ? formatValue(toolCall.result) : String(toolCall.result);
               lines.push(`${indent}  [result] ${resultStr}`);
             }
           }
@@ -285,14 +295,18 @@ function formatFrameGroups(entries: ContextEntry[], lines: string[]): void {
         // Summary from compress mode
         lines.push(`${indent}  [summary] ${entry.text}`);
       } else if (entry.kind === 'tool-call') {
+        // Skip __vibe_return_* tools - internal plumbing
+        if (entry.toolName.startsWith('__vibe_return_')) {
+          continue;
+        }
         // Tool call with args and result/error
-        const argsStr = JSON.stringify(entry.args);
+        const argsStr = formatValue(entry.args);
         lines.push(`${indent}  [tool] ${entry.toolName}(${argsStr})`);
         if (entry.error) {
           lines.push(`${indent}  [error] ${entry.error}`);
         } else if (entry.result !== undefined) {
           const resultStr =
-            typeof entry.result === 'object' ? JSON.stringify(entry.result) : String(entry.result);
+            typeof entry.result === 'object' ? formatValue(entry.result) : String(entry.result);
           lines.push(`${indent}  [result] ${resultStr}`);
         }
       }
@@ -312,25 +326,29 @@ export function formatEntriesForSummarization(entries: FrameEntry[]): string {
   for (const entry of entries) {
     if (entry.kind === 'variable') {
       const typeStr = entry.type ? ` (${entry.type})` : '';
-      const valueStr = typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value);
+      const valueStr = typeof entry.value === 'object' ? formatValue(entry.value) : String(entry.value);
       const sourceStr = entry.source === 'ai' ? ' [from AI]' : entry.source === 'user' ? ' [from user]' : '';
       lines.push(`Variable ${entry.name}${typeStr} = ${valueStr}${sourceStr}`);
     } else if (entry.kind === 'prompt') {
       lines.push(`AI ${entry.aiType}: "${entry.prompt}"`);
       if (entry.toolCalls && entry.toolCalls.length > 0) {
         for (const toolCall of entry.toolCalls) {
-          const argsStr = JSON.stringify(toolCall.args);
+          // Skip __vibe_return_* tools - internal plumbing
+          if (toolCall.toolName.startsWith('__vibe_return_')) {
+            continue;
+          }
+          const argsStr = formatValue(toolCall.args);
           lines.push(`  Tool call: ${toolCall.toolName}(${argsStr})`);
           if (toolCall.error) {
             lines.push(`  Error: ${toolCall.error}`);
           } else if (toolCall.result !== undefined) {
-            const resultStr = typeof toolCall.result === 'object' ? JSON.stringify(toolCall.result) : String(toolCall.result);
+            const resultStr = typeof toolCall.result === 'object' ? formatValue(toolCall.result) : String(toolCall.result);
             lines.push(`  Result: ${resultStr}`);
           }
         }
       }
       if (entry.response !== undefined) {
-        const responseStr = typeof entry.response === 'object' ? JSON.stringify(entry.response) : String(entry.response);
+        const responseStr = typeof entry.response === 'object' ? formatValue(entry.response) : String(entry.response);
         lines.push(`  Response: ${responseStr}`);
       }
     } else if (entry.kind === 'scope-enter') {
@@ -342,12 +360,16 @@ export function formatEntriesForSummarization(entries: FrameEntry[]): string {
     } else if (entry.kind === 'summary') {
       lines.push(`Summary: ${entry.text}`);
     } else if (entry.kind === 'tool-call') {
-      const argsStr = JSON.stringify(entry.args);
+      // Skip __vibe_return_* tools - internal plumbing
+      if (entry.toolName.startsWith('__vibe_return_')) {
+        continue;
+      }
+      const argsStr = formatValue(entry.args);
       lines.push(`Tool call: ${entry.toolName}(${argsStr})`);
       if (entry.error) {
         lines.push(`  Error: ${entry.error}`);
       } else if (entry.result !== undefined) {
-        const resultStr = typeof entry.result === 'object' ? JSON.stringify(entry.result) : String(entry.result);
+        const resultStr = typeof entry.result === 'object' ? formatValue(entry.result) : String(entry.result);
         lines.push(`  Result: ${resultStr}`);
       }
     }

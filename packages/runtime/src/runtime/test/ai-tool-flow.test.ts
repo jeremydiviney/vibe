@@ -299,9 +299,9 @@ describe('AI Tool Calling Flow', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> vibe: "Calculate (2+3) * 4"
-    [tool] add({"a":2,"b":3})
+    [tool] add({ a: 2, b: 3 })
     [result] 5
-    [tool] multiply({"a":5,"b":4})
+    [tool] multiply({ a: 5, b: 4 })
     [result] 20
     <-- result (text): The result of (2+3) * 4 is 20`
     );
@@ -562,9 +562,9 @@ describe('AI Tool Calling - Do Command (Single Round)', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> do: "Calculate 5 + 3 and 2 * 4"
-    [tool] add({"a":5,"b":3})
+    [tool] add({ a: 5, b: 3 })
     [result] 8
-    [tool] multiply({"a":2,"b":4})
+    [tool] multiply({ a: 2, b: 4 })
     [result] 8
     <-- first (text): 5 + 3 = 8 and 2 * 4 = 8
     --> do: "What were the previous calculations?"
@@ -612,7 +612,7 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> vibe: "Calculate 5 + 3"
-    [tool] add({"a":5,"b":3})
+    [tool] add({ a: 5, b: 3 })
     [result] 8
     <-- result (text): The answer is 8`
     );
@@ -655,10 +655,10 @@ describe('AI Tool Calling - Formatted Context Output', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> vibe: "Weather in Seattle and NYC?"
-    [tool] getWeather({"city":"Seattle"})
-    [result] {"temp":55,"condition":"rainy"}
-    [tool] getWeather({"city":"New York"})
-    [result] {"temp":45,"condition":"cloudy"}
+    [tool] getWeather({ city: 'Seattle' })
+    [result] { temp: 55, condition: 'rainy' }
+    [tool] getWeather({ city: 'New York' })
+    [result] { temp: 45, condition: 'cloudy' }
     <-- weather (text): Seattle: 55F rainy, NYC: 45F cloudy`
     );
   });
@@ -837,13 +837,13 @@ describe('AI Tool Calling - Context Modes (forget/verbose)', () => {
     ==> for i
     - i (number): 1
     --> vibe: "Add {i}"
-    [tool] add({"a":0,"b":1})
+    [tool] add({ a: 0, b: 1 })
     [result] 1
     <-- partial (number): 1
     - sum (number): 1
     - i (number): 2
     --> vibe: "Add {i}"
-    [tool] add({"a":1,"b":2})
+    [tool] add({ a: 1, b: 2 })
     [result] 3
     <-- partial (number): 3
     - sum (number): 4

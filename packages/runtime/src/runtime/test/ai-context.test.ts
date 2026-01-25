@@ -353,7 +353,7 @@ Variables from the VIBE language call stack.
 
   <entry> (current scope)
     - mutableVar: changing
-    - CONFIG (json): {"key":"value"}
+    - CONFIG (json): { key: 'value' }
     - anotherLet: also changing
     - SYSTEM_PROMPT (text): be helpful`
     );
@@ -400,7 +400,7 @@ Variables from the VIBE language call stack.
 Variables from the VIBE language call stack.
 
   <entry> (current scope)
-    - jsonVar (json): {"key":"value"}
+    - jsonVar (json): { key: 'value' }
     - textVar (text): text value
     - untypedConst: constant
     - untypedLet: mutable`
@@ -730,9 +730,9 @@ Variables from the VIBE language call stack.
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - PROMPT (text): analyze this data
-    - CONFIG (json): {"modelName":"gpt-4","temperature":"high"}
+    - CONFIG (json): { modelName: 'gpt-4', temperature: 'high' }
     - userMessage (text): user says hello
-    - data (json): {"items":["a","b","c"],"count":"3"}
+    - data (json): { items: [ 'a', 'b', 'c' ], count: '3' }
     - untypedVar (text): plain string`
     );
   });
@@ -829,8 +829,8 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - x (text): test
-    [tool] getWeather({"city":"Seattle"})
-    [result] {"temp":55,"condition":"rainy"}`
+    [tool] getWeather({ city: 'Seattle' })
+    [result] { temp: 55, condition: 'rainy' }`
     );
   });
 
@@ -855,7 +855,7 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - x (text): test
-    [tool] readFile({"path":"/nonexistent.txt"})
+    [tool] readFile({ path: '/nonexistent.txt' })
     [error] File not found`
     );
   });
@@ -889,10 +889,10 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - x (text): test
-    [tool] fetch({"url":"https://api.example.com/data"})
-    [result] {"status":"ok"}
-    [tool] jsonParse({"text":"{\\"key\\":\\"value\\"}"})
-    [result] {"key":"value"}`
+    [tool] fetch({ url: 'https://api.example.com/data' })
+    [result] { status: 'ok' }
+    [tool] jsonParse({ text: '{"key":"value"}' })
+    [result] { key: 'value' }`
     );
   });
 
@@ -933,8 +933,8 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - x (text): test
-    [tool] getWeather({"city":"Seattle"})
-    [result] {"temp":55}
+    [tool] getWeather({ city: 'Seattle' })
+    [result] { temp: 55 }
     --> vibe: "Summarize the weather"
     <-- summary (text): It is 55 degrees in Seattle`
     );
@@ -961,7 +961,7 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     - x (text): test
-    [tool] longRunningTask({"input":"data"})`
+    [tool] longRunningTask({ input: 'data' })`
     );
   });
 
@@ -1011,10 +1011,10 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> vibe: "What's the weather in Seattle and San Francisco?"
-    [tool] getWeather({"city":"Seattle"})
-    [result] {"temp":55,"condition":"rainy"}
-    [tool] getWeather({"city":"San Francisco"})
-    [result] {"temp":68,"condition":"sunny"}
+    [tool] getWeather({ city: 'Seattle' })
+    [result] { temp: 55, condition: 'rainy' }
+    [tool] getWeather({ city: 'San Francisco' })
+    [result] { temp: 68, condition: 'sunny' }
     <-- weather (text): Seattle is 55°F and rainy. San Francisco is 68°F and sunny.`
     );
   });
@@ -1068,10 +1068,10 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> vibe: "Find user 123 and get their orders"
-    [tool] getUser({"id":123})
-    [result] {"name":"Alice","email":"alice@example.com"}
-    [tool] getOrders({"userId":123})
-    [result] [{"orderId":"A1","total":99.99},{"orderId":"A2","total":149.5}]
+    [tool] getUser({ id: 123 })
+    [result] { name: 'Alice', email: 'alice@example.com' }
+    [tool] getOrders({ userId: 123 })
+    [result] [ { orderId: 'A1', total: 99.99 }, { orderId: 'A2', total: 149.5 } ]
     <-- result (text): Alice (alice@example.com) has 2 orders totaling $249.49.`
     );
   });
@@ -1121,9 +1121,9 @@ describe('Tool Call Context Formatting', () => {
     expect(formatted.text).toBe(
       `  <entry> (current scope)
     --> vibe: "Read the config file"
-    [tool] readFile({"path":"/etc/config.json"})
+    [tool] readFile({ path: '/etc/config.json' })
     [error] Permission denied
-    [tool] readFile({"path":"./config.json"})
+    [tool] readFile({ path: './config.json' })
     [result] {"setting": "value"}
     <-- data (text): Found config with setting=value`
     );
