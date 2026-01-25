@@ -26,7 +26,7 @@ export function buildContextMessage(contextText: string): string | null {
   const trimmed = contextText.trim();
   if (!trimmed) return null;
 
-  return `Here is the current program context:\n\n${trimmed}`;
+  return trimmed;
 }
 
 /**

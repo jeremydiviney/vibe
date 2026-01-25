@@ -27,10 +27,9 @@ describe('buildContextMessage', () => {
     expect(buildContextMessage('   ')).toBeNull();
   });
 
-  test('wraps context with header', () => {
+  test('returns trimmed context', () => {
     const message = buildContextMessage('Variable x = 5');
-    expect(message).toContain('context');
-    expect(message).toContain('Variable x = 5');
+    expect(message).toBe('Variable x = 5');
   });
 });
 
@@ -181,9 +180,7 @@ Call tools when needed to complete the task.`,
     // Message 2: Context message
     expect(messages[2]).toEqual({
       role: 'user',
-      content: `Here is the current program context:
-
-<entry> (current scope)
+      content: `<entry> (current scope)
   - x (number): 10
   - y (number): 20`,
     });

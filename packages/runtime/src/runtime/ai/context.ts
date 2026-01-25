@@ -106,7 +106,7 @@ export function buildAIContext(
   if (formattedContext.text) {
     messages.push({
       role: 'user',
-      content: `Here is the current program context:\n\n${formattedContext.text}`,
+      content: formattedContext.text,
     });
   }
 
