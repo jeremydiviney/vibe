@@ -26,11 +26,13 @@ export function createInitialState(
     }
   }
 
-  // Collect type declarations
+  // Collect type declarations (both standalone and exported)
   const typeDefinitions = new Map<string, AST.StructuralType>();
   for (const stmt of program.body) {
     if (stmt.type === 'TypeDeclaration') {
       typeDefinitions.set(stmt.name, stmt.structure);
+    } else if (stmt.type === 'ExportDeclaration' && stmt.declaration.type === 'TypeDeclaration') {
+      typeDefinitions.set(stmt.declaration.name, stmt.declaration.structure);
     }
   }
 

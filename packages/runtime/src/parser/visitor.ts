@@ -92,8 +92,8 @@ class VibeAstVisitor extends BaseVibeVisitor {
     }));
   }
 
-  exportDeclaration(ctx: { Export: IToken[]; functionDeclaration?: CstNode[]; letDeclaration?: CstNode[]; constDeclaration?: CstNode[]; modelDeclaration?: CstNode[] }): AST.ExportDeclaration {
-    const decl = ctx.functionDeclaration ?? ctx.letDeclaration ?? ctx.constDeclaration ?? ctx.modelDeclaration;
+  exportDeclaration(ctx: { Export: IToken[]; functionDeclaration?: CstNode[]; letDeclaration?: CstNode[]; constDeclaration?: CstNode[]; modelDeclaration?: CstNode[]; typeDeclaration?: CstNode[] }): AST.ExportDeclaration {
+    const decl = ctx.functionDeclaration ?? ctx.letDeclaration ?? ctx.constDeclaration ?? ctx.modelDeclaration ?? ctx.typeDeclaration;
     if (!decl) throw new Error('Unknown export declaration type');
     return { type: 'ExportDeclaration', declaration: this.visit(decl), location: tokenLocation(ctx.Export[0]) };
   }

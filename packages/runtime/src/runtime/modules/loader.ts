@@ -222,6 +222,10 @@ function extractVibeExports(program: AST.Program): Record<string, ExportedItem> 
       case 'ModelDeclaration':
         exports[decl.name] = { kind: 'model', declaration: decl };
         break;
+
+      case 'TypeDeclaration':
+        exports[decl.name] = { kind: 'type', declaration: decl };
+        break;
     }
   }
 
@@ -402,4 +406,41 @@ function registerImportedNames(
     ...state,
     importedNames: newImportedNames,
   };
+}
+
+/**
+ * Resolve a type definition by name, checking local definitions and imported modules.
+ * @param state Runtime state
+ * @param typeName Name of the type to resolve
+ * @returns The structural type definition, or undefined if not found
+ */
+export function resolveTypeDefinition(
+  state: RuntimeState,
+  typeName: string
+): AST.StructuralType | undefined {
+  // First check local type definitions
+  const localType = state.typeDefinitions.get(typeName);
+  if (localType) {
+    return localType;
+  }
+
+  // Check if it's an imported name
+  const importInfo = state.importedNames[typeName];
+  if (!importInfo || importInfo.sourceType !== 'vibe') {
+    return undefined;
+  }
+
+  // Look up in the imported vibe module
+  const vibeModule = state.vibeModules[importInfo.source];
+  if (!vibeModule) {
+    return undefined;
+  }
+
+  // Get the exported item
+  const exportedItem = vibeModule.exports[typeName];
+  if (!exportedItem || exportedItem.kind !== 'type') {
+    return undefined;
+  }
+
+  return exportedItem.declaration.structure;
 }

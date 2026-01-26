@@ -561,7 +561,8 @@ export interface VibeModule {
 export type ExportedItem =
   | { kind: 'function'; declaration: AST.FunctionDeclaration }
   | { kind: 'variable'; name: string; value: unknown; isConst: boolean; vibeType: string | null }
-  | { kind: 'model'; declaration: AST.ModelDeclaration };
+  | { kind: 'model'; declaration: AST.ModelDeclaration }
+  | { kind: 'type'; declaration: AST.TypeDeclaration };
 
 // ============================================================================
 // Async Execution Types

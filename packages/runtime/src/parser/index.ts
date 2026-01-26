@@ -72,7 +72,7 @@ class VibeParser extends CstParser {
     });
   });
 
-  // export function|let|const|model ...
+  // export function|let|const|model|type ...
   private exportDeclaration = this.RULE('exportDeclaration', () => {
     this.CONSUME(T.Export);
     this.OR([
@@ -80,6 +80,7 @@ class VibeParser extends CstParser {
       { ALT: () => this.SUBRULE(this.letDeclaration) },
       { ALT: () => this.SUBRULE(this.constDeclaration) },
       { ALT: () => this.SUBRULE(this.modelDeclaration) },
+      { ALT: () => this.SUBRULE(this.typeDeclaration) },
     ]);
   });
 

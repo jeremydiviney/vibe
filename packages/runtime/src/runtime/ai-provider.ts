@@ -22,6 +22,7 @@ import {
 } from './ai/return-tools';
 import type { ExpectedField } from './types';
 import { RuntimeError } from '../errors';
+import { resolveTypeDefinition } from './modules/loader';
 
 /**
  * Get model value from runtime state by model name.
@@ -64,10 +65,12 @@ function isBuiltInType(type: string | null): type is TargetType {
 /**
  * Convert a StructuralType to an array of ExpectedField.
  * Recursively handles nested types and type references.
+ * @param structure The structural type to convert
+ * @param state RuntimeState for resolving type references (including imports)
  */
 function structuralTypeToExpectedFields(
   structure: import('../ast').StructuralType,
-  typeDefinitions: Map<string, import('../ast').StructuralType>
+  state: RuntimeState
 ): ExpectedField[] {
   return structure.fields.map((field) => {
     // Handle inline nested objects
@@ -75,20 +78,20 @@ function structuralTypeToExpectedFields(
       return {
         name: field.name,
         type: 'json' as const,  // Nested objects are json at runtime
-        nestedFields: structuralTypeToExpectedFields(field.nestedType, typeDefinitions),
+        nestedFields: structuralTypeToExpectedFields(field.nestedType, state),
       };
     }
 
     // Handle array of named types
     if (field.type.endsWith('[]')) {
       const baseType = field.type.slice(0, -2);
-      const referencedType = typeDefinitions.get(baseType);
+      const referencedType = resolveTypeDefinition(state, baseType);
       if (referencedType) {
         // Array of structural type - each element should match the structure
         return {
           name: field.name,
           type: 'json[]' as const,
-          nestedFields: structuralTypeToExpectedFields(referencedType, typeDefinitions),
+          nestedFields: structuralTypeToExpectedFields(referencedType, state),
         };
       }
       // Array of built-in type
@@ -96,12 +99,12 @@ function structuralTypeToExpectedFields(
     }
 
     // Handle named type reference
-    const referencedType = typeDefinitions.get(field.type);
+    const referencedType = resolveTypeDefinition(state, field.type);
     if (referencedType) {
       return {
         name: field.name,
         type: 'json' as const,
-        nestedFields: structuralTypeToExpectedFields(referencedType, typeDefinitions),
+        nestedFields: structuralTypeToExpectedFields(referencedType, state),
       };
     }
 
@@ -186,12 +189,12 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
           // Single-value typed return: const x: number = do "..."
           expectedFields = [{ name: 'value', type: targetType }];
         } else {
-          // Check if it's a structural type
-          const structuralType = state.typeDefinitions.get(targetType);
+          // Check if it's a structural type (local or imported)
+          const structuralType = resolveTypeDefinition(state, targetType);
           if (structuralType) {
             // Structural type return: const result: MyType = do "..."
             // Convert structure to expected fields
-            expectedFields = structuralTypeToExpectedFields(structuralType, state.typeDefinitions);
+            expectedFields = structuralTypeToExpectedFields(structuralType, state);
           }
         }
       }

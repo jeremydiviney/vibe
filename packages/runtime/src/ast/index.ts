@@ -110,7 +110,7 @@ export interface ImportDeclaration extends BaseNode {
 
 export interface ExportDeclaration extends BaseNode {
   type: 'ExportDeclaration';
-  declaration: FunctionDeclaration | LetDeclaration | ConstDeclaration | ModelDeclaration;
+  declaration: FunctionDeclaration | LetDeclaration | ConstDeclaration | ModelDeclaration | TypeDeclaration;
 }
 
 export interface LetDeclaration extends BaseNode {

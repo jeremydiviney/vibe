@@ -107,6 +107,24 @@ describe('Parser - Export Declarations', () => {
     expect((exportDecl.declaration as AST.ModelDeclaration).name).toBe('gpt');
   });
 
+  test('export type', () => {
+    const source = `export type Player {
+      name: text
+      score: number
+    }`;
+    const ast = parse(source);
+
+    const exportDecl = ast.body[0] as AST.ExportDeclaration;
+    expect(exportDecl.type).toBe('ExportDeclaration');
+    expect(exportDecl.declaration.type).toBe('TypeDeclaration');
+    expect((exportDecl.declaration as AST.TypeDeclaration).name).toBe('Player');
+    expect((exportDecl.declaration as AST.TypeDeclaration).structure.fields).toHaveLength(2);
+    expect((exportDecl.declaration as AST.TypeDeclaration).structure.fields[0].name).toBe('name');
+    expect((exportDecl.declaration as AST.TypeDeclaration).structure.fields[0].type).toBe('text');
+    expect((exportDecl.declaration as AST.TypeDeclaration).structure.fields[1].name).toBe('score');
+    expect((exportDecl.declaration as AST.TypeDeclaration).structure.fields[1].type).toBe('number');
+  });
+
   test('multiple exports', () => {
     const source = `
       export function add(a: text, b: text): text {
