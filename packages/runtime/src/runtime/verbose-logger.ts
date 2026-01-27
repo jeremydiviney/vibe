@@ -126,9 +126,16 @@ export class VerboseLogger {
 
     this.ensureDirectories();
 
+    // Format model line: show variable name and actual model name
+    const modelActual = context.modelDetails?.name ?? '(unknown)';
+    const modelProvider = context.modelDetails?.provider ?? 'unknown';
+    const modelLine = context.model !== modelActual
+      ? `Model: ${context.model} → ${modelActual} (${modelProvider})`
+      : `Model: ${modelActual} (${modelProvider})`;
+
     const lines: string[] = [
       `=== AI Call: ${id} ===`,
-      `Model: ${context.modelDetails?.name ?? context.model} (${context.modelDetails?.provider ?? 'unknown'})`,
+      modelLine,
       `Type: ${context.type}`,
       `Target: ${context.targetType ?? 'text'}`,
       `Context: ${context.contextMode ?? 'default'}`,

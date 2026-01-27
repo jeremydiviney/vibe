@@ -24,7 +24,9 @@ export function getImportedValue(
       // Return a marker that this is an imported Vibe function
       return { __vibeImportedFunction: true, name, source: importInfo.source };
     } else if (exported.kind === 'variable') {
-      return exported.value;
+      // Look up from module globals - exported.value is just metadata
+      const varValue = module.globals[name]?.value;
+      return varValue;
     } else if (exported.kind === 'model') {
       // Return the evaluated model from module globals
       // Models are added to globals during extractModuleGlobals

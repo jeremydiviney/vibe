@@ -58,9 +58,12 @@ export function buildToolSystemMessage(tools: ToolSchema[]): string | null {
 
   const toolList = tools
     .map((t) => {
-      // Format: name(param: type, param: type)
+      // Format: name(param: type, param?: type) - optional params have ?
       const signature = t.parameters
-        .map((p) => `${p.name}: ${formatJsonSchemaType(p.type)}`)
+        .map((p) => {
+          const optional = p.required === false ? '?' : '';
+          return `${p.name}${optional}: ${formatJsonSchemaType(p.type)}`;
+        })
         .join(', ');
 
       const lines: string[] = [`- ${t.name}(${signature})`];

@@ -173,11 +173,9 @@ export async function executeWithTools(
             // Return tool succeeded - collect result
             returnFieldResults.push(result.result);
             completedViaReturnTool = true;
-            // Track which field was returned
-            const fieldName = call.args?.field;
-            if (typeof fieldName === 'string') {
-              collectedFields.add(fieldName);
-            }
+            // Track which field was returned (default to 'value' for single-value returns)
+            const fieldName = typeof call.args?.field === 'string' ? call.args.field : 'value';
+            collectedFields.add(fieldName);
           }
           // If return tool errored, error flows back to AI for retry
         }

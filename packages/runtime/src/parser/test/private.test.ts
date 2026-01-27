@@ -133,4 +133,85 @@ describe('private keyword parsing', () => {
       expect((ast.body[3] as AST.ConstDeclaration).isPrivate).toBeUndefined();
     });
   });
+
+  describe('function parameters with private', () => {
+    it('parses function with private parameter', () => {
+      const code = `
+        function process(private secret: text, visible: text): text {
+          return visible
+        }
+      `;
+      const ast = parse(code);
+
+      expect(ast.body.length).toBe(1);
+      const func = ast.body[0] as AST.FunctionDeclaration;
+      expect(func.type).toBe('FunctionDeclaration');
+      expect(func.name).toBe('process');
+      expect(func.params.length).toBe(2);
+
+      expect(func.params[0].name).toBe('secret');
+      expect(func.params[0].vibeType).toBe('text');
+      expect(func.params[0].isPrivate).toBe(true);
+
+      expect(func.params[1].name).toBe('visible');
+      expect(func.params[1].vibeType).toBe('text');
+      expect(func.params[1].isPrivate).toBeUndefined();
+    });
+
+    it('parses function with all private parameters', () => {
+      const code = `
+        function secure(private key: text, private value: json): boolean {
+          return true
+        }
+      `;
+      const ast = parse(code);
+
+      const func = ast.body[0] as AST.FunctionDeclaration;
+      expect(func.params.length).toBe(2);
+      expect(func.params[0].isPrivate).toBe(true);
+      expect(func.params[1].isPrivate).toBe(true);
+    });
+
+    it('parses function with no private parameters', () => {
+      const code = `
+        function public(a: text, b: number): text {
+          return a
+        }
+      `;
+      const ast = parse(code);
+
+      const func = ast.body[0] as AST.FunctionDeclaration;
+      expect(func.params.length).toBe(2);
+      expect(func.params[0].isPrivate).toBeUndefined();
+      expect(func.params[1].isPrivate).toBeUndefined();
+    });
+
+    it('parses exported function with private parameter', () => {
+      const code = `
+        export function runBench(guesser: model, answerer: model, private secretEntry: json, runId: text): text {
+          return runId
+        }
+      `;
+      const ast = parse(code);
+
+      expect(ast.body.length).toBe(1);
+      const exportDecl = ast.body[0] as AST.ExportDeclaration;
+      expect(exportDecl.type).toBe('ExportDeclaration');
+
+      const func = exportDecl.declaration as AST.FunctionDeclaration;
+      expect(func.params.length).toBe(4);
+
+      expect(func.params[0].name).toBe('guesser');
+      expect(func.params[0].isPrivate).toBeUndefined();
+
+      expect(func.params[1].name).toBe('answerer');
+      expect(func.params[1].isPrivate).toBeUndefined();
+
+      expect(func.params[2].name).toBe('secretEntry');
+      expect(func.params[2].isPrivate).toBe(true);
+
+      expect(func.params[3].name).toBe('runId');
+      expect(func.params[3].isPrivate).toBeUndefined();
+    });
+  });
 });

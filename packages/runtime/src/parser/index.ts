@@ -494,8 +494,11 @@ class VibeParser extends CstParser {
     });
   });
 
-  // name: type (type is REQUIRED)
+  // [private] name: type (type is REQUIRED, private is optional)
   private parameter = this.RULE('parameter', () => {
+    this.OPTION(() => {
+      this.CONSUME(T.Private);
+    });
     this.CONSUME(T.Identifier);
     this.CONSUME(T.Colon);
     this.SUBRULE(this.vibeType);

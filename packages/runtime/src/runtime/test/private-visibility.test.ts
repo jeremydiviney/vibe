@@ -457,4 +457,187 @@ describe('private variable visibility', () => {
       expect(formattedGlobal.text).not.toContain('super-secret-password');
     });
   });
+
+  describe('private function parameters', () => {
+    it('stores isPrivate flag in VibeValue for function parameters', () => {
+      const code = `
+        function process(private secret: text, visible: text): text {
+          return visible
+        }
+
+        let result = process("hidden-value", "shown-value")
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      // Execute step by step to capture state while inside function
+      // Find when we're inside the function (has 2 frames)
+      let insideFunctionState: typeof state | null = null;
+      while (state.status === 'running') {
+        state = step(state);
+        if (state.callStack.length === 2) {
+          // We're inside the function
+          insideFunctionState = state;
+          break;
+        }
+      }
+
+      expect(insideFunctionState).not.toBeNull();
+      if (insideFunctionState) {
+        const functionFrame = currentFrame(insideFunctionState);
+
+        // Verify secret parameter has isPrivate flag
+        expect(functionFrame.locals['secret']).toBeDefined();
+        expect(functionFrame.locals['secret'].value).toBe('hidden-value');
+        expect(functionFrame.locals['secret'].isPrivate).toBe(true);
+
+        // Verify visible parameter does NOT have isPrivate flag
+        expect(functionFrame.locals['visible']).toBeDefined();
+        expect(functionFrame.locals['visible'].value).toBe('shown-value');
+        expect(functionFrame.locals['visible'].isPrivate).toBeUndefined();
+      }
+    });
+
+    it('stores isPrivate flag in orderedEntries for function parameters', () => {
+      const code = `
+        function process(private secret: text, visible: text): text {
+          return visible
+        }
+
+        let result = process("hidden-value", "shown-value")
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      // Execute step by step to capture state while inside function
+      let insideFunctionState: typeof state | null = null;
+      while (state.status === 'running') {
+        state = step(state);
+        if (state.callStack.length === 2) {
+          insideFunctionState = state;
+          break;
+        }
+      }
+
+      expect(insideFunctionState).not.toBeNull();
+      if (insideFunctionState) {
+        const functionFrame = currentFrame(insideFunctionState);
+
+        const secretEntry = functionFrame.orderedEntries.find(
+          (e) => e.kind === 'variable' && e.name === 'secret'
+        );
+        expect(secretEntry).toBeDefined();
+        if (secretEntry?.kind === 'variable') {
+          expect(secretEntry.isPrivate).toBe(true);
+        }
+
+        const visibleEntry = functionFrame.orderedEntries.find(
+          (e) => e.kind === 'variable' && e.name === 'visible'
+        );
+        expect(visibleEntry).toBeDefined();
+        if (visibleEntry?.kind === 'variable') {
+          expect(visibleEntry.isPrivate).toBeUndefined();
+        }
+      }
+    });
+
+    it('filters private function parameters from local context', () => {
+      const code = `
+        function process(private secret: text, visible: text): text {
+          return visible
+        }
+
+        let result = process("hidden-value", "shown-value")
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      // Execute step by step to capture state while inside function
+      let insideFunctionState: typeof state | null = null;
+      while (state.status === 'running') {
+        state = step(state);
+        if (state.callStack.length === 2) {
+          insideFunctionState = state;
+          break;
+        }
+      }
+
+      expect(insideFunctionState).not.toBeNull();
+      if (insideFunctionState) {
+        const context = buildLocalContext(insideFunctionState);
+        const varNames = context
+          .filter((e) => e.kind === 'variable')
+          .map((e) => (e as { name: string }).name);
+
+        // visible parameter should be in context
+        expect(varNames).toContain('visible');
+
+        // secret parameter should NOT be in context (private)
+        expect(varNames).not.toContain('secret');
+      }
+    });
+
+    it('private parameters are hidden from AI but values still accessible in code', () => {
+      const code = `
+        let captured: text = ""
+
+        function captureSecret(private secret: text, visible: text): text {
+          captured = secret
+          return visible
+        }
+
+        let result = captureSecret("hidden-value", "shown-value")
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      while (state.status === 'running') {
+        state = step(state);
+      }
+
+      const frame = currentFrame(state);
+
+      // The secret value was successfully used inside the function
+      expect(frame.locals['captured'].value).toBe('hidden-value');
+
+      // Result is the visible value
+      expect(frame.locals['result'].value).toBe('shown-value');
+    });
+
+    it('private parameter value in formatted context does not appear', () => {
+      const code = `
+        function process(private secret: text, visible: text): text {
+          return visible
+        }
+
+        let result = process("super-secret-password", "public-data")
+      `;
+      const ast = parse(code);
+      let state = createInitialState(ast);
+
+      // Execute step by step to capture state while inside function
+      let insideFunctionState: typeof state | null = null;
+      while (state.status === 'running') {
+        state = step(state);
+        if (state.callStack.length === 2) {
+          insideFunctionState = state;
+          break;
+        }
+      }
+
+      expect(insideFunctionState).not.toBeNull();
+      if (insideFunctionState) {
+        const localContext = buildLocalContext(insideFunctionState);
+        const formattedLocal = formatContextForAI(localContext);
+
+        // visible parameter should appear in formatted text
+        expect(formattedLocal.text).toContain('visible');
+        expect(formattedLocal.text).toContain('public-data');
+
+        // private parameter should NOT appear in formatted text
+        expect(formattedLocal.text).not.toContain('secret');
+        expect(formattedLocal.text).not.toContain('super-secret-password');
+      }
+    });
+  });
 });

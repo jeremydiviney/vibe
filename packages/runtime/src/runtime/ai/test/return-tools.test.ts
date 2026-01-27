@@ -94,16 +94,18 @@ describe('return-tools', () => {
         expect(tool.__vibeTool).toBe(true);
         expect(tool.schema.name).toBe(tool.name);
         expect(tool.schema.parameters).toHaveLength(2);
-        expect(tool.schema.parameters[0].name).toBe('field');
+        // value is first and required, field is second and optional
+        expect(tool.schema.parameters[0].name).toBe('value');
         expect(tool.schema.parameters[0].required).toBe(true);
-        expect(tool.schema.parameters[1].name).toBe('value');
-        expect(tool.schema.parameters[1].required).toBe(true);
+        expect(tool.schema.parameters[1].name).toBe('field');
+        expect(tool.schema.parameters[1].required).toBe(false);
       }
     });
 
     it('should have correct value types per tool', () => {
       const tools = getReturnTools();
-      const typeMap = new Map(tools.map(t => [t.name, t.schema.parameters[1].type]));
+      // value is now the first parameter
+      const typeMap = new Map(tools.map(t => [t.name, t.schema.parameters[0].type]));
 
       expect(typeMap.get('__vibe_return_text')).toEqual({ type: 'string' });
       expect(typeMap.get('__vibe_return_number')).toEqual({ type: 'number' });
@@ -411,10 +413,12 @@ describe('return-tools', () => {
       expect(buildReturnInstruction([])).toBe('');
     });
 
-    it('should build instruction for single number field', () => {
+    it('should build instruction for single value field without field parameter', () => {
       const instruction = buildReturnInstruction([{ name: 'value', type: 'number' }]);
       expect(instruction).toContain('__vibe_return_number');
-      expect(instruction).toContain('"value"');
+      // Single-value returns should NOT include field parameter in the tool call
+      expect(instruction).not.toContain('field: "value"');
+      expect(instruction).toContain('value: <number>');
     });
 
     it('should build instruction for multiple fields with correct tool names', () => {

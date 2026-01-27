@@ -453,8 +453,15 @@ class VibeAstVisitor extends BaseVibeVisitor {
     return ctx.toolParameter.map((p) => this.visit(p));
   }
 
-  parameter(ctx: { Identifier: IToken[]; vibeType: CstNode[] }): AST.FunctionParameter {
-    return { name: ctx.Identifier[0].image, vibeType: this.visit(ctx.vibeType) };
+  parameter(ctx: { Private?: IToken[]; Identifier: IToken[]; vibeType: CstNode[] }): AST.FunctionParameter {
+    const param: AST.FunctionParameter = {
+      name: ctx.Identifier[0].image,
+      vibeType: this.visit(ctx.vibeType),
+    };
+    if (ctx.Private) {
+      param.isPrivate = true;
+    }
+    return param;
   }
 
   parameterList(ctx: { parameter: CstNode[] }): AST.FunctionParameter[] {

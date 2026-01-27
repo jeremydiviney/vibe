@@ -175,6 +175,7 @@ export interface TypeDeclaration extends BaseNode {
 export interface FunctionParameter {
   name: string;
   vibeType: VibeTypeRequired;  // Function params always have explicit types
+  isPrivate?: boolean;         // Private params are hidden from AI context
 }
 
 export interface FunctionDeclaration extends BaseNode {

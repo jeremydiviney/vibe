@@ -41,6 +41,7 @@ export function createFunctionFrame(
     newFrame.locals[param.name] = createVibeValue(validatedValue, {
       isConst: false,
       vibeType: param.vibeType,
+      isPrivate: param.isPrivate,
     });
     // Include snapshotted value in ordered entries for context tracking
     newFrame.orderedEntries.push({
@@ -49,6 +50,7 @@ export function createFunctionFrame(
       value: validatedValue,
       type: param.vibeType,
       isConst: false,  // Parameters are not const
+      isPrivate: param.isPrivate,
     });
   }
 

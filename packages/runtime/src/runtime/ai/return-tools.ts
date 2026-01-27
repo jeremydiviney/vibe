@@ -68,20 +68,22 @@ function createTypedReturnTool(
       description,
       parameters: [
         {
-          name: 'field',
-          type: { type: 'string' },
-          description: 'The field name to return',
-          required: true,
-        },
-        {
           name: 'value',
           type: valueSchema,
           required: true,
         },
+        {
+          name: 'field',
+          type: { type: 'string' },
+          description: 'The field name to return (only needed for multi-field returns)',
+          required: false,
+        },
       ],
     },
     executor: async (args) => {
-      return { __fieldReturn: true, field: args.field, value: args.value };
+      // Default field to 'value' for single-value returns
+      const field = args.field ?? 'value';
+      return { __fieldReturn: true, field, value: args.value };
     },
   };
 }
@@ -94,42 +96,42 @@ export function getReturnTools(): VibeToolValue[] {
   return [
     createTypedReturnTool(
       RETURN_TOOL_NAMES.text,
-      'Return a text (string) value for a field.',
+      'Return a text (string) value. The field parameter is only required when returning multiple fields.',
       { type: 'string' }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.number,
-      'Return a number value for a field.',
+      'Return a number value. The field parameter is only required when returning multiple fields.',
       { type: 'number' }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.boolean,
-      'Return a boolean value for a field.',
+      'Return a boolean value. The field parameter is only required when returning multiple fields.',
       { type: 'boolean' }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.json,
-      'Return a JSON object value for a field.',
+      'Return a JSON object value. The field parameter is only required when returning multiple fields.',
       { type: 'object' }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.text_array,
-      'Return an array of text (string) values for a field.',
+      'Return an array of text (string) values. The field parameter is only required when returning multiple fields.',
       { type: 'array', items: { type: 'string' } }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.number_array,
-      'Return an array of number values for a field.',
+      'Return an array of number values. The field parameter is only required when returning multiple fields.',
       { type: 'array', items: { type: 'number' } }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.boolean_array,
-      'Return an array of boolean values for a field.',
+      'Return an array of boolean values. The field parameter is only required when returning multiple fields.',
       { type: 'array', items: { type: 'boolean' } }
     ),
     createTypedReturnTool(
       RETURN_TOOL_NAMES.json_array,
-      'Return an array of JSON object values for a field.',
+      'Return an array of JSON object values. The field parameter is only required when returning multiple fields.',
       { type: 'array', items: { type: 'object' } }
     ),
   ];
@@ -177,6 +179,7 @@ export function collectAndValidateFieldResults(
 
   for (const { field, value } of toolResults) {
     const expectedType = expectedMap.get(field);
+
     if (!expectedType) {
       const validFields = flattenedExpected.map((f) => f.path).join(', ');
       throw new Error(
@@ -395,16 +398,34 @@ export function buildReturnInstruction(expectedFields: ExpectedField[]): string 
   if (expectedFields.length === 0) return '';
 
   const flattenedFields = flattenExpectedFields(expectedFields);
+
+  // Check if this is a single-value return (one field named 'value')
+  // In this case, don't include the field parameter in the instruction
+  const isSingleValueReturn = flattenedFields.length === 1 && flattenedFields[0].path === 'value';
+
   const callList = flattenedFields
-    .map((f) => `- Call ${getReturnToolName(f.type)}(field: "${f.path}", value: <${f.type}>)`)
+    .map((f) => {
+      if (isSingleValueReturn) {
+        // For single-value returns, just show value parameter
+        return `- Call ${getReturnToolName(f.type)}(value: <${f.type}>)`;
+      } else {
+        // For multi-field returns, include field parameter
+        return `- Call ${getReturnToolName(f.type)}(value: <${f.type}>, field: "${f.path}")`;
+      }
+    })
     .join('\n');
+
+  // Add explicit instruction about field parameter for single-value returns
+  const fieldNote = isSingleValueReturn
+    ? ' Do NOT include a "field" parameter.'
+    : '';
 
   return `
 
 IMPORTANT: You MUST use the return tools to provide your answer. Call the appropriate typed tool for EACH field:
 ${callList}
 
-You must make exactly ${flattenedFields.length} tool call${flattenedFields.length > 1 ? 's' : ''}. Do not respond with plain text.`;
+You must make exactly ${flattenedFields.length} tool call${flattenedFields.length > 1 ? 's' : ''}.${fieldNote} Do not respond with plain text.`;
 }
 
 /**

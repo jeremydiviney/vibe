@@ -249,7 +249,7 @@ Call tools when needed to complete the task.`
     );
   });
 
-  test('formats tool with many parameters', () => {
+  test('formats tool with many parameters including optional', () => {
     const tools: ToolSchema[] = [
       {
         name: 'sendEmail',
@@ -267,7 +267,7 @@ Call tools when needed to complete the task.`
 
     expect(message).toBe(
 `You have access to the following tools:
-- sendEmail(to: string, subject: string, body: string, cc: string)
+- sendEmail(to: string, subject: string, body: string, cc?: string)
     Send an email
 
 Call tools when needed to complete the task.`
