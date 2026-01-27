@@ -28,6 +28,14 @@
   - [ ] Global config (`~/.vibe/settings.json`) and project config
   - [ ] CLI flags: `--yes-all`, `--safe-mode`
 
+### AI Output
+- [ ] Capture and store plain text output from AI models (not just tool calls)
+  - [ ] Models often produce explanatory text alongside tool calls
+  - [ ] Currently this text is discarded, only tool results are used
+  - [ ] Consider: `.text` property on AI result alongside `.toolCalls`
+  - [ ] Consider: logging option to capture all model output
+  - [ ] Useful for debugging, auditing, and understanding model reasoning
+
 ### Language Design
 - [ ] Seamless Vibe↔TypeScript type integration
   - [ ] Vibe structural types (`type Foo { ... }`) automatically available as TS interfaces in ts blocks
