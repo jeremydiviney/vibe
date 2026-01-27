@@ -62,6 +62,7 @@ export interface VibeModelValue {
   url: string | null;
   provider?: AIProviderType | null;
   maxRetriesOnError?: number | null;
+  thinkingLevel?: string | null;  // "none" | "low" | "medium" | "high" | "max"
   tools?: VibeToolValue[];  // Tools available to this model for AI calls
   usage: ModelUsageRecord[];  // Accumulated usage records from all AI calls
 }

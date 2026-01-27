@@ -113,6 +113,9 @@ function structuralTypeToExpectedFields(
   });
 }
 
+/** Default thinking level when not specified */
+const DEFAULT_THINKING_LEVEL = 'low';
+
 /**
  * Build model config from runtime model value.
  */
@@ -133,6 +136,7 @@ function buildModelConfig(modelValue: VibeModelValue): ModelConfig {
     url: modelValue.url,
     provider,
     maxRetriesOnError: modelValue.maxRetriesOnError ?? undefined,
+    thinkingLevel: (modelValue.thinkingLevel as ModelConfig['thinkingLevel']) ?? DEFAULT_THINKING_LEVEL,
   };
 }
 

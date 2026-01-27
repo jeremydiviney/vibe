@@ -6,14 +6,49 @@ import { AIError } from '../types';
 import { buildSystemMessage, buildContextMessage, buildPromptMessage, buildToolSystemMessage } from '../formatters';
 import { toGoogleFunctionDeclarations } from '../tool-schema';
 
-/** Map thinking level to Google Gemini 3 thinkingLevel */
-const THINKING_LEVEL_MAP: Record<ThinkingLevel, string | null> = {
-  none: null,       // Don't set thinkingConfig
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  max: 'high',      // Gemini 3 Flash max is 'high'
+/**
+ * Model-specific thinking level mappings.
+ * Maps Vibe thinking levels to Google API values for each model.
+ * - Gemini 3 Pro: Only supports 'low' and 'high'
+ * - Gemini 3 Flash: Supports 'minimal', 'low', 'medium', 'high'
+ */
+type GoogleThinkingMap = Record<ThinkingLevel, string | null>;
+
+const GOOGLE_THINKING_MAPS: Record<string, GoogleThinkingMap> = {
+  // Gemini 3 Flash - supports all levels
+  'gemini-3-flash-preview': {
+    none: null,
+    low: 'low',
+    medium: 'medium',
+    high: 'high',
+    max: 'high',
+  },
+  // Gemini 3 Pro - only supports 'low' and 'high'
+  'gemini-3-pro-preview': {
+    none: null,
+    low: 'low',
+    medium: 'low',   // Pro doesn't support medium, fall back to low
+    high: 'high',
+    max: 'high',
+  },
 };
+
+// Default map for unknown models (conservative - assumes Pro-like constraints)
+const DEFAULT_GOOGLE_THINKING_MAP: GoogleThinkingMap = {
+  none: null,
+  low: 'low',
+  medium: 'low',
+  high: 'high',
+  max: 'high',
+};
+
+/**
+ * Get Google thinking level based on model and Vibe thinking level.
+ */
+function getGoogleThinkingLevel(modelName: string, level: ThinkingLevel): string | null {
+  const map = GOOGLE_THINKING_MAPS[modelName] ?? DEFAULT_GOOGLE_THINKING_MAP;
+  return map[level];
+}
 
 /** Generate a unique ID for tool calls (Google doesn't provide one) */
 function generateToolCallId(): string {
@@ -118,7 +153,7 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
 
     // Add thinking config if level specified
     const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
-    const googleThinkingLevel = thinkingLevel ? THINKING_LEVEL_MAP[thinkingLevel] : null;
+    const googleThinkingLevel = thinkingLevel ? getGoogleThinkingLevel(model.name, thinkingLevel) : null;
     if (googleThinkingLevel) {
       generationConfig.thinkingConfig = {
         thinkingLevel: googleThinkingLevel,

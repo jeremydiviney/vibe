@@ -13,11 +13,11 @@ export const OPENAI_CONFIG = {
 
 /** Map thinking level to OpenAI reasoning_effort */
 const REASONING_EFFORT_MAP: Record<ThinkingLevel, string> = {
-  none: 'none',
-  low: 'low',
-  medium: 'medium',
-  high: 'high',
-  max: 'xhigh',  // OpenAI uses 'xhigh' for max reasoning
+  none: 'none',      // No reasoning tokens (GPT-5.1+)
+  low: 'low',        // Minimal reasoning
+  medium: 'medium',  // Default - balanced speed and accuracy
+  high: 'high',      // More thorough reasoning
+  max: 'xhigh',      // Maximum reasoning (GPT-5.1-codex-max+)
 };
 
 /**

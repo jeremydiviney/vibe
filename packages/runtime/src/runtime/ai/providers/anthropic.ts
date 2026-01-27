@@ -18,10 +18,10 @@ const EXTENDED_THINKING_BETA = 'interleaved-thinking-2025-05-14';
 /** Map thinking level to Anthropic budget_tokens */
 const THINKING_BUDGET_MAP: Record<ThinkingLevel, number> = {
   none: 0,
-  low: 1024,      // Minimum required
-  medium: 4096,
-  high: 10240,
-  max: 32768,
+  low: 1024,      // Minimum required by API
+  medium: 8192,   // Moderate thinking
+  high: 16384,    // Substantial thinking (recommended for complex tasks)
+  max: 32768,     // Default max that works across all models
 };
 
 /**
@@ -176,7 +176,8 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
           ? 'length'
           : 'end';
 
-    // Extract usage including cache and thinking tokens
+    // Extract usage including cache tokens
+    // Note: Anthropic includes thinking tokens in output_tokens, doesn't report separately
     const rawUsage = message.usage as unknown as Record<string, unknown> | undefined;
     const usage = rawUsage
       ? {
@@ -184,7 +185,6 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
           outputTokens: Number(rawUsage.output_tokens ?? 0),
           cachedInputTokens: rawUsage.cache_read_input_tokens ? Number(rawUsage.cache_read_input_tokens) : undefined,
           cacheCreationTokens: rawUsage.cache_creation_input_tokens ? Number(rawUsage.cache_creation_input_tokens) : undefined,
-          thinkingTokens: rawUsage.thinking_tokens ? Number(rawUsage.thinking_tokens) : undefined,
         }
       : undefined;
 
