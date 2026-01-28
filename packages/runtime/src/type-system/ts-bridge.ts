@@ -22,7 +22,10 @@ export function vibeTypeToTs(vibeType: string | null): string {
     'prompt': 'string',
     'number': 'number',
     'boolean': 'boolean',
-    'json': 'Record<string, unknown>',
+    // Use 'any' for json to allow flexible type inference in ts blocks
+    // 'Record<string, unknown>' is too restrictive and prevents TypeScript from
+    // inferring return types when we access properties or use them as indices
+    'json': 'any',
     'null': 'null | undefined',
   };
 

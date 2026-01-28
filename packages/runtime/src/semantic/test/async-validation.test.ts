@@ -27,7 +27,7 @@ async let x: text = vibe "prompt" m
 
   test('valid async let with ts block', () => {
     const ast = parse(`
-async let x = ts() { return fetchData(); }
+async let x = ts() { return fetch("https://example.com"); }
 `);
     const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
@@ -66,7 +66,7 @@ async const x: text = vibe "prompt" m
 
   test('valid async const with ts block', () => {
     const ast = parse(`
-async const x = ts() { return fetchData(); }
+async const x = ts() { return fetch("https://example.com"); }
 `);
     const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);
@@ -255,7 +255,7 @@ model m = { name: "test", apiKey: "key", url: "http://test" }
 let sync1 = "hello"
 async let async1: text = do "prompt" m
 const sync2 = 42
-async const async2 = ts() { return fetchData(); }
+async const async2 = ts() { return fetch("https://example.com"); }
 `);
     const errors = analyze(ast, '', '');
     expect(errors.length).toBe(0);

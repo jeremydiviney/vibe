@@ -86,13 +86,26 @@ function createVirtualCompilerHost(
 /**
  * Generate virtual TypeScript function code from ts() block params and body.
  * Optionally includes import statements for type resolution.
+ *
+ * When a parameter name matches an imported specifier, the import provides
+ * the type instead of the parameter (to preserve TypeScript type info).
  */
 function generateVirtualCode(
   params: TsBlockParam[],
   body: string,
   imports?: TsImportInfo[]
 ): string {
-  const paramList = params
+  // Collect all imported specifier names
+  const importedNames = new Set<string>();
+  for (const imp of imports ?? []) {
+    for (const spec of imp.specifiers) {
+      importedNames.add(spec);
+    }
+  }
+
+  // Only include params that are NOT imports (imports provide their own types)
+  const nonImportParams = params.filter(p => !importedNames.has(p.name));
+  const paramList = nonImportParams
     .map((p) => `${p.name}: ${vibeTypeToTs(p.vibeType)}`)
     .join(', ');
 

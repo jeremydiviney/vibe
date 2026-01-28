@@ -11,6 +11,7 @@ import { isValidType, typesCompatible, isValidJson, getBaseType, tsTypeToVibe, i
 import { ESCAPED_LBRACE, ESCAPED_RBRACE, ESCAPED_BANG_LBRACE } from '../parser/visitor/helpers';
 import { isCoreFunction } from '../runtime/stdlib/core';
 import { checkTsBlockTypes, inferTsBlockReturnType } from './ts-block-checker';
+import { validateTsBlockScope } from './ts-block-scope-validator';
 import type { TsFunctionSignature } from './ts-signatures';
 
 // ============================================================================
@@ -388,6 +389,13 @@ export function validateTsBlock(ctx: AnalyzerContext, node: AST.TsBlock): void {
       name: bindingName,
       vibeType,
     });
+  }
+
+  // Validate that the body only references allowed identifiers (params, locals, globals)
+  const allowedParams = new Set(params.map(p => p.name));
+  const scopeErrors = validateTsBlockScope(node.body, allowedParams, node.location);
+  for (const err of scopeErrors) {
+    ctx.error(err.message, err.location);
   }
 
   const tsErrors = checkTsBlockTypes(params, node.body, node.location);

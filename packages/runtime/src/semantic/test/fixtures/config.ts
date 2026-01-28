@@ -48,3 +48,9 @@ export function getApiKey(provider: string): string {
 export function getPort(service: string): number {
   return PORTS[service] ?? 0;
 }
+
+// Function returning ModelConfig (for testing ts block with object parameter)
+export function getModelConfig(id: string): ModelConfig | null {
+  if (id === "default") return DEFAULT_MODEL;
+  return null;
+}

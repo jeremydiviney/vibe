@@ -139,15 +139,22 @@ describe('Semantic Analysis - TsBlock', () => {
       let a = "5"
       let sum = ts(a, b) { return a + b }
     `);
-    expect(errors).toHaveLength(1);
+    // 2 errors:
+    // 1. 'b' is not defined (parameter validation)
+    // 2. 'b' is not accessible in ts block (scope validation - only 'a' is allowed)
+    expect(errors).toHaveLength(2);
     expect(errors[0].message).toMatch(/'b' is not defined/);
+    expect(errors[1].message).toMatch(/'b' is not accessible/);
   });
 
   test('error: ts block with multiple undefined parameters', () => {
     const errors = analyze(`
       let sum = ts(x, y, z) { return x + y + z }
     `);
-    expect(errors).toHaveLength(3);
+    // 3 errors for x, y, z not being defined (parameter validation)
+    // Note: scope validator runs with empty param set since params failed validation,
+    // so we also get 3 scope errors for x, y, z not being accessible
+    expect(errors).toHaveLength(6);
   });
 
   test('ts block with member access param resolves type', () => {

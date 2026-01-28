@@ -380,11 +380,11 @@ let result = ts(undefinedVar) { return undefinedVar }
     expect(errors.some(e => e.includes("'undefinedVar' is not defined"))).toBe(true);
   });
 
-  test('ts block with no parameters skips type checking', () => {
+  test('ts block with no parameters allows JS globals', () => {
     const errors = getErrors(`
-let result = ts() { return fetchData() }
+let result = ts() { return fetch("https://example.com") }
 `);
-    // Should not error - external calls are allowed
+    // Should not error - JS globals like fetch are allowed
     expect(errors).toEqual([]);
   });
 
@@ -507,7 +507,7 @@ describe('TS Block Return Type Inference with Imports', () => {
   test('infers text from Record<string, string> index access', () => {
     const errors = getErrors(`
 import { API_KEYS } from "./config.ts"
-const key: text = ts() { return API_KEYS["openai"]; }
+const key: text = ts(API_KEYS) { return API_KEYS["openai"]; }
 `);
     expect(errors).toEqual([]);
   });
@@ -515,7 +515,7 @@ const key: text = ts() { return API_KEYS["openai"]; }
   test('infers number from Record<string, number> index access', () => {
     const errors = getErrors(`
 import { PORTS } from "./config.ts"
-const port: number = ts() { return PORTS["http"]; }
+const port: number = ts(PORTS) { return PORTS["http"]; }
 `);
     expect(errors).toEqual([]);
   });
@@ -523,7 +523,7 @@ const port: number = ts() { return PORTS["http"]; }
   test('type error when assigning Record<string,string> result to number', () => {
     const errors = getErrors(`
 import { API_KEYS } from "./config.ts"
-const key: number = ts() { return API_KEYS["openai"]; }
+const key: number = ts(API_KEYS) { return API_KEYS["openai"]; }
 `);
     // Should error because API_KEYS returns string, not number
     expect(errors.length).toBe(1);
@@ -533,7 +533,7 @@ const key: number = ts() { return API_KEYS["openai"]; }
   test('infers text from imported function returning string', () => {
     const errors = getErrors(`
 import { getApiKey } from "./config.ts"
-const key: text = ts() { return getApiKey("openai"); }
+const key: text = ts(getApiKey) { return getApiKey("openai"); }
 `);
     expect(errors).toEqual([]);
   });
@@ -541,7 +541,7 @@ const key: text = ts() { return getApiKey("openai"); }
   test('type error when using string result as number', () => {
     const errors = getErrors(`
 import { getApiKey } from "./config.ts"
-const key: number = ts() { return getApiKey("openai"); }
+const key: number = ts(getApiKey) { return getApiKey("openai"); }
 `);
     expect(errors.length).toBe(1);
     expect(errors[0]).toContain('cannot assign text to number');
@@ -551,7 +551,7 @@ const key: number = ts() { return getApiKey("openai"); }
     const errors = getErrors(`
 import { API_KEYS } from "./config.ts"
 let provider: text = "openai"
-const key: text = ts(provider) { return API_KEYS[provider]; }
+const key: text = ts(API_KEYS, provider) { return API_KEYS[provider]; }
 `);
     expect(errors).toEqual([]);
   });
@@ -560,7 +560,7 @@ const key: text = ts(provider) { return API_KEYS[provider]; }
     const errors = getErrors(`
 import { PORTS } from "./config.ts"
 let service: text = "http"
-const port: number = ts(service) { return PORTS[service]; }
+const port: number = ts(PORTS, service) { return PORTS[service]; }
 `);
     expect(errors).toEqual([]);
   });
@@ -568,7 +568,7 @@ const port: number = ts(service) { return PORTS[service]; }
   test('infers text from object property access', () => {
     const errors = getErrors(`
 import { DEFAULT_MODEL } from "./config.ts"
-const name: text = ts() { return DEFAULT_MODEL.name; }
+const name: text = ts(DEFAULT_MODEL) { return DEFAULT_MODEL.name; }
 `);
     expect(errors).toEqual([]);
   });
@@ -576,7 +576,7 @@ const name: text = ts() { return DEFAULT_MODEL.name; }
   test('infers text[] from string array', () => {
     const errors = getErrors(`
 import { PROVIDERS } from "./config.ts"
-const first: text = ts() { return PROVIDERS[0]; }
+const first: text = ts(PROVIDERS) { return PROVIDERS[0]; }
 `);
     expect(errors).toEqual([]);
   });
@@ -584,8 +584,8 @@ const first: text = ts() { return PROVIDERS[0]; }
   test('ts block with multiple imports resolves types correctly', () => {
     const errors = getErrors(`
 import { API_KEYS, PORTS } from "./config.ts"
-const key: text = ts() { return API_KEYS["openai"]; }
-const port: number = ts() { return PORTS["http"]; }
+const key: text = ts(API_KEYS) { return API_KEYS["openai"]; }
+const port: number = ts(PORTS) { return PORTS["http"]; }
 `);
     expect(errors).toEqual([]);
   });
@@ -595,10 +595,37 @@ const port: number = ts() { return PORTS["http"]; }
     // due to the fallback workaround
     const errors = getErrors(`
 import { NONEXISTENT } from "./nonexistent.ts"
-const x: text = ts() { return NONEXISTENT["key"]; }
+const x: text = ts(NONEXISTENT) { return NONEXISTENT["key"]; }
 `);
     // Should not crash, errors about missing import are acceptable
     expect(errors.every(e => !e.includes('cannot assign json to text'))).toBe(true);
+  });
+
+  test('infers text when accessing imported Record with object property (models.vibe scenario)', () => {
+    // This matches the 20-questions-bench models.vibe pattern:
+    // const config = getModelConfig(modelId)
+    // const apiKeyEnvVar = ts(API_KEYS, config) { return API_KEYS[config.provider]; }
+    const errors = getErrors(`
+import { API_KEYS, getModelConfig } from "./config.ts"
+let modelId: text = "default"
+const config = getModelConfig(modelId)
+const apiKeyEnvVar: text = ts(API_KEYS, config) { return API_KEYS[config.provider]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('infers type without annotation when accessing imported Record with object property', () => {
+    // Same as above but without explicit type annotation - should infer text
+    const errors = getErrors(`
+import { API_KEYS, getModelConfig } from "./config.ts"
+let modelId: text = "default"
+const config = getModelConfig(modelId)
+const apiKeyEnvVar = ts(API_KEYS, config) { return API_KEYS[config.provider]; }
+let x: number = apiKeyEnvVar
+`);
+    // Should error because apiKeyEnvVar should be inferred as text, not json
+    expect(errors.length).toBe(1);
+    expect(errors[0]).toContain('cannot assign text to number');
   });
 });
 
