@@ -24,8 +24,14 @@ export function visitImportDeclaration(vc: VisitorContext, node: AST.ImportDecla
   const isToolImport = node.source === 'system/tools';
 
   // Extract TypeScript signatures for non-system TS imports
+  // Also track import info for ts block type inference
   if (node.sourceType === 'ts' && ctx.basePath && !isSystemModule) {
     const sourcePath = resolve(dirname(ctx.basePath), node.source);
+
+    // Track import info for ts block type resolution
+    const specifierNames = node.specifiers.map(s => s.imported);
+    ctx.tsImports.push({ sourcePath, specifiers: specifierNames });
+
     for (const spec of node.specifiers) {
       try {
         const sig = extractFunctionSignature(sourcePath, spec.imported);

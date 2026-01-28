@@ -114,7 +114,7 @@ function structuralTypeToExpectedFields(
 }
 
 /** Default thinking level when not specified */
-const DEFAULT_THINKING_LEVEL = 'low';
+const DEFAULT_THINKING_LEVEL = 'medium';
 
 /**
  * Build model config from runtime model value.

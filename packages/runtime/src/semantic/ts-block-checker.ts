@@ -22,6 +22,17 @@ export interface TsBlockParam {
 }
 
 /**
+ * Import info for ts() block type inference.
+ * Used to include imports in the virtual code so TypeScript can resolve types.
+ */
+export interface TsImportInfo {
+  /** Absolute path to the TypeScript file */
+  sourcePath: string;
+  /** Names imported from this file (e.g., ['API_KEYS', 'PROVIDER_URLS']) */
+  specifiers: string[];
+}
+
+/**
  * Create compiler options for virtual TypeScript compilation.
  */
 function createCompilerOptions(): ts.CompilerOptions {
@@ -74,12 +85,24 @@ function createVirtualCompilerHost(
 
 /**
  * Generate virtual TypeScript function code from ts() block params and body.
+ * Optionally includes import statements for type resolution.
  */
-function generateVirtualCode(params: TsBlockParam[], body: string): string {
+function generateVirtualCode(
+  params: TsBlockParam[],
+  body: string,
+  imports?: TsImportInfo[]
+): string {
   const paramList = params
     .map((p) => `${p.name}: ${vibeTypeToTs(p.vibeType)}`)
     .join(', ');
-  return `function __tsBlock(${paramList}) {\n${body}\n}`;
+
+  // Generate import statements
+  const importStatements = (imports ?? [])
+    .map(imp => `import { ${imp.specifiers.join(', ')} } from "${imp.sourcePath.replace(/\\/g, '/')}";`)
+    .join('\n');
+
+  const importSection = importStatements ? importStatements + '\n\n' : '';
+  return `${importSection}function __tsBlock(${paramList}) {\n${body}\n}`;
 }
 
 /**
@@ -116,7 +139,9 @@ export function checkTsBlockTypes(
   const diagnostics = ts.getPreEmitDiagnostics(program);
 
   // Filter diagnostics to only include type errors related to our parameters
-  // Error code 2304 is "Cannot find name" - we ignore these for external refs
+  // Error codes for "Cannot find name":
+  // - 2304: "Cannot find name '{0}'"
+  // - 2552: "Cannot find name '{0}'. Did you mean '{1}'?"
   const paramNames = new Set(params.map(p => p.name));
   const relevantErrors: TsBlockError[] = [];
 
@@ -127,7 +152,7 @@ export function checkTsBlockTypes(
 
     // Skip "Cannot find name" errors for external functions/variables
     // These are expected since ts() blocks can call external code
-    if (d.code === 2304) {
+    if (d.code === 2304 || d.code === 2552) {
       // Only report if it's about one of our parameters (shouldn't happen
       // since we define them, but just in case)
       const match = message.match(/Cannot find name '(\w+)'/);
@@ -163,15 +188,24 @@ export function checkTsBlockTypes(
  *
  * @param params - Array of parameter names and their Vibe types
  * @param body - The TypeScript code inside the ts() block
+ * @param imports - Optional import info for resolving external types
  * @returns The inferred Vibe type, or null if it cannot be determined
  */
 export function inferTsBlockReturnType(
   params: TsBlockParam[],
-  body: string
+  body: string,
+  imports?: TsImportInfo[]
 ): string | null {
   const virtualFileName = '__virtual_ts_block_infer__.ts';
-  const virtualCode = generateVirtualCode(params, body);
-  const compilerOptions = createCompilerOptions();
+  const virtualCode = generateVirtualCode(params, body, imports);
+
+  // Use enhanced compiler options when we have imports to resolve
+  const compilerOptions: ts.CompilerOptions = {
+    ...createCompilerOptions(),
+    // Enable module resolution for imports
+    moduleResolution: imports?.length ? ts.ModuleResolutionKind.NodeNext : undefined,
+  };
+
   const { host } = createVirtualCompilerHost(virtualFileName, virtualCode, compilerOptions);
 
   const program = ts.createProgram([virtualFileName], compilerOptions, host);

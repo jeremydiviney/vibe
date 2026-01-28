@@ -241,7 +241,10 @@ export function validateLiteralType(
   }
 
   // Check type compatibility
-  if (!typesCompatible(sourceType, type)) {
+  // Special case: ts blocks that infer to 'json' may be using external imports
+  // that we can't analyze. Trust the declared type in this case.
+  const isTsBlockWithFallbackType = expr.type === 'TsBlock' && sourceType === 'json';
+  if (!typesCompatible(sourceType, type) && !isTsBlockWithFallbackType) {
     ctx.error(`Type error: cannot assign ${sourceType} to ${type}`, location);
   }
 
@@ -818,7 +821,8 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
           vibeType,
         });
       }
-      return inferTsBlockReturnType(params, expr.body);
+      // Pass TS imports to enable type resolution for imported values
+      return inferTsBlockReturnType(params, expr.body, ctx.tsImports);
     }
     default:
       return null;

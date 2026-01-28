@@ -495,6 +495,113 @@ let x: text = ts() { return [1, 2, 3] }
   });
 });
 
+describe('TS Block Return Type Inference with Imports', () => {
+  const analyzer = new SemanticAnalyzer();
+
+  function getErrors(code: string): string[] {
+    const ast = parse(code);
+    const errors = analyzer.analyze(ast, code, fixturesDir + '/main.vibe');
+    return errors.map((e) => e.message);
+  }
+
+  test('infers text from Record<string, string> index access', () => {
+    const errors = getErrors(`
+import { API_KEYS } from "./config.ts"
+const key: text = ts() { return API_KEYS["openai"]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('infers number from Record<string, number> index access', () => {
+    const errors = getErrors(`
+import { PORTS } from "./config.ts"
+const port: number = ts() { return PORTS["http"]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('type error when assigning Record<string,string> result to number', () => {
+    const errors = getErrors(`
+import { API_KEYS } from "./config.ts"
+const key: number = ts() { return API_KEYS["openai"]; }
+`);
+    // Should error because API_KEYS returns string, not number
+    expect(errors.length).toBe(1);
+    expect(errors[0]).toContain('cannot assign text to number');
+  });
+
+  test('infers text from imported function returning string', () => {
+    const errors = getErrors(`
+import { getApiKey } from "./config.ts"
+const key: text = ts() { return getApiKey("openai"); }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('type error when using string result as number', () => {
+    const errors = getErrors(`
+import { getApiKey } from "./config.ts"
+const key: number = ts() { return getApiKey("openai"); }
+`);
+    expect(errors.length).toBe(1);
+    expect(errors[0]).toContain('cannot assign text to number');
+  });
+
+  test('infers text from Record index with variable key', () => {
+    const errors = getErrors(`
+import { API_KEYS } from "./config.ts"
+let provider: text = "openai"
+const key: text = ts(provider) { return API_KEYS[provider]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('infers number from PORTS with variable key', () => {
+    const errors = getErrors(`
+import { PORTS } from "./config.ts"
+let service: text = "http"
+const port: number = ts(service) { return PORTS[service]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('infers text from object property access', () => {
+    const errors = getErrors(`
+import { DEFAULT_MODEL } from "./config.ts"
+const name: text = ts() { return DEFAULT_MODEL.name; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('infers text[] from string array', () => {
+    const errors = getErrors(`
+import { PROVIDERS } from "./config.ts"
+const first: text = ts() { return PROVIDERS[0]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('ts block with multiple imports resolves types correctly', () => {
+    const errors = getErrors(`
+import { API_KEYS, PORTS } from "./config.ts"
+const key: text = ts() { return API_KEYS["openai"]; }
+const port: number = ts() { return PORTS["http"]; }
+`);
+    expect(errors).toEqual([]);
+  });
+
+  test('falls back gracefully for unresolvable imports', () => {
+    // When import can't be resolved, should fall back to json and allow assignment
+    // due to the fallback workaround
+    const errors = getErrors(`
+import { NONEXISTENT } from "./nonexistent.ts"
+const x: text = ts() { return NONEXISTENT["key"]; }
+`);
+    // Should not crash, errors about missing import are acceptable
+    expect(errors.every(e => !e.includes('cannot assign json to text'))).toBe(true);
+  });
+});
+
 describe('Return Type Inference - Imported TS Functions', () => {
   const analyzer = new SemanticAnalyzer();
 

@@ -51,16 +51,19 @@ This creates binaries for all platforms in `dist/`:
 
 ### Build VS Code Extension
 ```bash
-bun run build:extension    # Build extension JS files
+bun run build:extension    # Build extension JS files only
 ```
 
 ### Package Extension for Release
+**Always use this when deploying updates** - it builds and packages in one step:
 ```bash
 cd packages/vscode-extension
-bun run package            # Creates .vsix in releases/ folder
+bun run package            # Runs vscode:prepublish (build) + creates .vsix
 ```
 
 The packaged extension will be at `packages/vscode-extension/releases/vibe-language-X.X.X.vsix`
+
+**Note:** `bun run package` automatically runs `vscode:prepublish` which rebuilds the extension. You don't need to run `build:extension` separately before packaging.
 
 ## Test Commands
 ```bash

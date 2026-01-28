@@ -7,6 +7,7 @@
 import type { SourceLocation } from '../errors';
 import type { SymbolTable, SymbolKind } from './symbol-table';
 import type { TsFunctionSignature } from './ts-signatures';
+import type { TsImportInfo } from './ts-block-checker';
 import type { TypeRegistry } from './type-registry';
 import type { VibeType } from '../ast';
 
@@ -23,6 +24,9 @@ export interface AnalyzerContext {
 
   /** Map of imported TS function names to their signatures */
   tsImportSignatures: Map<string, TsFunctionSignature>;
+
+  /** TS import info for type resolution in ts blocks */
+  tsImports: TsImportInfo[];
 
   /** Base path for resolving imports */
   basePath?: string;

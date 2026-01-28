@@ -9,6 +9,7 @@ import { SemanticError, type SourceLocation } from '../errors';
 import { SymbolTable, type SymbolKind } from './symbol-table';
 import { TypeRegistry } from './type-registry';
 import type { TsFunctionSignature } from './ts-signatures';
+import type { TsImportInfo } from './ts-block-checker';
 import type { AnalyzerContext, AnalyzerState } from './analyzer-context';
 import { createVisitors } from './analyzer-visitors';
 
@@ -19,6 +20,7 @@ export class SemanticAnalyzer {
   private source?: string;
   private basePath?: string;
   private tsImportSignatures: Map<string, TsFunctionSignature> = new Map();
+  private tsImports: TsImportInfo[] = [];
 
   /**
    * Analyze a Vibe program and return any semantic errors.
@@ -28,6 +30,7 @@ export class SemanticAnalyzer {
     this.source = source;
     this.basePath = basePath;
     this.tsImportSignatures.clear();
+    this.tsImports = [];  // Fresh imports for each analysis
     this.typeRegistry = new TypeRegistry();  // Fresh registry for each analysis
     this.symbols = new SymbolTable();  // Fresh symbol table for each analysis
     this.symbols.enterScope();
@@ -61,6 +64,7 @@ export class SemanticAnalyzer {
       symbols: this.symbols,
       typeRegistry: this.typeRegistry,
       tsImportSignatures: this.tsImportSignatures,
+      tsImports: this.tsImports,
       basePath: this.basePath,
       source: this.source,
       inFunction: false,
