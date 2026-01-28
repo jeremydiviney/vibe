@@ -112,7 +112,8 @@ export function resumeWithAIResponse(
   response: unknown,
   interaction?: AIInteraction,
   toolRounds?: ToolRoundResult[],
-  usageRecord?: ModelUsageRecord
+  usageRecord?: ModelUsageRecord,
+  textContent?: string
 ): RuntimeState {
   if (state.status !== 'awaiting_ai' || !state.pendingAI) {
     throw new Error('Cannot resume: not awaiting AI response');
@@ -174,6 +175,7 @@ export function resumeWithAIResponse(
     source: 'ai',
     toolCalls: toolCallRecords,
     usage: usageRecord,
+    textContent,
   });
 
   // Create prompt entry with embedded tool calls (order: prompt → tools → response)

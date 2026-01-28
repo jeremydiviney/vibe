@@ -2,7 +2,7 @@
 
 import type { VibeType } from '../../ast';
 import { ReferenceError, RuntimeError, TypeError, type SourceLocation } from '../../errors';
-import type { RuntimeState, Instruction, VibeValue, StackFrame, ToolCallRecord } from '../types';
+import type { RuntimeState, Instruction, VibeValue, StackFrame } from '../types';
 import { createVibeValue, isVibeValue } from '../types';
 import { currentFrame } from '../state';
 import { validateAndCoerce } from '../validation';
@@ -71,27 +71,44 @@ export function execDeclareVar(
 
   const rawValue = initialValue !== undefined ? initialValue : state.lastResult;
 
-  // If value is already a VibeValue (e.g., from AI response or error), extract its properties
+  // If value is already a VibeValue (e.g., from AI response or error), extract its properties.
+  //
+  // AI interaction metadata (toolCalls, usage, textContent) is handled specially:
+  // - When lastResultSource === 'ai', this is a DIRECT assignment from an AI call (const result = do "...")
+  //   In this case, preserve all AI metadata.
+  // - When lastResultSource !== 'ai', this is a variable-to-variable assignment (const copy = result)
+  //   In this case, strip AI metadata - it should only be available on the original variable.
+  //
+  // Note: AI metadata CAN flow through function parameters/returns (handled in functions.ts).
   let innerValue: unknown;
-  let toolCalls: ToolCallRecord[] = [];
   let source = initialValue !== undefined ? null : state.lastResultSource;
   let err: VibeValue['err'] = false;
   let errDetails: VibeValue['errDetails'] = null;
   let asyncOperationId: string | undefined;
-
-  let usage: VibeValue['usage'];
-
   let sourceVibeType: VibeType = null;
+
+  // AI metadata - only preserved for direct AI assignments
+  let toolCalls: VibeValue['toolCalls'] = [];
+  let usage: VibeValue['usage'];
+  let textContent: VibeValue['textContent'];
+
+  // Check if this is a direct assignment from AI (not a variable-to-variable copy)
+  const isDirectFromAI = state.lastResultSource === 'ai';
 
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
-    toolCalls = rawValue.toolCalls;
     source = rawValue.source ?? source;
     err = rawValue.err;  // Preserve error boolean from operations like null arithmetic
     errDetails = rawValue.errDetails;  // Preserve error details
     asyncOperationId = rawValue.asyncOperationId;  // Preserve async operation ID for pending async
-    usage = rawValue.usage;  // Preserve usage record from AI responses
     sourceVibeType = rawValue.vibeType;  // Preserve type from source value
+
+    // Only preserve AI metadata for direct AI assignments, not variable-to-variable copies
+    if (isDirectFromAI) {
+      toolCalls = rawValue.toolCalls;
+      usage = rawValue.usage;
+      textContent = rawValue.textContent;
+    }
   } else {
     innerValue = rawValue;
   }
@@ -103,7 +120,7 @@ export function execDeclareVar(
 
   const newLocals = {
     ...frame.locals,
-    [name]: createVibeValue(validatedValue, { isConst, vibeType: finalType, source, toolCalls, err, errDetails, isPrivate, asyncOperationId, usage }),
+    [name]: createVibeValue(validatedValue, { isConst, vibeType: finalType, source, err, errDetails, isPrivate, asyncOperationId, toolCalls, usage, textContent }),
   };
 
   // Add variable to ordered entries with snapshotted value for context tracking
@@ -170,21 +187,33 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
   const rawValue = state.lastResult;
 
-  // If value is already a VibeValue (e.g., from AI response or error), extract its properties
+  // If value is already a VibeValue (e.g., from AI response or error), extract its properties.
+  // AI interaction metadata (toolCalls, usage, textContent) is only preserved for direct AI assignments.
   let innerValue: unknown;
-  let toolCalls: ToolCallRecord[] = [];
   let source = state.lastResultSource;
   let err: VibeValue['err'] = false;
   let errDetails: VibeValue['errDetails'] = null;
+
+  // AI metadata - only preserved for direct AI assignments
+  let toolCalls: VibeValue['toolCalls'] = [];
   let usage: VibeValue['usage'];
+  let textContent: VibeValue['textContent'];
+
+  // Check if this is a direct assignment from AI (not a variable-to-variable copy)
+  const isDirectFromAI = state.lastResultSource === 'ai';
 
   if (isVibeValue(rawValue)) {
     innerValue = rawValue.value;
-    toolCalls = rawValue.toolCalls;
     source = rawValue.source ?? source;
     err = rawValue.err;  // Preserve error boolean from operations like null arithmetic
     errDetails = rawValue.errDetails;  // Preserve error details
-    usage = rawValue.usage;  // Preserve usage record from AI responses
+
+    // Only preserve AI metadata for direct AI assignments
+    if (isDirectFromAI) {
+      toolCalls = rawValue.toolCalls;
+      usage = rawValue.usage;
+      textContent = rawValue.textContent;
+    }
   } else {
     innerValue = rawValue;
   }
@@ -206,7 +235,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
 
     const newGlobals = {
       ...module.globals,
-      [name]: { ...variable, value: validatedValue, source, toolCalls, err, errDetails, usage },
+      [name]: { ...variable, value: validatedValue, source, err, errDetails, toolCalls, usage, textContent },
     };
 
     return {
@@ -232,7 +261,7 @@ export function execAssignVar(state: RuntimeState, name: string, location?: Sour
   const frame = state.callStack[frameIndex];
   const newLocals = {
     ...frame.locals,
-    [name]: { ...variable, value: validatedValue, source, toolCalls, err, errDetails, usage },
+    [name]: { ...variable, value: validatedValue, source, err, errDetails, toolCalls, usage, textContent },
   };
 
   // Add assignment to ordered entries with snapshotted value for context tracking

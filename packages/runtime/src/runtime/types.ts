@@ -48,6 +48,7 @@ export interface VibeValue {
   isPrivate?: boolean;               // true if hidden from AI context
   asyncOperationId?: string;         // ID of pending async operation (when value is pending)
   usage?: ModelUsageRecord;          // Token usage from the AI call that produced this value
+  textContent?: string;              // Plain text output from AI (alongside tool calls)
 }
 
 // Type guard for VibeValue
@@ -76,6 +77,7 @@ export function createVibeValue(
     isPrivate?: boolean;
     asyncOperationId?: string;
     usage?: ModelUsageRecord;
+    textContent?: string;
   } = {}
 ): VibeValue {
   const result: VibeValue = {
@@ -95,6 +97,9 @@ export function createVibeValue(
   }
   if (options.usage) {
     result.usage = options.usage;
+  }
+  if (options.textContent) {
+    result.textContent = options.textContent;
   }
   return result;
 }

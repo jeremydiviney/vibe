@@ -142,6 +142,7 @@ function pushModelUsage(state: RuntimeState, modelName: string, record: ModelUsa
 // AI execution result with optional usage and tool rounds
 export interface AIExecutionResult {
   value: unknown;
+  textContent?: string;  // Plain text output from AI (alongside tool calls)
   usage?: TokenUsage;
   toolRounds?: ToolRoundResult[];  // Tool calling rounds that occurred during execution
   retryAttempts?: Array<{ aiResponse: string; rawResponse?: string; followUpMessage: string; followUpResponse: string; rawFollowUpResponse?: string }>;  // Retries where AI didn't call tools
@@ -473,7 +474,7 @@ export class Runtime {
     const usageRecord = createUsageRecord(result.usage);
     pushModelUsage(state, pendingAI.model, usageRecord);
 
-    return resumeWithAIResponse(state, result.value, interaction, result.toolRounds, usageRecord);
+    return resumeWithAIResponse(state, result.value, interaction, result.toolRounds, usageRecord, result.textContent);
   }
 
   private async handleAwaitingTool(state: RuntimeState, logger?: VerboseLogger | null): Promise<RuntimeState> {

@@ -336,6 +336,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
       // Return the parsed value, usage, tool rounds, and context for logging
       return {
         value: finalValue,
+        textContent: response.content || undefined,  // Plain text output from AI
         usage: response.usage,
         toolRounds: rounds.length > 0 ? rounds : undefined,
         retryAttempts,
@@ -399,6 +400,7 @@ export function createRealAIProvider(getState: () => RuntimeState): AIProvider {
 
       return {
         value: String(response.content),
+        textContent: response.content || undefined,  // Same as value for vibe
         usage: response.usage,
         // Include vibe messages for logging
         messages,

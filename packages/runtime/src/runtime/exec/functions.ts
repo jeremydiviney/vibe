@@ -3,7 +3,7 @@
 import * as AST from '../../ast';
 import { ReferenceError, RuntimeError, TypeError, type SourceLocation } from '../../errors';
 import type { RuntimeState, StackFrame, CalleeValue } from '../types';
-import { resolveValue, createVibeValue, isCalleeValue } from '../types';
+import { resolveValue, createVibeValue, isCalleeValue, isVibeValue } from '../types';
 import { isVibeToolValue } from '../tools/types';
 import { createFrame } from '../state';
 import { getImportedVibeFunction, getImportedVibeFunctionModulePath, getModuleFunctions } from '../modules';
@@ -32,16 +32,30 @@ export function createFunctionFrame(
     const param = params[i];
     const argValue = args[i] ?? null;
 
+    // Extract raw value for validation, but preserve AI metadata from VibeValue
+    const rawValue = isVibeValue(argValue) ? argValue.value : argValue;
+    const sourceVibe = isVibeValue(argValue) ? argValue : null;
+
     const { value: validatedValue } = validateAndCoerce(
-      argValue,
+      rawValue,
       param.vibeType,
       param.name
     );
 
+    // Preserve AI metadata (toolCalls, usage, textContent) through function parameters.
+    // This allows AI results to flow through function calls while still stripping
+    // metadata on variable assignment (const y = x).
     newFrame.locals[param.name] = createVibeValue(validatedValue, {
       isConst: false,
       vibeType: param.vibeType,
       isPrivate: param.isPrivate,
+      // Preserve AI metadata from source VibeValue:
+      toolCalls: sourceVibe?.toolCalls ?? [],
+      usage: sourceVibe?.usage,
+      textContent: sourceVibe?.textContent,
+      source: sourceVibe?.source ?? null,
+      err: sourceVibe?.err ?? false,
+      errDetails: sourceVibe?.errDetails ?? null,
     });
     // Include snapshotted value in ordered entries for context tracking
     newFrame.orderedEntries.push({
@@ -128,14 +142,17 @@ export function execCallFunction(
   argCount: number,
   location: SourceLocation
 ): RuntimeState {
-  // Get args and callee from value stack, unwrapping VibeValues
+  // Get args and callee from value stack
+  // Keep rawArgs as VibeValues to preserve AI metadata through function parameters
   const rawArgs = state.valueStack.slice(-argCount);
   const rawCallee = state.valueStack[state.valueStack.length - argCount - 1];
   const newValueStack = state.valueStack.slice(0, -(argCount + 1));
 
-  // Unwrap VibeValue for callee and args
+  // Unwrap VibeValue for callee (functions don't need metadata)
+  // Keep rawArgs for Vibe functions to preserve AI metadata
+  // Create resolved args for TS functions and core functions that don't understand VibeValues
   const callee = resolveValue(rawCallee);
-  const args = rawArgs.map(arg => resolveValue(arg));
+  const resolvedArgs = rawArgs.map(arg => resolveValue(arg));
 
   // Tool values have their own type guard (they're persistent stored values, not transient callees)
   if (isVibeToolValue(callee)) {
@@ -157,9 +174,10 @@ export function execCallFunction(
       const func = state.functions[callee.name];
       if (!func) throw new ReferenceError(callee.name, location);
       if (isInAsyncContext(state)) {
-        return scheduleAsyncVibeFunction(state, callee.name, args, newValueStack);
+        // Pass rawArgs to preserve AI metadata through function parameters
+        return scheduleAsyncVibeFunction(state, callee.name, rawArgs, newValueStack);
       }
-      return executeVibeFunction(state, func, args, newValueStack);
+      return executeVibeFunction(state, func, rawArgs, newValueStack);
     }
 
     case 'vibe-module-function': {
@@ -167,13 +185,13 @@ export function execCallFunction(
       const func = moduleFunctions?.[callee.name];
       if (!func) throw new ReferenceError(callee.name, location);
       if (isInAsyncContext(state)) {
-        return scheduleAsyncVibeFunction(state, callee.name, args, newValueStack, callee.modulePath);
+        return scheduleAsyncVibeFunction(state, callee.name, rawArgs, newValueStack, callee.modulePath);
       }
-      return executeVibeFunction(state, func, args, newValueStack, callee.modulePath);
+      return executeVibeFunction(state, func, rawArgs, newValueStack, callee.modulePath);
     }
 
     case 'imported-ts-function': {
-      const resolvedArgs = args.map(arg => resolveValue(arg));
+      // TS functions receive resolved args (they don't understand VibeValues)
       if (isInAsyncContext(state)) {
         const newState = scheduleAsyncOperation(
           state,
@@ -199,19 +217,21 @@ export function execCallFunction(
       if (!func) throw new ReferenceError(callee.name, location);
       const modulePath = getImportedVibeFunctionModulePath(state, callee.name);
       if (isInAsyncContext(state)) {
-        return scheduleAsyncVibeFunction(state, callee.name, args, newValueStack, modulePath);
+        return scheduleAsyncVibeFunction(state, callee.name, rawArgs, newValueStack, modulePath);
       }
-      return executeVibeFunction(state, func, args, newValueStack, modulePath);
+      return executeVibeFunction(state, func, rawArgs, newValueStack, modulePath);
     }
 
     case 'core-function': {
+      // Core functions receive resolved args (they don't understand VibeValues)
       const coreFunc = getCoreFunction(callee.name);
       if (!coreFunc) throw new ReferenceError(callee.name, location);
-      return { ...state, valueStack: newValueStack, lastResult: coreFunc(...args) };
+      return { ...state, valueStack: newValueStack, lastResult: coreFunc(...resolvedArgs) };
     }
 
     case 'bound-method': {
-      const result = executeBuiltinMethod(callee.object, callee.method, args, location);
+      // Built-in methods receive resolved args
+      const result = executeBuiltinMethod(callee.object, callee.method, resolvedArgs, location);
       return { ...state, valueStack: newValueStack, lastResult: result };
     }
   }
