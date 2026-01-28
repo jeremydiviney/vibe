@@ -11,14 +11,80 @@ export const OPENAI_CONFIG = {
   defaultUrl: 'https://api.openai.com/v1',
 };
 
-/** Map thinking level to OpenAI reasoning_effort */
-const REASONING_EFFORT_MAP: Record<ThinkingLevel, string> = {
+/** Default thinking level map for OpenAI models (reasoning_effort parameter) */
+const DEFAULT_REASONING_EFFORT_MAP: Record<ThinkingLevel, string> = {
   none: 'none',      // No reasoning tokens (GPT-5.1+)
   low: 'low',        // Minimal reasoning
   medium: 'medium',  // Default - balanced speed and accuracy
   high: 'high',      // More thorough reasoning
   max: 'xhigh',      // Maximum reasoning (GPT-5.1-codex-max+)
 };
+
+/**
+ * Model reasoning configuration types:
+ * - 'effort': Uses OpenAI-style `reasoning_effort` parameter (string levels)
+ * - 'boolean': Uses OpenRouter-style `reasoning.enabled` parameter (true/false)
+ * - 'none': No reasoning configuration (always-on or not supported)
+ */
+type ReasoningType = 'effort' | 'boolean' | 'none';
+
+interface ModelReasoningConfig {
+  type: ReasoningType;
+  /** For 'effort' type: custom level mappings (optional, defaults to DEFAULT_REASONING_EFFORT_MAP) */
+  effortMap?: Partial<Record<ThinkingLevel, string | false>>;
+}
+
+/**
+ * Model-specific reasoning configurations.
+ * Models not in this map default to 'effort' type with standard OpenAI mapping.
+ */
+const MODEL_REASONING_CONFIGS: Record<string, ModelReasoningConfig> = {
+  // xAI Grok models (via OpenRouter)
+  'x-ai/grok-4': { type: 'none' },  // Always-on reasoning, cannot be configured
+  'x-ai/grok-4.1-fast': { type: 'boolean' },  // Boolean reasoning param
+
+  // DeepSeek models (via OpenRouter)
+  'deepseek/deepseek-v3.2-20251201': { type: 'boolean' },  // Boolean reasoning param
+
+  // GLM models (via OpenRouter)
+  'z-ai/glm-4.7': { type: 'none' },  // No reasoning support
+
+  // Kimi/Moonshot models (via OpenRouter)
+  'moonshotai/kimi-k2.5': { type: 'boolean' },  // Boolean reasoning param
+};
+
+/**
+ * Get model reasoning configuration.
+ * Returns the config for the model, or default 'effort' type for unknown models.
+ */
+function getModelReasoningConfig(modelName: string): ModelReasoningConfig {
+  // Check for exact model match
+  if (modelName in MODEL_REASONING_CONFIGS) {
+    return MODEL_REASONING_CONFIGS[modelName];
+  }
+
+  // Default to OpenAI-style reasoning effort
+  return { type: 'effort' };
+}
+
+/**
+ * Get the reasoning_effort value for OpenAI-style models.
+ */
+function getReasoningEffort(level: ThinkingLevel, config: ModelReasoningConfig): string | null {
+  const map = config.effortMap ?? {};
+  if (level in map) {
+    const value = map[level];
+    return value === false ? null : (value ?? null);
+  }
+  return DEFAULT_REASONING_EFFORT_MAP[level];
+}
+
+/**
+ * Get the boolean reasoning value for OpenRouter-style models.
+ */
+function getReasoningEnabled(level: ThinkingLevel): boolean {
+  return level !== 'none';
+}
 
 /**
  * Execute an AI request using the OpenAI SDK.
@@ -93,10 +159,30 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       params.tools = toOpenAITools(tools) as OpenAI.ChatCompletionTool[];
     }
 
-    // Add reasoning effort if thinking level specified
+    // Add reasoning configuration based on model type
     const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
     if (thinkingLevel) {
-      (params as unknown as Record<string, unknown>).reasoning_effort = REASONING_EFFORT_MAP[thinkingLevel];
+      const reasoningConfig = getModelReasoningConfig(model.name);
+
+      switch (reasoningConfig.type) {
+        case 'effort': {
+          // OpenAI-style: reasoning_effort parameter
+          const effort = getReasoningEffort(thinkingLevel, reasoningConfig);
+          if (effort !== null) {
+            (params as unknown as Record<string, unknown>).reasoning_effort = effort;
+          }
+          break;
+        }
+        case 'boolean': {
+          // OpenRouter-style: reasoning.enabled parameter
+          const enabled = getReasoningEnabled(thinkingLevel);
+          (params as unknown as Record<string, unknown>).reasoning = { enabled };
+          break;
+        }
+        case 'none':
+          // No reasoning configuration for this model
+          break;
+      }
     }
 
     // Make API request
