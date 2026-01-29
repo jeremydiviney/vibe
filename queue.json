@@ -1,0 +1,7007 @@
+{
+  "createdAt": "2026-01-28T07:43:35.183Z",
+  "totalItems": 700,
+  "completedCount": 0,
+  "items": [
+    {
+      "id": "item-00000",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00001",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00002",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00003",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00004",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00005",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00006",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00007",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00008",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00009",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00010",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00011",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00012",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00013",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00014",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00015",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00016",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00017",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00018",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00019",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00020",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00021",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00022",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00023",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00024",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00025",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00026",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00027",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00028",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00029",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00030",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00031",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00032",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00033",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00034",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00035",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00036",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00037",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00038",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00039",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00040",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00041",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00042",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00043",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00044",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00045",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00046",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00047",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00048",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00049",
+      "guesserModelId": "gpt5_2_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00050",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00051",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00052",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00053",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00054",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00055",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00056",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00057",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00058",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00059",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00060",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00061",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00062",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00063",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00064",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00065",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00066",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00067",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00068",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00069",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00070",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00071",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00072",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00073",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00074",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00075",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00076",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00077",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00078",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00079",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00080",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00081",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00082",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00083",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00084",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00085",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00086",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00087",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00088",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00089",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00090",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00091",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00092",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00093",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00094",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00095",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00096",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00097",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00098",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00099",
+      "guesserModelId": "gpt5_2_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00100",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00101",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00102",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00103",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00104",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00105",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00106",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00107",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00108",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00109",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00110",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00111",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00112",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00113",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00114",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00115",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00116",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00117",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00118",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00119",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00120",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00121",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00122",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00123",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00124",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00125",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00126",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00127",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00128",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00129",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00130",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00131",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00132",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00133",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00134",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00135",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00136",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00137",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00138",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00139",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00140",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00141",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00142",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00143",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00144",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00145",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00146",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00147",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00148",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00149",
+      "guesserModelId": "gpt5_2_max",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00150",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00151",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00152",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00153",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00154",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00155",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00156",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00157",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00158",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00159",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00160",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00161",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00162",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00163",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00164",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00165",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00166",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00167",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00168",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00169",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00170",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00171",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00172",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00173",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00174",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00175",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00176",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00177",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00178",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00179",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00180",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00181",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00182",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00183",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00184",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00185",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00186",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00187",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00188",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00189",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00190",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00191",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00192",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00193",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00194",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00195",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00196",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00197",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00198",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00199",
+      "guesserModelId": "gemini3Flash_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00200",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00201",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00202",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00203",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00204",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00205",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00206",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00207",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00208",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00209",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00210",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00211",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00212",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00213",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00214",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00215",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00216",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00217",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00218",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00219",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00220",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00221",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00222",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00223",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00224",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00225",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00226",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00227",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00228",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00229",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00230",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00231",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00232",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00233",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00234",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00235",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00236",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00237",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00238",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00239",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00240",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00241",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00242",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00243",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00244",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00245",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00246",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00247",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00248",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00249",
+      "guesserModelId": "gemini3Pro_low",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00250",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00251",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00252",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00253",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00254",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00255",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00256",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00257",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00258",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00259",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00260",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00261",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00262",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00263",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00264",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00265",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00266",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00267",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00268",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00269",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00270",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00271",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00272",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00273",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00274",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00275",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00276",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00277",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00278",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00279",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00280",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00281",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00282",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00283",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00284",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00285",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00286",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00287",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00288",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00289",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00290",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00291",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00292",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00293",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00294",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00295",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00296",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00297",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00298",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00299",
+      "guesserModelId": "gemini3Pro_high",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00300",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00301",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00302",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00303",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00304",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00305",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00306",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00307",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00308",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00309",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00310",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00311",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00312",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00313",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00314",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00315",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00316",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00317",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00318",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00319",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00320",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00321",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00322",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00323",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00324",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00325",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00326",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00327",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00328",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00329",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00330",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00331",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00332",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00333",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00334",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00335",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00336",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00337",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00338",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00339",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00340",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00341",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00342",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00343",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00344",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00345",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00346",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00347",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00348",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00349",
+      "guesserModelId": "claudeHaiku_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00350",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00351",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00352",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00353",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00354",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00355",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00356",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00357",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00358",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00359",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00360",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00361",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00362",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00363",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00364",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00365",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00366",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00367",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00368",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00369",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00370",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00371",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00372",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00373",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00374",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00375",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00376",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00377",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00378",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00379",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00380",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00381",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00382",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00383",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00384",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00385",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00386",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00387",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00388",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00389",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00390",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00391",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00392",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00393",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00394",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00395",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00396",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00397",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00398",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00399",
+      "guesserModelId": "claudeSonnet_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00400",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00401",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00402",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00403",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00404",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00405",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00406",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00407",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00408",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00409",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00410",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00411",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00412",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00413",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00414",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00415",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00416",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00417",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00418",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00419",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00420",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00421",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00422",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00423",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00424",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00425",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00426",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00427",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00428",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00429",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00430",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00431",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00432",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00433",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00434",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00435",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00436",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00437",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00438",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00439",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00440",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00441",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00442",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00443",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00444",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00445",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00446",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00447",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00448",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00449",
+      "guesserModelId": "claudeOpus_medium",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00450",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00451",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00452",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00453",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00454",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00455",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00456",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00457",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00458",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00459",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00460",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00461",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00462",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00463",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00464",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00465",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00466",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00467",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00468",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00469",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00470",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00471",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00472",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00473",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00474",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00475",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00476",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00477",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00478",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00479",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00480",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00481",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00482",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00483",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00484",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00485",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00486",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00487",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00488",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00489",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00490",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00491",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00492",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00493",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00494",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00495",
+      "guesserModelId": "grok4",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00496",
+      "guesserModelId": "grok4",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00497",
+      "guesserModelId": "grok4",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00498",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00499",
+      "guesserModelId": "grok4",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00500",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00501",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00502",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00503",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00504",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00505",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00506",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00507",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00508",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00509",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00510",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00511",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00512",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00513",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00514",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00515",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00516",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00517",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00518",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00519",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00520",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00521",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00522",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00523",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00524",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00525",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00526",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00527",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00528",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00529",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00530",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00531",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00532",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00533",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00534",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00535",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00536",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00537",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00538",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00539",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00540",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00541",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00542",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00543",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00544",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00545",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00546",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00547",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00548",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00549",
+      "guesserModelId": "grok4_1_fast",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00550",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00551",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00552",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00553",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00554",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00555",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00556",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00557",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00558",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00559",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00560",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00561",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00562",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00563",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00564",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00565",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00566",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00567",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00568",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00569",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00570",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00571",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00572",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00573",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00574",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00575",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00576",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00577",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00578",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00579",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00580",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00581",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00582",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00583",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00584",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00585",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00586",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00587",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00588",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00589",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00590",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00591",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00592",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00593",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00594",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00595",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00596",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00597",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00598",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00599",
+      "guesserModelId": "deepseek_v3_2",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00600",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00601",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00602",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00603",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00604",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00605",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00606",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00607",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00608",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00609",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00610",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00611",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00612",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00613",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00614",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00615",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00616",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00617",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00618",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00619",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00620",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00621",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00622",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00623",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00624",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00625",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00626",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00627",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00628",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00629",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00630",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00631",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00632",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00633",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00634",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00635",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00636",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00637",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00638",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00639",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00640",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00641",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00642",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00643",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00644",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00645",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00646",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00647",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00648",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00649",
+      "guesserModelId": "glm_4_7",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00650",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Taylor Swift"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00651",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Elon Musk"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00652",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Beyoncé"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00653",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Tom Hanks"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00654",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Oprah Winfrey"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00655",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "LeBron James"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00656",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Adele"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00657",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Dwayne Johnson"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00658",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Kim Kardashian"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00659",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "celebrity",
+        "secret": "Cristiano Ronaldo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00660",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "elephant"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00661",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "penguin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00662",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "butterfly"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00663",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "dolphin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00664",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "spider"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00665",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "eagle"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00666",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "creature",
+        "secret": "octopus"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00667",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "creature",
+        "secret": "bee"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00668",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "shark"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00669",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "creature",
+        "secret": "hummingbird"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00670",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Albert Einstein"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00671",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Cleopatra"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00672",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Napoleon Bonaparte"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00673",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Leonardo da Vinci"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00674",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Mahatma Gandhi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00675",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Julius Caesar"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00676",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Marie Curie"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00677",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Abraham Lincoln"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00678",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "William Shakespeare"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00679",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "historical figure",
+        "secret": "Genghis Khan"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00680",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Eiffel Tower"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00681",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Grand Canyon"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00682",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Tokyo"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00683",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Amazon Rainforest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00684",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Great Wall of China"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00685",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Sahara Desert"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00686",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "place",
+        "secret": "Venice"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00687",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "place",
+        "secret": "Mount Everest"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00688",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "place",
+        "secret": "Machu Picchu"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00689",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "place",
+        "secret": "Antarctica"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00690",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "pizza"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00691",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "smartphone"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00692",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "Bitcoin"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00693",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Internet"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00694",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "yoga"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00695",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "sushi"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00696",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "kimi_k2_5_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a black hole"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00697",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gemini3Pro_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "the Olympics"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00698",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "claudeOpus_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "a rainbow"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "item-00699",
+      "guesserModelId": "kimi_k2_5",
+      "answererModelId": "gpt5_2_high",
+      "secret": {
+        "category": "wildcard",
+        "secret": "coffee"
+      },
+      "status": "pending"
+    }
+  ]
+}
