@@ -193,6 +193,9 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     const rawResponse = JSON.stringify(message, null, 2);
     return { content, parsedValue: content, usage, toolCalls, stopReason, rawResponse };
   } catch (error) {
+    if (error instanceof AIError) {
+      throw error;
+    }
     if (error instanceof Anthropic.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;
       throw new AIError(
@@ -200,6 +203,20 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
         error.status,
         isRetryable
       );
+    }
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+      const isNetworkError = message.includes('timeout') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('socket hang up');
+      if (isNetworkError) {
+        throw new AIError(
+          `Network error: ${error.message}`,
+          undefined,
+          true
+        );
+      }
     }
     throw error;
   }
@@ -252,6 +269,9 @@ async function executeWithOverrideMessages(
 
     return { content, parsedValue: content, usage, toolCalls: [], stopReason: 'end' };
   } catch (error) {
+    if (error instanceof AIError) {
+      throw error;
+    }
     if (error instanceof Anthropic.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;
       throw new AIError(
@@ -259,6 +279,20 @@ async function executeWithOverrideMessages(
         error.status,
         isRetryable
       );
+    }
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+      const isNetworkError = message.includes('timeout') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('socket hang up');
+      if (isNetworkError) {
+        throw new AIError(
+          `Network error: ${error.message}`,
+          undefined,
+          true
+        );
+      }
     }
     throw error;
   }

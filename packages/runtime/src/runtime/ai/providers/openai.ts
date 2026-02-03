@@ -188,6 +188,27 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     // Make API request
     const completion = await client.chat.completions.create(params);
 
+    // Check for OpenRouter error-in-200 responses (errors returned with HTTP 200 status)
+    const rawCompletion = completion as unknown as Record<string, unknown>;
+    if (rawCompletion.error) {
+      const err = rawCompletion.error as { code?: number; message?: string };
+      const isRetryable = err.code === 429 || (err.code ?? 0) >= 500;
+      throw new AIError(
+        `OpenRouter error (${err.code}): ${err.message}`,
+        err.code,
+        isRetryable
+      );
+    }
+
+    // Guard against empty/missing choices (model warm-up, non-conformant responses)
+    if (!completion.choices?.length) {
+      throw new AIError(
+        'No response from model: choices array is empty or missing. The model may be warming up or temporarily unavailable.',
+        undefined,
+        true
+      );
+    }
+
     // Extract message
     const message = completion.choices[0]?.message;
     const content = message?.content ?? '';
@@ -238,6 +259,9 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     const rawResponse = JSON.stringify(completion, null, 2);
     return { content, parsedValue: content, usage, toolCalls, stopReason, rawResponse };
   } catch (error) {
+    if (error instanceof AIError) {
+      throw error;
+    }
     if (error instanceof OpenAI.APIError) {
       const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;
       throw new AIError(
@@ -245,6 +269,21 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
         error.status,
         isRetryable
       );
+    }
+    // Handle timeout and network errors as retryable
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+      const isNetworkError = message.includes('timeout') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('socket hang up');
+      if (isNetworkError) {
+        throw new AIError(
+          `Network error: ${error.message}`,
+          undefined,
+          true
+        );
+      }
     }
     throw error;
   }

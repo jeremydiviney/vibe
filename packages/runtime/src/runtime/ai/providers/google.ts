@@ -237,7 +237,11 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
         message.includes('rate limit') ||
         message.includes('500') ||
         message.includes('503') ||
-        message.includes('service unavailable');
+        message.includes('service unavailable') ||
+        message.includes('timeout') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('socket hang up');
 
       // Extract status code if present
       const statusMatch = error.message.match(/(\d{3})/);

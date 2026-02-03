@@ -55,7 +55,25 @@ let s2 = 'single quoted'
 let s3 = `template with {variable} interpolation`
 ```
 
-Template literals use `{expression}` for interpolation (not `${}`).
+All string types support `{variable}` interpolation (not `${}`). Currently, only variables and property access are supported inside `{}` — not expressions.
+
+```vibe
+let name = "world"
+let user = { first: "John", last: "Doe" }
+
+// These work:
+print("Hello {name}")           // variable
+print("Hi {user.first}")        // property access
+print("{items[0]}")             // array indexing
+
+// These do NOT work (use a temporary variable instead):
+print("{count + 1}")            // expression - won't interpolate
+print("{arr.len()}")            // method call - won't interpolate
+
+// Workaround for expressions:
+let next = count + 1
+print("Next: {next}")
+```
 
 ### Numbers
 
