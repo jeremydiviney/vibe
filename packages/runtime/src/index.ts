@@ -1,5 +1,5 @@
 // Version (updated by publish script)
-export const VERSION = '0.2.11';
+export const VERSION = '0.2.12';
 
 // Re-export public API
 export { VibeLexer, tokenize, allTokens } from './lexer';

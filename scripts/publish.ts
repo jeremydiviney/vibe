@@ -26,12 +26,12 @@ await $`bun run scripts/build.ts`;
 console.log('\nStep 3: Updating package versions...');
 
 const packages = [
-  'npm/vibe/package.json',
-  'npm/vibe-linux-x64/package.json',
-  'npm/vibe-linux-arm64/package.json',
-  'npm/vibe-darwin-arm64/package.json',
-  'npm/vibe-darwin-x64/package.json',
-  'npm/vibe-windows-x64/package.json',
+  '.npm-publish/vibe/package.json',
+  '.npm-publish/vibe-linux-x64/package.json',
+  '.npm-publish/vibe-linux-arm64/package.json',
+  '.npm-publish/vibe-darwin-arm64/package.json',
+  '.npm-publish/vibe-darwin-x64/package.json',
+  '.npm-publish/vibe-windows-x64/package.json',
 ];
 
 for (const pkgPath of packages) {
@@ -53,11 +53,11 @@ for (const pkgPath of packages) {
 console.log('\nStep 4: Copying binaries to packages...');
 
 const binaries = [
-  { src: 'dist/vibe-linux-x64', dest: 'npm/vibe-linux-x64/bin/vibe' },
-  { src: 'dist/vibe-linux-arm64', dest: 'npm/vibe-linux-arm64/bin/vibe' },
-  { src: 'dist/vibe-darwin-arm64', dest: 'npm/vibe-darwin-arm64/bin/vibe' },
-  { src: 'dist/vibe-darwin-x64', dest: 'npm/vibe-darwin-x64/bin/vibe' },
-  { src: 'dist/vibe-windows-x64.exe', dest: 'npm/vibe-windows-x64/bin/vibe.exe' },
+  { src: 'dist/vibe-linux-x64', dest: '.npm-publish/vibe-linux-x64/bin/vibe' },
+  { src: 'dist/vibe-linux-arm64', dest: '.npm-publish/vibe-linux-arm64/bin/vibe' },
+  { src: 'dist/vibe-darwin-arm64', dest: '.npm-publish/vibe-darwin-arm64/bin/vibe' },
+  { src: 'dist/vibe-darwin-x64', dest: '.npm-publish/vibe-darwin-x64/bin/vibe' },
+  { src: 'dist/vibe-windows-x64.exe', dest: '.npm-publish/vibe-windows-x64/bin/vibe.exe' },
 ];
 
 for (const { src, dest } of binaries) {
@@ -72,8 +72,8 @@ for (const { src, dest } of binaries) {
 // 5. Copy README to main package
 console.log('\nStep 5: Copying README...');
 if (existsSync('README.md')) {
-  cpSync('README.md', 'npm/vibe/README.md');
-  console.log('  ✓ README.md -> npm/vibe/README.md');
+  cpSync('README.md', '.npm-publish/vibe/README.md');
+  console.log('  ✓ README.md -> .npm-publish/vibe/README.md');
 }
 
 // 6. Publish packages
@@ -82,7 +82,7 @@ console.log('\nStep 6: Publishing packages...');
 const platforms = ['linux-x64', 'linux-arm64', 'darwin-arm64', 'darwin-x64', 'windows-x64'];
 
 for (const platform of platforms) {
-  const pkgDir = `npm/vibe-${platform}`;
+  const pkgDir = `.npm-publish/vibe-${platform}`;
   process.stdout.write(`  Publishing @vibe-lang/vibe-${platform}...`);
   if (dryRun) {
     await $`cd ${pkgDir} && npm publish --access public --dry-run`.quiet();
@@ -95,9 +95,9 @@ for (const platform of platforms) {
 // Publish main package
 process.stdout.write(`  Publishing @vibe-lang/vibe...`);
 if (dryRun) {
-  await $`cd npm/vibe && npm publish --access public --dry-run`.quiet();
+  await $`cd .npm-publish/vibe && npm publish --access public --dry-run`.quiet();
 } else {
-  await $`cd npm/vibe && npm publish --access public`.quiet();
+  await $`cd .npm-publish/vibe && npm publish --access public`.quiet();
 }
 console.log(` ✓`);
 

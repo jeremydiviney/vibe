@@ -22,6 +22,8 @@ const PACKAGES = [
   'packages/vscode-extension/package.json',
 ]
 
+const RUNTIME_VERSION_FILE = join(ROOT, 'packages', 'runtime', 'src', 'index.ts')
+
 function readVersion(): string {
   return readFileSync(VERSION_FILE, 'utf-8').trim()
 }
@@ -42,6 +44,27 @@ function updatePackageJson(path: string, version: string): void {
   pkg.version = version
   writeFileSync(fullPath, JSON.stringify(pkg, null, 2) + '\n')
   console.log(`  ${path}: ${oldVersion} -> ${version}`)
+}
+
+function updateRuntimeVersion(version: string): void {
+  if (!existsSync(RUNTIME_VERSION_FILE)) {
+    console.log('  Skipping packages/runtime/src/index.ts (not found)')
+    return
+  }
+
+  const content = readFileSync(RUNTIME_VERSION_FILE, 'utf-8')
+  const updated = content.replace(
+    /export const VERSION = '[^']+';/,
+    `export const VERSION = '${version}';`
+  )
+
+  if (updated === content) {
+    console.log('  packages/runtime/src/index.ts: no version string updated')
+    return
+  }
+
+  writeFileSync(RUNTIME_VERSION_FILE, updated)
+  console.log(`  packages/runtime/src/index.ts: -> ${version}`)
 }
 
 function bumpVersion(current: string, type: 'major' | 'minor' | 'patch'): string {
@@ -111,6 +134,9 @@ console.log(`  VERSION: ${currentVersion} -> ${newVersion}`)
 for (const pkg of PACKAGES) {
   updatePackageJson(pkg, newVersion)
 }
+
+// Update runtime version constant
+updateRuntimeVersion(newVersion)
 
 console.log('\nDone! Run these commands to publish:')
 console.log('  cd packages/runtime && bun publish')

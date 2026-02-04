@@ -6,8 +6,8 @@ dist/
 build/
 out/
 
-# npm package binaries (built artifacts, not the JS wrapper)
-npm/vibe-*/bin/
+# npm publish staging (built artifacts, not the JS wrapper)
+.npm-publish/
 
 # Bun
 bun.lockb

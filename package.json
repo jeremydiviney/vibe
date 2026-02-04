@@ -16,6 +16,7 @@
     "test:all": "bun test packages/runtime/src/ packages/runtime/tests/integration/ --timeout 120000",
     "test:extension": "bun test packages/vscode-extension/src/test/",
     "build:binaries": "bun run scripts/build.ts",
+    "install:local": "bun run scripts/install-local.ts",
     "publish:npm": "bun run scripts/publish.ts",
     "build:extension": "bun run --cwd packages/vscode-extension build",
     "version": "bun scripts/version.ts",
