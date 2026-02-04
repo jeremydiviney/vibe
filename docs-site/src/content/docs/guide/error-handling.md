@@ -287,8 +287,6 @@ let userData: json = vibe "Fetch user {userId}"
 
 if userData.err {
   let msg = userData.errDetails.message
-  ts(userId, msg) {
-    console.error(`Failed to fetch user ${userId}: ${msg}`);
-  }
+  print('Failed to fetch user {userId}: {msg}')
 }
 ```
