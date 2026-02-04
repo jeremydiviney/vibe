@@ -1,6 +1,6 @@
 import * as AST from '../ast';
 import type { RuntimeState, AIOperation, AIInteraction, StackFrame, FrameEntry, PromptToolCall, ToolCallRecord, VibeValue } from './types';
-import { createVibeValue } from './types';
+import { createVibeValue, createVibeError } from './types';
 import type { ToolRoundResult } from './ai/tool-loop';
 import type { ModelUsageRecord } from './ai/types';
 
@@ -113,7 +113,8 @@ export function resumeWithAIResponse(
   interaction?: AIInteraction,
   toolRounds?: ToolRoundResult[],
   usageRecord?: ModelUsageRecord,
-  textContent?: string
+  textContent?: string,
+  error?: Error | string
 ): RuntimeState {
   if (state.status !== 'awaiting_ai' || !state.pendingAI) {
     throw new Error('Cannot resume: not awaiting AI response');
@@ -170,13 +171,15 @@ export function resumeWithAIResponse(
     })
   );
 
-  // Create VibeValue with final response value and all tool calls
-  const aiResultValue: VibeValue = createVibeValue(response, {
-    source: 'ai',
-    toolCalls: toolCallRecords,
-    usage: usageRecord,
-    textContent,
-  });
+  // Create VibeValue — error VibeValue if AI call failed, normal VibeValue otherwise
+  const aiResultValue: VibeValue = error
+    ? createVibeError(error, null, { source: 'ai' })
+    : createVibeValue(response, {
+        source: 'ai',
+        toolCalls: toolCallRecords,
+        usage: usageRecord,
+        textContent,
+      });
 
   // Create prompt entry with embedded tool calls (order: prompt → tools → response)
   // Note: promptEntry.response stores raw value for context display

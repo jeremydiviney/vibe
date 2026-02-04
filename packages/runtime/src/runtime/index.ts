@@ -436,7 +436,9 @@ export class Runtime {
           retryAttempts: aiLogContext.retryAttempts as any,
         } : undefined);
       }
-      throw error;
+      // Capture AI error into Vibe .err system instead of crashing
+      const aiError = error instanceof Error ? error : new Error(String(error));
+      return resumeWithAIResponse(state, null, undefined, undefined, undefined, undefined, aiError);
     }
 
     // Log AI complete

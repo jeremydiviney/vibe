@@ -111,6 +111,7 @@ export function createVibeError(
   options: {
     isConst?: boolean;
     vibeType?: VibeType;
+    source?: ValueSource;
   } = {}
 ): VibeValue {
   const isErrorObject = error instanceof Error;
@@ -128,7 +129,7 @@ export function createVibeError(
     toolCalls: [],
     isConst: options.isConst ?? false,
     vibeType: options.vibeType ?? null,
-    source: null,
+    source: options.source ?? null,
   };
 }
 
