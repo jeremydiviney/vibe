@@ -162,6 +162,58 @@ describe('AI Error Capture into .err', () => {
     expect(vibeValue.errDetails?.message).toBe('raw string error');
   });
 
+  it('.err is checkable on typed do result (text)', async () => {
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      const result: text = do "test prompt" m
+      let hadError = false
+      if result.err {
+        hadError = true
+      }
+    `);
+    const provider = createFailingProvider(new Error('API error'));
+    const runtime = new Runtime(ast, provider);
+    await runtime.run();
+
+    expect(runtime.getValue('hadError')).toBe(true);
+  });
+
+  it('.err is checkable on typed do result (custom type)', async () => {
+    const ast = parse(`
+      type MyResult {
+        answer: text
+        score: number
+      }
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      const result: MyResult = do "test prompt" m
+      let hadError = false
+      if result.err {
+        hadError = true
+      }
+    `);
+    const provider = createFailingProvider(new Error('Rate limit'));
+    const runtime = new Runtime(ast, provider);
+    await runtime.run();
+
+    expect(runtime.getValue('hadError')).toBe(true);
+  });
+
+  it('.errDetails.message accessible on typed do result', async () => {
+    const ast = parse(`
+      model m = { name: "test", apiKey: "key", url: "http://test" }
+      const result: text = do "test prompt" m
+      let msg = ""
+      if result.err {
+        msg = result.errDetails.message
+      }
+    `);
+    const provider = createFailingProvider(new Error('Overloaded 529'));
+    const runtime = new Runtime(ast, provider);
+    await runtime.run();
+
+    expect(runtime.getValue('msg')).toBe('Overloaded 529');
+  });
+
   it('error preserves Error class name in errDetails.type', async () => {
     class CustomAPIError extends Error {
       constructor(message: string) {

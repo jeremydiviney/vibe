@@ -105,6 +105,12 @@ export class TypeRegistry {
    * @returns The field type, or null if not found
    */
   resolveSingleMember(baseType: string, memberName: string): string | null {
+    // VibeValue meta-properties — valid on any type at runtime
+    if (memberName === 'err') return 'boolean';
+    if (memberName === 'errDetails') return 'json';
+    if (memberName === 'toolCalls') return 'json';
+    if (memberName === 'textContent') return 'text';
+
     // Handle array types
     if (baseType.endsWith('[]')) {
       if (memberName === 'len') return 'number';
