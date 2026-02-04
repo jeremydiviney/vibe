@@ -19,6 +19,7 @@ bun.lockb
 
 # AI interaction logs
 .ai-logs/
+.vibe-logs/
 
 # IDE
 .idea/
