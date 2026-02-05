@@ -9,6 +9,7 @@ export interface InitialStateOptions {
   logAiInteractions?: boolean;
   rootDir?: string;       // Root directory for file operation sandboxing (defaults to cwd)
   maxParallel?: number;   // Max concurrent async operations (default: 4)
+  programArgs?: string[]; // CLI arguments passed after the .vibe filename
 }
 
 // Create initial runtime state from a program AST
@@ -93,6 +94,9 @@ export function createInitialState(
 
     // String interpolation context (for prompt strings in do/vibe)
     inPromptContext: false,
+
+    // CLI program arguments
+    programArgs: options?.programArgs ?? [],
   };
 }
 

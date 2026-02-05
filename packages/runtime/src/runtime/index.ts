@@ -170,6 +170,7 @@ export interface RuntimeOptions {
   printToConsole?: boolean;    // Print verbose logs to console (default: true)
   writeToFile?: boolean;       // Write verbose logs to file (default: true)
   maxParallel?: number;        // Max concurrent async operations (default: 4)
+  programArgs?: string[];      // CLI arguments passed after the .vibe filename
 }
 
 // Options for the unified execution loop
@@ -193,6 +194,7 @@ export class Runtime {
       logAiInteractions: this.logAiInteractions,
       rootDir: options?.rootDir,
       maxParallel: options?.maxParallel,
+      programArgs: options?.programArgs,
     });
     this.aiProvider = aiProvider;
     this.basePath = options?.basePath ?? process.cwd() + '/main.vibe';

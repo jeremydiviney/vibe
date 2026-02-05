@@ -14,6 +14,14 @@ import { checkTsBlockTypes, inferTsBlockReturnType } from './ts-block-checker';
 import { validateTsBlockScope } from './ts-block-scope-validator';
 import type { TsFunctionSignature } from './ts-signatures';
 
+// Return types for core functions (used for type inference on CallExpression)
+const CORE_FUNCTION_RETURN_TYPES: Record<string, string> = {
+  env: 'text',
+  args: 'text',     // args() returns text[], args(n) returns text, args("name") returns text
+  hasArg: 'boolean',
+  // print returns void/null, no entry needed
+};
+
 // ============================================================================
 // Model and Tool Validation
 // ============================================================================
@@ -806,6 +814,9 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         if (funcSymbol?.kind === 'function' && funcSymbol.returnType) {
           return funcSymbol.returnType;
         }
+        // Core function return types
+        const coreReturnType = CORE_FUNCTION_RETURN_TYPES[expr.callee.name];
+        if (coreReturnType) return coreReturnType;
       }
       // Handle method calls (MemberExpression callee) like arr.pop(), arr.len()
       if (expr.callee.type === 'MemberExpression' && ctx.typeRegistry) {

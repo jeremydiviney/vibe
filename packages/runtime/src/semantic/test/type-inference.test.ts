@@ -479,4 +479,38 @@ export function runBench(guesser: model) {
       }
     }
   });
+
+  // ============================================================================
+  // Core function return type inference
+  // ============================================================================
+
+  function getErrors(code: string): string[] {
+    const { errors } = analyzeCode(code);
+    return errors;
+  }
+
+  test('hasArg infers boolean - cannot assign to number', () => {
+    const errors = getErrors('let x = hasArg("flag")\nlet y: number = x');
+    expect(errors).toContain('Type error: cannot assign boolean to number');
+  });
+
+  test('hasArg infers boolean - can assign to boolean', () => {
+    const errors = getErrors('let x = hasArg("flag")\nlet y: boolean = x');
+    expect(errors).toEqual([]);
+  });
+
+  test('args infers text - cannot assign to number', () => {
+    const errors = getErrors('let x = args("name")\nlet y: number = x');
+    expect(errors).toContain('Type error: cannot assign text to number');
+  });
+
+  test('args infers text - can assign to text', () => {
+    const errors = getErrors('let x = args("name")\nlet y: text = x');
+    expect(errors).toEqual([]);
+  });
+
+  test('env infers text - cannot assign to boolean', () => {
+    const errors = getErrors('let x = env("FOO")\nlet y: boolean = x');
+    expect(errors).toContain('Type error: cannot assign text to boolean');
+  });
 });

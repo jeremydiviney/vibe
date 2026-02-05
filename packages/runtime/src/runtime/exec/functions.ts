@@ -144,7 +144,8 @@ export function execCallFunction(
 ): RuntimeState {
   // Get args and callee from value stack
   // Keep rawArgs as VibeValues to preserve AI metadata through function parameters
-  const rawArgs = state.valueStack.slice(-argCount);
+  // Note: slice(-0) === slice(0) which returns entire array, so handle 0 args explicitly
+  const rawArgs = argCount > 0 ? state.valueStack.slice(-argCount) : [];
   const rawCallee = state.valueStack[state.valueStack.length - argCount - 1];
   const newValueStack = state.valueStack.slice(0, -(argCount + 1));
 
@@ -223,10 +224,10 @@ export function execCallFunction(
     }
 
     case 'core-function': {
-      // Core functions receive resolved args (they don't understand VibeValues)
+      // Core functions receive state as first arg, then resolved user args
       const coreFunc = getCoreFunction(callee.name);
       if (!coreFunc) throw new ReferenceError(callee.name, location);
-      return { ...state, valueStack: newValueStack, lastResult: coreFunc(...resolvedArgs) };
+      return { ...state, valueStack: newValueStack, lastResult: coreFunc(state, ...resolvedArgs) };
     }
 
     case 'bound-method': {

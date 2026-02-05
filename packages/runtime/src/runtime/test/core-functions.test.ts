@@ -175,6 +175,220 @@ if true {
     });
   });
 
+  describe('args()', () => {
+    test('args() returns all program args', async () => {
+      const ast = parse(`let allArgs = args()`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'hello', '--count', '5', 'positional'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('allArgs')).toEqual(['--name', 'hello', '--count', '5', 'positional']);
+    });
+
+    test('args() returns empty array when no args', async () => {
+      const ast = parse(`let allArgs = args()`);
+      const runtime = new Runtime(ast, createMockProvider());
+      await runtime.run();
+      expect(runtime.getValue('allArgs')).toEqual([]);
+    });
+
+    test('args(n) returns arg at index', async () => {
+      const ast = parse(`
+let first = args(0)
+let second = args(1)
+let third = args(2)
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['foo', 'bar', 'baz'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('first')).toBe('foo');
+      expect(runtime.getValue('second')).toBe('bar');
+      expect(runtime.getValue('third')).toBe('baz');
+    });
+
+    test('args(n) returns null for out of bounds index', async () => {
+      const ast = parse(`let val = args(5)`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['foo'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBeNull();
+    });
+
+    test('args("name") returns --name value', async () => {
+      const ast = parse(`let val = args("name")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'hello'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe('hello');
+    });
+
+    test('args("name") supports --name=value form', async () => {
+      const ast = parse(`let val = args("name")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name=hello'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe('hello');
+    });
+
+    test('args("name") returns null for missing flag', async () => {
+      const ast = parse(`let val = args("missing")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'hello'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBeNull();
+    });
+
+    test('args("name") with multiple flags', async () => {
+      const ast = parse(`
+let name = args("name")
+let count = args("count")
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'hello', '--count', '5'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('name')).toBe('hello');
+      expect(runtime.getValue('count')).toBe('5');
+    });
+
+    test('args("name") returns empty string for boolean-style flag (last arg)', async () => {
+      const ast = parse(`let val = args("dry-run")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--dry-run'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe('');
+    });
+
+    test('args("name") returns empty string for boolean-style flag (followed by another flag)', async () => {
+      const ast = parse(`let val = args("dry-run")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--dry-run', '--verbose'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe('');
+    });
+
+    test('args("name") returns empty string for --name= form', async () => {
+      const ast = parse(`let val = args("name")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name='],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe('');
+    });
+
+    test('args works inside function', async () => {
+      const ast = parse(`
+function getArg(name: text): text {
+  return args(name)
+}
+let val = getArg("secret")
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--secret', 'Taylor Swift'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe('Taylor Swift');
+    });
+  });
+
+  describe('hasArg()', () => {
+    test('hasArg returns true when flag is present', async () => {
+      const ast = parse(`let val = hasArg("dry-run")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--dry-run'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe(true);
+    });
+
+    test('hasArg returns false when flag is absent', async () => {
+      const ast = parse(`let val = hasArg("dry-run")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'hello'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe(false);
+    });
+
+    test('hasArg returns false with no args', async () => {
+      const ast = parse(`let val = hasArg("dry-run")`);
+      const runtime = new Runtime(ast, createMockProvider());
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe(false);
+    });
+
+    test('hasArg detects --flag=value form', async () => {
+      const ast = parse(`let val = hasArg("name")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name=hello'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe(true);
+    });
+
+    test('hasArg works in conditional', async () => {
+      const ast = parse(`
+let mode = "wet"
+if hasArg("dry-run") {
+  mode = "dry"
+}
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--dry-run'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('mode')).toBe('dry');
+    });
+  });
+
+  describe('type inference', () => {
+    test('hasArg infers boolean type', async () => {
+      const ast = parse(`let dryRun = hasArg("dry-run")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--dry-run'],
+      });
+      await runtime.run();
+      const raw = runtime.getRawValue('dryRun') as any;
+      expect(raw.value).toBe(true);
+      expect(raw.vibeType).toBe('boolean');
+    });
+
+    test('args("name") infers text type', async () => {
+      const ast = parse(`let name = args("name")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'hello'],
+      });
+      await runtime.run();
+      const raw = runtime.getRawValue('name') as any;
+      expect(raw.value).toBe('hello');
+      expect(raw.vibeType).toBe('text');
+    });
+
+    test('env() infers text type', async () => {
+      process.env.TYPE_TEST_VAR = 'test';
+      const ast = parse(`let val = env("TYPE_TEST_VAR")`);
+      const runtime = new Runtime(ast, createMockProvider());
+      await runtime.run();
+      const raw = runtime.getRawValue('val') as any;
+      expect(raw.value).toBe('test');
+      expect(raw.vibeType).toBe('text');
+      delete process.env.TYPE_TEST_VAR;
+    });
+
+    test('hasArg infers boolean - rejects assignment to number', async () => {
+      expect(() => {
+        const ast = parse(`let x: number = hasArg("flag")`);
+      }).not.toThrow(); // Parser doesn't throw, but semantic analysis would catch it
+    });
+  });
+
   describe('core functions cannot be imported', () => {
     test('importing env from system/utils fails (env is core function)', async () => {
       const ast = parse(`

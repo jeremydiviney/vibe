@@ -73,6 +73,7 @@ class MockAIProvider implements AIProvider {
 export interface RunVibeOptions {
   aiProvider?: AIProvider;
   file?: string;
+  programArgs?: string[];
 }
 
 // Main function to run a vibe program
@@ -87,7 +88,7 @@ export async function runVibe(source: string, options?: RunVibeOptions): Promise
   }
 
   // 3. Runtime
-  const runtime = new Runtime(ast, options?.aiProvider ?? new MockAIProvider(), { basePath: options?.file });
+  const runtime = new Runtime(ast, options?.aiProvider ?? new MockAIProvider(), { basePath: options?.file, programArgs: options?.programArgs });
   return runtime.run();
 }
 
@@ -157,36 +158,41 @@ async function main(): Promise<void> {
     process.exit(exitCode);
   }
 
-  // Handle version flag
-  if (args.includes('--version') || args.includes('-v')) {
+  // Find the .vibe file in args — everything before it is runtime flags, everything after is program args
+  const vibeFileIndex = args.findIndex(arg => arg.endsWith('.vibe'));
+  const runtimeFlags = vibeFileIndex >= 0 ? args.slice(0, vibeFileIndex) : args;
+  const programArgs = vibeFileIndex >= 0 ? args.slice(vibeFileIndex + 1) : [];
+
+  // Handle version flag (only check runtime flags, not program args)
+  if (runtimeFlags.includes('--version') || runtimeFlags.includes('-v')) {
     console.log(`vibe ${VERSION}`);
     return;
   }
 
-  // Parse flags
-  const verbose = args.includes('--verbose');
-  const inspect = args.includes('--inspect');
-  const inspectBrk = args.includes('--inspect-brk');
+  // Parse runtime flags (only args BEFORE the .vibe file)
+  const verbose = runtimeFlags.includes('--verbose');
+  const inspect = runtimeFlags.includes('--inspect');
+  const inspectBrk = runtimeFlags.includes('--inspect-brk');
   const debugMode = inspect || inspectBrk;
   const stopOnEntry = inspectBrk;
 
   // Parse --inspect-port=PORT option
   let debugPort = 9229; // Default debug port
-  const portArg = args.find(arg => arg.startsWith('--inspect-port='));
+  const portArg = runtimeFlags.find(arg => arg.startsWith('--inspect-port='));
   if (portArg) {
     debugPort = parseInt(portArg.split('=')[1], 10);
   }
 
   // Parse --log-dir=PATH option
   let logDir: string | undefined;
-  const logDirArg = args.find(arg => arg.startsWith('--log-dir='));
+  const logDirArg = runtimeFlags.find(arg => arg.startsWith('--log-dir='));
   if (logDirArg) {
     logDir = logDirArg.split('=')[1];
   }
 
   // Parse --max-parallel=N option (for async operations)
   let maxParallel = 4; // Default
-  const maxParallelArg = args.find(arg => arg.startsWith('--max-parallel='));
+  const maxParallelArg = runtimeFlags.find(arg => arg.startsWith('--max-parallel='));
   if (maxParallelArg) {
     const parsed = parseInt(maxParallelArg.split('=')[1], 10);
     if (!isNaN(parsed) && parsed > 0) {
@@ -198,7 +204,7 @@ async function main(): Promise<void> {
 
   if (fileArgs.length === 0) {
     console.log('Vibe - AI Agent Language');
-    console.log('Usage: vibe [command] [options] <file.vibe>');
+    console.log('Usage: vibe [options] <file.vibe> [program args...]');
     console.log('');
     console.log('Commands:');
     console.log('  upgrade [version]   Update vibe (default: latest)');
@@ -241,7 +247,7 @@ async function main(): Promise<void> {
 
     if (debugMode) {
       // Run in debug mode
-      await runDebugMode(ast, filePath, debugPort, stopOnEntry, verbose, logDir);
+      await runDebugMode(ast, filePath, debugPort, stopOnEntry, verbose, logDir, programArgs);
     } else {
       // Normal execution
       const runtime: Runtime = new Runtime(
@@ -252,6 +258,7 @@ async function main(): Promise<void> {
           verbose,
           logDir,
           maxParallel,
+          programArgs,
         }
       );
 
@@ -289,7 +296,8 @@ async function runDebugMode(
   port: number,
   stopOnEntry: boolean,
   verbose?: boolean,
-  logDir?: string
+  logDir?: string,
+  programArgs?: string[]
 ): Promise<void> {
   // Import debug modules
   const { createDebugState, runWithDebug, getCurrentLocation } = await import('./debug');
@@ -300,7 +308,7 @@ async function runDebugMode(
 
   // Create initial state
   // Note: verbose logging in debug mode is limited for now
-  let runtimeState = createInitialState(ast);
+  let runtimeState = createInitialState(ast, { programArgs: programArgs ?? [] });
 
   // Load imports
   runtimeState = await loadImports(runtimeState, filePath);

@@ -697,6 +697,9 @@ export interface RuntimeState {
 
   // String interpolation context - true when evaluating prompt for do/vibe or prompt variable
   inPromptContext: boolean;
+
+  // CLI program arguments (everything after the .vibe filename)
+  programArgs: string[];
 }
 
 // ============================================================================
