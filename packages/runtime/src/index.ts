@@ -170,6 +170,7 @@ async function main(): Promise<void> {
   }
 
   // Parse runtime flags (only args BEFORE the .vibe file)
+  const checkOnly = runtimeFlags.includes('--check');
   const verbose = runtimeFlags.includes('--verbose');
   const inspect = runtimeFlags.includes('--inspect');
   const inspectBrk = runtimeFlags.includes('--inspect-brk');
@@ -210,6 +211,7 @@ async function main(): Promise<void> {
     console.log('  upgrade [version]   Update vibe (default: latest)');
     console.log('');
     console.log('Options:');
+    console.log('  --check               Parse and check for errors without running');
     console.log('  --verbose             Enable verbose JSONL logging (console + file)');
     console.log('  --log-dir=PATH        Directory for logs (default: .vibe-logs)');
     console.log('  --max-parallel=N      Max concurrent async operations (default: 4)');
@@ -241,6 +243,19 @@ async function main(): Promise<void> {
     // Parse and analyze
     const ast = parse(source, { file: filePath });
     const errors = analyze(ast, source, filePath);
+
+    if (checkOnly) {
+      if (errors.length > 0) {
+        for (const error of errors) {
+          console.error(error.format());
+        }
+        console.error(`\n${errors.length} error${errors.length === 1 ? '' : 's'} found.`);
+        process.exit(1);
+      }
+      console.log(`No errors found in ${filePath}`);
+      return;
+    }
+
     if (errors.length > 0) {
       throw errors[0];
     }

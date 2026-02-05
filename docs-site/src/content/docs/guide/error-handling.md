@@ -5,14 +5,13 @@ description: Working with errors in Vibe programs
 
 Vibe uses a unified value system where every value can carry an error. This allows errors to propagate through expressions without crashing your program.
 
-## The VibeValue System
+## Error Properties
 
-Every value in Vibe is wrapped in a `VibeValue` that contains:
+Every value in Vibe can carry error information. You can check for errors using these properties:
 
-- `value` - The actual data (or `null` if there's an error)
-- `err` - Boolean flag (`true` if error, `false` if successful)
-- `errDetails` - Error information (when `err` is `true`)
-- `toolCalls` - Record of AI tool calls (for AI responses)
+- `.err` - Boolean flag (`true` if error, `false` if successful)
+- `.errDetails` - Error information (when `.err` is `true`)
+- `.toolCalls` - Record of AI tool calls (for AI responses)
 
 ## Checking for Errors
 
@@ -225,7 +224,7 @@ if result.err {
 }
 ```
 
-Note: TypeScript blocks receive resolved values, not VibeValues. Check `.err` in Vibe code before passing values to ts blocks.
+Note: TypeScript blocks receive resolved values. Check `.err` in Vibe code before passing values to ts blocks.
 
 ### Parallel Operation Errors
 

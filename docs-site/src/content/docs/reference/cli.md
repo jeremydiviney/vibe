@@ -8,7 +8,7 @@ The `vibe` command runs Vibe programs and provides various options for debugging
 ## Basic Usage
 
 ```bash
-vibe <file.vibe>
+vibe [options] <file.vibe> [program args...]
 ```
 
 Run a Vibe program:
@@ -16,6 +16,14 @@ Run a Vibe program:
 ```bash
 vibe hello.vibe
 ```
+
+Pass arguments to the program:
+
+```bash
+vibe script.vibe --name Alice --count 5 --dry-run
+```
+
+Everything before the `.vibe` file is a runtime flag. Everything after is passed to the program as arguments (see [Program Arguments](#program-arguments)).
 
 ## Commands
 
@@ -43,6 +51,16 @@ Show the installed Vibe version:
 vibe --version
 vibe -v
 ```
+
+### --check
+
+Parse and check a file for errors without running it. Reports all errors found:
+
+```bash
+vibe --check myprogram.vibe
+```
+
+Exits with code 0 if no errors, code 1 if errors are found. Useful for CI pipelines and editor integrations.
 
 ### --verbose
 
@@ -133,6 +151,58 @@ Then attach VS Code debugger to port 9229.
 
 ```bash
 vibe --max-parallel=10 batch-process.vibe
+```
+
+### Check a file for errors
+
+```bash
+vibe --check myprogram.vibe
+```
+
+### Pass arguments to a program
+
+```bash
+vibe deploy.vibe --env production --dry-run
+```
+
+## Program Arguments
+
+Arguments placed after the `.vibe` filename are passed to the program. Access them using the built-in `args()` and `hasArg()` functions (no import needed).
+
+### args()
+
+Access program arguments in three ways:
+
+```vibe
+// Get all arguments as an array
+let allArgs = args()          // ["--env", "production", "--dry-run"]
+
+// Get argument by index
+let first = args(0)           // "--env"
+
+// Get value of a named flag
+let envName = args("env")     // "production"
+```
+
+**Named flag lookup** supports two forms:
+- `--name value` — returns `"value"`
+- `--name=value` — returns `"value"`
+- `--name` (no value) — returns `""` (empty string)
+- Missing flag — returns `null`
+
+### hasArg()
+
+Check if a flag is present (returns `boolean`):
+
+```vibe
+if hasArg("dry-run") {
+  print("Dry run mode - no changes will be made")
+}
+
+let envName = args("env")
+if envName == null {
+  print("Usage: vibe deploy.vibe --env <name>")
+}
 ```
 
 ## Environment Variables

@@ -28,12 +28,6 @@
   - [ ] Global config (`~/.vibe/settings.json`) and project config
   - [ ] CLI flags: `--yes-all`, `--safe-mode`
 
-### CLI
-- [ ] Command-line argument passing to Vibe programs
-  - [ ] Access `args` or `argv` from within Vibe code
-  - [ ] Parse named flags (e.g., `--max-items 50`)
-  - [ ] Support positional arguments
-
 ### Language Design
 - [ ] Seamless Vibe↔TypeScript type integration
   - [ ] Vibe structural types (`type Foo { ... }`) automatically available as TS interfaces in ts blocks
@@ -47,3 +41,9 @@
     - [ ] Go-to-definition for TS symbols
     - [ ] Error squiggles from TS compiler
     - [ ] Consider: embedded language support or virtual document approach
+
+## Completed
+- [x] CLI argument passing to Vibe programs (args, hasArg core functions)
+- [x] Error handling (.err system for AI call failures)
+- [x] ts block scope restriction and type inference
+- [x] Model-specific reasoning parameter handling

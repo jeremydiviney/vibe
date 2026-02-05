@@ -42,6 +42,40 @@ let port = env("PORT", "3000")  // With default value
 | `defaultValue` | text? | Default if not set |
 | **Returns** | text | Variable value |
 
+### args
+
+Access CLI arguments passed after the `.vibe` filename:
+
+```vibe
+let all = args()            // All args as text[]
+let first = args(0)         // Arg at index (or null)
+let name = args("name")    // Value of --name flag (or null)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | Returns all args as array |
+| `index` | number | Returns arg at index (or `null`) |
+| `name` | text | Returns value of `--name` flag (or `null`) |
+| **Returns** | text[] / text / null | Depends on argument |
+
+Named flags return `""` (empty string) for boolean-style flags like `--dry-run`. Returns `null` when the flag is not present.
+
+### hasArg
+
+Check if a CLI flag is present:
+
+```vibe
+if hasArg("verbose") {
+  print("Verbose mode enabled")
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | text | Flag name without dashes |
+| **Returns** | boolean | Whether flag is present |
+
 ---
 
 ## Utility Functions

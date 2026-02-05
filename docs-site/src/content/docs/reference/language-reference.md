@@ -229,7 +229,7 @@ tool fetchUrl(url: text): text
 ## TypeScript Blocks
 
 ```vibe
-// Pass Vibe variables as parameters (values are resolved, not VibeValues)
+// Pass Vibe variables as parameters (values are automatically resolved)
 let result = ts(x, y) {
   return x + y;
 }
@@ -275,7 +275,7 @@ async vibe "Background task" agent
 
 ## Error Handling
 
-Every value is a VibeValue with error tracking:
+Every value can carry error information:
 
 ```vibe
 let result = do "Risky operation"
