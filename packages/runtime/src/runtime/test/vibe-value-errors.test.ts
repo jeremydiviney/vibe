@@ -187,6 +187,65 @@ describe('VibeValue Error Handling', () => {
     });
   });
 
+  describe('.value is not accessible from Vibe code', () => {
+    it('.value errors on string variable', () => {
+      const ast = parse(`
+        let x = "hello"
+        let v = x.value
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+      expect(state.status).toBe('error');
+      expect(state.error).toContain('Unknown string property: value');
+    });
+
+    it('.value errors on number variable', () => {
+      const ast = parse(`
+        let x = 42
+        let v = x.value
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+      expect(state.status).toBe('error');
+      expect(state.error).toContain("Cannot access property 'value'");
+    });
+
+    it('.value errors on boolean variable', () => {
+      const ast = parse(`
+        let x = true
+        let v = x.value
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+      expect(state.status).toBe('error');
+      expect(state.error).toContain("Cannot access property 'value'");
+    });
+
+    it('.value on object returns undefined (not the VibeValue inner value)', () => {
+      const ast = parse(`
+        let x = { name: "test" }
+        let v = x.value
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+      // Object property access falls through to normal lookup — x.value is undefined
+      // because the unwrapped object {name: "test"} has no "value" key
+      expect(state.status).toBe('completed');
+      expect(state.callStack[0].locals['v'].value).toBeUndefined();
+    });
+
+    it('.value errors on array variable', () => {
+      const ast = parse(`
+        let x = [1, 2, 3]
+        let v = x.value
+      `);
+      let state = createInitialState(ast);
+      state = runUntilPause(state);
+      expect(state.status).toBe('error');
+      expect(state.error).toContain('Unknown array property: value');
+    });
+  });
+
   describe('.toolCalls property access', () => {
     it('.toolCalls returns empty array for non-AI values', () => {
       const ast = parse(`
