@@ -1,10 +1,11 @@
 // Tests for auto-imported core functions (print, env)
 // These functions are available everywhere without explicit import
 
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, test, beforeEach, afterEach, spyOn } from 'bun:test';
 import { parse } from '../../parser/parse';
 import { Runtime } from '../index';
 import type { AIProvider, AIResponse } from '../types';
+import { resetArgsChecked } from '../stdlib/core';
 
 // Mock provider for tests that don't need AI
 function createMockProvider(): AIProvider {
@@ -386,6 +387,174 @@ if hasArg("dry-run") {
       expect(() => {
         const ast = parse(`let x: number = hasArg("flag")`);
       }).not.toThrow(); // Parser doesn't throw, but semantic analysis would catch it
+    });
+  });
+
+  describe('defineArg()', () => {
+    afterEach(() => {
+      resetArgsChecked();
+    });
+
+    test('returns default when arg not provided', async () => {
+      const ast = parse(`const maxItems = defineArg("max-items", "number", "Max items per run", false, 20)`);
+      const runtime = new Runtime(ast, createMockProvider(), { programArgs: [] });
+      await runtime.run();
+      expect(runtime.getValue('maxItems')).toBe(20);
+    });
+
+    test('returns parsed number when arg provided', async () => {
+      const ast = parse(`const maxItems = defineArg("max-items", "number", "Max items per run", false, 20)`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--max-items', '5'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('maxItems')).toBe(5);
+    });
+
+    test('returns parsed number with --name=value form', async () => {
+      const ast = parse(`const count = defineArg("count", "number", "Count", false, 10)`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--count=42'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('count')).toBe(42);
+    });
+
+    test('returns text value when type is text', async () => {
+      const ast = parse(`const name = defineArg("name", "text", "User name", false, "default")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--name', 'Alice'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('name')).toBe('Alice');
+    });
+
+    test('returns text default when arg not provided', async () => {
+      const ast = parse(`const name = defineArg("name", "text", "User name", false, "default")`);
+      const runtime = new Runtime(ast, createMockProvider(), { programArgs: [] });
+      await runtime.run();
+      expect(runtime.getValue('name')).toBe('default');
+    });
+
+    test('returns null when optional and not provided', async () => {
+      const ast = parse(`const filter = defineArg("filter", "text", "Optional filter")`);
+      const runtime = new Runtime(ast, createMockProvider(), { programArgs: [] });
+      await runtime.run();
+      expect(runtime.getValue('filter')).toBeNull();
+    });
+
+    test('exits with error when required arg is missing', async () => {
+      const ast = parse(`const output = defineArg("output", "text", "Output dir", true)`);
+      const runtime = new Runtime(ast, createMockProvider(), { programArgs: [] });
+      const mockExit = spyOn(process, 'exit').mockImplementation((code?: number) => { throw new Error(`exit ${code}`); });
+      const mockError = spyOn(console, 'error').mockImplementation(() => {});
+      const mockLog = spyOn(console, 'log').mockImplementation(() => {});
+      await expect(runtime.run()).rejects.toThrow('exit 1');
+      expect(mockError.mock.calls[0][0]).toContain('--output is required');
+      mockExit.mockRestore();
+      mockError.mockRestore();
+      mockLog.mockRestore();
+    });
+
+    test('throws when number value is not a valid number', async () => {
+      const ast = parse(`const count = defineArg("count", "number", "Count")`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--count', 'abc'],
+      });
+      await expect(runtime.run()).rejects.toThrow('expects a number');
+    });
+
+    test('--help prints all registered args and exits on first args() call', async () => {
+      const ast = parse(`
+const a = defineArg("count", "number", "Item count", false, 10)
+const b = defineArg("name", "text", "User name", true)
+let allArgs = args()
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--help'],
+      });
+      const mockExit = spyOn(process, 'exit').mockImplementation((code?: number) => { throw new Error(`exit ${code}`); });
+      const mockLog = spyOn(console, 'log').mockImplementation(() => {});
+      await expect(runtime.run()).rejects.toThrow('exit 0');
+      const output = mockLog.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('--count');
+      expect(output).toContain('--name');
+      expect(output).toContain('Item count');
+      expect(output).toContain('(default: 10)');
+      expect(output).toContain('(required)');
+      expect(output).toContain('--help');
+      mockExit.mockRestore();
+      mockLog.mockRestore();
+    });
+
+    test('multiple defineArg calls work together', async () => {
+      const ast = parse(`
+const a = defineArg("count", "number", "Count", false, 10)
+const b = defineArg("name", "text", "Name", false, "world")
+const c = defineArg("filter", "text", "Filter")
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--count', '3', '--name', 'Alice'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('a')).toBe(3);
+      expect(runtime.getValue('b')).toBe('Alice');
+      expect(runtime.getValue('c')).toBeNull();
+    });
+
+    test('args("name") returns typed value matching defineArg definition', async () => {
+      const ast = parse(`
+const a = defineArg("count", "number", "Count", false, 10)
+let val = args("count")
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--count', '42'],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe(42);
+    });
+
+    test('args("name") returns default from defineArg when arg not provided', async () => {
+      const ast = parse(`
+const a = defineArg("count", "number", "Count", false, 10)
+let val = args("count")
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: [],
+      });
+      await runtime.run();
+      expect(runtime.getValue('val')).toBe(10);
+    });
+
+    test('unknown flags trigger warnings on first args() call', async () => {
+      const ast = parse(`
+const a = defineArg("count", "number", "Count", false, 10)
+let allArgs = args()
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--count', '5', '--unknown', '--also-bad=123'],
+      });
+      const mockWarn = spyOn(console, 'warn').mockImplementation(() => {});
+      await runtime.run();
+      const warnings = mockWarn.mock.calls.map(c => c[0] as string);
+      expect(warnings.some(w => w.includes('--unknown'))).toBe(true);
+      expect(warnings.some(w => w.includes('--also-bad'))).toBe(true);
+      mockWarn.mockRestore();
+    });
+
+    test('args("name") warns when accessing undefined arg', async () => {
+      const ast = parse(`
+const a = defineArg("count", "number", "Count", false, 10)
+let val = args("unknown-arg")
+`);
+      const runtime = new Runtime(ast, createMockProvider(), {
+        programArgs: ['--count', '5'],
+      });
+      const mockWarn = spyOn(console, 'warn').mockImplementation(() => {});
+      await runtime.run();
+      const warnings = mockWarn.mock.calls.map(c => c[0] as string);
+      expect(warnings.some(w => w.includes("'unknown-arg'"))).toBe(true);
+      mockWarn.mockRestore();
     });
   });
 

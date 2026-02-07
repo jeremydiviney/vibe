@@ -97,6 +97,10 @@ export function createInitialState(
 
     // CLI program arguments
     programArgs: options?.programArgs ?? [],
+
+    // Registered CLI arg definitions
+    argDefinitions: [],
+
   };
 }
 

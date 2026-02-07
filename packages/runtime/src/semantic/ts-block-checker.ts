@@ -115,7 +115,7 @@ function generateVirtualCode(
     .join('\n');
 
   const importSection = importStatements ? importStatements + '\n\n' : '';
-  return `${importSection}function __tsBlock(${paramList}) {\n${body}\n}`;
+  return `${importSection}async function __tsBlock(${paramList}) {\n${body}\n}`;
 }
 
 /**

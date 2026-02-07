@@ -228,7 +228,7 @@ describe('TS Block Parameter Expression Resolution', () => {
 
   test('model.usage returns a copy of usage array', () => {
     const ast = parse(`
-      model m = { name: "gpt-4", apiKey: "key" }
+      model m = { name: "gpt-4", apiKey: "key", provider: "openai" }
       let result = ts(usage=m.usage) { return usage.length }
     `);
     let state = createInitialState(ast);
@@ -240,7 +240,7 @@ describe('TS Block Parameter Expression Resolution', () => {
 
   test('model.name resolves to model name', () => {
     const ast = parse(`
-      model m = { name: "gpt-4o", apiKey: "key" }
+      model m = { name: "gpt-4o", apiKey: "key", provider: "openai" }
       let result = ts(n=m.name) { return n }
     `);
     let state = createInitialState(ast);

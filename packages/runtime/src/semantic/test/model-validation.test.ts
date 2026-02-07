@@ -61,7 +61,31 @@ model myModel = {
     expect(errors[0].message).toBe("Model 'myModel' is missing required field 'apiKey'");
   });
 
-  test('model missing url field', () => {
+  test('model with provider but no url is valid', () => {
+    const ast = parse(`
+model myModel = {
+  name: "gpt-4",
+  apiKey: "sk-test",
+  provider: "openai"
+}
+`);
+    const errors = analyze(ast, '', '');
+    expect(errors.length).toBe(0);
+  });
+
+  test('model with url but no provider is valid', () => {
+    const ast = parse(`
+model myModel = {
+  name: "gpt-4",
+  apiKey: "sk-test",
+  url: "https://api.openai.com/v1"
+}
+`);
+    const errors = analyze(ast, '', '');
+    expect(errors.length).toBe(0);
+  });
+
+  test('model with neither url nor provider is an error', () => {
     const ast = parse(`
 model myModel = {
   name: "gpt-4",
@@ -70,7 +94,7 @@ model myModel = {
 `);
     const errors = analyze(ast, '', '');
     expect(errors.length).toBe(1);
-    expect(errors[0].message).toBe("Model 'myModel' is missing required field 'url'");
+    expect(errors[0].message).toContain("must have at least 'url' or 'provider'");
   });
 
   test('model missing all fields', () => {
@@ -81,7 +105,7 @@ model myModel = {}
     expect(errors.length).toBe(3);
     expect(errors.map(e => e.message)).toContain("Model 'myModel' is missing required field 'name'");
     expect(errors.map(e => e.message)).toContain("Model 'myModel' is missing required field 'apiKey'");
-    expect(errors.map(e => e.message)).toContain("Model 'myModel' is missing required field 'url'");
+    expect(errors.map(e => e.message)).toContain("Model 'myModel' must have at least 'url' or 'provider'. Without either, the API endpoint cannot be determined.");
   });
 
   // ============================================================================

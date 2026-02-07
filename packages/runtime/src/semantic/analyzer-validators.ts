@@ -17,9 +17,9 @@ import type { TsFunctionSignature } from './ts-signatures';
 // Return types for core functions (used for type inference on CallExpression)
 const CORE_FUNCTION_RETURN_TYPES: Record<string, string> = {
   env: 'text',
-  args: 'text',     // args() returns text[], args(n) returns text, args("name") returns text
   hasArg: 'boolean',
   // print returns void/null, no entry needed
+  // args and defineArg have parameter-dependent return types, handled in getExpressionType
 };
 
 // ============================================================================
@@ -35,8 +35,8 @@ export function validateModelConfig(
   visitExpression: (node: AST.Expression) => void
 ): void {
   const config = node.config;
-  const requiredFields = ['name', 'apiKey', 'url'];
-  const optionalFields = ['provider', 'maxRetriesOnError', 'thinkingLevel', 'tools'];
+  const requiredFields = ['name', 'apiKey'];
+  const optionalFields = ['url', 'provider', 'maxRetriesOnError', 'thinkingLevel', 'tools'];
   const validFields = [...requiredFields, ...optionalFields];
   const provided = new Set(config.providedFields);
 
@@ -57,7 +57,7 @@ export function validateModelConfig(
   // Validate provider is one of the allowed values
   if (config.provider) {
     if (config.provider.type === 'StringLiteral') {
-      const validProviders = ['anthropic', 'openai', 'google'];
+      const validProviders = ['anthropic', 'openai', 'google', 'openrouter'];
       if (!validProviders.includes(config.provider.value)) {
         ctx.error(
           `Invalid provider '${config.provider.value}'. Must be: ${validProviders.join(', ')}`,
@@ -66,6 +66,32 @@ export function validateModelConfig(
       }
     }
     visitExpression(config.provider);
+  }
+
+  // Require at least one of 'url' or 'provider'
+  if (!provided.has('url') && !provided.has('provider')) {
+    ctx.error(
+      `Model '${node.name}' must have at least 'url' or 'provider'. Without either, the API endpoint cannot be determined.`,
+      node.location
+    );
+  }
+
+  // Warn if url and provider conflict (only when both are string literals)
+  if (config.url && config.provider &&
+      config.url.type === 'StringLiteral' && config.provider.type === 'StringLiteral') {
+    const url = config.url.value.toLowerCase();
+    const provider = config.provider.value;
+    const detectedProvider =
+      url.includes('anthropic') ? 'anthropic' :
+      url.includes('google') || url.includes('generativelanguage') ? 'google' :
+      url.includes('openrouter') ? 'openrouter' :
+      'openai';
+    if (detectedProvider !== provider && detectedProvider !== 'openai') {
+      ctx.error(
+        `Model '${node.name}' URL suggests '${detectedProvider}' but provider is '${provider}'. The explicit provider determines the API format — ensure this is intentional.`,
+        config.url.location
+      );
+    }
   }
 
   // Validate maxRetriesOnError is a non-negative number
@@ -817,6 +843,24 @@ export function getExpressionType(ctx: AnalyzerContext, expr: AST.Expression): s
         // Core function return types
         const coreReturnType = CORE_FUNCTION_RETURN_TYPES[expr.callee.name];
         if (coreReturnType) return coreReturnType;
+
+        // defineArg return type depends on its 2nd argument (type: "number" or "text")
+        if (expr.callee.name === 'defineArg' && expr.arguments.length >= 2) {
+          const typeArg = expr.arguments[1];
+          if (typeArg.type === 'StringLiteral') {
+            if (typeArg.value === 'number') return 'number';
+            if (typeArg.value === 'text') return 'text';
+          }
+        }
+
+        // args() return type depends on argument
+        if (expr.callee.name === 'args') {
+          if (expr.arguments.length === 0) return 'text[]';
+          const firstArg = expr.arguments[0];
+          if (firstArg.type === 'NumberLiteral') return 'text';
+          if (firstArg.type === 'StringLiteral') return 'text'; // default to text for named args
+          return 'text';
+        }
       }
       // Handle method calls (MemberExpression callee) like arr.pop(), arr.len()
       if (expr.callee.type === 'MemberExpression' && ctx.typeRegistry) {

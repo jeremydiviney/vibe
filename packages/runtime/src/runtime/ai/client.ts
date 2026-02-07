@@ -18,6 +18,7 @@ export function detectProvider(url: string | null): AIProviderType {
   const u = url.toLowerCase();
   if (u.includes('anthropic')) return 'anthropic';
   if (u.includes('google') || u.includes('generativelanguage')) return 'google';
+  if (u.includes('openrouter')) return 'openrouter';
   return 'openai';
 }
 
@@ -30,6 +31,7 @@ export function getProviderExecutor(provider: AIProviderType): ProviderExecutor 
       return executeAnthropic;
     case 'google':
       return executeGoogle;
+    case 'openrouter':
     case 'openai':
     default:
       return executeOpenAI;

@@ -110,6 +110,7 @@ import type { TokenUsage, ModelUsageRecord } from './ai/types';
 import type { ToolRoundResult } from './ai/tool-loop';
 import type { AILogMessage, ContextEntry, PromptToolCall, LogEvent } from './types';
 import { VerboseLogger } from './verbose-logger';
+import { printArgHelp } from './stdlib/core';
 
 // Sequential request ID counter for usage tracking
 let nextRequestId = 1;
@@ -249,6 +250,13 @@ export class Runtime {
       logger: this.verboseLogger,
       logInteractions: this.logAiInteractions,
     });
+
+    // Fallback --help check for programs that use defineArg but don't call args()/hasArg()
+    if (this.state.argDefinitions.length > 0 &&
+        this.state.programArgs.some(a => a === '--help' || a === '-h')) {
+      printArgHelp(this.state);
+      process.exit(0);
+    }
 
     if (this.state.status === 'error') {
       this.verboseLogger?.complete('error', this.state.error ?? 'Unknown error');

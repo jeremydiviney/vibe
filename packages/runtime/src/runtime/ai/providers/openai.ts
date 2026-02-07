@@ -9,6 +9,7 @@ import { toOpenAITools } from '../tool-schema';
 /** OpenAI provider configuration */
 export const OPENAI_CONFIG = {
   defaultUrl: 'https://api.openai.com/v1',
+  openRouterUrl: 'https://openrouter.ai/api/v1',
 };
 
 /** Default thinking level map for OpenAI models (reasoning_effort parameter) */
@@ -51,6 +52,10 @@ const MODEL_REASONING_CONFIGS: Record<string, ModelReasoningConfig> = {
 
   // Kimi/Moonshot models (via OpenRouter)
   'moonshotai/kimi-k2.5': { type: 'boolean' },  // Boolean reasoning param
+
+  // Google models (via OpenRouter) - only support 'low' and 'high'
+  'google/gemini-3-pro-preview': { type: 'effort', effortMap: { none: false, low: 'low', medium: 'low', high: 'high', max: 'high' } },
+  'google/gemini-3-flash-preview': { type: 'effort', effortMap: { none: false, low: 'low', medium: 'low', high: 'high', max: 'high' } },
 };
 
 /**
@@ -95,7 +100,7 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
   // Create OpenAI client
   const client = new OpenAI({
     apiKey: model.apiKey,
-    baseURL: model.url ?? OPENAI_CONFIG.defaultUrl,
+    baseURL: model.url ?? (model.provider === 'openrouter' ? OPENAI_CONFIG.openRouterUrl : OPENAI_CONFIG.defaultUrl),
   });
 
   // Build base messages

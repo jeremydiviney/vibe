@@ -25,7 +25,7 @@ export const CONFIG = {
 };
 
 // Array of strings
-export const PROVIDERS: string[] = ["openai", "anthropic", "google"];
+export const PROVIDERS: string[] = ["openai", "anthropic", "google", "openrouter"];
 
 // Interface-based config
 export interface ModelConfig {

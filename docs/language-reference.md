@@ -224,7 +224,6 @@ Models configure AI providers. Models are always immutable:
 model myModel = {
   name: "gpt-4",
   apiKey: env("OPENAI_API_KEY"),
-  url: "https://api.openai.com/v1",
   provider: "openai"
 }
 ```
@@ -233,11 +232,11 @@ model myModel = {
 
 - `name` - Model name/identifier
 - `apiKey` - API key for authentication
-- `url` - API endpoint URL
 
 ### Optional Fields
 
-- `provider` - Provider type: `"openai"`, `"anthropic"`, `"google"`
+- `provider` - Provider type: `"openai"`, `"anthropic"`, `"google"`, `"openrouter"`. Determines API format and default URL.
+- `url` - API endpoint URL override. If omitted, uses the provider's default URL.
 - `maxRetriesOnError` - Number of retries on failure
 - `thinkingLevel` - For models with extended thinking: `"low"`, `"medium"`, `"high"`
 - `tools` - Array of tools available to this model
@@ -392,6 +391,35 @@ let items: text[] = []
 items.push("first")
 items.push("second")
 ```
+
+## CLI Arguments
+
+### Raw Access
+
+- `args()` - Returns all program arguments as a text array
+- `args(n)` - Returns the argument at index n (text), or null
+- `args("name")` - Returns the value of `--name` flag. If the arg was registered via `defineArg()`, returns a typed value (number or text). Warns if the arg is not registered.
+- `hasArg("name")` - Returns true if `--name` flag is present. Warns if the arg is not registered.
+
+### Defining Expected Arguments
+
+Use `defineArg()` to define CLI arguments with types, descriptions, defaults, and automatic `--help` generation:
+
+```vibe
+const maxItems = defineArg("max-items", "number", "Max items per run", false, 20)
+const filter = defineArg("filter", "text", "Optional filter")
+const output = defineArg("output", "text", "Output directory", true)
+```
+
+Signature: `defineArg(name, type, description, required?, default?)`
+
+- **name** - Flag name (used as `--name` on the command line)
+- **type** - `"number"` or `"text"`
+- **description** - Help text shown with `--help`
+- **required** (optional) - `true` to require the arg, `false` or omitted for optional
+- **default** (optional) - Default value if not provided
+
+When `defineArg()` is used, `--help`/`-h` handling and unknown flag warnings happen automatically on the first `args()` or `hasArg()` call. Both `defineArg()` and `args("name")` return typed values matching the definition.
 
 ## Comments
 

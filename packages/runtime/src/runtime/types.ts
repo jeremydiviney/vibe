@@ -700,6 +700,10 @@ export interface RuntimeState {
 
   // CLI program arguments (everything after the .vibe filename)
   programArgs: string[];
+
+  // Registered CLI arg definitions from defineArg() calls
+  argDefinitions: Array<{ name: string; type: 'number' | 'text'; description: string; required: boolean; defaultValue?: unknown }>;
+
 }
 
 // ============================================================================

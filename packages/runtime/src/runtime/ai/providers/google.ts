@@ -199,6 +199,17 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       }));
     }
 
+    // Debug: if we found no tool calls, check if there are functionCall keys we somehow missed
+    if (!toolCalls?.length) {
+      const missedCalls = responseParts.filter((p) => 'functionCall' in p);
+      if (missedCalls.length > 0) {
+        console.warn(`[google] Found ${missedCalls.length} part(s) with 'functionCall' key but filter returned 0. ` +
+          `Part details: ${JSON.stringify(missedCalls.map(p => ({ keys: Object.keys(p), fcTruthy: !!p.functionCall, fcType: typeof p.functionCall, fcValue: p.functionCall })))}`);
+      }
+    }
+
+
+
     // Determine stop reason
     const finishReason = response.candidates?.[0]?.finishReason as string | undefined;
     const stopReason =

@@ -55,6 +55,11 @@ export function tsTypeToVibe(tsType: string): string | null {
     return vibeBase ? `${vibeBase}[]` : null;
   }
 
+  // Unwrap Promise<T> - ts blocks are async at runtime, so the Promise is already awaited
+  if (tsType.startsWith('Promise<') && tsType.endsWith('>')) {
+    return tsTypeToVibe(tsType.slice(8, -1));
+  }
+
   // Direct mappings
   const map: Record<string, string> = {
     'string': 'text',

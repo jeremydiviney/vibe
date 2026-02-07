@@ -513,4 +513,24 @@ export function runBench(guesser: model) {
     const errors = getErrors('let x = env("FOO")\nlet y: boolean = x');
     expect(errors).toContain('Type error: cannot assign text to boolean');
   });
+
+  test('defineArg("number") infers number - cannot assign to text', () => {
+    const errors = getErrors('const x: text = defineArg("count", "number", "Count")');
+    expect(errors).toContain('Type error: cannot assign number to text');
+  });
+
+  test('defineArg("number") infers number - can assign to number', () => {
+    const errors = getErrors('const x: number = defineArg("count", "number", "Count")');
+    expect(errors).toEqual([]);
+  });
+
+  test('defineArg("text") infers text - cannot assign to number', () => {
+    const errors = getErrors('const x: number = defineArg("name", "text", "Name")');
+    expect(errors).toContain('Type error: cannot assign text to number');
+  });
+
+  test('defineArg("text") infers text - can assign to text', () => {
+    const errors = getErrors('const x: text = defineArg("name", "text", "Name")');
+    expect(errors).toEqual([]);
+  });
 });

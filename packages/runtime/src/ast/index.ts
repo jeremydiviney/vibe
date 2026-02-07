@@ -13,7 +13,7 @@ interface BaseNode {
 // ============================================================================
 
 /** Supported AI provider types - strictly typed */
-export type AIProviderType = 'anthropic' | 'openai' | 'google';
+export type AIProviderType = 'anthropic' | 'openai' | 'google' | 'openrouter';
 
 // ============================================================================
 // Vibe Types
