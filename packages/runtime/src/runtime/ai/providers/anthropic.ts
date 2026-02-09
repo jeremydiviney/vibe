@@ -56,9 +56,10 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
     // Context chunks as separate messages (if any)
     ...chunks.map((chunk, i) => ({
       role: 'user' as const,
-      content: chunk.content,
-      // Cache control on 2nd-to-last chunk to allow latest chunk to change
-      ...(i === cacheBreakpointIndex ? { cache_control: { type: 'ephemeral' as const } } : {}),
+      // Cache control goes on content blocks, not the message itself
+      content: i === cacheBreakpointIndex
+        ? [{ type: 'text' as const, text: chunk.content, cache_control: { type: 'ephemeral' as const } }]
+        : chunk.content,
     })),
     // Prompt is always last (never cached)
     { role: 'user' as const, content: promptMessage },
