@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import type { AIRequest, AIResponse, AIToolCall, ThinkingLevel } from '../types';
 import { AIError } from '../types';
 import { buildMessages } from '../formatters';
-import { toOpenAITools } from '../tool-schema';
+import { toOpenAITools, toOpenAIResponsesFunctionTools } from '../tool-schema';
 
 /** OpenAI provider configuration */
 export const OPENAI_CONFIG = {
@@ -93,8 +93,22 @@ function getReasoningEnabled(level: ThinkingLevel): boolean {
 
 /**
  * Execute an AI request using the OpenAI SDK.
+ * Routes to Responses API when web search is configured.
  */
 export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
+  // Use Responses API when web search is configured
+  // (web_search_options in Chat Completions only works with search-specific models)
+  if (request.model.serverTools?.webSearch) {
+    return executeOpenAIWithResponses(request);
+  }
+
+  return executeOpenAIChatCompletions(request);
+}
+
+/**
+ * Execute via Chat Completions API (standard path, no web search).
+ */
+async function executeOpenAIChatCompletions(request: AIRequest): Promise<AIResponse> {
   const { prompt, contextText, targetType, model, tools, previousToolCalls, toolResults } = request;
 
   // Create OpenAI client
@@ -162,22 +176,6 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
     // Add tools if provided
     if (tools?.length) {
       params.tools = toOpenAITools(tools) as OpenAI.ChatCompletionTool[];
-    }
-
-    // Add web search if configured via serverTools
-    const webSearch = model.serverTools?.webSearch;
-    if (webSearch) {
-      const searchOptions: Record<string, unknown> = {};
-      if (typeof webSearch === 'object') {
-        if (webSearch.contextSize) searchOptions.search_context_size = webSearch.contextSize;
-        if (webSearch.userLocation) {
-          searchOptions.user_location = {
-            type: 'approximate',
-            approximate: webSearch.userLocation,
-          };
-        }
-      }
-      (params as unknown as Record<string, unknown>).web_search_options = searchOptions;
     }
 
     // Add reasoning configuration based on model type
@@ -292,6 +290,171 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       );
     }
     // Handle timeout and network errors as retryable
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+      const isNetworkError = message.includes('timeout') ||
+        message.includes('econnreset') ||
+        message.includes('econnrefused') ||
+        message.includes('socket hang up');
+      if (isNetworkError) {
+        throw new AIError(
+          `Network error: ${error.message}`,
+          undefined,
+          true
+        );
+      }
+    }
+    throw error;
+  }
+}
+
+/**
+ * Execute via OpenAI Responses API.
+ * Used when web search is configured, since the web_search tool is only
+ * available through the Responses API for non-search-specific models.
+ */
+async function executeOpenAIWithResponses(request: AIRequest): Promise<AIResponse> {
+  const { prompt, contextText, model, tools, previousToolCalls, toolResults } = request;
+
+  const client = new OpenAI({
+    apiKey: model.apiKey,
+    baseURL: model.url ?? (model.provider === 'openrouter' ? OPENAI_CONFIG.openRouterUrl : OPENAI_CONFIG.defaultUrl),
+  });
+
+  // Build base messages
+  const baseMessages = buildMessages(prompt, contextText, tools);
+
+  // Separate system messages for 'instructions' parameter
+  const systemMessages = baseMessages.filter(m => m.role === 'system');
+  const nonSystemMessages = baseMessages.filter(m => m.role !== 'system');
+  const instructions = systemMessages.map(m => m.content).join('\n\n');
+
+  // Build input array with user messages
+  type InputItem = Record<string, unknown>;
+  const input: InputItem[] = nonSystemMessages.map(m => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  // Add tool call history if present (multi-turn with Responses API format)
+  if (previousToolCalls?.length && toolResults?.length) {
+    // Add function_call items from previous response
+    for (const call of previousToolCalls) {
+      input.push({
+        type: 'function_call',
+        name: call.toolName,
+        arguments: JSON.stringify(call.args),
+        call_id: call.id,
+      });
+    }
+    // Add function_call_output items
+    for (const result of toolResults) {
+      input.push({
+        type: 'function_call_output',
+        call_id: result.toolCallId,
+        output: result.error
+          ? `Error: ${result.error}`
+          : (typeof result.result === 'string' ? result.result : JSON.stringify(result.result)),
+      });
+    }
+  }
+
+  // Add follow-up message if present
+  if (request.followUpMessage) {
+    input.push({ role: 'user', content: request.followUpMessage });
+  }
+
+  // Build tools array - start with web_search
+  const webSearch = model.serverTools?.webSearch;
+  const responsesTools: Record<string, unknown>[] = [];
+
+  if (webSearch) {
+    const webSearchTool: Record<string, unknown> = { type: 'web_search' };
+    if (typeof webSearch === 'object' && webSearch.userLocation) {
+      webSearchTool.user_location = {
+        type: 'approximate',
+        ...webSearch.userLocation,
+      };
+    }
+    responsesTools.push(webSearchTool);
+  }
+
+  // Add function tools (Responses API uses flat format, not nested under 'function')
+  if (tools?.length) {
+    responsesTools.push(...toOpenAIResponsesFunctionTools(tools));
+  }
+
+  try {
+    // Build request params
+    const params: Record<string, unknown> = {
+      model: model.name,
+      input,
+      instructions,
+    };
+
+    if (responsesTools.length > 0) {
+      params.tools = responsesTools;
+    }
+
+    // Add reasoning config
+    const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
+    if (thinkingLevel) {
+      const reasoningConfig = getModelReasoningConfig(model.name);
+      if (reasoningConfig.type === 'effort') {
+        const effort = getReasoningEffort(thinkingLevel, reasoningConfig);
+        if (effort !== null) {
+          params.reasoning = { effort };
+        }
+      }
+    }
+
+    // Make Responses API request
+    const response = await (client.responses as unknown as { create(params: Record<string, unknown>): Promise<Record<string, unknown>> }).create(params);
+
+    // Extract text content via output_text shortcut
+    const content = (response.output_text as string) ?? '';
+
+    // Extract function calls from output items
+    const outputItems = (response.output ?? []) as Array<Record<string, unknown>>;
+    const functionCallItems = outputItems.filter(item => item.type === 'function_call');
+    let toolCalls: AIToolCall[] | undefined;
+    if (functionCallItems.length > 0) {
+      toolCalls = functionCallItems.map(item => ({
+        id: (item.call_id as string) ?? (item.id as string),
+        toolName: item.name as string,
+        args: JSON.parse(item.arguments as string),
+      }));
+    }
+
+    // Determine stop reason
+    const status = response.status as string | undefined;
+    const stopReason = toolCalls?.length
+      ? 'tool_use' as const
+      : (status === 'incomplete' ? 'length' as const : 'end' as const);
+
+    // Extract usage
+    const rawUsage = response.usage as Record<string, unknown> | undefined;
+    const usage = rawUsage
+      ? {
+          inputTokens: Number(rawUsage.input_tokens ?? 0),
+          outputTokens: Number(rawUsage.output_tokens ?? 0),
+        }
+      : undefined;
+
+    const rawResponse = JSON.stringify(response, null, 2);
+    return { content, parsedValue: content, usage, toolCalls, stopReason, rawResponse };
+  } catch (error) {
+    if (error instanceof AIError) {
+      throw error;
+    }
+    if (error instanceof OpenAI.APIError) {
+      const isRetryable = error.status === 429 || (error.status ?? 0) >= 500;
+      throw new AIError(
+        `OpenAI API error (${error.status}): ${error.message}`,
+        error.status,
+        isRetryable
+      );
+    }
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
       const isNetworkError = message.includes('timeout') ||

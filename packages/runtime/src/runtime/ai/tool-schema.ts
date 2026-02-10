@@ -149,3 +149,44 @@ export function toGoogleFunctionDeclaration(schema: ToolSchema): GoogleFunctionD
 export function toGoogleFunctionDeclarations(schemas: ToolSchema[]): GoogleFunctionDeclaration[] {
   return schemas.map(toGoogleFunctionDeclaration);
 }
+
+// ============================================================================
+// OpenAI Responses API converters
+// ============================================================================
+
+/** OpenAI Responses API function tool format (flat, not nested under 'function') */
+export interface OpenAIResponsesFunctionTool {
+  type: 'function';
+  name: string;
+  description?: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, JsonSchema>;
+    required?: string[];
+  };
+}
+
+/**
+ * Convert internal ToolSchema to OpenAI Responses API function tool format.
+ */
+export function toOpenAIResponsesFunctionTool(schema: ToolSchema): OpenAIResponsesFunctionTool {
+  const { properties, required } = parametersToProperties(schema.parameters);
+
+  return {
+    type: 'function',
+    name: schema.name,
+    description: schema.description,
+    parameters: {
+      type: 'object',
+      properties,
+      required: required.length > 0 ? required : undefined,
+    },
+  };
+}
+
+/**
+ * Convert array of ToolSchema to OpenAI Responses API function tools.
+ */
+export function toOpenAIResponsesFunctionTools(schemas: ToolSchema[]): OpenAIResponsesFunctionTool[] {
+  return schemas.map(toOpenAIResponsesFunctionTool);
+}
