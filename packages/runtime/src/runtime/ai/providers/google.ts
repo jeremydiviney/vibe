@@ -171,6 +171,17 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       config.tools = [{ functionDeclarations: toGoogleFunctionDeclarations(tools) }];
     }
 
+    // Add Google Search tool if configured via serverTools
+    const webSearch = model.serverTools?.webSearch;
+    if (webSearch) {
+      const googleSearchTool: Record<string, unknown> = { googleSearch: {} };
+      if (typeof webSearch === 'object' && webSearch.excludeDomains?.length) {
+        googleSearchTool.googleSearch = { excludeDomains: webSearch.excludeDomains };
+      }
+      const existingTools = (config.tools as unknown[]) ?? [];
+      config.tools = [...existingTools, googleSearchTool];
+    }
+
     // Make API request
     // Cast contents to unknown to avoid strict SDK type checking (we build valid content)
     const response = await client.models.generateContent({

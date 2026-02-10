@@ -36,7 +36,7 @@ export function validateModelConfig(
 ): void {
   const config = node.config;
   const requiredFields = ['name', 'apiKey'];
-  const optionalFields = ['url', 'provider', 'maxRetriesOnError', 'thinkingLevel', 'tools'];
+  const optionalFields = ['url', 'provider', 'maxRetriesOnError', 'thinkingLevel', 'tools', 'serverTools'];
   const validFields = [...requiredFields, ...optionalFields];
   const provided = new Set(config.providedFields);
 
@@ -111,6 +111,7 @@ export function validateModelConfig(
   if (config.modelName) visitExpression(config.modelName);
   if (config.apiKey) visitExpression(config.apiKey);
   if (config.url) visitExpression(config.url);
+  if (config.serverTools) visitExpression(config.serverTools);
 }
 
 /**

@@ -162,6 +162,7 @@ export interface ModelConfig extends BaseNode {
   maxRetriesOnError: Expression | null; // Non-negative integer
   thinkingLevel: Expression | null;     // "none" | "low" | "medium" | "high" | "max"
   tools: Expression | null;             // Array of VibeToolValue objects
+  serverTools: Expression | null;       // Server-side tool config (e.g., webSearch)
   providedFields: string[];             // For semantic validation
 }
 

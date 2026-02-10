@@ -66,6 +66,7 @@ export interface VibeModelValue {
   maxRetriesOnError?: number | null;
   thinkingLevel?: string | null;  // "none" | "low" | "medium" | "high" | "max"
   tools?: VibeToolValue[];  // Tools available to this model for AI calls
+  serverTools?: Record<string, unknown> | null;  // Server-side tool config (e.g., webSearch)
   usage: ModelUsageRecord[];  // Accumulated usage records from all AI calls
 }
 

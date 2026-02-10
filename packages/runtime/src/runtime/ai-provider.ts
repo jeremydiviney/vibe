@@ -3,7 +3,7 @@
 
 import type { AIProvider, AIExecutionResult } from './index';
 import type { RuntimeState, AILogMessage, PromptToolCall } from './types';
-import type { VibeModelValue, TargetType, AIRequest, ModelConfig, AIProviderType } from './ai';
+import type { VibeModelValue, TargetType, AIRequest, ModelConfig, AIProviderType, ServerToolsConfig } from './ai';
 import type { VibeToolValue, ToolSchema } from './tools/types';
 import { detectProvider, getProviderExecutor, buildAIRequest } from './ai';
 import { withRetry } from './ai/retry';
@@ -130,6 +130,17 @@ function buildModelConfig(modelValue: VibeModelValue): ModelConfig {
   const provider: AIProviderType =
     (modelValue.provider as AIProviderType) ?? detectProvider(modelValue.url);
 
+  // Normalize raw serverTools value into ServerToolsConfig
+  let serverTools: ServerToolsConfig | undefined;
+  if (modelValue.serverTools && typeof modelValue.serverTools === 'object') {
+    const raw = modelValue.serverTools as Record<string, unknown>;
+    if (raw.webSearch !== undefined) {
+      serverTools = {
+        webSearch: raw.webSearch as ServerToolsConfig['webSearch'],
+      };
+    }
+  }
+
   return {
     name: modelValue.name,
     apiKey: modelValue.apiKey,
@@ -137,6 +148,7 @@ function buildModelConfig(modelValue: VibeModelValue): ModelConfig {
     provider,
     maxRetriesOnError: modelValue.maxRetriesOnError ?? undefined,
     thinkingLevel: (modelValue.thinkingLevel as ModelConfig['thinkingLevel']) ?? DEFAULT_THINKING_LEVEL,
+    serverTools,
   };
 }
 

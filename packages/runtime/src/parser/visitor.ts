@@ -298,6 +298,7 @@ class VibeAstVisitor extends BaseVibeVisitor {
         maxRetriesOnError: properties.get('maxRetriesOnError')?.value ?? null,
         thinkingLevel: properties.get('thinkingLevel')?.value ?? null,
         tools: properties.get('tools')?.value ?? null,
+        serverTools: properties.get('serverTools')?.value ?? null,
         providedFields: [...properties.keys()],
         location,
       },

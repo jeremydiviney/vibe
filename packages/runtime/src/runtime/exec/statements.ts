@@ -145,7 +145,7 @@ export function execDestructuringDeclaration(
 }
 
 // Model config fields in evaluation order
-const MODEL_CONFIG_FIELDS = ['modelName', 'apiKey', 'url', 'provider', 'maxRetriesOnError', 'thinkingLevel', 'tools'] as const;
+const MODEL_CONFIG_FIELDS = ['modelName', 'apiKey', 'url', 'provider', 'maxRetriesOnError', 'thinkingLevel', 'tools', 'serverTools'] as const;
 
 /**
  * Model declaration - evaluate all config expressions through instruction stack.
@@ -190,7 +190,7 @@ export function finalizeModelDeclaration(
   const newValueStack = state.valueStack.slice(0, -fieldCount);
 
   // Unwrap VibeValues to get raw values
-  const [modelName, apiKey, url, provider, maxRetriesOnError, thinkingLevel, tools] = rawValues.map(
+  const [modelName, apiKey, url, provider, maxRetriesOnError, thinkingLevel, tools, serverTools] = rawValues.map(
     v => resolveValue(v)
   );
 
@@ -202,6 +202,7 @@ export function finalizeModelDeclaration(
     maxRetriesOnError: maxRetriesOnError as number | null,
     thinkingLevel: thinkingLevel as string | null,
     tools: tools as unknown[] | undefined,
+    serverTools: serverTools as Record<string, unknown> | null,
     usage: [],
   };
 

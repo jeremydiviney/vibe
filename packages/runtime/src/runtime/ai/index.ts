@@ -5,6 +5,7 @@ export type {
   AIProviderType,
   TargetType,
   ModelConfig,
+  ServerToolsConfig,
   AIRequest,
   AIResponse,
   ProviderExecutor,

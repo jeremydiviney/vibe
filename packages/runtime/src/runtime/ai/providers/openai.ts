@@ -164,6 +164,22 @@ export async function executeOpenAI(request: AIRequest): Promise<AIResponse> {
       params.tools = toOpenAITools(tools) as OpenAI.ChatCompletionTool[];
     }
 
+    // Add web search if configured via serverTools
+    const webSearch = model.serverTools?.webSearch;
+    if (webSearch) {
+      const searchOptions: Record<string, unknown> = {};
+      if (typeof webSearch === 'object') {
+        if (webSearch.contextSize) searchOptions.search_context_size = webSearch.contextSize;
+        if (webSearch.userLocation) {
+          searchOptions.user_location = {
+            type: 'approximate',
+            approximate: webSearch.userLocation,
+          };
+        }
+      }
+      (params as unknown as Record<string, unknown>).web_search_options = searchOptions;
+    }
+
     // Add reasoning configuration based on model type
     const thinkingLevel = model.thinkingLevel as ThinkingLevel | undefined;
     if (thinkingLevel) {

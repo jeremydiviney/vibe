@@ -12,6 +12,26 @@ export type TargetType = 'text' | 'json' | 'boolean' | 'number' | 'text[]' | 'js
 /** Thinking level for extended reasoning */
 export type ThinkingLevel = 'none' | 'low' | 'medium' | 'high' | 'max';
 
+/** Server-side tool configuration (provider-managed tools like web search) */
+export interface ServerToolsConfig {
+  webSearch?: boolean | WebSearchConfig;
+}
+
+export interface WebSearchConfig {
+  /** Max search invocations per request (Anthropic only) */
+  maxUses?: number;
+  /** Search context size (OpenAI only): "low" | "medium" | "high" */
+  contextSize?: 'low' | 'medium' | 'high';
+  /** Domains to exclude from results (Google only) */
+  excludeDomains?: string[];
+  /** User location for localized results (OpenAI only) */
+  userLocation?: {
+    country?: string;
+    city?: string;
+    region?: string;
+  };
+}
+
 /** Model configuration from Vibe model declaration */
 export interface ModelConfig {
   name: string;
@@ -20,6 +40,7 @@ export interface ModelConfig {
   provider?: AIProviderType;
   maxRetriesOnError?: number;
   thinkingLevel?: ThinkingLevel;
+  serverTools?: ServerToolsConfig;
 }
 
 /** AI request for all providers */

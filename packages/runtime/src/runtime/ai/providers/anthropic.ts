@@ -125,9 +125,23 @@ export async function executeAnthropic(request: AIRequest): Promise<AIResponse> 
       messages: allMessages,
     };
 
+    // Add web search tool if configured via serverTools
+    const webSearch = model.serverTools?.webSearch;
+    if (webSearch) {
+      const webSearchTool: Record<string, unknown> = {
+        type: 'web_search_20250305',
+        name: 'web_search',
+      };
+      if (typeof webSearch === 'object' && webSearch.maxUses) {
+        webSearchTool.max_uses = webSearch.maxUses;
+      }
+      params.tools = [webSearchTool];
+    }
+
     // Add tools if provided
     if (tools?.length) {
-      params.tools = toAnthropicTools(tools);
+      const baseTools = Array.isArray(params.tools) ? params.tools : [];
+      params.tools = [...baseTools, ...toAnthropicTools(tools)];
     }
 
     // Add extended thinking if level specified and not 'none'
