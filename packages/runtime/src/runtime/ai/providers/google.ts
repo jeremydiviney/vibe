@@ -166,20 +166,17 @@ export async function executeGoogle(request: AIRequest): Promise<AIResponse> {
       ...generationConfig,
     };
 
-    // Add tools if provided
-    if (tools?.length) {
-      config.tools = [{ functionDeclarations: toGoogleFunctionDeclarations(tools) }];
-    }
-
-    // Add Google Search tool if configured via serverTools
+    // Add tools - Google does NOT support combining googleSearch with functionDeclarations.
+    // When webSearch is enabled, use googleSearch exclusively; otherwise use function tools.
     const webSearch = model.serverTools?.webSearch;
     if (webSearch) {
       const googleSearchTool: Record<string, unknown> = { googleSearch: {} };
       if (typeof webSearch === 'object' && webSearch.excludeDomains?.length) {
         googleSearchTool.googleSearch = { excludeDomains: webSearch.excludeDomains };
       }
-      const existingTools = (config.tools as unknown[]) ?? [];
-      config.tools = [...existingTools, googleSearchTool];
+      config.tools = [googleSearchTool];
+    } else if (tools?.length) {
+      config.tools = [{ functionDeclarations: toGoogleFunctionDeclarations(tools) }];
     }
 
     // Make API request
